@@ -1,11 +1,14 @@
 import * as express from "express";
 import * as http from "http";
+import { getConfig } from "./config";
+import { getLogger } from "./logging";
 
-const port = 3000;
+const config = getConfig();
+const logger = getLogger(...config.loggers);
 
 function createApp() {
 	const app = express();
-	app.set("port", port);
+	app.set("port", config.port);
 
 	const bodyParser = require("body-parser");
 	app.use(bodyParser.json());
@@ -38,7 +41,7 @@ app.use((err, req, res, next) => {
 });
 
 const server = http.createServer(app);
-server.listen(port);
+server.listen(config.port);
 server.on("error", onError);
 server.on("listening", onListening);
 
@@ -69,16 +72,14 @@ function onError (error) {
 		throw error;
 	}
 
-	const bind = typeof port === "string" ? `Pipe ${port}` : `Port ${port}`;
-
 	// handle specific listen errors with friendly messages
 	switch (error.code) {
 		case "EACCES":
-			//log.fatal(`${bind} requires elevated privileges`);
+			logger.error(`${ config.port } requires elevated privileges`);
 			process.exit(1);
 			break;
 		case "EADDRINUSE":
-			//log.fatal(`${bind} is already in use`);
+			logger.error(`${ config.port } is already in use`);
 			process.exit(1);
 			break;
 		default:
@@ -91,6 +92,5 @@ function onError (error) {
  */
 function onListening () {
 	const addr = server.address();
-	const bind = typeof addr === "string" ? `pipe ${addr}` : `port ${addr.port}`;
-	//log.debug(`Listening on ${bind}`);
+	logger.debug(`Listening on ${ addr.port }`);
 }

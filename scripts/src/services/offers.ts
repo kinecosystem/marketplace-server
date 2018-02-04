@@ -6,35 +6,14 @@ export type Coupon = {
 	content_type: "Coupon";
 }
 
-export type Question = {
-	title: string;
-	answers: string[];
+export type HTMLPoll = {
+	content_type: "HTMLPoll";
+	html: string;
 }
 
-export type SliderPoll = {
-	min: number;
-	max: number;
-	content_type: "SliderPoll";
-}
-
-export type SliderPollAnswer = {
-	value: number;
-	content_type: "SliderPollAnswer";
-}
-
-export type MultiChoicePoll = {
-	questions: Question[];
-	content_type: "MultiChoicePoll";
-}
-
-export type MultiChoicePollAnswer = {
-	answers: number[];
-	content_type: "MultiChoicePollAnswer";
-}
-
-export type Limits = {
-	supply: number;
-	expiration: string; // formatted in iso 8601 in UTC (2018-01-29T10:47:46)
+export type HTMLPollAnswer = {
+	content_type: "HTMLPollAnswer";
+	answers: { [key: string]: string };
 }
 
 export type Offer = {
@@ -43,9 +22,8 @@ export type Offer = {
 	description: string;
 	image: string;
 	amount: number;
-	content: MultiChoicePoll | SliderPoll | Coupon;
+	content: Coupon | HTMLPoll;
 	offer_type: "earn" | "spend";
-	limits?: Limits;
 }
 
 export type OfferList = {
@@ -76,7 +54,7 @@ export const getOffers = async (options): Promise<ServiceResult<OfferList>> => {
 			description: "Tell us about yourself",
 			image: IMAGE_BASE + img,
 			amount: 4000,
-			content: {} as Coupon,
+			content: {"content_type": "HTMLPoll", "html": "<html><body><h1>title</h1><div>my poll</div></body></html>"} as HTMLPoll,
 			offer_type: "earn",
 		})).concat(spend.map<Offer>(img => ({
 			id: img,
@@ -84,7 +62,7 @@ export const getOffers = async (options): Promise<ServiceResult<OfferList>> => {
 			description: "$10 gift card",
 			image: IMAGE_BASE + img,
 			amount: 8000,
-			content: {} as Coupon,
+			content: {"content_type": "Coupon", "description": "aaa-bbb-ccc-ddd"} as Coupon,
 			offer_type: "spend",
 		})));
 

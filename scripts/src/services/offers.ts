@@ -1,5 +1,6 @@
 import { ServiceResult } from "./index";
 import { Order } from "./orders";
+import { getConfig } from "../config";
 
 export type Coupon = {
 	description: string;
@@ -46,13 +47,13 @@ export const getOffers = async (options): Promise<ServiceResult<OfferList>> => {
 		"spend_offer4.png",
 		"spend_offer5.png",
 	];
-	const IMAGE_BASE = "https://s3.amazonaws.com/kinmarketplace-assets/version1/";
+	const assets_base = getConfig().assets_base;
 	const offers =  
 		earn.map<Offer>(img => ({
 			id: img,
 			title: "Answer a poll",
 			description: "Tell us about yourself",
-			image: IMAGE_BASE + img,
+			image: assets_base + img,
 			amount: 4000,
 			content: {"content_type": "HTMLPoll", "html": "<html><body><h1>title</h1><div>my poll</div></body></html>"} as HTMLPoll,
 			offer_type: "earn",
@@ -60,7 +61,7 @@ export const getOffers = async (options): Promise<ServiceResult<OfferList>> => {
 			id: img,
 			title: "Gift Card",
 			description: "$10 gift card",
-			image: IMAGE_BASE + img,
+			image: assets_base + img,
 			amount: 8000,
 			content: {"content_type": "Coupon", "description": "aaa-bbb-ccc-ddd"} as Coupon,
 			offer_type: "spend",

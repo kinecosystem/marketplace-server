@@ -1,40 +1,20 @@
 import { ServiceResult } from "./index";
 import { Order } from "./orders";
+import { getConfig } from "../config";
 
 export type Coupon = {
 	description: string;
 	content_type: "Coupon";
 }
 
-export type Question = {
-	title: string;
-	answers: string[];
+export type HTMLPoll = {
+	content_type: "HTMLPoll";
+	html: string;
 }
 
-export type SliderPoll = {
-	min: number;
-	max: number;
-	content_type: "SliderPoll";
-}
-
-export type SliderPollAnswer = {
-	value: number;
-	content_type: "SliderPollAnswer";
-}
-
-export type MultiChoicePoll = {
-	questions: Question[];
-	content_type: "MultiChoicePoll";
-}
-
-export type MultiChoicePollAnswer = {
-	answers: number[];
-	content_type: "MultiChoicePollAnswer";
-}
-
-export type Limits = {
-	supply: number;
-	expiration: string; // formatted in iso 8601 in UTC (2018-01-29T10:47:46)
+export type HTMLPollAnswer = {
+	content_type: "HTMLPollAnswer";
+	answers: { [key: string]: string };
 }
 
 export type Offer = {
@@ -43,9 +23,8 @@ export type Offer = {
 	description: string;
 	image: string;
 	amount: number;
-	content: MultiChoicePoll | SliderPoll | Coupon;
+	content: Coupon | HTMLPoll;
 	offer_type: "earn" | "spend";
-	limits?: Limits;
 }
 
 export type OfferList = {
@@ -53,10 +32,45 @@ export type OfferList = {
 }
 
 export const getOffers = async (options): Promise<ServiceResult<OfferList>> => {
+
+	const earn = [
+		"earn_offer1.png", 
+		"earn_offer2.png", 
+		"earn_offer3.png", 
+		"earn_offer4.png", 
+		"earn_offer5.png", 
+		];
+	const spend = [
+		"spend_offer1.png",
+		"spend_offer2.png",
+		"spend_offer3.png",
+		"spend_offer4.png",
+		"spend_offer5.png",
+	];
+	const assets_base = getConfig().assets_base;
+	const offers =  
+		earn.map<Offer>(img => ({
+			id: img,
+			title: "Answer a poll",
+			description: "Tell us about yourself",
+			image: assets_base + img,
+			amount: 4000,
+			content: {"content_type": "HTMLPoll", "html": "<html><body><h1>title</h1><div>my poll</div></body></html>"} as HTMLPoll,
+			offer_type: "earn",
+		})).concat(spend.map<Offer>(img => ({
+			id: img,
+			title: "Gift Card",
+			description: "$10 gift card",
+			image: assets_base + img,
+			amount: 8000,
+			content: {"content_type": "Coupon", "description": "aaa-bbb-ccc-ddd"} as Coupon,
+			offer_type: "spend",
+		})));
+
 	return {
 		code: 200,
 		data: {
-			offers: []
+			offers
 		}
 	};
 };

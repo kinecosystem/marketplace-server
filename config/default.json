@@ -3,5 +3,6 @@
 	"loggers": [{
 		"name": "console",
 		"type": "console"
-	}]
+	}],
+  "assets_base": "https://s3.amazonaws.com/kinmarketplace-assets/version1/"
 }

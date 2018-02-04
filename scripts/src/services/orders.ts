@@ -1,5 +1,5 @@
 import { ServiceResult } from "./index";
-import { MultiChoicePollAnswer, SliderPollAnswer } from "./offers";
+import { HTMLPollAnswer } from "./offers";
 
 export type Order = {
 	id: string;
@@ -22,7 +22,7 @@ export type EarnResult = {
 
 export type EarnSubmission = {
 	recipient_address: string;
-	completed_form?: MultiChoicePollAnswer | SliderPollAnswer;
+	completed_form?: HTMLPollAnswer;
 }
 
 export type SpendSubmission = {

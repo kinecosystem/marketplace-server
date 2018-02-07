@@ -32,14 +32,13 @@ export type OfferList = {
 }
 
 export const getOffers = async (options): Promise<ServiceResult<OfferList>> => {
-
 	const earn = [
 		"earn_offer1.png", 
 		"earn_offer2.png", 
 		"earn_offer3.png", 
 		"earn_offer4.png", 
 		"earn_offer5.png", 
-		];
+	];
 	const spend = [
 		"spend_offer1.png",
 		"spend_offer2.png",
@@ -47,13 +46,14 @@ export const getOffers = async (options): Promise<ServiceResult<OfferList>> => {
 		"spend_offer4.png",
 		"spend_offer5.png",
 	];
-	const assets_base = getConfig().assets_base;
+
+	const assetsBase = getConfig().assets_base;
 	const offers =  
 		earn.map<Offer>(img => ({
 			id: img,
 			title: "Answer a poll",
 			description: "Tell us about yourself",
-			image: assets_base + img,
+			image: assetsBase + img,
 			amount: 4000,
 			content: {"content_type": "HTMLPoll", "html": "<html><body><h1>title</h1><div>my poll</div></body></html>"} as HTMLPoll,
 			offer_type: "earn",
@@ -61,7 +61,7 @@ export const getOffers = async (options): Promise<ServiceResult<OfferList>> => {
 			id: img,
 			title: "Gift Card",
 			description: "$10 gift card",
-			image: assets_base + img,
+			image: assetsBase + img,
 			amount: 8000,
 			content: {"content_type": "Coupon", "description": "aaa-bbb-ccc-ddd"} as Coupon,
 			offer_type: "spend",

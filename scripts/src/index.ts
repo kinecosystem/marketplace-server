@@ -3,6 +3,8 @@ import * as http from "http";
 import { getConfig } from "./config";
 import { getLogger } from "./logging";
 
+import "./models/all";
+
 const config = getConfig();
 const logger = getLogger(...config.loggers);
 

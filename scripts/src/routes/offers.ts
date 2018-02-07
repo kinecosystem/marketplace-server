@@ -21,6 +21,10 @@ router.get("/", async (req, res, next) => {
 	}
 });
 
+router.get("/moo", async (req, res, next) => {
+	throw "moo";
+});
+
 /**
  * create an order for an offer
  */

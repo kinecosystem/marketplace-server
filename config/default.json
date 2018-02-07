@@ -4,5 +4,21 @@
 		"name": "console",
 		"type": "console"
 	}],
-  "assets_base": "https://s3.amazonaws.com/kinmarketplace-assets/version1/"
+	"asset_base": "https://s3.amazonaws.com/kinmarketplace-assets/version1/",
+	"db": {
+		"database": "database",
+		"username": "username",
+		"password": "password",
+		"options": {
+			"dialect": "sqlite",
+			"storage": "database.sqlite",
+			"operatorsAliases": false,
+			"pool": {
+				"max": 5,
+				"min": 0,
+				"acquire": 30000,
+				"idle": 10000
+			}
+		}
+	}
 }

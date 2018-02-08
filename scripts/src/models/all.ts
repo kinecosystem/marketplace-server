@@ -56,7 +56,6 @@ const AuthToken = models.push(sequelize.define("auth_tokens", {
 	token: Sequelize.STRING,
 }));
 
-
 const Application = models.push(sequelize.define("applications", {
 	id: { type: Sequelize.STRING, primaryKey: true },
 	name: Sequelize.STRING,

@@ -27,7 +27,7 @@ export enum IdPrefix {
 	App = "A",
 	Transaction = "T",
 	Offer = "O",
-	None = ""
+	None = "",
 }
 
 const ID_LENGTH = 10;

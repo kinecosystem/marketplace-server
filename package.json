@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/kinfoundation/marketplace-server"
+    "type": "git",
+    "url": "https://github.com/kinfoundation/marketplace-server"
   },
   "dependencies": {
     "body-parser": "^1.18.2",
@@ -26,6 +26,7 @@
     "sqlite3": "3.1.13",
     "swagger-node-codegen": "^1.1.0",
     "tslint": "^5.9.1",
+    "tslint-eslint-rules": "^4.1.1",
     "typescript": "^2.6.2"
   },
   "scripts": {

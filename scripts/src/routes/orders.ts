@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import { cancelOrder, submitOrder } from "../services/orders";
 
 export const router: Router = Router();
@@ -14,8 +15,8 @@ router.delete("/:order_id", async (req, res, next) => {
 		res.status(result.code || 200).send(result.data);
 	} catch (err) {
 		return res.status(500).send({
+			error: "Server Error",
 			status: 500,
-			error: 'Server Error'
 		});
 	}
 });
@@ -31,8 +32,8 @@ router.post("/:order_id", async (req, res, next) => {
 		res.status(result.code || 200).send(result.data);
 	} catch (err) {
 		return res.status(500).send({
+			error: "Server Error",
 			status: 500,
-			error: 'Server Error'
 		});
 	}
 });

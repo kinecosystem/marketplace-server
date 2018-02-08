@@ -29,7 +29,7 @@
     "build": "npm-run-all clean transpile",
     "start": "node scripts/bin/index",
     "restart": "npm-run-all build start",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no tests yet\" && exit 0"
   },
   "author": "",
   "license": "ISC"

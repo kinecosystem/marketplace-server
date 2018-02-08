@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getOffers, createOrder } from "../services/offers";
+import { createOrder, getOffers } from "../services/offers";
 
 export const router: Router = Router();
 
@@ -15,8 +15,8 @@ router.get("/", async (req, res, next) => {
 		res.status(result.code || 200).send(result.data);
 	} catch (err) {
 		return res.status(500).send({
+			error: "Server Error",
 			status: 500,
-			error: "Server Error"
 		});
 	}
 });
@@ -33,8 +33,8 @@ router.post("/:offer_id/order", async (req, res, next) => {
 		res.status(result.code || 200).send(result.data);
 	} catch (err) {
 		return res.status(err.status).send({
+			error: err.error,
 			status: err.status,
-			error: err.error
 		});
 	}
 });

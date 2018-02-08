@@ -1,0 +1,6 @@
+{
+	"extends": "tslint:recommended",
+	"rules": {
+		"indent": [true, "tabs", 2]
+	}
+}

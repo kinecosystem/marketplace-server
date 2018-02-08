@@ -24,8 +24,8 @@ if (dbConfig.options.storage && !/^[./]/.test(dbConfig.options.storage)) {
 
 const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.passive, dbConfig.options);
 const models = {
-	_items: [] as Model<any, any>[],
-	push: function<T extends Model<any, any>>(item: T): T {
+	_items: [] as GenericModel[],
+	push: function<T extends GenericModel>(item: T): T {
 		this._items.push(item);
 		return item;
 	},

@@ -2,12 +2,12 @@ import * as express from "express";
 import * as bearerToken from "express-bearer-token";
 import * as http from "http";
 import { getConfig } from "./config";
-import { getLogger } from "./logging";
+import { initLogger } from "./logging";
 
 import "./models/all";
 
 const config = getConfig();
-const logger = getLogger(...config.loggers);
+const logger = initLogger(...config.loggers);
 
 function createApp() {
 	const app = express();

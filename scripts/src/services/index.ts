@@ -1,10 +1,10 @@
-export type ServiceError = {
+export interface ServiceError {
 	code: number;
 	error: string;
 	message?: string;
 }
 
-export type ServiceResult<Data = any> = {
+export interface ServiceResult<Data = any> {
 	code: number;
 	data?: Data;
 }

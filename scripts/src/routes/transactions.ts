@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import { getHistory } from "../services/transactions";
 
 export const router: Router = Router();
@@ -14,8 +15,8 @@ router.get("/", async (req, res, next) => {
 		res.status(result.code || 200).send(result.data);
 	} catch (err) {
 		return res.status(500).send({
+			error: "Server Error",
 			status: 500,
-			error: 'Server Error'
 		});
 	}
 });

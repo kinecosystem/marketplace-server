@@ -1,10 +1,9 @@
+import * as Sequelize from "sequelize";
 import { Model } from "sequelize";
 type GenericModel = Model<any, any>;
 
-const Sequelize = require("sequelize");
-
-import { path } from "../utils";
 import { getConfig } from "../config";
+import { path } from "../utils";
 
 const dbConfig = Object.assign(getConfig().db);
 if (!dbConfig.options) {
@@ -13,8 +12,8 @@ if (!dbConfig.options) {
 
 if (!dbConfig.options.define) {
 	dbConfig.options.define = {
+		freezeTableName: true,
 		timestamps: false,
-		freezeTableName: true
 	};
 }
 
@@ -25,86 +24,86 @@ if (dbConfig.options.storage && !/^[./]/.test(dbConfig.options.storage)) {
 const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.passive, dbConfig.options);
 const models = {
 	_items: [] as GenericModel[],
-	push: function<T extends GenericModel>(item: T): T {
+	push<T extends GenericModel>(item: T): T {
 		this._items.push(item);
 		return item;
 	},
-	sync: function(): Promise<GenericModel[]> {
+	sync(): Promise<GenericModel[]> {
 		return Promise.all<GenericModel>(this._items.map(item => {
 			return item.sync().then(model => {
 				console.log(`table ${ model.name } created`);
 				return model;
 			});
 		}));
-	}
+	},
 };
 
 const User = models.push(sequelize.define("users", {
-	id: { type: Sequelize.STRING, primaryKey: true }, //internal id
+	activated_date: Sequelize.DATE,
 	app_id: Sequelize.STRING,
 	app_user_id: Sequelize.STRING,
 	created_date: Sequelize.DATE,
-	activated_date: Sequelize.DATE
-}));
+	id: { type: Sequelize.STRING, primaryKey: true }, // internal id
+}) as GenericModel);
 
 const AuthToken = models.push(sequelize.define("auth_tokens", {
-	user_id: Sequelize.STRING, //the internal id
-	device_id: Sequelize.STRING,
 	created_date: Sequelize.DATE,
+	device_id: Sequelize.STRING,
 	expire_date: Sequelize.DATE, // set to 2 weeks? session period?
-	valid: Sequelize.BOOLEAN, // I can invalidate this token manually?
 	token: Sequelize.STRING,
-}));
+	user_id: Sequelize.STRING, // the internal id
+	valid: Sequelize.BOOLEAN, // I can invalidate this token manually?
+}) as GenericModel);
 
 const Application = models.push(sequelize.define("applications", {
+	created_date: Sequelize.DATE,
 	id: { type: Sequelize.STRING, primaryKey: true },
-	name: Sequelize.STRING,
 	jwt_public_key: Sequelize.STRING,
-	created_date: Sequelize.DATE, 
-}));
+	name: Sequelize.STRING,
+}) as GenericModel);
 
 const OfferOwner = models.push(sequelize.define("offer_owners", {
 	id: { type: Sequelize.STRING, primaryKey: true },
 	name: Sequelize.STRING,
-}));
+}) as GenericModel);
 
 const Offer = models.push(sequelize.define("offers", {
-	id: { type: Sequelize.STRING, primaryKey: true },
-	owner_id: Sequelize.STRING, // OfferOwner
-	meta: Sequelize.JSON, // title, description, image
-	type: Sequelize.ENUM("spend", "earn"),
 	amount: Sequelize.BIGINT,  // amount in micro-kin
 	cap: Sequelize.JSON, // complex object with cap rules
 	created_date: Sequelize.DATE,
-}));
+	id: { type: Sequelize.STRING, primaryKey: true },
+	meta: Sequelize.JSON, // title, description, image
+	owner_id: Sequelize.STRING, // OfferOwner
+	type: Sequelize.ENUM("spend", "earn"),
+}) as GenericModel);
 
 const OfferContent = models.push(sequelize.define("offer_content", {
+	content: Sequelize.JSON,
 	offer_id: Sequelize.STRING,
-	content: Sequelize.JSON
-}));
+}) as GenericModel);
 
 const AppOffer = models.push(sequelize.define("app_offers", {
 	app_id: Sequelize.STRING,
 	offer_id: Sequelize.STRING,
-}));
+}) as GenericModel);
 
 // pre-bought coupons
 const Asset = models.push(sequelize.define("assets", {
+	created_date: Sequelize.DATE,
 	id: { type: Sequelize.STRING, primaryKey: true },
+	is_used: Sequelize.BOOLEAN,
 	type: Sequelize.STRING,
 	value: Sequelize.JSON,
-	is_used: Sequelize.BOOLEAN,
-	created_date: Sequelize.DATE,
-}));
+}) as GenericModel);
 
 const Transaction = models.push(sequelize.define("transactions", {
-	order_id: Sequelize.STRING,
 	blockchain_txid: Sequelize.STRING,
-	user_id: Sequelize.STRING, // redundent
-	meta: Sequelize.JSON, // some human readable data for UI
-	type: Sequelize.STRING,
-	value: Sequelize.JSON,
 	created_date: Sequelize.DATE,
-}));
+	meta: Sequelize.JSON, // some human readable data for UI
+	order_id: Sequelize.STRING,
+	type: Sequelize.STRING,
+	user_id: Sequelize.STRING, // redundant
+	value: Sequelize.JSON,
+}) as GenericModel);
 
 models.sync().then(synced => console.log(`finished syncing all models (${ synced.length })`));

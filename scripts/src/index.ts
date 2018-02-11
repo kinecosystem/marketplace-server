@@ -31,14 +31,14 @@ app.use("/v1/transactions", require("./routes/transactions").router);
 
 // catch 404
 app.use((req, res, next) => {
-	//log.error(`Error 404 on ${req.url}.`);
+	// log.error(`Error 404 on ${req.url}.`);
 	res.status(404).send({ status: 404, error: "Not found" });
 });
 
 // catch errors
 app.use((err, req, res, next) => {
 	const status = err.status || 500;
-	//log.error(`Error ${status} (${err.message}) on ${req.method} ${req.url} with payload ${req.body}.`);
+	// log.error(`Error ${status} (${err.message}) on ${req.method} ${req.url} with payload ${req.body}.`);
 	res.status(status).send({ status, error: "Server error" });
 });
 
@@ -69,7 +69,7 @@ function normalizePort(val) {
 /**
  * Event listener for HTTP server "error" event.
  */
-function onError (error) {
+function onError(error) {
 	if (error.syscall !== "listen") {
 		throw error;
 	}
@@ -92,7 +92,7 @@ function onError (error) {
 /**
  * Event listener for HTTP server "listening" event.
  */
-function onListening () {
+function onListening() {
 	const addr = server.address();
 	logger.debug(`Listening on ${ addr.port }`);
 }

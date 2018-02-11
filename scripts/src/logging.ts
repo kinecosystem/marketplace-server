@@ -1,7 +1,7 @@
 import * as winston from "winston";
-import {GenericTextTransportOptions} from "winston";
-import {GenericTransportOptions} from "winston";
-import {FileTransportOptions} from "winston";
+import { GenericTextTransportOptions } from "winston";
+import { GenericTransportOptions } from "winston";
+import { FileTransportOptions } from "winston";
 
 export interface LogTarget {
 	name: string;
@@ -31,11 +31,11 @@ type WinstonTransportOptions = GenericTransportOptions & GenericTextTransportOpt
 function createTarget(target: LogTarget): winston.TransportInstance {
 	let cls: { new (options: WinstonTransportOptions): winston.TransportInstance };
 	const defaults: WinstonTransportOptions = {
-		timestamp: true
+		timestamp: true,
 	};
 	const options: WinstonTransportOptions = {
 		level: target.level,
-		timestamp: target.timestamp
+		timestamp: target.timestamp,
 	};
 
 	switch (target.type) {

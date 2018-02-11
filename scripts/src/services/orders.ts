@@ -1,43 +1,43 @@
 import { ServiceResult } from "./index";
 import { HTMLPollAnswer } from "./offers";
 
-export type Order = {
+export interface Order {
 	id: string;
 	recipient_address?: string;
 }
 
-export type SpendResult = {
+export interface SpendResult {
 	offer_type: "SpendResult";
 	asset: {
 		coupon_code: string;
-		asset_type: "coupon_code"
-	}
+		asset_type: "coupon_code";
+	};
 }
 
-export type EarnResult = {
+export interface EarnResult {
 	offer_type: "EarnResult";
 	transaction_id: string;
 	sender_address: string;
 }
 
-export type EarnSubmission = {
+export interface EarnSubmission {
 	recipient_address: string;
 	completed_form?: HTMLPollAnswer;
 }
 
-export type SpendSubmission = {
+export interface SpendSubmission {
 	transaction_id: string;
 	sender_address?: string;
 }
 
-export type SubmissionResult = {
+export interface SubmissionResult {
 	order_id: string;
 	content: SpendResult | EarnResult;
 }
 
 export const cancelOrder = async (options): Promise<ServiceResult<void>> => {
 	return {
-		code: 204
+		code: 204,
 	};
 };
 
@@ -45,12 +45,12 @@ export const submitOrder = async (options): Promise<ServiceResult<SubmissionResu
 	return {
 		code: 200,
 		data: {
-			order_id: "i_am_an_order",
 			content: {
 				offer_type: "EarnResult",
+				sender_address: "i_am_a_sender",
 				transaction_id: "i_am_a_transaction",
-				sender_address: "i_am_a_sender"
-			}
-		}
+			},
+			order_id: "i_am_an_order",
+		},
 	};
 };

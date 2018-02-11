@@ -1,23 +1,23 @@
+import { getConfig } from "../config";
 import { ServiceResult } from "./index";
 import { Order } from "./orders";
-import { getConfig } from "../config";
 
-export type Coupon = {
+export interface Coupon {
 	description: string;
 	content_type: "Coupon";
 }
 
-export type HTMLPoll = {
+export interface HTMLPoll {
 	content_type: "HTMLPoll";
 	html: string;
 }
 
-export type HTMLPollAnswer = {
+export interface HTMLPollAnswer {
 	content_type: "HTMLPollAnswer";
 	answers: { [key: string]: string };
 }
 
-export type Offer = {
+export interface Offer {
 	id: string;
 	title: string;
 	description: string;
@@ -27,17 +27,17 @@ export type Offer = {
 	offer_type: "earn" | "spend";
 }
 
-export type OfferList = {
+export interface OfferList {
 	offers: Offer[];
 }
 
 export const getOffers = async (options): Promise<ServiceResult<OfferList>> => {
 	const earn = [
-		"earn_offer1.png", 
-		"earn_offer2.png", 
-		"earn_offer3.png", 
-		"earn_offer4.png", 
-		"earn_offer5.png", 
+		"earn_offer1.png",
+		"earn_offer2.png",
+		"earn_offer3.png",
+		"earn_offer4.png",
+		"earn_offer5.png",
 	];
 	const spend = [
 		"spend_offer1.png",
@@ -48,30 +48,35 @@ export const getOffers = async (options): Promise<ServiceResult<OfferList>> => {
 	];
 
 	const assetsBase = getConfig().assets_base;
-	const offers =  
-		earn.map<Offer>(img => ({
-			id: img,
-			title: "Answer a poll",
-			description: "Tell us about yourself",
-			image: assetsBase + img,
+	const offers = earn.map<Offer>(img => ({
 			amount: 4000,
-			content: {"content_type": "HTMLPoll", "html": "<html><body><h1>title</h1><div>my poll</div></body></html>"} as HTMLPoll,
-			offer_type: "earn",
-		})).concat(spend.map<Offer>(img => ({
+			content: {
+				content_type: "HTMLPoll",
+				html: "<html><body><h1>title</h1><div>my poll</div></body></html>",
+			} as HTMLPoll,
+			description: "Tell us about yourself",
 			id: img,
-			title: "Gift Card",
-			description: "$10 gift card",
 			image: assetsBase + img,
+			offer_type: "earn",
+			title: "Answer a poll",
+		})).concat(spend.map<Offer>(img => ({
 			amount: 8000,
-			content: {"content_type": "Coupon", "description": "aaa-bbb-ccc-ddd"} as Coupon,
+			content: {
+				content_type: "Coupon",
+				description: "aaa-bbb-ccc-ddd",
+			} as Coupon,
+			description: "$10 gift card",
+			id: img,
+			image: assetsBase + img,
 			offer_type: "spend",
+			title: "Gift Card",
 		})));
 
 	return {
 		code: 200,
 		data: {
-			offers
-		}
+			offers,
+		},
 	};
 };
 
@@ -79,7 +84,7 @@ export const createOrder = async (options): Promise<ServiceResult<Order>> => {
 	return {
 		code: 200,
 		data: {
-			id: "i_am_an_order"
-		}
+			id: "i_am_an_order",
+		},
 	};
 };

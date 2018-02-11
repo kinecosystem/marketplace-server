@@ -20,7 +20,7 @@ type JWTContent = {
 	signature: string;
 }
 
-function getApplicationPublicKey(application_id: string, key_id: string) {
+function getApplicationPublicKey(applicationId: string, keyId: string) {
 	// return the public key for the given application.
 	// an application might have multiple keys. each key identified by key_id.
 
@@ -30,14 +30,10 @@ function getApplicationPublicKey(application_id: string, key_id: string) {
 			"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDdlatRjRjogo3WojgGHFHYLugdUWAY9iR3fy4arWNA1KoS8kVw33cJibXr8bvwUAUparCwlvdbH6dvEOfou0/gCFQsHUfQrSDv+MuSUMAe8jzKE4qW+jK+xQU9a03GUnKHkkle+Q0pX/g6jXZ7r1/xAK5Do2kQ+X5xK9cipRgEKwIDAQAB\n" +
 			"-----END PUBLIC KEY-----"}};
 
-	return publicKeys[application_id][key_id];
+	return publicKeys[applicationId][keyId];
 }
 
 export function validateJWT(jwt: string): {userId: string, appId: string} {
-
-	/*
-	eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtleSI6Im9uZSJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.vofJHXe4d0AEUxzDoqGRH7RgCTSvIbj1uYv76-jOTHjmmQE5q2YkWvQa_kfTtwsa8-xDRIsoMoZHNc6vQraUyiHMmFd6Leyv1Gb5K2NdB10aiztAlu3Z4iBZLgeBeqqaD6nvfYNJdwPtNspN9AESJBG0XBnDkeA2srrjAgHWn7s
-	 */
 	const decoded = jsonwebtoken.decode(jwt, {complete: true}) as JWTContent;
 	const publicKey = getApplicationPublicKey(decoded.payload.iss, decoded.header.key);
 
@@ -47,8 +43,4 @@ export function validateJWT(jwt: string): {userId: string, appId: string} {
 		userId: decoded.payload.user_id,
 		appId: decoded.payload.iss,
 	};
-}
-
-function getUser(userId: string) {
-	return;
 }

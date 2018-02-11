@@ -4,7 +4,7 @@
 		"name": "console",
 		"type": "console"
 	}],
-	"asset_base": "https://s3.amazonaws.com/kinmarketplace-assets/version1/",
+	"assets_base": "https://s3.amazonaws.com/kinmarketplace-assets/version1/",
 	"db": {
 		"database": "database",
 		"username": "username",

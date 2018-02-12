@@ -20,11 +20,17 @@ export interface FileTarget extends LogTarget {
 	file: string;
 }
 
-export function getLogger(...targets: LogTarget[]): winston.LoggerInstance {
+let defaultLogger: winston.LoggerInstance;
+
+export function initLogger(...targets: LogTarget[]): winston.LoggerInstance {
 	const options: winston.LoggerOptions = {};
 	options.transports = targets.map(target => createTarget(target));
+	defaultLogger = new winston.Logger(options);
+	return defaultLogger;
+}
 
-	return new winston.Logger(options);
+export function getLogger(): winston.LoggerInstance {
+	return defaultLogger;
 }
 
 type WinstonTransportOptions = GenericTransportOptions & GenericTextTransportOptions;

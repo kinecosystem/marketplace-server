@@ -1,12 +1,13 @@
 import * as express from "express";
+import * as bearerToken from "express-bearer-token";
 import * as http from "http";
 import { getConfig } from "./config";
-import { getLogger } from "./logging";
+import { initLogger } from "./logging";
 
 import "./models/all";
 
 const config = getConfig();
-const logger = getLogger(...config.loggers);
+const logger = initLogger(...config.loggers);
 
 function createApp() {
 	const app = express();
@@ -18,6 +19,7 @@ function createApp() {
 
 	const cookieParser = require("cookie-parser");
 	app.use(cookieParser());
+	app.use(bearerToken());
 
 	return app;
 }
@@ -28,6 +30,9 @@ export const app: express.Express = createApp();
 app.use("/v1/offers", require("./routes/offers").router);
 app.use("/v1/orders", require("./routes/orders").router);
 app.use("/v1/transactions", require("./routes/transactions").router);
+
+// authentication
+app.use("/v1/users", require("./routes/users").router);
 
 // catch 404
 app.use((req, res, next) => {

@@ -11,12 +11,15 @@
     "body-parser": "^1.18.2",
     "cookie-parser": "^1.4.3",
     "express": "^4.16.2",
+    "express-bearer-token": "^2.1.1",
+    "jsonwebtoken": "^8.1.1",
     "pg": "6",
     "pg-hstore": "2.3.2",
     "sequelize": "4.32.2",
     "winston": "^2.4.0"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^7.2.5",
     "@types/body-parser": "^1.16.8",
     "@types/express": "^4.11.0",
     "@types/sequelize": "^4.27.4",

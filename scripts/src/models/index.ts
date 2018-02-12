@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { BaseEntity, createConnection } from "typeorm";
+import { BaseEntity, Column, createConnection, PrimaryColumn } from "typeorm";
 import { ConnectionOptions } from "typeorm/connection/ConnectionOptions";
 
 import { getConfig } from "../config";
@@ -13,7 +13,23 @@ if (dbConfig.type === "sqlite" && !/^[./]/.test(dbConfig.database)) {
 const entities: ModelConstructor[] = [];
 
 export type ModelConstructor = { new(): Model };
-export abstract class Model extends BaseEntity {}
+export abstract class Model extends BaseEntity {
+	@PrimaryColumn({ name: "id" })
+	private _id: string;
+
+	public get id(): string {
+		return this._id;
+	}
+}
+
+export abstract class CreationDateModel extends Model {
+	@Column({ name: "created_date" })
+	private _createdDate: Date;
+
+	public get createdDate(): Date {
+		return this._createdDate;
+	}
+}
 
 export function Register(ctor: ModelConstructor) {
 	entities.push(ctor);

@@ -1,6 +1,6 @@
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
-import { Model, Register } from "./index";
+import { CreationDateModel, Model, Register } from "./index";
 
 export type OfferMeta = {
 	title: string;
@@ -12,13 +12,7 @@ export type OfferType = "spend" | "earn";
 
 @Entity()
 @Register
-export class Offer extends Model {
-	@PrimaryColumn({ name: "id" })
-	private _id: string;
-
-	@Column({ name: "created_date" })
-	private _createdDate: Date;
-
+export class Offer extends CreationDateModel {
 	@Column({ name: "amount" })
 	private _amount: number;
 
@@ -33,14 +27,6 @@ export class Offer extends Model {
 
 	@Column({ name: "owner_id" })
 	private _ownerId: string;
-
-	public get id(): string {
-		return this._id;
-	}
-
-	public get createdDate(): Date {
-		return this._createdDate;
-	}
 
 	public get amount(): number {
 		return this._amount;
@@ -85,9 +71,6 @@ export class OfferContent extends Model {
 @Entity()
 @Register
 export class OfferOwner extends Model {
-	@PrimaryColumn({ name: "id" })
-	private _id: string;
-
 	@Column({ name: "name" })
 	private _name: string;
 
@@ -117,13 +100,7 @@ export class AppOffer extends Model {
 
 @Entity()
 @Register
-export class Asset extends Model {
-	@PrimaryColumn({ name: "id" })
-	private _id: string;
-
-	@Column({ name: "created_date" })
-	private _createdDate: Date;
-
+export class Asset extends CreationDateModel {
 	@Column({ name: "type" })
 	private _type: "coupon";
 
@@ -132,14 +109,6 @@ export class Asset extends Model {
 
 	@Column({ name: "value" })
 	private _value: string;
-
-	public get id(): string {
-		return this._id;
-	}
-
-	public get createdDate(): Date {
-		return this._createdDate;
-	}
 
 	public get type(): "coupon" {
 		return this._type;

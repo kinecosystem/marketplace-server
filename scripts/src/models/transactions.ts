@@ -1,16 +1,10 @@
 import { Column, Entity, PrimaryColumn } from "typeorm";
 
-import { Model, Register } from "./index";
+import { CreationDateModel, Model, Register } from "./index";
 
 @Entity()
 @Register
-export class Transaction extends Model {
-	@PrimaryColumn({ name: "id" })
-	private _id: string;
-
-	@Column({ name: "created_date" })
-	private _createdDate: Date;
-
+export class Transaction extends CreationDateModel {
 	@Column({ name: "type" })
 	private _type: string;
 
@@ -25,14 +19,6 @@ export class Transaction extends Model {
 
 	@Column({ name: "value" })
 	private _value: string;
-
-	public get id(): string {
-		return this._id;
-	}
-
-	public get createdDate(): Date {
-		return this._createdDate;
-	}
 
 	public get blockchainTxId(): string {
 		return this._blockchainTxId;

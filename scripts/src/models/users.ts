@@ -1,28 +1,18 @@
 import { Column, Entity, PrimaryColumn } from "typeorm";
 
-import { Model, Register } from "./index";
+import { CreationDateModel, Model, Register } from "./index";
 
 @Entity()
 @Register
-export class User extends Model {
-	@PrimaryColumn({ name: "id" })
-	private _id: string;
-
+export class User extends CreationDateModel {
 	@Column({ name: "app_id" })
 	private _appId: string;
 
 	@Column({ name: "app_user_id" })
 	private _appUserId: string;
 
-	@Column({ name: "created_date" })
-	private _createdDate: Date;
-
 	@Column({ name: "activated_date" })
 	private _activatedDate: Date;
-
-	public get id(): string {
-		return this._id;
-	}
 
 	public get appId(): string {
 		return this._appId;
@@ -32,10 +22,6 @@ export class User extends Model {
 		return this._appUserId;
 	}
 
-	public get createdDate(): Date {
-		return this._createdDate;
-	}
-
 	public get activatedDate(): Date {
 		return this._activatedDate;
 	}
@@ -43,13 +29,7 @@ export class User extends Model {
 
 @Entity()
 @Register
-export class AuthToken extends Model {
-	@PrimaryColumn({ name: "id" })
-	private _id: string;
-
-	@Column({ name: "created_date" })
-	private _createdDate: Date;
-
+export class AuthToken extends CreationDateModel {
 	@Column({ name: "activated_date" })
 	private _expireDate: Date;
 
@@ -64,14 +44,6 @@ export class AuthToken extends Model {
 
 	@Column({ name: "valid" })
 	private _valid: boolean;
-
-	public get id(): string {
-		return this._id;
-	}
-
-	public get createdDate(): Date {
-		return this._createdDate;
-	}
 
 	public get expireDate(): Date {
 		return this._expireDate;
@@ -96,26 +68,12 @@ export class AuthToken extends Model {
 
 @Entity()
 @Register
-export class Application extends Model {
-	@PrimaryColumn({ name: "id" })
-	private _id: string;
-
-	@Column({ name: "created_date" })
-	private _createdDate: Date;
-
+export class Application extends CreationDateModel {
 	@Column({ name: "name" })
 	private _name: string;
 
 	@Column({ name: "jwt_public_key" })
 	private _jwtPublicKey: string;
-
-	public get id(): string {
-		return this._id;
-	}
-
-	public get createdDate(): Date {
-		return this._createdDate;
-	}
 
 	public get name(): string {
 		return this._name;

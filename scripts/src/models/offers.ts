@@ -8,6 +8,8 @@ export type OfferMeta = {
 	description: string;
 };
 
+export type OfferType = "spend" | "earn";
+
 @Entity()
 @Register
 export class Offer extends Model {
@@ -27,14 +29,10 @@ export class Offer extends Model {
 	private _meta: string;
 
 	@Column({ name: "type" })
-	private _type: "spend" | "earn";
+	private _type: OfferType;
 
 	@Column({ name: "owner_id" })
 	private _ownerId: string;
-
-	constructor() {
-		super();
-	}
 
 	public get id(): string {
 		return this._id;
@@ -56,7 +54,7 @@ export class Offer extends Model {
 		return JSON.parse(this._meta);
 	}
 
-	public get type(): "spend" | "earn" {
+	public get type(): OfferType {
 		return this._type;
 	}
 
@@ -74,10 +72,6 @@ export class OfferContent extends Model {
 
 	@PrimaryColumn({ name: "content" })
 	private _content: string;
-
-	constructor() {
-		super();
-	}
 
 	public get offerId(): string {
 		return this._offerId;
@@ -97,10 +91,6 @@ export class OfferOwner extends Model {
 	@Column({ name: "name" })
 	private _name: string;
 
-	constructor() {
-		super();
-	}
-
 	public get name(): string {
 		return this._name;
 	}
@@ -115,10 +105,6 @@ export class AppOffer extends Model {
 
 	@PrimaryColumn({ name: "app_id" })
 	private _appId: string;
-
-	constructor() {
-		super();
-	}
 
 	public get offerId(): string {
 		return this._offerId;
@@ -146,10 +132,6 @@ export class Asset extends Model {
 
 	@Column({ name: "value" })
 	private _value: string;
-
-	constructor() {
-		super();
-	}
 
 	public get id(): string {
 		return this._id;

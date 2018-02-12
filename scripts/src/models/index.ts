@@ -13,11 +13,7 @@ if (dbConfig.type === "sqlite" && !/^[./]/.test(dbConfig.database)) {
 const entities: ModelConstructor[] = [];
 
 export type ModelConstructor = { new(): Model };
-export abstract class Model extends BaseEntity {
-	protected constructor() {
-		super();
-	}
-}
+export abstract class Model extends BaseEntity {}
 
 export function Register(ctor: ModelConstructor) {
 	entities.push(ctor);
@@ -36,12 +32,12 @@ export function init(): Promise<string> {
 }
 
 function createOnConnectedString(options: ConnectionOptions): string {
-	let str = `connected to ${ options.type } server`;
+	let msg = `connected to ${ options.type } server`;
 
 	switch (options.type) {
 		case "sqlite":
-			str += `, db file: '${ options.database }'`;
+			msg += `, db file: '${ options.database }'`;
 	}
 
-	return str;
+	return msg;
 }

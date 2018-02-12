@@ -20,10 +20,6 @@ export class User extends Model {
 	@Column({ name: "activated_date" })
 	private _activatedDate: Date;
 
-	constructor() {
-		super();
-	}
-
 	public get id(): string {
 		return this._id;
 	}
@@ -69,10 +65,6 @@ export class AuthToken extends Model {
 	@Column({ name: "valid" })
 	private _valid: boolean;
 
-	constructor() {
-		super();
-	}
-
 	public get id(): string {
 		return this._id;
 	}
@@ -116,10 +108,6 @@ export class Application extends Model {
 
 	@Column({ name: "jwt_public_key" })
 	private _jwtPublicKey: string;
-
-	constructor() {
-		super();
-	}
 
 	public get id(): string {
 		return this._id;

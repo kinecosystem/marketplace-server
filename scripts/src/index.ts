@@ -53,7 +53,7 @@ app.use((err, req, res, next) => {
 });
 
 // initializing db and models
-initModels().then(str => logger.debug(str));
+initModels().then(msg => logger.debug(msg));
 
 const server = http.createServer(app);
 server.listen(config.port);

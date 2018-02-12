@@ -26,10 +26,6 @@ export class Transaction extends Model {
 	@Column({ name: "value" })
 	private _value: string;
 
-	constructor() {
-		super();
-	}
-
 	public get id(): string {
 		return this._id;
 	}

@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
+import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
 import { Model, Register } from "./index";
 
@@ -67,22 +67,16 @@ export class Offer extends Model {
 
 @Entity()
 @Register
+@Index(["_offerId", "_content"], { unique: true })
 export class OfferContent extends Model {
-	@PrimaryColumn({ name: "id" })
-	private _id: string;
-
-	@Column({ name: "offer_id" })
+	@PrimaryColumn({ name: "offer_id" })
 	private _offerId: string;
 
-	@Column({ name: "content" })
+	@PrimaryColumn({ name: "content" })
 	private _content: string;
 
 	constructor() {
 		super();
-	}
-
-	public get id(): string {
-		return this._id;
 	}
 
 	public get offerId(): string {
@@ -114,22 +108,16 @@ export class OfferOwner extends Model {
 
 @Entity()
 @Register
+@Index(["_offerId", "_appId"], { unique: true })
 export class AppOffer extends Model {
-	@PrimaryColumn({ name: "id" })
-	private _id: string;
-
-	@Column({ name: "offer_id" })
+	@PrimaryColumn({ name: "offer_id" })
 	private _offerId: string;
 
-	@Column({ name: "app_id" })
+	@PrimaryColumn({ name: "app_id" })
 	private _appId: string;
 
 	constructor() {
 		super();
-	}
-
-	public get id(): string {
-		return this._id;
 	}
 
 	public get offerId(): string {

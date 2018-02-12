@@ -17,9 +17,6 @@ export class Transaction extends Model {
 	@Column({ name: "blockchain_txid" })
 	private _blockchainTxId: string;
 
-	@Column({ name: "order_id" })
-	private _orderId: string;
-
 	@Column({ name: "user_id" })
 	private _userId: string;
 
@@ -43,10 +40,6 @@ export class Transaction extends Model {
 
 	public get blockchainTxId(): string {
 		return this._blockchainTxId;
-	}
-
-	public get orderId(): string {
-		return this._orderId;
 	}
 
 	public get userId(): string {

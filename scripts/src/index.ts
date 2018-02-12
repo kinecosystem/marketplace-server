@@ -1,10 +1,15 @@
 import * as express from "express";
 import * as bearerToken from "express-bearer-token";
 import * as http from "http";
+
 import { getConfig } from "./config";
 import { initLogger } from "./logging";
+import { init as initModels } from "./models/index";
 
-import "./models/all";
+// make sure that the model files are used, this is only for now because they are not really used
+import "./models/users";
+import "./models/offers";
+import "./models/transactions";
 
 const config = getConfig();
 const logger = initLogger(...config.loggers);
@@ -46,6 +51,9 @@ app.use((err, req, res, next) => {
 	// log.error(`Error ${status} (${err.message}) on ${req.method} ${req.url} with payload ${req.body}.`);
 	res.status(status).send({ status, error: "Server error" });
 });
+
+// initializing db and models
+initModels().then(str => logger.debug(str));
 
 const server = http.createServer(app);
 server.listen(config.port);

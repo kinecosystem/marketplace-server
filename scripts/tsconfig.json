@@ -9,7 +9,10 @@
     "declaration": true,
     "skipLibCheck": true,
     "removeComments": true,
-    "skipDefaultLibCheck": true
+    "skipDefaultLibCheck": true,
+    
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
   },
   "exclude": [
     "bin",

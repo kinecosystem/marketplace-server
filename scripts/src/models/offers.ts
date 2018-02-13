@@ -1,6 +1,7 @@
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, Model, Register } from "./index";
+import { IdPrefix } from "../utils";
 
 export type OfferMeta = {
 	title: string;
@@ -16,11 +17,11 @@ export class Offer extends CreationDateModel {
 	@Column({ name: "amount" })
 	private _amount: number;
 
-	@Column({ name: "cap" })
-	private _cap: string;
+	@Column("simple-json", { name: "cap" })
+	private _cap: any;
 
-	@Column({ name: "meta" })
-	private _meta: string;
+	@Column("simple-json", { name: "meta" })
+	private _meta: OfferMeta;
 
 	@Column({ name: "type" })
 	private _type: OfferType;
@@ -28,16 +29,20 @@ export class Offer extends CreationDateModel {
 	@Column({ name: "owner_id" })
 	private _ownerId: string;
 
+	public constructor() {
+		super(IdPrefix.Offer);
+	}
+
 	public get amount(): number {
 		return this._amount;
 	}
 
 	public get cap(): any {
-		return JSON.parse(this._cap);
+		return this._cap;
 	}
 
 	public get meta(): OfferMeta {
-		return JSON.parse(this._meta);
+		return this._meta;
 	}
 
 	public get type(): OfferType {
@@ -59,6 +64,10 @@ export class OfferContent extends Model {
 	@PrimaryColumn({ name: "content" })
 	private _content: string;
 
+	public constructor() {
+		super();
+	}
+
 	public get offerId(): string {
 		return this._offerId;
 	}
@@ -74,6 +83,10 @@ export class OfferOwner extends Model {
 	@Column({ name: "name" })
 	private _name: string;
 
+	public constructor() {
+		super();
+	}
+
 	public get name(): string {
 		return this._name;
 	}
@@ -88,6 +101,10 @@ export class AppOffer extends Model {
 
 	@PrimaryColumn({ name: "app_id" })
 	private _appId: string;
+
+	public constructor() {
+		super();
+	}
 
 	public get offerId(): string {
 		return this._offerId;
@@ -109,6 +126,10 @@ export class Asset extends CreationDateModel {
 
 	@Column({ name: "value" })
 	private _value: string;
+
+	public constructor() {
+		super();
+	}
 
 	public get type(): "coupon" {
 		return this._type;

@@ -1,6 +1,7 @@
 import { Column, Entity, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, Model, Register } from "./index";
+import { IdPrefix } from "../utils";
 
 @Entity()
 @Register
@@ -14,11 +15,15 @@ export class Transaction extends CreationDateModel {
 	@Column({ name: "user_id" })
 	private _userId: string;
 
-	@Column({ name: "meta" })
-	private _meta: string;
+	@Column("simple-json", { name: "meta" })
+	private _meta: any;
 
-	@Column({ name: "value" })
-	private _value: string;
+	@Column("simple-json", { name: "value" })
+	private _value: any;
+
+	public constructor() {
+		super(IdPrefix.Transaction);
+	}
 
 	public get blockchainTxId(): string {
 		return this._blockchainTxId;
@@ -33,10 +38,10 @@ export class Transaction extends CreationDateModel {
 	}
 
 	public get meta(): any {
-		return JSON.parse(this._meta);
+		return this._meta;
 	}
 
 	public get value(): any {
-		return JSON.parse(this._value);
+		return this._value;
 	}
 }

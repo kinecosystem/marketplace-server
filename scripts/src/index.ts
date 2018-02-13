@@ -34,8 +34,6 @@ export const app: express.Express = createApp();
 // routes
 app.use("/v1/offers", require("./routes/offers").router);
 app.use("/v1/orders", require("./routes/orders").router);
-app.use("/v1/transactions", require("./routes/transactions").router);
-
 // authentication
 app.use("/v1/users", require("./routes/users").router);
 

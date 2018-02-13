@@ -35,6 +35,7 @@
   "scripts": {
     "clean": "rimraf scripts/bin",
     "transpile": "tsc -p scripts",
+    "lint": "./node_modules/.bin/tslint -p ./scripts",
     "build": "npm-run-all clean transpile",
     "start": "node scripts/bin/index",
     "restart": "npm-run-all build start",

@@ -1,7 +1,8 @@
 import { Request, Router } from "express";
 import {validateJWT} from "../services/users";
-import * as db from "../models/all";
 import { getLogger } from "../logging";
+
+const db = null;
 
 
 export const router: Router = Router();

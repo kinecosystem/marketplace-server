@@ -31,6 +31,8 @@ function createApp() {
 
 export const app: express.Express = createApp();
 
+app.use(express.static("../../statics"));
+
 // routes
 app.use("/v1/offers", require("./routes/offers").router);
 app.use("/v1/orders", require("./routes/orders").router);

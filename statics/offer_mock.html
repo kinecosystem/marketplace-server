@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Title</title>
+		<style>
+			html, body {
+				width: 100%;
+				height: 100%;
+				padding: 0;
+				margin: 0;
+				box-sizing: border-box;
+			}
+
+			body {
+				padding: 10px;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
+
+			button {
+				font-size: 20px;
+			}
+		</style>
+	</head>
+	<body>
+		<button onclick="buttonClick()">Finish</button>
+		<script>
+			KinNative.loaded();
+
+			var data = {
+				questions: [{
+					answer: "i'm the first answer for the first question",
+				}, {
+					answer: 1
+				}, {
+					answer: false
+				}]
+			}
+
+			function buttonClick() {
+				KinNative.handleResult(JSON.stringify(data));
+			}
+		</script>
+	</body>
+</html>

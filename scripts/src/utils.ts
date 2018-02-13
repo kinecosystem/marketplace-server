@@ -41,3 +41,15 @@ export function generateId(prefix: IdPrefix = IdPrefix.None): string {
 
 	return prefix + id;
 }
+
+export function normalizeError(error: string | Error | any): string {
+	if (typeof error === "string") {
+		return error;
+	}
+
+	if (error instanceof Error) {
+		return error.message;
+	}
+
+	return error.toString();
+}

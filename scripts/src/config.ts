@@ -1,19 +1,12 @@
-import { Options as SqlOptions } from "sequelize";
+import { ConnectionOptions } from "typeorm";
 
 import { LogTarget } from "./logging";
-
-export interface DatabaseConfig {
-	database: string;
-	username: string;
-	password: string;
-	options: SqlOptions;
-}
 
 export interface Config {
 	port?: number;
 	loggers?: LogTarget[];
 	assets_base: string;
-	db: DatabaseConfig;
+	db: ConnectionOptions;
 }
 
 export function getConfig(name: string = "default"): Config {

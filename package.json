@@ -28,7 +28,6 @@
     "npm-run-all": "^4.0.1",
     "rimraf": "2.6.1",
     "sqlite3": "3.1.13",
-    "swagger-node-codegen": "^1.1.0",
     "tslint": "^5.9.1",
     "tslint-eslint-rules": "^4.1.1",
     "typescript": "^2.6.2"

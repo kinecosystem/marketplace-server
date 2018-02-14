@@ -1,25 +1,24 @@
 import { Request, Router } from "express";
-import {validateJWT} from "../services/users";
+import { validateJWT } from "../services/users";
 import { getLogger } from "../logging";
 
 const db = null;
 
-
 export const router: Router = Router();
-let logger = getLogger();
+const logger = getLogger();
 
 export type AuthToken = {
 	token: string;
 	activated: boolean;
-}
+};
 
 /**
  * sign in a user
  */
 router.post("/", async (req, res, next) => {
-	let {userId , appId} = validateJWT(req.body.jwt); // throws if JWT not valid // XXX test this case
+	const { userId , appId } = validateJWT(req.body.jwt); // throws if JWT not valid // XXX test this case
 
-	let user = await db.User.findOne({where: {app_id: appId, app_user_id: userId}});
+	let user = await db.User.findOne({ where: { app_id: appId, app_user_id: userId } });
 	if (!user) {
 		// new user
 		user = await db.User.create({
@@ -34,12 +33,12 @@ router.post("/", async (req, res, next) => {
 		logger.info(`returning existing user ${user.id}`);
 	}
 
-	let authToken = await db.AuthToken.create({
+	const authToken = await db.AuthToken.create({
 		user_id: user.id,
 		device_id: req.body.device_id,
 	});
 
-	res.status(200).send({token: authToken.token, activated: user.activated});
+	res.status(200).send({ token: authToken.token, activated: user.activated });
 });
 
 /**
@@ -48,9 +47,9 @@ router.post("/", async (req, res, next) => {
 router.post("/me/activate", async (req: Request & { token: string }, res, next) => {
 	const result = null; // activate user if not already activated and fund the account with KIN
 
-	let token = req.token;
-	let authToken = await db.AuthToken.findOne({where: {token: req.token}});
-	let user = await db.User.findOne({where: {user_id: authToken.user_id}});
+	const token = req.token;
+	let authToken = await db.AuthToken.findOne({ where: { token: req.token } });
+	const user = await db.User.findOne({ where: { user_id: authToken.user_id } });
 
 	if (!user.activated) {
 		user.activated = true;
@@ -66,10 +65,11 @@ router.post("/me/activate", async (req: Request & { token: string }, res, next) 
 		// tx_id = kin.sdk.payTo(public_address, order.id);
 		logger.info(`funding user KIN ${user.id}`);
 
-		let tx_id = null; // XXX should I return tx_id here? // XXX should the client make a separate call to create an order and submit it like the rest of the order flows?
+		const txId = null; // XXX should I return tx_id here?
+		// XXX should the client make a separate call to create an order and submit it like the rest of the order flows?
 	} else {
 		logger.info(`existing user activated ${user.id}`);
 	}
 
-	res.status(200).send({token: token, activated: user.activated});
+	res.status(200).send({ token, activated: user.activated });
 });

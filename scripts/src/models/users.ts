@@ -1,6 +1,7 @@
 import { Column, Entity, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, Model, Register } from "./index";
+import { IdPrefix } from "../utils";
 
 @Entity()
 @Register
@@ -13,6 +14,10 @@ export class User extends CreationDateModel {
 
 	@Column({ name: "activated_date" })
 	private _activatedDate: Date;
+
+	public constructor() {
+		super(IdPrefix.User);
+	}
 
 	public get appId(): string {
 		return this._appId;
@@ -36,7 +41,7 @@ export class AuthToken extends CreationDateModel {
 	@Column({ name: "device_id" })
 	private _deviceId: string;
 
-	@Column({ name: "token" })
+	@Column({ name: "token", unique: true })
 	private _token: string;
 
 	@Column({ name: "user_id" })
@@ -44,6 +49,10 @@ export class AuthToken extends CreationDateModel {
 
 	@Column({ name: "valid" })
 	private _valid: boolean;
+
+	public constructor() {
+		super();
+	}
 
 	public get expireDate(): Date {
 		return this._expireDate;
@@ -74,6 +83,10 @@ export class Application extends CreationDateModel {
 
 	@Column({ name: "jwt_public_key" })
 	private _jwtPublicKey: string;
+
+	public constructor() {
+		super(IdPrefix.App);
+	}
 
 	public get name(): string {
 		return this._name;

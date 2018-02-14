@@ -3,7 +3,7 @@ import { BaseEntity, Column, createConnection, PrimaryColumn } from "typeorm";
 import { ConnectionOptions } from "typeorm/connection/ConnectionOptions";
 
 import { getConfig } from "../config";
-import { normalizeError, path } from "../utils";
+import { normalizeError, path, IdPrefix, generateId } from "../utils";
 
 const dbConfig = Object.assign(getConfig().db);
 if (dbConfig.type === "sqlite" && !/^[./]/.test(dbConfig.database)) {
@@ -17,6 +17,11 @@ export abstract class Model extends BaseEntity {
 	@PrimaryColumn({ name: "id" })
 	private _id: string;
 
+	protected constructor(prefix: IdPrefix = IdPrefix.None) {
+		super();
+		this._id = generateId(prefix);
+	}
+
 	public get id(): string {
 		return this._id;
 	}
@@ -25,6 +30,11 @@ export abstract class Model extends BaseEntity {
 export abstract class CreationDateModel extends Model {
 	@Column({ name: "created_date" })
 	private _createdDate: Date;
+
+	protected constructor(prefix?: IdPrefix) {
+		super(prefix);
+		this._createdDate = new Date();
+	}
 
 	public get createdDate(): Date {
 		return this._createdDate;

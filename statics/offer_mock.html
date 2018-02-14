@@ -2,46 +2,87 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>Title</title>
+		<title>Poll</title>
 		<style>
+			html, body, div, button {
+				box-sizing: border-box;
+				font-family: "Gill Sans", sans-serif;
+			}
+
 			html, body {
 				width: 100%;
 				height: 100%;
 				padding: 0;
 				margin: 0;
-				box-sizing: border-box;
 			}
 
 			body {
 				padding: 10px;
 				display: flex;
-				justify-content: center;
-				align-items: center;
+				flex-direction: column;
+			}
+
+			#title {
+				font-size: 20px;
+			}
+
+			#data {
+				flex-grow: 1;
+				padding: 10px;
+				font-size: 14px;
+				border: 0px solid;
+				resize: none;
+				overflow: scroll;
+				outline: 0;
+			}
+
+			#actions {
+				text-align: center;
 			}
 
 			button {
-				font-size: 20px;
+				font-size: 16px;
 			}
 		</style>
 	</head>
 	<body>
-		<button onclick="buttonClick()">Finish</button>
-		<script>
-			KinNative.loaded();
+		<div id="title">Poll data:</div>
+		<textarea id="data">Nothing yet...</textarea>
+		<div id="actions">
+			<button onclick="buttonClick()">Finish</button>
+		</div>
 
-			var data = {
-				questions: [{
-					answer: "i'm the first answer for the first question",
-				}, {
-					answer: 1
-				}, {
-					answer: false
-				}]
-			}
+		<script>
+			var dataAsJson = null;
+			var dataAsString = null;
 
 			function buttonClick() {
-				KinNative.handleResult(JSON.stringify(data));
+				var response = {
+					keys: Object.keys(dataAsJson),
+					length: dataAsString.length
+				}
+
+				console.log(JSON.stringify(response));
+				KinNative.handleResult(JSON.stringify(response));
 			}
+
+			window.kin = {
+				renderPoll: function(data) {
+					dataAsString = data;
+					const el = document.getElementById("data");
+
+					try {
+						dataAsJson = JSON.parse(data);
+					} catch (e) {
+						el.innerText = "received invalid data";
+						return;
+					}
+
+					el.value = JSON.stringify(dataAsJson, null, "\t");
+				}
+			};
+
+			KinNative.loaded();
 		</script>
 	</body>
 </html>

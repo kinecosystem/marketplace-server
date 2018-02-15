@@ -1,6 +1,7 @@
 import { Router } from "express";
 
-import { createOrder, getOffers } from "../services/offers";
+import { getOffers, OfferList } from "../services/offers";
+import { createOrder, OpenOrder } from "../services/orders";
 
 export const router: Router = Router();
 
@@ -8,34 +9,14 @@ export const router: Router = Router();
  * Return a list of offers
  */
 router.get("/", async (req, res, next) => {
-	const options = {
-	};
-
-	try {
-		const result = await getOffers(options);
-		res.status(result.code || 200).send(result.data);
-	} catch (err) {
-		return res.status(500).send({
-			error: "Server Error",
-			status: 500,
-		});
-	}
+	const data: OfferList = await getOffers({});
+	res.status(200).send(data);
 });
 
 /**
  * create an order for an offer
  */
-router.post("/:offer_id/order", async (req, res, next) => {
-	const options = {
-	};
-
-	try {
-		const result = await createOrder(options);
-		res.status(result.code || 200).send(result.data);
-	} catch (err) {
-		return res.status(err.status).send({
-			error: err.error,
-			status: err.status,
-		});
-	}
+router.post("/:offer_id/orders", async (req, res, next) => {
+	const order: OpenOrder = await createOrder(req.params.offer_id);
+	res.status(201).send(order);
 });

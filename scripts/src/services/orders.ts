@@ -1,10 +1,5 @@
-import { ServiceResult } from "./index";
-import { HTMLPollAnswer } from "./offers";
-
-export interface Order {
-	id: string;
-	recipient_address?: string;
-}
+import { Paging, ServiceResult } from "./index";
+import { PollAnswer } from "./offers";
 
 export interface SpendResult {
 	offer_type: "SpendResult";
@@ -22,7 +17,7 @@ export interface EarnResult {
 
 export interface EarnSubmission {
 	recipient_address: string;
-	completed_form?: HTMLPollAnswer;
+	completed_form?: PollAnswer;
 }
 
 export interface SpendSubmission {
@@ -35,22 +30,162 @@ export interface SubmissionResult {
 	content: SpendResult | EarnResult;
 }
 
-export const cancelOrder = async (options): Promise<ServiceResult<void>> => {
-	return {
-		code: 204,
-	};
-};
+export interface OrderList {
+	orders: Order[];
+	paging: Paging;
+}
 
-export const submitOrder = async (options): Promise<ServiceResult<SubmissionResult>> => {
+export interface BlockchainData {
+	transaction_id?: string;
+	sender_address?: string;
+	recipient_address?: string;
+}
+
+export interface OrderResult {
+	coupon_code?: string;
+	reason?: string;
+}
+
+export interface OpenOrder {
+	order_id: string;
+	blockchain_data: BlockchainData;
+}
+
+export interface Order extends OpenOrder {
+	result?: OrderResult;
+	status: "completed" | "failed" | "pending";
+	completion_date: string; // UTC ISO
+	offer_type: "earn" | "spend";
+	title: string;
+	description: string;
+	call_to_action?: string;
+	amount: number;
+}
+
+const orders: Order[] = [
+	{
+		result: { reason: "Transaction failed" },
+		status: "failed",
+		order_id: "Tkjhds8s9d7fsdf6",
+		completion_date: "2018-09-15T14:33:33",
+		blockchain_data: {
+			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
+			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
+			recipient_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
+		},
+		offer_type: "spend",
+		title: "Spotify",
+		description: "2 week subscription",
+		call_to_action: "tap to reveal coupon",
+		amount: 32000,
+	},
+	{
+		result: { reason: "Please check again later" },
+		status: "pending",
+		order_id: "Tkjhds8s9d7fsdf5",
+		completion_date: "2018-09-14T14:33:33",
+		blockchain_data: {
+			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
+			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
+			recipient_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
+		},
+		offer_type: "earn",
+		title: "Dunkin Donuts",
+		description: "completed poll",
+		amount: 4100,
+	},
+	{
+		status: "pending",
+		order_id: "Tkjhds8s9d7fsdf4",
+		completion_date: "2018-09-13T14:33:33",
+		blockchain_data: {
+			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
+			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
+			recipient_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
+		},
+		offer_type: "spend",
+		title: "Spotify",
+		description: "2 week subscription",
+		call_to_action: "tap to reveal coupon",
+		amount: 6030,
+	},
+	{
+		status: "pending",
+		order_id: "Tkjhds8s9d7fsdf3",
+		completion_date: "2018-09-12T14:33:33",
+		blockchain_data: {
+			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
+			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
+			recipient_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
+		},
+		offer_type: "earn",
+		title: "Dunkin Donuts",
+		description: "completed poll",
+		amount: 7100,
+	},
+	{
+		result: { coupon_code: "XXX-YYY-ZZZ" },
+		status: "completed",
+		order_id: "Tkjhds8s9d7fsdf2",
+		completion_date: "2018-09-11T14:33:33",
+		blockchain_data: {
+			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
+			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
+			recipient_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
+		},
+		offer_type: "spend",
+		title: "Spotify",
+		description: "2 week subscription",
+		call_to_action: "tap to reveal coupon",
+		amount: 3000,
+	},
+	{
+		status: "completed",
+		order_id: "Tkjhds8s9d7fsdf1",
+		completion_date: "2018-09-10T14:33:33",
+		blockchain_data: {
+			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
+			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
+			recipient_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
+		},
+		offer_type: "earn",
+		title: "Dunkin Donuts",
+		description: "completed poll",
+		amount: 4000,
+	},
+];
+
+export async function getOrder(orderId: string): Promise<Order> {
+	orders.forEach(order => {
+		if (order.order_id === orderId) {
+			return order;
+		}
+	});
+	throw Error; // XXX throw and exception that is convirtable to json
+}
+
+export async function createOrder(offerId): Promise<OpenOrder> {
+	return { order_id: "Tkjhds8s9d7fsdf6", blockchain_data: { recipient_address: "YYYYYYY" } };
+}
+
+export async function submitOrder(options): Promise<void> {
+	return;
+}
+
+export async function cancelOrder(options): Promise<void> {
+	return;
+}
+
+export async function getOrderHistory(): Promise<OrderList> {
 	return {
-		code: 200,
-		data: {
-			content: {
-				offer_type: "EarnResult",
-				sender_address: "i_am_a_sender",
-				transaction_id: "i_am_a_transaction",
+		orders,
+		paging: {
+			cursors: {
+				after: "MTAxNTExOTQ1MjAwNzI5NDE",
+				before: "NDMyNzQyODI3OTQw",
 			},
-			order_id: "i_am_an_order",
+			previous: "https://graph.facebook.com/me/albums?limit=25&before=NDMyNzQyODI3OTQw",
+			next: "https://graph.facebook.com/me/albums?limit=25&after=MTAxNTExOTQ1MjAwNzI5NDE=",
 		},
 	};
-};
+}

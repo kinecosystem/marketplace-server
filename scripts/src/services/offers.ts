@@ -1,18 +1,8 @@
 import { getConfig } from "../config";
-import { ServiceResult } from "./index";
+import { Paging, ServiceResult } from "./index";
 import { Order } from "./orders";
 
-export interface Coupon {
-	description: string;
-	content_type: "Coupon";
-}
-
-export interface HTMLPoll {
-	content_type: "HTMLPoll";
-	html: string;
-}
-
-export interface HTMLPollAnswer {
+export interface PollAnswer {
 	content_type: "HTMLPollAnswer";
 	answers: { [key: string]: string };
 }
@@ -23,15 +13,33 @@ export interface Offer {
 	description: string;
 	image: string;
 	amount: number;
-	content: Coupon | HTMLPoll;
+	content: string;
+	content_type: "coupon" | "poll";
 	offer_type: "earn" | "spend";
 }
 
 export interface OfferList {
 	offers: Offer[];
+	paging: Paging;
 }
 
-export const getOffers = async (options): Promise<ServiceResult<OfferList>> => {
+const poll = {
+	pages: [{
+		description: "whats up sdkjhfdlskjhfg skldjfhks ljhf lsdhjfklsd hflksdl sdjhfkl s",
+		answers: ["dfhjksdhfksd sdf", "sdfsdjiosdjfl", "333333333333333333333333333333",
+			"44444444444444444444", "555555555555555555555555555555", "666666666666666666666666666666",
+			"7777777777777777777777777777777777777777", "888888888888888"],
+		title: "hi there",
+	}, {
+		description: "whats up sdkjhfdlskjhfg skldjfhks ljhf lsdhjfklsd hflksdl sdjhfkl s",
+		answers: ["dfhjksdhfksd sdf", "sdfsdjiosdjfl", "333333333333333333333333333333",
+			"44444444444444444444", "555555555555555555555555555555", "666666666666666666666666666666",
+			"7777777777777777777777777777777777777777", "888888888888888"],
+		title: "hi there",
+	}],
+};
+
+export async function getOffers(options): Promise<OfferList> {
 	const earn = [
 		"earn_offer1.png",
 		"earn_offer2.png",
@@ -46,45 +54,26 @@ export const getOffers = async (options): Promise<ServiceResult<OfferList>> => {
 		"spend_offer4.png",
 		"spend_offer5.png",
 	];
-
 	const assetsBase = getConfig().assets_base;
 	const offers = earn.map<Offer>(img => ({
-			amount: 4000,
-			content: {
-				content_type: "HTMLPoll",
-				html: "<html><body><h1>title</h1><div>my poll</div></body></html>",
-			} as HTMLPoll,
-			description: "Tell us about yourself",
-			id: img,
-			image: assetsBase + img,
-			offer_type: "earn",
-			title: "Answer a poll",
-		})).concat(spend.map<Offer>(img => ({
-			amount: 8000,
-			content: {
-				content_type: "Coupon",
-				description: "aaa-bbb-ccc-ddd",
-			} as Coupon,
-			description: "$10 gift card",
-			id: img,
-			image: assetsBase + img,
-			offer_type: "spend",
-			title: "Gift Card",
-		})));
+		amount: 4000,
+		content: JSON.stringify(poll),
+		content_type: "poll",
+		description: "Tell us about yourself",
+		id: img,
+		image: assetsBase + img,
+		offer_type: "earn",
+		title: "Answer a poll",
+	})).concat(spend.map<Offer>(img => ({
+		amount: 8000,
+		content_type: "coupon",
+		content: "aaa-bbb-ccc-ddd",
+		description: "$10 gift card",
+		id: img,
+		image: assetsBase + img,
+		offer_type: "spend",
+		title: "Gift Card",
+	})));
 
-	return {
-		code: 200,
-		data: {
-			offers,
-		},
-	};
-};
-
-export const createOrder = async (options): Promise<ServiceResult<Order>> => {
-	return {
-		code: 200,
-		data: {
-			id: "i_am_an_order",
-		},
-	};
-};
+	return { offers, paging: { cursors: {} } };
+}

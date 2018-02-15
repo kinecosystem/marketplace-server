@@ -1,11 +1,6 @@
 import { Paging, ServiceResult } from "./index";
 import { PollAnswer } from "./offers";
 
-export interface Order {
-	id: string;
-	recipient_address?: string;
-}
-
 export interface SpendResult {
 	offer_type: "SpendResult";
 	asset: {
@@ -67,7 +62,7 @@ export interface Order extends OpenOrder {
 	amount: number;
 }
 
-const orders = [
+const orders: Order[] = [
 	{
 		result: { reason: "Transaction failed" },
 		status: "failed",
@@ -192,5 +187,5 @@ export async function getOrderHistory(): Promise<OrderList> {
 			previous: "https://graph.facebook.com/me/albums?limit=25&before=NDMyNzQyODI3OTQw",
 			next: "https://graph.facebook.com/me/albums?limit=25&after=MTAxNTExOTQ1MjAwNzI5NDE=",
 		},
-	} as OrderList; // XXX why doesn't this work without as OrderList???
+	};
 }

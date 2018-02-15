@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { cancelOrder, getOrder, getOrderHistory, submitOrder } from "../services/orders";
+import { cancelOrder, getOrder, getOrderHistory, OpenOrder, Order, submitOrder } from "../services/orders";
 
 export const router: Router = Router();
 
@@ -8,7 +8,7 @@ export const router: Router = Router();
  * get an order
  */
 router.get("/:order_id", async (req, res, next) => {
-	const order = await getOrder("Tkjhds8s9d7fsdf1");
+	const order: Order = await getOrder("Tkjhds8s9d7fsdf1");
 	res.status(200).send(order);
 });
 

@@ -1,7 +1,7 @@
 import { Router } from "express";
 
-import { getOffers } from "../services/offers";
-import { createOrder } from "../services/orders";
+import { getOffers, OfferList } from "../services/offers";
+import { createOrder, OpenOrder } from "../services/orders";
 
 export const router: Router = Router();
 
@@ -9,7 +9,7 @@ export const router: Router = Router();
  * Return a list of offers
  */
 router.get("/", async (req, res, next) => {
-	const data = await getOffers({});
+	const data: OfferList = await getOffers({});
 	res.status(200).send(data);
 });
 
@@ -17,6 +17,6 @@ router.get("/", async (req, res, next) => {
  * create an order for an offer
  */
 router.post("/:offer_id/orders", async (req, res, next) => {
-	const order = createOrder(req.params.offer_id);
+	const order: OpenOrder = await createOrder(req.params.offer_id);
 	res.status(201).send(order);
 });

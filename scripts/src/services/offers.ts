@@ -23,6 +23,22 @@ export interface OfferList {
 	paging: Paging;
 }
 
+const poll = {
+	pages: [{
+		description: "whats up sdkjhfdlskjhfg skldjfhks ljhf lsdhjfklsd hflksdl sdjhfkl s",
+		answers: ["dfhjksdhfksd sdf", "sdfsdjiosdjfl", "333333333333333333333333333333",
+			"44444444444444444444", "555555555555555555555555555555", "666666666666666666666666666666",
+			"7777777777777777777777777777777777777777", "888888888888888"],
+		title: "hi there",
+	}, {
+		description: "whats up sdkjhfdlskjhfg skldjfhks ljhf lsdhjfklsd hflksdl sdjhfkl s",
+		answers: ["dfhjksdhfksd sdf", "sdfsdjiosdjfl", "333333333333333333333333333333",
+			"44444444444444444444", "555555555555555555555555555555", "666666666666666666666666666666",
+			"7777777777777777777777777777777777777777", "888888888888888"],
+		title: "hi there",
+	}],
+};
+
 export async function getOffers(options): Promise<OfferList> {
 	const earn = [
 		"earn_offer1.png",
@@ -38,11 +54,10 @@ export async function getOffers(options): Promise<OfferList> {
 		"spend_offer4.png",
 		"spend_offer5.png",
 	];
-
 	const assetsBase = getConfig().assets_base;
 	const offers = earn.map<Offer>(img => ({
 		amount: 4000,
-		content: "<html><body><h1>title</h1><div>my poll</div></body></html>",
+		content: JSON.stringify(poll),
 		content_type: "poll",
 		description: "Tell us about yourself",
 		id: img,

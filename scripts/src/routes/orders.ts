@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { cancelOrder, getOrder, getOrderHistory, OpenOrder, Order, submitOrder } from "../services/orders";
+import { cancelOrder, getOrder, getOrderHistory, OpenOrder, Order, OrderList, submitOrder } from "../services/orders";
 
 export const router: Router = Router();
 
@@ -33,6 +33,6 @@ router.delete("/:order_id", async (req, res, next) => {
  * get user history
  */
 router.get("/", async (req, res, next) => {
-	const orderList = getOrderHistory();
+	const orderList: OrderList = await getOrderHistory();
 	res.status(200).send(orderList);
 });

@@ -1,6 +1,7 @@
 import * as jsonwebtoken from "jsonwebtoken";
 import * as db from "../models/users";
 import { getLogger } from "../logging";
+import { getManager } from "typeorm";
 
 const logger = getLogger();
 
@@ -90,13 +91,14 @@ export async function activateUser(token: string): Promise<AuthToken> {
 	const user = await db.User.findOneById( authToken.userId );
 
 	if (!user.activated) {
-		user.activatedDate = new Date();
-		// XXX use transaction
-		await user.save();
+		await getManager().transaction(async mgr => {
+			user.activatedDate = new Date();
+			await mgr.save(user);
 
-		authToken = new db.AuthToken();
-		authToken.userId = user.id;
-		authToken.deviceId = authToken.deviceId;
+			authToken = new db.AuthToken(authToken.userId, authToken.deviceId, true);
+			await mgr.save(authToken);
+		});
+
 		// XXX should implement some sort of authtoken scoping that will be encoded into the token:
 		// authToken.scope = {tos: true}
 

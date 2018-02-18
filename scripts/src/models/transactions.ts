@@ -6,42 +6,32 @@ import { IdPrefix } from "../utils";
 @Entity()
 @Register
 export class Transaction extends CreationDateModel {
-	@Column({ name: "type" })
-	private _type: string;
+	@Column()
+	public type: string;
 
 	@Column({ name: "blockchain_txid" })
-	private _blockchainTxId: string;
+	public blockchainTxId: string;
 
 	@Column({ name: "user_id" })
-	private _userId: string;
+	public userId: string;
 
-	@Column("simple-json", { name: "meta" })
-	private _meta: any;
+	@Column({ name: "offer_id" })
+	public offerId: string;
 
-	@Column("simple-json", { name: "value" })
-	private _value: any;
+	@Column("simple-json")
+	public meta: any;
+
+	@Column("simple-json")
+	public value: any;
 
 	public constructor() {
 		super(IdPrefix.Transaction);
 	}
 
-	public get blockchainTxId(): string {
-		return this._blockchainTxId;
-	}
-
-	public get userId(): string {
-		return this._userId;
-	}
-
-	public get type(): string {
-		return this._type;
-	}
-
-	public get meta(): any {
-		return this._meta;
-	}
-
-	public get value(): any {
-		return this._value;
+	public get status(): "open" | "done" | "failed" | "pending" {
+		if (this.blockchainTxId) {
+			return "done";
+		}
+		return "open";
 	}
 }

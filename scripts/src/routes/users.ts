@@ -15,6 +15,9 @@ router.get("/", async (req, res, next) => {
 });
 
 router.post("/", async (req, res, next) => {
+	/**
+	 * allow either registration with JWT or plain userId to be checked against a whitelist from the given app
+	 */
 	const { token, activated } = await getOrCreateUserCredentials(
 		req.body.jwt,
 		req.body.public_address,

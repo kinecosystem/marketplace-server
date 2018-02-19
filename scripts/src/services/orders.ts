@@ -67,7 +67,7 @@ const orders: Order[] = [
 		result: { reason: "Transaction failed" },
 		status: "failed",
 		order_id: "Tkjhds8s9d7fsdf6",
-		completion_date: "2018-09-15T14:33:33",
+		completion_date: "2018-09-15T14:33:33Z",
 		blockchain_data: {
 			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
 			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
@@ -83,7 +83,7 @@ const orders: Order[] = [
 		result: { reason: "Please check again later" },
 		status: "pending",
 		order_id: "Tkjhds8s9d7fsdf5",
-		completion_date: "2018-09-14T14:33:33",
+		completion_date: "2018-09-14T14:33:33Z",
 		blockchain_data: {
 			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
 			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
@@ -97,7 +97,7 @@ const orders: Order[] = [
 	{
 		status: "pending",
 		order_id: "Tkjhds8s9d7fsdf4",
-		completion_date: "2018-09-13T14:33:33",
+		completion_date: "2018-09-13T14:33:33Z",
 		blockchain_data: {
 			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
 			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
@@ -112,7 +112,7 @@ const orders: Order[] = [
 	{
 		status: "pending",
 		order_id: "Tkjhds8s9d7fsdf3",
-		completion_date: "2018-09-12T14:33:33",
+		completion_date: "2018-09-12T14:33:33Z",
 		blockchain_data: {
 			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
 			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
@@ -127,7 +127,7 @@ const orders: Order[] = [
 		result: { coupon_code: "XXX-YYY-ZZZ" },
 		status: "completed",
 		order_id: "Tkjhds8s9d7fsdf2",
-		completion_date: "2018-09-11T14:33:33",
+		completion_date: "2018-09-11T14:33:33Z",
 		blockchain_data: {
 			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
 			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
@@ -142,7 +142,7 @@ const orders: Order[] = [
 	{
 		status: "completed",
 		order_id: "Tkjhds8s9d7fsdf1",
-		completion_date: "2018-09-10T14:33:33",
+		completion_date: "2018-09-10T14:33:33Z",
 		blockchain_data: {
 			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
 			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",

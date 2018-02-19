@@ -15,7 +15,7 @@ export class User extends CreationDateModel {
 	@Column({ name: "wallet_address" })
 	public walletAddress: string;
 
-	@Column({ name: "activated_date" })
+	@Column({ name: "activated_date", nullable: true })
 	public activatedDate: Date;
 
 	constructor();
@@ -33,26 +33,30 @@ export class User extends CreationDateModel {
 @Entity({ name: "auth_tokens" })
 @Register
 export class AuthToken extends CreationDateModel {
-	@Column({ name: "activated_date" })
+	@Column({ name: "expire_date" })
 	public expireDate: Date;
 
 	@Column({ name: "device_id" })
 	public deviceId: string;
 
-	@Column({ name: "token" })
+	@Column()
 	public token: string;
 
 	@Column({ name: "user_id" })
 	public userId: string;
 
-	@Column({ name: "valid" })
+	@Column()
 	public valid: boolean;
 
 	constructor();
 	constructor(userId: string, deviceId: string, valid: boolean);
 	constructor(userId?: string, deviceId?: string, valid?: boolean) {
 		super(IdPrefix.None);
-		Object.assign(this, { userId, deviceId, valid });
+		// XXX token could be a JWT
+		Object.assign(this, {
+			token: generateId(IdPrefix.None),
+			expireDate: new Date(/* 2 weeks from now */),
+			userId, deviceId, valid });
 	}
 }
 

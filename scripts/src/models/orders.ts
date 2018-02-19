@@ -16,7 +16,7 @@ export class Order extends CreationDateModel {
 	@Column()
 	public type: string;
 
-	@Column({ name: "blockchain_txid" })
+	@Column({ name: "blockchain_txid", nullable: true })
 	public blockchainTxId: string;
 
 	@Column({ name: "user_id" })
@@ -28,7 +28,7 @@ export class Order extends CreationDateModel {
 	@Column("simple-json")
 	public meta: TransactionMeta;
 
-	@Column("simple-json")
+	@Column("simple-json") // the asset?
 	public value: any;
 
 	public constructor() {

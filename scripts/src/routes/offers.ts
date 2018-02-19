@@ -17,8 +17,12 @@ router.get("/", async (req: Request & {context: Context}, res, next) => {
 	//   or len(Transaction.find({offerId, userId})) >= offer.user_cap:
 	//     user_offers += offer
 	// return user_offers
-	const data: OfferList = await getOffers(req.context.user.id, req.context.user.appId);
-	res.status(200).send(data);
+	try {
+		const data: OfferList = await getOffers(req.context.user.id, req.context.user.appId);
+		res.status(200).send(data);
+	} catch (err) {
+		next(err);
+	}
 });
 
 /**

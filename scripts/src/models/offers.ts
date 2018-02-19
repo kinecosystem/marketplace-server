@@ -93,7 +93,7 @@ export class Asset extends CreationDateModel {
 	@Column()
 	public type: "coupon";
 
-	@Column({ name: "owner_id" })
+	@Column({ name: "owner_id", nullable: true })
 	public ownerId: string;  // User.id
 
 	@Column("simple-json")

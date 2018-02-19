@@ -19,10 +19,10 @@ export class User extends CreationDateModel {
 	public activatedDate: Date;
 
 	constructor();
-	constructor(userId: string, appId: string, walletAddress: string);
-	constructor(userId?: string, appId?: string, walletAddress?: string) {
+	constructor(appUserId: string, appId: string, walletAddress: string);
+	constructor(appUserId?: string, appId?: string, walletAddress?: string) {
 		super(IdPrefix.User);
-		Object.assign(this, { userId, appId, walletAddress });
+		Object.assign(this, { appUserId, appId, walletAddress });
 	}
 
 	public get activated(): boolean {

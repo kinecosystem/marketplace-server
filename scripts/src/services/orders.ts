@@ -54,7 +54,9 @@ export interface OpenOrder {
 	expiration: string;
 }
 
-export interface Order extends OpenOrder {
+export interface Order {
+	order_id: string;
+	blockchain_data: BlockchainData;
 	result?: OrderResult;
 	status: "completed" | "failed" | "pending";
 	completion_date: string; // UTC ISO

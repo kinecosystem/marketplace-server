@@ -8,6 +8,7 @@ const logger = getLogger();
 export type AuthToken = {
 	token: string;
 	activated: boolean;
+	expiration_date: string;
 };
 
 type JWTClaims = {
@@ -36,40 +37,45 @@ function getApplicationPublicKey(applicationId: string, keyId: string) {
 
 	const publicKeys = {
 		fancy: { 1: "sdfnksdjfhlskjfhksdf", 2: "23423423423423" },
-		kik: {one: "-----BEGIN PUBLIC KEY-----\n" +
+		kik: {
+			one: "-----BEGIN PUBLIC KEY-----\n" +
 			"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDdlatRjRjogo3WojgGHFHYLugdUWAY9iR3fy4ar" +
 			"WNA1KoS8kVw33cJibXr8bvwUAUparCwlvdbH6dvEOfou0/gCFQsHUfQrSDv+MuSUMAe8jzKE4qW+j" +
 			"K+xQU9a03GUnKHkkle+Q0pX/g6jXZ7r1/xAK5Do2kQ+X5xK9cipRgEKwIDAQAB\n" +
-			"-----END PUBLIC KEY-----"}};
+			"-----END PUBLIC KEY-----",
+		},
+	};
 
 	return publicKeys[applicationId][keyId];
 }
 
-function validateJWT(jwt: string): {userId: string, appId: string} {
+export function validateJWT(jwt: string): { appUserId: string, appId: string } {
 	const decoded = jsonwebtoken.decode(jwt, { complete: true }) as JWTContent;
 	const publicKey = getApplicationPublicKey(decoded.payload.iss, decoded.header.key);
 
 	jsonwebtoken.verify(jwt, publicKey);
 
 	return {
-		userId: decoded.payload.user_id,
+		appUserId: decoded.payload.user_id,
 		appId: decoded.payload.iss,
 	};
 }
 
+export function validateWhitelist(appUserId: string, appId: string): { appUserId: string, appId: string } {
+	// check if userId is whitelisted in app
+	return { appUserId, appId };
+}
+
 export async function getOrCreateUserCredentials(
-	jwt: string,
+	appUserId: string,
+	appId: string,
 	walletAddress: string,
 	deviceId: string): Promise<AuthToken> {
 
-	const { userId , appId } = validateJWT(jwt); // throws if JWT not valid // XXX test this case
-	let user = await db.User.findOne( { appId, appUserId: userId });
+	let user = await db.User.findOne({ appId, appUserId });
 	if (!user) {
 		// new user
-		user = new db.User();
-		user.appId = appId;
-		user.appUserId = userId;
-		user.walletAddress = walletAddress;
+		user = new db.User(appUserId, appId, walletAddress);
 		await user.save();
 		// create wallet with lumens:
 		// kin.sdk.createWallet(user.walletAddress);
@@ -83,12 +89,14 @@ export async function getOrCreateUserCredentials(
 		deviceId,
 	});
 
-	return { token: authToken.token, activated: user.activated };
+	await authToken.save();
+
+	return { token: authToken.token, activated: user.activated, expiration_date: authToken.expireDate.toISOString() };
 }
 
 export async function activateUser(token: string): Promise<AuthToken> {
 	let authToken = await db.AuthToken.findOne({ token });
-	const user = await db.User.findOneById( authToken.userId );
+	const user = await db.User.findOneById(authToken.userId);
 
 	if (!user.activated) {
 		await getManager().transaction(async mgr => {
@@ -115,5 +123,5 @@ export async function activateUser(token: string): Promise<AuthToken> {
 		logger.info(`existing user activated ${user.id}`);
 	}
 
-	return { token: authToken.token, activated: user.activated };
+	return { token: authToken.token, activated: user.activated, expiration_date: authToken.expireDate.toISOString() };
 }

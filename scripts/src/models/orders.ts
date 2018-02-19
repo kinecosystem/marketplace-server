@@ -3,9 +3,16 @@ import { Column, Entity, PrimaryColumn } from "typeorm";
 import { CreationDateModel, Model, Register } from "./index";
 import { IdPrefix } from "../utils";
 
-@Entity()
+export type TransactionMeta = {
+	title: string;
+	image: string;
+	description: string;
+	call_to_action: string;
+};
+
+@Entity({ name: "orders" })
 @Register
-export class Transaction extends CreationDateModel {
+export class Order extends CreationDateModel {
 	@Column()
 	public type: string;
 
@@ -19,7 +26,7 @@ export class Transaction extends CreationDateModel {
 	public offerId: string;
 
 	@Column("simple-json")
-	public meta: any;
+	public meta: TransactionMeta;
 
 	@Column("simple-json")
 	public value: any;

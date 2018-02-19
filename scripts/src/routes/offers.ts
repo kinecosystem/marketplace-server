@@ -1,5 +1,5 @@
-import { Router } from "express";
-
+import { Request, Router } from "express";
+import { Context } from "../index";
 import { getOffers, OfferList } from "../services/offers";
 import { createOrder, OpenOrder } from "../services/orders";
 
@@ -8,7 +8,7 @@ export const router: Router = Router();
 /**
  * Return a list of offers
  */
-router.get("/", async (req, res, next) => {
+router.get("/", async (req: Request & {context: Context}, res, next) => {
 	// // return all offers that are still within global cap and user cap are not expired
 	// offers = Offers.find({expiration > now() && cap > used)
 	// user_offers = []
@@ -17,7 +17,7 @@ router.get("/", async (req, res, next) => {
 	//   or len(Transaction.find({offerId, userId})) >= offer.user_cap:
 	//     user_offers += offer
 	// return user_offers
-	const data: OfferList = await getOffers({});
+	const data: OfferList = await getOffers(req.context.user.id, req.context.user.appId);
 	res.status(200).send(data);
 });
 

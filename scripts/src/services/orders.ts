@@ -1,7 +1,7 @@
 import { Paging, ServiceResult } from "./index";
 import { PollAnswer } from "./offers";
 import { Offer } from "../models/offers";
-import { Transaction } from "../models/transactions";
+import * as db from "../models/orders";
 
 export interface SpendResult {
 	offer_type: "SpendResult";

@@ -5,14 +5,31 @@ import * as http from "http";
 import { getConfig } from "./config";
 import { initLogger } from "./logging";
 import { init as initModels } from "./models/index";
+import * as db from "./models/users";
 
 // make sure that the model files are used, this is only for now because they are not really used
 import "./models/users";
 import "./models/offers";
-import "./models/transactions";
+import "./models/orders";
 
 const config = getConfig();
 const logger = initLogger(...config.loggers);
+
+export type Context = {
+	authtoken: db.AuthToken;
+	user: db.User;
+};
+
+// add user context to request - from the auth token
+async function userContext(
+	req: express.Request & { token: string, context: Context },
+	res: express.Response, next: express.NextFunction) {
+
+	const authtoken = await db.AuthToken.findOne({ token: req.token });
+	const user = await db.User.findOneById(authtoken.userId);
+	req.context = { user, authtoken };
+	next();
+}
 
 function createApp() {
 	const app = express();
@@ -25,6 +42,7 @@ function createApp() {
 	const cookieParser = require("cookie-parser");
 	app.use(cookieParser());
 	app.use(bearerToken());
+	app.use(userContext);
 
 	return app;
 }

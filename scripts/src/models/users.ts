@@ -3,7 +3,7 @@ import { Column, Entity, PrimaryColumn } from "typeorm";
 import { CreationDateModel, Model, Register } from "./index";
 import { generateId, IdPrefix } from "../utils";
 
-@Entity()
+@Entity({ name: "users" })
 @Register
 export class User extends CreationDateModel {
 	@Column({ name: "app_id" })
@@ -30,7 +30,7 @@ export class User extends CreationDateModel {
 	}
 }
 
-@Entity()
+@Entity({ name: "auth_tokens" })
 @Register
 export class AuthToken extends CreationDateModel {
 	@Column({ name: "activated_date" })
@@ -56,7 +56,7 @@ export class AuthToken extends CreationDateModel {
 	}
 }
 
-@Entity()
+@Entity({ name: "applications" })
 @Register
 export class Application extends CreationDateModel {
 	@Column({ name: "name" })

@@ -11,6 +11,7 @@
     "body-parser": "^1.18.2",
     "cookie-parser": "^1.4.3",
     "express": "^4.16.2",
+    "express-async-errors": "^2.1.2",
     "express-bearer-token": "^2.1.1",
     "jsonwebtoken": "^8.1.1",
     "pg": "6",

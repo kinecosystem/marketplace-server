@@ -2,6 +2,9 @@ import * as express from "express";
 import * as bearerToken from "express-bearer-token";
 import * as http from "http";
 
+// handle async/await errors in middleware
+import "express-async-errors";
+
 import { getConfig } from "./config";
 import { initLogger } from "./logging";
 import { init as initModels } from "./models/index";

@@ -1,10 +1,10 @@
 import { Column, Entity, PrimaryColumn } from "typeorm";
 
-import { CreationDateModel, Model, Register } from "./index";
+import { CreationDateModel, Model, register } from "./index";
 import { generateId, IdPrefix } from "../utils";
 
 @Entity()
-@Register
+@register
 export class User extends CreationDateModel {
 	@Column({ name: "app_id" })
 	public appId: string;
@@ -31,21 +31,21 @@ export class User extends CreationDateModel {
 }
 
 @Entity()
-@Register
+@register
 export class AuthToken extends CreationDateModel {
-	@Column({ name: "activated_date" })
+	@Column({ name: "expire_date" })
 	public expireDate: Date;
 
 	@Column({ name: "device_id" })
 	public deviceId: string;
 
-	@Column({ name: "token" })
+	@Column()
 	public token: string;
 
 	@Column({ name: "user_id" })
 	public userId: string;
 
-	@Column({ name: "valid" })
+	@Column()
 	public valid: boolean;
 
 	constructor();
@@ -57,9 +57,9 @@ export class AuthToken extends CreationDateModel {
 }
 
 @Entity()
-@Register
+@register
 export class Application extends CreationDateModel {
-	@Column({ name: "name" })
+	@Column()
 	public name: string;
 
 	@Column({ name: "jwt_public_key" })

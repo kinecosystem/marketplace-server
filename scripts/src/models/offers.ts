@@ -1,6 +1,6 @@
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
-import { CreationDateModel, Model, Register } from "./index";
+import { CreationDateModel, Model, register } from "./index";
 import { IdPrefix } from "../utils";
 
 export type OfferMeta = {
@@ -12,134 +12,82 @@ export type OfferMeta = {
 export type OfferType = "spend" | "earn";
 
 @Entity()
-@Register
+@register
 export class Offer extends CreationDateModel {
-	@Column({ name: "amount" })
-	private _amount: number;
+	@Column()
+	public amount: number;
 
-	@Column("simple-json", { name: "cap" })
-	private _cap: any;
+	@Column("simple-json")
+	public cap: any;
 
-	@Column("simple-json", { name: "meta" })
-	private _meta: OfferMeta;
+	@Column("simple-json")
+	public meta: OfferMeta;
 
-	@Column({ name: "type" })
-	private _type: OfferType;
+	@Column()
+	public type: OfferType;
 
 	@Column({ name: "owner_id" })
-	private _ownerId: string;
+	public ownerId: string;
 
 	public constructor() {
 		super(IdPrefix.Offer);
 	}
-
-	public get amount(): number {
-		return this._amount;
-	}
-
-	public get cap(): any {
-		return this._cap;
-	}
-
-	public get meta(): OfferMeta {
-		return this._meta;
-	}
-
-	public get type(): OfferType {
-		return this._type;
-	}
-
-	public get ownerId(): string {
-		return this._ownerId;
-	}
 }
 
 @Entity()
-@Register
-@Index(["_offerId", "_content"], { unique: true })
+@register
+@Index(["offerId", "content"], { unique: true })
 export class OfferContent extends Model {
 	@PrimaryColumn({ name: "offer_id" })
-	private _offerId: string;
+	public offerId: string;
 
-	@PrimaryColumn({ name: "content" })
-	private _content: string;
+	@PrimaryColumn()
+	public content: string;
 
 	public constructor() {
 		super();
 	}
-
-	public get offerId(): string {
-		return this._offerId;
-	}
-
-	public get content(): any {
-		return JSON.parse(this._content);
-	}
 }
 
 @Entity()
-@Register
+@register
 export class OfferOwner extends Model {
-	@Column({ name: "name" })
-	private _name: string;
+	@Column()
+	public name: string;
 
 	public constructor() {
 		super();
 	}
-
-	public get name(): string {
-		return this._name;
-	}
 }
 
 @Entity()
-@Register
-@Index(["_offerId", "_appId"], { unique: true })
+@register
+@Index(["offerId", "appId"], { unique: true })
 export class AppOffer extends Model {
 	@PrimaryColumn({ name: "offer_id" })
-	private _offerId: string;
+	public offerId: string;
 
 	@PrimaryColumn({ name: "app_id" })
-	private _appId: string;
+	public appId: string;
 
 	public constructor() {
 		super();
-	}
-
-	public get offerId(): string {
-		return this._offerId;
-	}
-
-	public get appId(): string {
-		return this._appId;
 	}
 }
 
 @Entity()
-@Register
+@register
 export class Asset extends CreationDateModel {
-	@Column({ name: "type" })
-	private _type: "coupon";
+	@Column()
+	public type: "coupon";
 
 	@Column({ name: "is_used" })
-	private _isUsed: boolean;
+	public isUsed: boolean;
 
-	@Column({ name: "value" })
-	private _value: string;
+	@Column("simple-json")
+	public value: any;
 
 	public constructor() {
 		super();
-	}
-
-	public get type(): "coupon" {
-		return this._type;
-	}
-
-	public get isUsed(): boolean {
-		return this._isUsed;
-	}
-
-	public get value(): any {
-		return JSON.parse(this._value);
 	}
 }

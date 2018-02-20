@@ -14,34 +14,26 @@ const entities: ModelConstructor[] = [];
 
 export type ModelConstructor = { new(): Model };
 export abstract class Model extends BaseEntity {
-	@PrimaryColumn({ name: "id" })
-	private _id: string;
+	@PrimaryColumn()
+	public id: string;
 
 	protected constructor(prefix: IdPrefix = IdPrefix.None) {
 		super();
-		this._id = generateId(prefix);
-	}
-
-	public get id(): string {
-		return this._id;
+		this.id = generateId(prefix);
 	}
 }
 
 export abstract class CreationDateModel extends Model {
 	@Column({ name: "created_date" })
-	private _createdDate: Date;
+	public createdDate: Date;
 
 	protected constructor(prefix?: IdPrefix) {
 		super(prefix);
-		this._createdDate = new Date();
-	}
-
-	public get createdDate(): Date {
-		return this._createdDate;
+		this.createdDate = new Date();
 	}
 }
 
-export function Register(ctor: ModelConstructor) {
+export function register(ctor: ModelConstructor) {
 	entities.push(ctor);
 }
 

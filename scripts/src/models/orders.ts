@@ -1,6 +1,6 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
+import { Column, Entity } from "typeorm";
 
-import { CreationDateModel, Model, Register } from "./index";
+import { CreationDateModel, register as Register } from "./index";
 import { IdPrefix } from "../utils";
 
 export type TransactionMeta = {

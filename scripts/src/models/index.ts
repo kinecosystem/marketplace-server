@@ -41,7 +41,7 @@ export abstract class CreationDateModel extends Model {
 	}
 }
 
-export function Register(ctor: ModelConstructor) {
+export function register(ctor: ModelConstructor) {
 	entities.push(ctor);
 }
 

@@ -1,6 +1,6 @@
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
-import { CreationDateModel, Model, Register } from "./index";
+import { CreationDateModel, Model, register as Register } from "./index";
 import { IdPrefix } from "../utils";
 
 export type OfferMeta = {

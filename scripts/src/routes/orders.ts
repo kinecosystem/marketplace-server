@@ -1,6 +1,9 @@
-import { Router } from "express";
+import { Request, Router } from "express";
 
-import { cancelOrder, getOrder, getOrderHistory, OpenOrder, Order, OrderList, submitOrder } from "../services/orders";
+import {
+	cancelOrder, getOrder, getOrderHistory, Order, OrderList, submitEarn,
+} from "../services/orders";
+import { Context } from "../middleware";
 
 export const router: Router = Router();
 
@@ -8,14 +11,14 @@ export const router: Router = Router();
  * get an order
  */
 router.get("/:order_id", async (req, res, next) => {
-	const order: Order = await getOrder("Tkjhds8s9d7fsdf1");
+	const order: Order = await getOrder(req.params.order_id);
 	res.status(200).send(order);
 });
 
 /**
  * submit an order - this is the earn payload requesting validation
  */
-router.post("/:order_id", async (req, res, next) => {
+router.post("/:order_id", async (req: Request & {context: Context}, res, next) => {
 	/**
 	 * // check that order hasn't passed expiration + grace period
 	 * order = OpenOrder.find({orderId})  // throw if doesn't exist
@@ -31,8 +34,11 @@ router.post("/:order_id", async (req, res, next) => {
 	 *   PaymentService.payTo(User.find(userId).walletAddress, order.amount, memo=order.id)
 	 * return ok
 	 */
-	await submitOrder({});
-	res.status(201).send();
+	const order = await submitEarn(
+		req.params.order_id,
+		JSON.stringify({ ok: true }),
+		req.context.user.walletAddress);
+	res.status(200).send(order);
 
 });
 
@@ -45,15 +51,15 @@ router.delete("/:order_id", async (req, res, next) => {
 	 * assert order.userId == req.userId
 	 * order.delete()
 	 */
-	await cancelOrder({});
+	await cancelOrder(req.params.order_id);
 	res.status(204).send();
 });
 
 /**
  * get user history
  */
-router.get("/", async (req, res, next) => {
-	const orderList: OrderList = await getOrderHistory();
+router.get("/", async (req: Request & {context: Context}, res, next) => {
+	const orderList: OrderList = await getOrderHistory(req.context.user.id);
 	res.status(200).send(orderList);
 });
 

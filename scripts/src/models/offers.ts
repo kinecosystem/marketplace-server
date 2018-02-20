@@ -54,7 +54,7 @@ export class OfferContent extends Model {
 	public content: string;
 
 	@Column({ name: "content_type" })
-	public contentType: "poll";
+	public contentType: "poll" | "coupon";
 
 	public constructor() {
 		super();

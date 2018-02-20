@@ -1,0 +1,1 @@
+curl -XPOST -d'{"sign_in_type": "whitelist", "user_id": "new_user4", "device_id": "my_device", "app_id": "kik", "public_address": "GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H"}' -H 'X-REQUEST-ID: 1234' -H 'content-type: application/json' "localhost:3000/v1/users"

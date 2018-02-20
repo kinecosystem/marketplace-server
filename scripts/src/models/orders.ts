@@ -10,14 +10,20 @@ export type TransactionMeta = {
 	call_to_action: string;
 };
 
+export type BlockchainData = {
+	transaction_id?: string;
+	sender_address?: string;
+	recipient_address?: string;
+};
+
 @Entity({ name: "orders" })
 @Register
 export class Order extends CreationDateModel {
 	@Column()
-	public type: string;
+	public type: "earn" | "spend";
 
-	@Column({ name: "blockchain_txid", nullable: true })
-	public blockchainTxId: string;
+	@Column("simple-json", { name: "blockchain_data", nullable: true })
+	public blockchainData: BlockchainData;
 
 	@Column({ name: "user_id" })
 	public userId: string;
@@ -28,17 +34,27 @@ export class Order extends CreationDateModel {
 	@Column("simple-json")
 	public meta: TransactionMeta;
 
-	@Column("simple-json") // the asset?
+	@Column("simple-json", { nullable: true }) // the asset?
 	public value: any;
+
+	@Column()
+	public amount: number;
 
 	public constructor() {
 		super(IdPrefix.Transaction);
 	}
 
-	public get status(): "open" | "done" | "failed" | "pending" {
-		if (this.blockchainTxId) {
-			return "done";
+	public get status(): "completed" | "failed" | "pending" {
+		if (this.blockchainData) {
+			return "completed";
 		}
-		return "open";
+		return "pending";
 	}
+}
+
+export class OpenOrder {
+	public userId: string;
+	public offerId: string;
+	public expiration: Date;
+	public id: string;
 }

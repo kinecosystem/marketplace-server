@@ -1,7 +1,11 @@
 import { Paging, ServiceResult } from "./index";
 import { PollAnswer } from "./offers";
-import { Offer } from "../models/offers";
+import * as offerDb from "../models/offers";
 import * as db from "../models/orders";
+import { generateId, IdPrefix } from "../utils";
+import { getLogger } from "../logging";
+
+const logger = getLogger();
 
 export interface SpendResult {
 	offer_type: "SpendResult";
@@ -50,7 +54,7 @@ export interface OrderResult {
 
 export interface OpenOrder {
 	order_id: string;
-	blockchain_data: BlockchainData;
+	blockchain_data?: BlockchainData;
 	expiration: string;
 }
 
@@ -67,117 +71,98 @@ export interface Order {
 	amount: number;
 }
 
-const orders: Order[] = [
-	{
-		result: { reason: "Transaction failed" },
-		status: "failed",
-		order_id: "Tkjhds8s9d7fsdf6",
-		completion_date: "2018-09-15T14:33:33Z",
-		blockchain_data: {
-			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
-			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-			recipient_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-		},
-		offer_type: "spend",
-		title: "Spotify",
-		description: "2 week subscription",
-		call_to_action: "tap to reveal coupon",
-		amount: 32000,
-	},
-	{
-		result: { reason: "Please check again later" },
-		status: "pending",
-		order_id: "Tkjhds8s9d7fsdf5",
-		completion_date: "2018-09-14T14:33:33Z",
-		blockchain_data: {
-			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
-			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-			recipient_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-		},
-		offer_type: "earn",
-		title: "Dunkin Donuts",
-		description: "completed poll",
-		amount: 4100,
-	},
-	{
-		status: "pending",
-		order_id: "Tkjhds8s9d7fsdf4",
-		completion_date: "2018-09-13T14:33:33Z",
-		blockchain_data: {
-			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
-			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-			recipient_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-		},
-		offer_type: "spend",
-		title: "Spotify",
-		description: "2 week subscription",
-		call_to_action: "tap to reveal coupon",
-		amount: 6030,
-	},
-	{
-		status: "pending",
-		order_id: "Tkjhds8s9d7fsdf3",
-		completion_date: "2018-09-12T14:33:33Z",
-		blockchain_data: {
-			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
-			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-			recipient_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-		},
-		offer_type: "earn",
-		title: "Dunkin Donuts",
-		description: "completed poll",
-		amount: 7100,
-	},
-	{
-		result: { coupon_code: "XXX-YYY-ZZZ" },
-		status: "completed",
-		order_id: "Tkjhds8s9d7fsdf2",
-		completion_date: "2018-09-11T14:33:33Z",
-		blockchain_data: {
-			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
-			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-			recipient_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-		},
-		offer_type: "spend",
-		title: "Spotify",
-		description: "2 week subscription",
-		call_to_action: "tap to reveal coupon",
-		amount: 3000,
-	},
-	{
-		status: "completed",
-		order_id: "Tkjhds8s9d7fsdf1",
-		completion_date: "2018-09-10T14:33:33Z",
-		blockchain_data: {
-			transaction_id: "717c9672505f480b8b87314c8ac8fb83f873fd1ed58f71678ccc1f3fa802ac41",
-			sender_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-			recipient_address: "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-		},
-		offer_type: "earn",
-		title: "Dunkin Donuts",
-		description: "completed poll",
-		amount: 4000,
-	},
-];
-
 export async function getOrder(orderId: string): Promise<Order> {
-	orders.forEach(order => {
-		if (order.order_id === orderId) {
-			return order;
-		}
-	});
-	throw Error; // XXX throw and exception that is convirtable to json
+	const order = await db.Order.findOneById(orderId);
+	if (!order) {
+		throw Error(`no such order ${orderId}`); // XXX throw and exception that is convert-able to json
+	}
+	return orderDbToApi(order);
 }
 
-export async function createOrder(offerId): Promise<OpenOrder> {
+const openOrdersDB: Map<string, db.OpenOrder> = new Map<string, db.OpenOrder>();
+const expirationTime = (10 * 60 * 1000); // 10 minutes
+const graceTime = (10 * 60 * 1000); // 10 minutes
+
+export async function createOrder(offerId: string, userId: string): Promise<OpenOrder> {
+	const expiration = new Date();
+	expiration.setTime(expiration.getTime() + expirationTime);
+
+	const openOrder = Object.assign(
+		new db.OpenOrder(),
+		{ expiration, id: generateId(IdPrefix.Transaction), offerId, userId });
+
+	openOrdersDB.set(openOrder.id, openOrder);
+
 	return {
-		order_id: "Tkjhds8s9d7fsdf6",
-		blockchain_data: { recipient_address: "YYYYYYY" },
-		expiration: "2018-02-22T15:55:44Z",
+		order_id: openOrder.id,
+		expiration: openOrder.expiration.toISOString(),
 	};
 }
 
-export async function submitOrder(options): Promise<void> {
+export async function submitEarn(orderId: string, form: string, walletAddress: string): Promise<Order> {
+	const openOrder: db.OpenOrder = openOrdersDB.get(orderId);
+	if (!openOrder) {
+		throw Error(`no such order ${orderId}`);
+	}
+	if (new Date() > openOrder.expiration) {
+		throw Error(`order ${orderId} expired`);
+	}
+
+	// validate form
+	if (!JSON.parse(form).ok) {
+		throw Error(`submitted form is invalid for ${orderId}`);
+	}
+
+	const offer: offerDb.Offer = await offerDb.Offer.findOneById(openOrder.offerId);
+	// create a transaction Order
+	const order = Object.assign(new db.Order(), {
+		id: openOrder.id,
+		userId: openOrder.userId,
+		offerId: openOrder.offerId,
+		amount: offer.amount,
+		type: "earn",
+		meta: {
+			title: offer.meta.title,
+			description: offer.meta.description,
+			image: offer.meta.image,
+			call_to_action: offer.meta.description,
+		},
+	});
+	offer.cap.used += 1;
+	await offer.save();
+	await order.save();
+	openOrdersDB.delete(openOrder.id);
+
+	payTo(walletAddress, order.amount, order.id);
+
+	return orderDbToApi(order);
+}
+
+function orderDbToApi(order: db.Order): Order {
+	return {
+		status: order.status,
+		order_id: order.id,
+		completion_date: order.createdDate.toISOString(),
+		blockchain_data: order.blockchainData,
+		offer_type: order.type,
+		title: order.meta.title,
+		description: order.meta.description,
+		call_to_action: order.meta.call_to_action,
+		amount: order.amount,
+	};
+}
+
+async function payTo(walletAddress: string, amount: number, orderId: string) {
+	// async in a payment service written in python
+	// with GlobalLock(orderId) {
+	logger.info(`paying ${amount} to ${walletAddress} with meta ${orderId}`);
+	const txId: string = generateId();
+	const order = await db.Order.findOneById(orderId);
+	order.blockchainData = { transaction_id: txId };
+	order.save();
+}
+
+export async function submitSpend(orderId: string): Promise<void> {
 	return;
 }
 
@@ -185,9 +170,19 @@ export async function cancelOrder(options): Promise<void> {
 	return;
 }
 
-export async function getOrderHistory(): Promise<OrderList> {
+export async function getOrderHistory(
+	userId: string,
+	limit?: number,
+	before?: string,
+	after?: string): Promise<OrderList> {
+
+	// XXX use the cursor input values
+	const orders: db.Order[] = await db.Order.find({ userId });
+
 	return {
-		orders,
+		orders: orders.map(order => {
+			return orderDbToApi(order);
+		}),
 		paging: {
 			cursors: {
 				after: "MTAxNTExOTQ1MjAwNzI5NDE",

@@ -1,5 +1,7 @@
 import { Paging, ServiceResult } from "./index";
 import { PollAnswer } from "./offers";
+import { Offer } from "../models/offers";
+import * as db from "../models/orders";
 
 export interface SpendResult {
 	offer_type: "SpendResult";
@@ -49,9 +51,12 @@ export interface OrderResult {
 export interface OpenOrder {
 	order_id: string;
 	blockchain_data: BlockchainData;
+	expiration: string;
 }
 
-export interface Order extends OpenOrder {
+export interface Order {
+	order_id: string;
+	blockchain_data: BlockchainData;
 	result?: OrderResult;
 	status: "completed" | "failed" | "pending";
 	completion_date: string; // UTC ISO
@@ -165,7 +170,11 @@ export async function getOrder(orderId: string): Promise<Order> {
 }
 
 export async function createOrder(offerId): Promise<OpenOrder> {
-	return { order_id: "Tkjhds8s9d7fsdf6", blockchain_data: { recipient_address: "YYYYYYY" } };
+	return {
+		order_id: "Tkjhds8s9d7fsdf6",
+		blockchain_data: { recipient_address: "YYYYYYY" },
+		expiration: "2018-02-22T15:55:44Z",
+	};
 }
 
 export async function submitOrder(options): Promise<void> {

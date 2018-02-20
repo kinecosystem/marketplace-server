@@ -5,11 +5,12 @@ import * as http from "http";
 import { getConfig } from "./config";
 import { initLogger } from "./logging";
 import { init as initModels } from "./models/index";
+import { userContext } from "./middleware";
 
 // make sure that the model files are used, this is only for now because they are not really used
 import "./models/users";
 import "./models/offers";
-import "./models/transactions";
+import "./models/orders";
 
 const config = getConfig();
 const logger = initLogger(...config.loggers);
@@ -25,6 +26,7 @@ function createApp() {
 	const cookieParser = require("cookie-parser");
 	app.use(cookieParser());
 	app.use(bearerToken());
+	app.use(userContext);
 
 	return app;
 }

@@ -2,8 +2,9 @@ import { Column, Entity, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, Model, Register } from "./index";
 import { generateId, IdPrefix } from "../utils";
+import moment = require("moment");
 
-@Entity()
+@Entity({ name: "users" })
 @Register
 export class User extends CreationDateModel {
 	@Column({ name: "app_id" })
@@ -15,14 +16,14 @@ export class User extends CreationDateModel {
 	@Column({ name: "wallet_address" })
 	public walletAddress: string;
 
-	@Column({ name: "activated_date" })
+	@Column({ name: "activated_date", nullable: true })
 	public activatedDate: Date;
 
 	constructor();
-	constructor(userId: string, appId: string, walletAddress: string);
-	constructor(userId?: string, appId?: string, walletAddress?: string) {
+	constructor(appUserId: string, appId: string, walletAddress: string);
+	constructor(appUserId?: string, appId?: string, walletAddress?: string) {
 		super(IdPrefix.User);
-		Object.assign(this, { userId, appId, walletAddress });
+		Object.assign(this, { appUserId, appId, walletAddress });
 	}
 
 	public get activated(): boolean {
@@ -30,33 +31,42 @@ export class User extends CreationDateModel {
 	}
 }
 
-@Entity()
+@Entity({ name: "auth_tokens" })
 @Register
 export class AuthToken extends CreationDateModel {
-	@Column({ name: "activated_date" })
+	@Column({ name: "expire_date" })
 	public expireDate: Date;
 
 	@Column({ name: "device_id" })
 	public deviceId: string;
 
-	@Column({ name: "token" })
-	public token: string;
-
 	@Column({ name: "user_id" })
 	public userId: string;
 
-	@Column({ name: "valid" })
+	@Column()
 	public valid: boolean;
 
 	constructor();
 	constructor(userId: string, deviceId: string, valid: boolean);
 	constructor(userId?: string, deviceId?: string, valid?: boolean) {
-		super(IdPrefix.None);
-		Object.assign(this, { userId, deviceId, valid });
+		super(IdPrefix.None); // the id is the actual token
+		const expireDate = moment().add(14, "days").toDate();
+
+		// XXX token could be a JWT
+		Object.assign(this, { expireDate, userId, deviceId, valid });
+	}
+
+	public isExpired(): boolean {
+		return new Date() > this.expireDate;
+	}
+
+	public isAboutToExpire(): boolean {
+		// 6 hours left
+		return moment().add(6, "hours").toDate() > this.expireDate;
 	}
 }
 
-@Entity()
+@Entity({ name: "applications" })
 @Register
 export class Application extends CreationDateModel {
 	@Column({ name: "name" })

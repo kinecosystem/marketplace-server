@@ -25,8 +25,14 @@ async function userContext(
 	req: express.Request & { token: string, context: Context },
 	res: express.Response, next: express.NextFunction) {
 
-	const authtoken = await db.AuthToken.findOne({ token: req.token });
+	const authtoken = await db.AuthToken.findOneById(req.token);
+	if (!authtoken) {
+		throw new Error("unauthenticated"); // 403
+	}
 	const user = await db.User.findOneById(authtoken.userId);
+	if (!user) {
+		throw new Error("incomplete user registration");
+	}
 	req.context = { user, authtoken };
 	next();
 }

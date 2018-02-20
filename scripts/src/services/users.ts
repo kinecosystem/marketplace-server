@@ -91,11 +91,11 @@ export async function getOrCreateUserCredentials(
 
 	await authToken.save();
 
-	return { token: authToken.token, activated: user.activated, expiration_date: authToken.expireDate.toISOString() };
+	return { token: authToken.id, activated: user.activated, expiration_date: authToken.expireDate.toISOString() };
 }
 
 export async function activateUser(token: string): Promise<AuthToken> {
-	let authToken = await db.AuthToken.findOne({ token });
+	let authToken = await db.AuthToken.findOneById(token);
 	const user = await db.User.findOneById(authToken.userId);
 
 	if (!user.activated) {
@@ -123,5 +123,5 @@ export async function activateUser(token: string): Promise<AuthToken> {
 		logger.info(`existing user activated ${user.id}`);
 	}
 
-	return { token: authToken.token, activated: user.activated, expiration_date: authToken.expireDate.toISOString() };
+	return { token: authToken.id, activated: user.activated, expiration_date: authToken.expireDate.toISOString() };
 }

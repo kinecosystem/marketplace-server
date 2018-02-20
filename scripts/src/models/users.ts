@@ -39,9 +39,6 @@ export class AuthToken extends CreationDateModel {
 	@Column({ name: "device_id" })
 	public deviceId: string;
 
-	@Column()
-	public token: string;
-
 	@Column({ name: "user_id" })
 	public userId: string;
 
@@ -51,10 +48,9 @@ export class AuthToken extends CreationDateModel {
 	constructor();
 	constructor(userId: string, deviceId: string, valid: boolean);
 	constructor(userId?: string, deviceId?: string, valid?: boolean) {
-		super(IdPrefix.None);
+		super(IdPrefix.None); // the id is the actual token
 		// XXX token could be a JWT
 		Object.assign(this, {
-			token: generateId(IdPrefix.None),
 			expireDate: new Date(/* 2 weeks from now */),
 			userId, deviceId, valid });
 	}

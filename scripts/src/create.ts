@@ -13,23 +13,23 @@ initModels().then(async () => {
 
 	const app: Application = await (new Application("kik", "jwt")).save();
 
-	const content = new OfferContent();
-	content.contentType = "poll";
-	content.offerId = "offer:1";
-	content.content = JSON.stringify({ pages: [{ title: "question1" }] });
-	await content.save();
-
 	const owner = new OfferOwner();
 	owner.name = "donuts";
 	await owner.save();
 
 	const offer = new Offer();
 	offer.amount = 4000;
-	offer.meta = { title: "offer title", image: "image", description: "fuck" };
+	offer.meta = { title: "offer title", image: "image", description: "the description" };
 	offer.ownerId = owner.id;
 	offer.type = "earn";
 	offer.cap = { total: 100, used: 0, per_user: 2 };
 	await offer.save();
+
+	const content = new OfferContent();
+	content.contentType = "poll";
+	content.offerId = offer.id;
+	content.content = JSON.stringify({ pages: [{ title: "question1" }] });
+	await content.save();
 
 	const appOffer = new AppOffer();
 	appOffer.appId = app.id;

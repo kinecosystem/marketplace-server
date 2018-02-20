@@ -49,11 +49,23 @@ export class AuthToken extends CreationDateModel {
 	constructor(userId: string, deviceId: string, valid: boolean);
 	constructor(userId?: string, deviceId?: string, valid?: boolean) {
 		super(IdPrefix.None); // the id is the actual token
+		const expireDate = new Date();
+		expireDate.setDate(expireDate.getDate() + 14);
+
 		// XXX token could be a JWT
-		Object.assign(this, {
-			expireDate: new Date(/* 2 weeks from now */),
-			userId, deviceId, valid });
+		Object.assign(this, { expireDate, userId, deviceId, valid });
 	}
+
+	public isExpired(): boolean {
+		return this.expireDate > new Date();
+	}
+
+	public isAboutToExpire(): boolean {
+		const dayFromNow = new Date();
+		dayFromNow.setDate(dayFromNow.getDate() + 1);
+		return this.expireDate > dayFromNow;
+	}
+
 }
 
 @Entity({ name: "applications" })

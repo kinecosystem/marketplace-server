@@ -76,6 +76,7 @@ export async function getOrCreateUserCredentials(
 	if (!user) {
 		// new user
 		user = new db.User(appUserId, appId, walletAddress);
+		user.activatedDate = new Date(); // XXX skip TOS
 		await user.save();
 		// create wallet with lumens:
 		// kin.sdk.createWallet(user.walletAddress);
@@ -84,20 +85,13 @@ export async function getOrCreateUserCredentials(
 		logger.info(`returning existing user ${user.id}`);
 	}
 
-	const authToken = await db.AuthToken.create({
-		userId: user.id,
-		deviceId,
-	});
-
-	await authToken.save();
+	// XXX should be a scope object
+	const authToken = await (new db.AuthToken(user.id, deviceId, true).save());
 
 	return { token: authToken.id, activated: user.activated, expiration_date: authToken.expireDate.toISOString() };
 }
 
-export async function activateUser(token: string): Promise<AuthToken> {
-	let authToken = await db.AuthToken.findOneById(token);
-	const user = await db.User.findOneById(authToken.userId);
-
+export async function activateUser(authToken: db.AuthToken, user: db.User): Promise<AuthToken> {
 	if (!user.activated) {
 		await getManager().transaction(async mgr => {
 			user.activatedDate = new Date();

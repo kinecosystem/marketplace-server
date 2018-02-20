@@ -16,7 +16,7 @@ const config = getConfig();
 const logger = initLogger(...config.loggers);
 
 export type Context = {
-	authtoken: db.AuthToken;
+	authToken: db.AuthToken;
 	user: db.User;
 };
 
@@ -25,15 +25,22 @@ async function userContext(
 	req: express.Request & { token: string, context: Context },
 	res: express.Response, next: express.NextFunction) {
 
-	const authtoken = await db.AuthToken.findOneById(req.token);
-	if (!authtoken) {
+	logger.info("request path: " + req.path)
+
+	if (req.path === "/v1/users") {
+		next(); // no authentication
+		return;
+	}
+
+	const authToken = await db.AuthToken.findOneById(req.token);
+	if (!authToken) {
 		throw new Error("unauthenticated"); // 403
 	}
-	const user = await db.User.findOneById(authtoken.userId);
+	const user = await db.User.findOneById(authToken.userId);
 	if (!user) {
 		throw new Error("incomplete user registration");
 	}
-	req.context = { user, authtoken };
+	req.context = { user, authToken };
 	next();
 }
 

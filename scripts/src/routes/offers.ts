@@ -1,5 +1,5 @@
 import { Request, Router } from "express";
-import { Context } from "../index";
+import { Context } from "../middleware";
 import { getOffers, OfferList } from "../services/offers";
 import { createOrder, OpenOrder } from "../services/orders";
 

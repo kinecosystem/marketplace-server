@@ -2,7 +2,7 @@ import { Request, Router } from "express";
 import { validateJWT, validateWhitelist, getOrCreateUserCredentials, activateUser } from "../services/users";
 import { getLogger } from "../logging";
 import * as db from "../models/users";
-import { Context } from "../index";
+import { Context } from "../middleware";
 
 export const router: Router = Router();
 const logger = getLogger();

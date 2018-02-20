@@ -5,7 +5,7 @@ import * as http from "http";
 import { getConfig } from "./config";
 import { initLogger } from "./logging";
 import { init as initModels } from "./models/index";
-import * as db from "./models/users";
+import { userContext } from "./middleware";
 
 // make sure that the model files are used, this is only for now because they are not really used
 import "./models/users";
@@ -14,35 +14,6 @@ import "./models/orders";
 
 const config = getConfig();
 const logger = initLogger(...config.loggers);
-
-export type Context = {
-	authToken: db.AuthToken;
-	user: db.User;
-};
-
-// add user context to request - from the auth token
-async function userContext(
-	req: express.Request & { token: string, context: Context },
-	res: express.Response, next: express.NextFunction) {
-
-	logger.info("request path: " + req.path)
-
-	if (req.path === "/v1/users") {
-		next(); // no authentication
-		return;
-	}
-
-	const authToken = await db.AuthToken.findOneById(req.token);
-	if (!authToken) {
-		throw new Error("unauthenticated"); // 403
-	}
-	const user = await db.User.findOneById(authToken.userId);
-	if (!user) {
-		throw new Error("incomplete user registration");
-	}
-	req.context = { user, authToken };
-	next();
-}
 
 function createApp() {
 	const app = express();

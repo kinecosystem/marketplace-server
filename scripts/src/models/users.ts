@@ -2,6 +2,7 @@ import { Column, Entity, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, Model, Register } from "./index";
 import { generateId, IdPrefix } from "../utils";
+import moment = require("moment");
 
 @Entity({ name: "users" })
 @Register
@@ -49,23 +50,20 @@ export class AuthToken extends CreationDateModel {
 	constructor(userId: string, deviceId: string, valid: boolean);
 	constructor(userId?: string, deviceId?: string, valid?: boolean) {
 		super(IdPrefix.None); // the id is the actual token
-		const expireDate = new Date();
-		expireDate.setDate(expireDate.getDate() + 14);
+		const expireDate = moment().add(14, "days").toDate();
 
 		// XXX token could be a JWT
 		Object.assign(this, { expireDate, userId, deviceId, valid });
 	}
 
 	public isExpired(): boolean {
-		return this.expireDate > new Date();
+		return new Date() > this.expireDate;
 	}
 
 	public isAboutToExpire(): boolean {
-		const dayFromNow = new Date();
-		dayFromNow.setDate(dayFromNow.getDate() + 1);
-		return this.expireDate > dayFromNow;
+		// 6 hours left
+		return moment().add(6, "hours").toDate() > this.expireDate;
 	}
-
 }
 
 @Entity({ name: "applications" })

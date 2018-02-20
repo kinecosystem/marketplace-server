@@ -1,6 +1,5 @@
 import { User, AuthToken, Application } from "./models/users";
 import { Offer, OfferContent, AppOffer, Asset, OfferOwner } from "./models/offers";
-// import { Order } from "./models/orders";
 
 import { init as initModels } from "./models";
 
@@ -11,7 +10,7 @@ initModels().then(async () => {
 	await (new AuthToken(user1.id, "device1", true)).save();
 	await (new AuthToken(user2.id, "device2", true)).save();
 
-	const app: Application = await (new Application("kik", "jwt")).save();
+	const app = await (new Application("kik", "jwt")).save();
 
 	const owner = new OfferOwner();
 	owner.name = "donuts";

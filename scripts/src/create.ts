@@ -155,8 +155,8 @@ initModels().then(async () => {
 	await createOrders(user1.id);
 	await createOrders(user2.id);
 
-	console.log(`created user1: user_id: ${user1.appUserId}, app_id: ${user1.appId}, device_id: ${authToken1.deviceId},
-	 token: ${authToken1.id}`);
-	console.log(`created user2: user_id: ${user2.appUserId}, app_id: ${user2.appId}, device_id: ${authToken2.deviceId},
-	 token: ${authToken2.id}`);
+	console.log(`created user1: user_id: ${user1.appUserId}, app_id: ${user1.appId}, device_id: ${authToken1.deviceId},`
+	 + ` token: ${authToken1.id}`);
+	console.log(`created user2: user_id: ${user2.appUserId}, app_id: ${user2.appId}, device_id: ${authToken2.deviceId},`
+	 + ` token: ${authToken2.id}`);
 });

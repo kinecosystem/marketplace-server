@@ -2,6 +2,7 @@ import { Column, Entity } from "typeorm";
 
 import { CreationDateModel, register as Register } from "./index";
 import { IdPrefix } from "../utils";
+import { OfferType } from "./offers";
 
 export type TransactionMeta = {
 	title: string;
@@ -16,11 +17,13 @@ export type BlockchainData = {
 	recipient_address?: string;
 };
 
+export type OrderStatus = "completed" | "failed" | "pending";
+
 @Entity({ name: "orders" })
 @Register
 export class Order extends CreationDateModel {
 	@Column()
-	public type: "earn" | "spend";
+	public type: OfferType;
 
 	@Column("simple-json", { name: "blockchain_data", nullable: true })
 	public blockchainData: BlockchainData;
@@ -44,7 +47,7 @@ export class Order extends CreationDateModel {
 		super(IdPrefix.Transaction);
 	}
 
-	public get status(): "completed" | "failed" | "pending" {
+	public get status(): OrderStatus {
 		if (this.blockchainData) {
 			return "completed";
 		}
@@ -52,9 +55,9 @@ export class Order extends CreationDateModel {
 	}
 }
 
-export class OpenOrder {
-	public userId: string;
-	public offerId: string;
-	public expiration: Date;
-	public id: string;
-}
+export type OpenOrder = {
+	userId: string;
+	offerId: string;
+	expiration: Date;
+	id: string;
+};

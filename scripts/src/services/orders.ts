@@ -79,7 +79,7 @@ export async function getOrder(orderId: string): Promise<Order> {
 	return orderDbToApi(order);
 }
 
-const openOrdersDB: Map<string, db.OpenOrder> = new Map<string, db.OpenOrder>();
+const openOrdersDB = new Map<string, db.OpenOrder>();
 const expirationTime = (10 * 60 * 1000); // 10 minutes
 const graceTime = (10 * 60 * 1000); // 10 minutes
 
@@ -87,9 +87,7 @@ export async function createOrder(offerId: string, userId: string): Promise<Open
 	const expiration = new Date();
 	expiration.setTime(expiration.getTime() + expirationTime);
 
-	const openOrder = Object.assign(
-		new db.OpenOrder(),
-		{ expiration, id: generateId(IdPrefix.Transaction), offerId, userId });
+	const openOrder: db.OpenOrder = { expiration, id: generateId(IdPrefix.Transaction), offerId, userId };
 
 	openOrdersDB.set(openOrder.id, openOrder);
 

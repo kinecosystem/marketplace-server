@@ -1,9 +1,9 @@
 import { User, AuthToken, Application } from "./models/users";
 import { Offer, OfferContent, AppOffer, Asset, OfferOwner } from "./models/offers";
+import { Order } from "./models/orders";
 
 import { init as initModels } from "./models";
 import { getConfig } from "./config";
-import { forEachToken } from "tslint";
 
 const poll = {
 	pages: [{
@@ -83,12 +83,61 @@ async function createOffers(): Promise<Offer[]> {
 	return offers;
 }
 
+function orderFromOffer(offer: Offer, userId: string): Order {
+	const order = new Order();
+	order.userId = userId;
+	order.offerId = offer.id;
+	order.meta = {
+		call_to_action: "press here",
+		description: offer.meta.description,
+		title: offer.meta.title,
+		image: offer.meta.image,
+	};
+	order.blockchainData = { transaction_id: "xxx", recipient_address: "reere", sender_address: "err" };
+	order.amount = offer.amount;
+	order.type = offer.type;
+
+	return order;
+}
+
+async function createOrders(userId: string) {
+	let offers = await Offer.find({ where: { type: "spend" }, take: 3 });
+	let order = orderFromOffer(offers[0], userId);
+	order.status = "completed";
+	const asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
+	order.value = asset.value;
+	await order.save();
+
+	order = orderFromOffer(offers[1], userId);
+	order.status = "failed";
+	order.value = { reason: "transaction timed out" };
+	await order.save();
+
+	order = orderFromOffer(offers[2], userId);
+	order.status = "pending";
+	await order.save();
+
+	offers = await Offer.find({ where: { type: "earn" }, take: 3 });
+	order = orderFromOffer(offers[0], userId);
+	order.status = "completed";
+	await order.save();
+
+	order = orderFromOffer(offers[1], userId);
+	order.status = "failed";
+	order.value = { reason: "transaction timed out" };
+	await order.save();
+
+	order = orderFromOffer(offers[2], userId);
+	order.status = "pending";
+	await order.save();
+}
+
 initModels().then(async () => {
 	const user1 = await (new User("doody", "kik", "wallet1")).save();
 	const user2 = await (new User("nitzan", "kik", "wallet2")).save();
 
-	await (new AuthToken(user1.id, "device1", true)).save();
-	await (new AuthToken(user2.id, "device2", true)).save();
+	const authToken1 = await (new AuthToken(user1.id, "device1", true)).save();
+	const authToken2 = await (new AuthToken(user2.id, "device2", true)).save();
 
 	const app = await (new Application("kik", "jwt")).save();
 
@@ -99,11 +148,20 @@ initModels().then(async () => {
 		appOffer.appId = app.id;
 		appOffer.offerId = offer.id;
 		await appOffer.save();
+		for (let i = 0; i < offer.cap.total; i++) {
+			const asset = new Asset();
+			asset.offerId = offer.id;
+			asset.ownerId = null;
+			asset.type = "coupon";
+			asset.value = { coupon_code: "xxxxxxxxxxx" };
+			await asset.save();
+		}
 	}
+	await createOrders(user1.id);
+	await createOrders(user2.id);
 
-	const asset = new Asset();
-	asset.ownerId = null;
-	asset.type = "coupon";
-	asset.value = { coupon_code: "xxxxxxxxxxx" };
-	await asset.save();
+	console.log(`created user1: user_id: ${user1.appUserId}, app_id: ${user1.appId}, device_id: ${authToken1.deviceId},
+	 token: ${authToken1.id}`);
+	console.log(`created user2: user_id: ${user2.appUserId}, app_id: ${user2.appId}, device_id: ${authToken2.deviceId},
+	 token: ${authToken2.id}`);
 });

@@ -43,15 +43,11 @@ export class Order extends CreationDateModel {
 	@Column()
 	public amount: number;
 
+	@Column()
+	public status: OrderStatus;
+
 	public constructor() {
 		super(IdPrefix.Transaction);
-	}
-
-	public get status(): OrderStatus {
-		if (this.blockchainData) {
-			return "completed";
-		}
-		return "pending";
 	}
 }
 

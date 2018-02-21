@@ -12,7 +12,7 @@ const config = getConfig();
 const logger = initLogger(...config.loggers);
 
 import { init as initModels } from "./models/index";
-import { userContext } from "./middleware";
+import * as middleware from "./middleware";
 
 // make sure that the model files are used, this is only for now because they are not really used
 import "./models/users";
@@ -30,7 +30,10 @@ function createApp() {
 	const cookieParser = require("cookie-parser");
 	app.use(cookieParser());
 	app.use(bearerToken());
-	app.use(userContext);
+
+	middleware.init();
+	app.use(middleware.logRequest);
+	app.use(middleware.userContext);
 
 	return app;
 }

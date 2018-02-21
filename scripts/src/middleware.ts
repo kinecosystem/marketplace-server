@@ -1,8 +1,19 @@
-import * as db from "./models/users";
 import * as express from "express";
+import { LoggerInstance } from "winston";
+
+import * as db from "./models/users";
 import { getLogger } from "./logging";
 
-const logger = getLogger();
+let logger: LoggerInstance;
+
+export function init() {
+	logger = getLogger();
+}
+
+export function logRequest(req, res, next) {
+	logger.info(`start handling request: ${ req.path }`);
+	next();
+}
 
 export type Context = {
 	authToken: db.AuthToken;
@@ -13,8 +24,6 @@ export type Context = {
 export async function userContext(
 	req: express.Request & { token: string, context: Context },
 	res: express.Response, next: express.NextFunction) {
-
-	logger.info("request path: " + req.path);
 
 	if (req.path === "/v1/users") {
 		next(); // no authentication

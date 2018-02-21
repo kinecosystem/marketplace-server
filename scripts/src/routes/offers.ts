@@ -28,7 +28,7 @@ router.get("/", async (req: Request & {context: Context}, res, next) => {
 /**
  * create an order for an offer
  */
-router.post("/:offer_id/orders", async (req, res, next) => {
+router.post("/:offer_id/orders", async (req: Request & {context: Context}, res, next) => {
 	/**
 	 * with GlobalLock(req.context.userId + req.context.offerId):
 	 *   // did the transaction
@@ -48,6 +48,6 @@ router.post("/:offer_id/orders", async (req, res, next) => {
 	 *   order = OpenOrders.create(offerId, userId) // this adds to the locked_cap
 	 *   return order
 	 */
-	const order: OpenOrder = await createOrder(req.params.offer_id);
+	const order: OpenOrder = await createOrder(req.params.offer_id, req.context.user.id);
 	res.status(201).send(order);
 });

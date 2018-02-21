@@ -20,6 +20,7 @@ export type AssetValue = {
 };
 
 export type OfferType = "spend" | "earn";
+export type ContentType = "poll" | "coupon";
 
 @Entity({ name: "offers" })
 @Register
@@ -54,7 +55,7 @@ export class OfferContent extends Model {
 	public content: string;
 
 	@Column({ name: "content_type" })
-	public contentType: "poll";
+	public contentType: ContentType;
 
 	public constructor() {
 		super();

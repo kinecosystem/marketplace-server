@@ -7,6 +7,10 @@ import "express-async-errors";
 
 import { getConfig } from "./config";
 import { initLogger } from "./logging";
+
+const config = getConfig();
+const logger = initLogger(...config.loggers);
+
 import { init as initModels } from "./models/index";
 import { userContext } from "./middleware";
 
@@ -14,9 +18,6 @@ import { userContext } from "./middleware";
 import "./models/users";
 import "./models/offers";
 import "./models/orders";
-
-const config = getConfig();
-const logger = initLogger(...config.loggers);
 
 function createApp() {
 	const app = express();

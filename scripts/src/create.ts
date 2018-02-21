@@ -87,12 +87,7 @@ function orderFromOffer(offer: Offer, userId: string): Order {
 	const order = new Order();
 	order.userId = userId;
 	order.offerId = offer.id;
-	order.meta = {
-		call_to_action: "press here",
-		description: offer.meta.description,
-		title: offer.meta.title,
-		image: offer.meta.image,
-	};
+	order.meta = Object.assign({}, offer.meta, { call_to_action: "press here" });
 	order.blockchainData = { transaction_id: "xxx", recipient_address: "reere", sender_address: "err" };
 	order.amount = offer.amount;
 	order.type = offer.type;

@@ -65,7 +65,7 @@ async function createOffers(): Promise<Offer[]> {
 
 		const offer = new Offer();
 		offer.amount = 8000;
-		offer.meta = { title: "Tell us about yourself", image: img, description: "$10 gift card" };
+		offer.meta = { title: "Tell us about yourself", image: assetsBase + img, description: "$10 gift card" };
 		offer.ownerId = owner.id;
 		offer.type = "spend";
 		offer.cap = { total: 100, used: 0, per_user: 2 };

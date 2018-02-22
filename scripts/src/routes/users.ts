@@ -1,17 +1,28 @@
-import { Request, Router } from "express";
-import { validateJWT, validateWhitelist, getOrCreateUserCredentials, activateUser } from "../services/users";
+import { Request } from "express";
+
+import {
+	validateJWT,
+	validateWhitelist,
+	getOrCreateUserCredentials,
+	activateUser as activateUserService } from "../services/users";
+
 import { getLogger } from "../logging";
 import * as db from "../models/users";
-import { Context } from "../middleware";
 
-export const router: Router = Router();
-const logger = getLogger();
+import { create as createRouter, ExtendedRouter } from "./router";
+
+export const router: ExtendedRouter = createRouter();
+
+let logger;
+export function init() {
+	logger = getLogger();
+}
 
 // get a user
-router.get("/", async (req, res, next) => {
+export async function getUser(req, res) {
 	const user = await db.User.findOne({ id: req.query.id });
 	res.status(200).send({ user });
-});
+}
 
 type SignInData = {
 	sign_in_type: "whitelist" | "jwt";
@@ -26,7 +37,7 @@ type SignInData = {
  * sign in a user,
  * allow either registration with JWT or plain userId to be checked against a whitelist from the given app
  */
-router.post("/", async (req, res, next) => {
+export async function signinUser(req, res) {
 	let context: { appId: string; appUserId: string };
 	const data: SignInData = req.body;
 
@@ -39,17 +50,17 @@ router.post("/", async (req, res, next) => {
 	}
 
 	const { token, activated, expiration_date } = await getOrCreateUserCredentials(
-			context.appUserId,
-			context.appId,
-			req.body.public_address,
-			req.body.device_id);
+		context.appUserId,
+		context.appId,
+		req.body.public_address,
+		req.body.device_id);
 	res.status(200).send({ token, activated, expiration_date });
-});
+}
 
 /**
  * user activates by approving TOS
  */
-router.post("/me/activate", async (req: Request & { context: Context }, res, next) => {
-	const { token, activated } = await activateUser(req.context.authToken, req.context.user);
+export async function activateUser(req: Request , res) {
+	const { token, activated } = await activateUserService(req.context.token, req.context.user);
 	res.status(200).send({ token, activated });
-});
+}

@@ -1,4 +1,4 @@
-import { Paging, ServiceResult } from "./index";
+import { Paging } from "./index";
 import { PollAnswer } from "./offers";
 import * as offerDb from "../models/offers";
 import * as db from "../models/orders";

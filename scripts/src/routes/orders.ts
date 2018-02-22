@@ -1,7 +1,6 @@
 import { Request } from "express";
 
 import { getLogger } from "../logging";
-import { create as createRouter, ExtendedRouter } from "./router";
 import {
 	cancelOrder as cancelOrderService,
 	getOrder as getOrderService,
@@ -9,8 +8,6 @@ import {
 	submitEarn as submitEarnService,
 	OrderList,
 } from "../services/orders";
-
-export const router: ExtendedRouter = createRouter();
 
 let logger;
 export function init() {

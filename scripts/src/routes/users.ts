@@ -9,10 +9,6 @@ import {
 import { getLogger } from "../logging";
 import * as db from "../models/users";
 
-import { create as createRouter, ExtendedRouter } from "./router";
-
-export const router: ExtendedRouter = createRouter();
-
 let logger;
 export function init() {
 	logger = getLogger();

@@ -37,25 +37,32 @@ function createApp() {
 
 export const app: express.Express = createApp();
 
-/*// routes
-app.use("/v1/offers", require("./routes/offers").router);
-app.use("/v1/orders", require("./routes/orders").router);
-// authentication
-app.use("/v1/users", require("./routes/users").router);*/
-
+// routes
 createRoutes(app, "/v1");
 
 // catch 404
-app.use((req, res, next) => {
+app.use((req, res) => {
 	// log.error(`Error 404 on ${req.url}.`);
 	res.status(404).send({ status: 404, error: "Not found" });
 });
 
 // catch errors
-app.use((err, req, res, next) => {
-	const status = err.status || 500;
-	logger.error(`Error ${status} (reason: ${err.message}) on ${req.method} ${req.url} with payload ${req.body}.`);
-	res.status(status).send({ status, error: "Server error" });
+app.use((err: any, req: express.Request, res: express.Response) => {
+	let message = "Error\n";
+
+	message += `\tmethod: ${ req.method }`;
+	message += `\tpath: ${ req.url }`;
+	message += `\tpayload: ${ req.body }`;
+
+	if (err instanceof Error) {
+		message += `\tmessage: ${ err.message }`;
+		message += `\tstack: ${ err.stack }`;
+	} else {
+		message += `\tmessage: ${ err.toString() }`;
+	}
+
+	logger.error(message);
+	res.status(500).send({ status, error: "Server error" });
 });
 
 // initializing db and models
@@ -65,25 +72,6 @@ const server = http.createServer(app);
 server.listen(config.port);
 server.on("error", onError);
 server.on("listening", onListening);
-
-/**
- * Normalize a port into a number, string, or false.
- */
-function normalizePort(val) {
-	const port = parseInt(val, 10);
-
-	if (isNaN(port)) {
-		// named pipe
-		return val;
-	}
-
-	if (port >= 0) {
-		// port number
-		return port;
-	}
-
-	return false;
-}
 
 /**
  * Event listener for HTTP server "error" event.

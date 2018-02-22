@@ -1,7 +1,7 @@
 import * as express from "express";
 
 import * as db from "../models/users";
-import { checkAuthentication } from "../auth";
+import { authenticate } from "../auth";
 import { init as initOffers, getOffers, createOrder } from "./offers";
 import { init as initUsers, getUser, signinUser, activateUser } from "./users";
 import { init as initOrders, getOrder, cancelOrder, getOrderHistory, submitEarn } from "./orders";
@@ -33,7 +33,7 @@ function router(): ExtendedRouter {
 				if (typeof name === "string" && AUTHENTICATED_METHODS.includes(name)) {
 					return (path: string, handler: express.RequestHandler) => {
 						return target[name](path, async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-							const token = await checkAuthentication(req);
+							const token = await authenticate(req);
 							const user = await db.User.findOneById(token.userId);
 							req.context = { user, token };
 
@@ -78,7 +78,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 
 function createPath(path: string, prefix?: string): string {
 	if (!prefix) {
-		return prefix;
+		return path;
 	}
 
 	return `${ prefix }/${ path }`;

@@ -1,5 +1,4 @@
 import * as express from "express";
-import * as bearerToken from "express-bearer-token";
 import * as http from "http";
 
 // handle async/await errors in middleware
@@ -11,8 +10,9 @@ import { initLogger } from "./logging";
 const config = getConfig();
 const logger = initLogger(...config.loggers);
 
+import { createRoutes } from "./routes/index";
 import { init as initModels } from "./models/index";
-import * as middleware from "./middleware";
+import { init as initCustomMiddleware } from "./middleware";
 
 // make sure that the model files are used, this is only for now because they are not really used
 import "./models/users";
@@ -29,11 +29,8 @@ function createApp() {
 
 	const cookieParser = require("cookie-parser");
 	app.use(cookieParser());
-	app.use(bearerToken());
 
-	middleware.init();
-	app.use(middleware.logRequest);
-	app.use(middleware.userContext);
+	initCustomMiddleware(app);
 
 	return app;
 }
@@ -41,22 +38,31 @@ function createApp() {
 export const app: express.Express = createApp();
 
 // routes
-app.use("/v1/offers", require("./routes/offers").router);
-app.use("/v1/orders", require("./routes/orders").router);
-// authentication
-app.use("/v1/users", require("./routes/users").router);
+createRoutes(app, "/v1");
 
 // catch 404
-app.use((req, res, next) => {
+app.use((req, res) => {
 	// log.error(`Error 404 on ${req.url}.`);
 	res.status(404).send({ status: 404, error: "Not found" });
 });
 
 // catch errors
-app.use((err, req, res, next) => {
-	const status = err.status || 500;
-	// log.error(`Error ${status} (${err.message}) on ${req.method} ${req.url} with payload ${req.body}.`);
-	res.status(status).send({ status, error: "Server error" });
+app.use((err: any, req: express.Request, res: express.Response) => {
+	let message = "Error\n";
+
+	message += `\tmethod: ${ req.method }`;
+	message += `\tpath: ${ req.url }`;
+	message += `\tpayload: ${ req.body }`;
+
+	if (err instanceof Error) {
+		message += `\tmessage: ${ err.message }`;
+		message += `\tstack: ${ err.stack }`;
+	} else {
+		message += `\tmessage: ${ err.toString() }`;
+	}
+
+	logger.error(message);
+	res.status(500).send({ status, error: "Server error" });
 });
 
 // initializing db and models
@@ -66,25 +72,6 @@ const server = http.createServer(app);
 server.listen(config.port);
 server.on("error", onError);
 server.on("listening", onListening);
-
-/**
- * Normalize a port into a number, string, or false.
- */
-function normalizePort(val) {
-	const port = parseInt(val, 10);
-
-	if (isNaN(port)) {
-		// named pipe
-		return val;
-	}
-
-	if (port >= 0) {
-		// port number
-		return port;
-	}
-
-	return false;
-}
 
 /**
  * Event listener for HTTP server "error" event.

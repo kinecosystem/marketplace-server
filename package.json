@@ -41,6 +41,7 @@
     "lint": "./node_modules/.bin/tslint -p ./scripts",
     "build": "npm-run-all clean lint transpile",
     "start": "node scripts/bin/index",
+    "create-db": "node scripts/bin/create",
     "restart": "npm-run-all build start",
     "test": "echo \"Error: no tests yet\" && exit 0"
   },

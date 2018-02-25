@@ -71,8 +71,8 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.use(createPath("users", pathPrefix),
 		router()
 			.get("/", getUser)
+			.post("/", signinUser)
 			.authenticated()
-				.post("/", signinUser)
 				.post("/me/activate", activateUser));
 }
 

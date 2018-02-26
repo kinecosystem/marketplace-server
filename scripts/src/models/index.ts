@@ -1,6 +1,5 @@
 import "reflect-metadata";
-import { BaseEntity, Column, createConnection, PrimaryColumn } from "typeorm";
-import { ConnectionOptions } from "typeorm/connection/ConnectionOptions";
+import { BaseEntity, Column, createConnection, PrimaryColumn, Connection, ConnectionOptions } from "typeorm";
 
 import { getConfig } from "../config";
 import { normalizeError, path, IdPrefix, generateId } from "../utils";
@@ -11,6 +10,8 @@ if (dbConfig.type === "sqlite" && !/^[./]/.test(dbConfig.database)) {
 }
 
 const entities: ModelConstructor[] = [];
+let connection: Connection;
+let initPromise: Promise<string>;
 
 export type ModelConstructor = { new(): Model };
 export abstract class Model extends BaseEntity {
@@ -38,15 +39,26 @@ export function register(ctor: ModelConstructor) {
 }
 
 export function init(): Promise<string> {
+	if (initPromise) {
+		return initPromise;
+	}
+
 	dbConfig.entities = entities;
 
-	return createConnection(dbConfig)
-		.then(connection => {
+	initPromise = createConnection(dbConfig)
+		.then(conn => {
+			connection = conn;
 			return createOnConnectedString(connection.options);
 		})
 		.catch(error => {
 			return normalizeError(error);
 		});
+
+	return initPromise;
+}
+
+export function close(): Promise<void> {
+	return connection.close();
 }
 
 function createOnConnectedString(options: ConnectionOptions): string {

@@ -24,6 +24,7 @@ type ExtendedRouter = express.Router & {
 };
 
 const AUTHENTICATED_METHODS = ["get", "delete", "post", "put", "patch"];
+
 function router(): ExtendedRouter {
 	const router = express.Router() as ExtendedRouter;
 
@@ -55,25 +56,41 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.use(createPath("offers", pathPrefix),
 		router()
 			.authenticated()
-				.get("/", getOffers)
-				.post("/:offer_id/orders", createOrder));
+			.get("/", getOffers));
+	app.use(createPath("offers", pathPrefix),
+		router()
+			.authenticated()
+			.post("/:offer_id/orders", createOrder));
 
 	initOrders();
 	app.use(createPath("orders", pathPrefix),
 		router()
 			.authenticated()
-				.get("/", getOrderHistory)
-				.get("/:order_id", getOrder)
-				.post("/:order_id", submitEarn)
-				.delete("/:order_id", cancelOrder));
+			.get("/", getOrderHistory));
+	app.use(createPath("orders", pathPrefix),
+		router()
+			.authenticated()
+			.get("/:order_id", getOrder));
+	app.use(createPath("orders", pathPrefix),
+		router()
+			.authenticated()
+			.post("/:order_id", submitEarn));
+	app.use(createPath("orders", pathPrefix),
+		router()
+			.authenticated()
+			.delete("/:order_id", cancelOrder));
 
 	initUsers();
 	app.use(createPath("users", pathPrefix),
 		router()
-			.get("/", getUser)
-			.post("/", signinUser)
+			.get("/", getUser));
+	app.use(createPath("users", pathPrefix),
+		router()
+			.post("/", signinUser));
+	app.use(createPath("users", pathPrefix),
+		router()
 			.authenticated()
-				.post("/me/activate", activateUser));
+			.post("/me/activate", activateUser));
 }
 
 function createPath(path: string, prefix?: string): string {

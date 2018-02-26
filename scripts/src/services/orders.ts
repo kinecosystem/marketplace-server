@@ -4,6 +4,7 @@ import * as offerDb from "../models/offers";
 import * as db from "../models/orders";
 import { generateId, IdPrefix } from "../utils";
 import { getLogger } from "../logging";
+import * as offerContents from "./offer_contents";
 
 const logger = getLogger();
 
@@ -107,7 +108,7 @@ export async function submitEarn(orderId: string, form: string, walletAddress: s
 	}
 
 	// validate form
-	if (!JSON.parse(form).ok) {
+	if (!offerContents.isValid(openOrder.offerId, form)) {
 		throw Error(`submitted form is invalid for ${orderId}`);
 	}
 

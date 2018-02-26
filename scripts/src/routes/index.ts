@@ -23,15 +23,27 @@ type ExtendedRouter = express.Router & {
 	authenticated(): express.Router;
 };
 
+function proxyOverRouter(router: express.Router, proxy: ExtendedRouter, obj: any): typeof obj {
+	if (typeof obj === "function") {
+		return function(...args: any[]) {
+			const result = obj(...args);
+			// const result = obj.apply(null, args);
+			return result === router ? proxy : result;
+		};
+	}
+
+	return obj === router ? proxy : obj;
+}
+
 const AUTHENTICATED_METHODS = ["get", "delete", "post", "put", "patch"];
 function router(): ExtendedRouter {
 	const router = express.Router() as ExtendedRouter;
 
 	router.authenticated = function() {
-		return new Proxy(this, {
+		const proxy = new Proxy(this, {
 			get(target, name) {
 				if (typeof name === "string" && AUTHENTICATED_METHODS.includes(name)) {
-					return (path: string, handler: express.RequestHandler) => {
+					return proxyOverRouter(router, proxy, (path: string, handler: express.RequestHandler) => {
 						return target[name](path, async (req: express.Request, res: express.Response, next: express.NextFunction) => {
 							const token = await authenticate(req);
 							const user = await db.User.findOneById(token.userId);
@@ -39,12 +51,14 @@ function router(): ExtendedRouter {
 
 							return handler(req, res, next);
 						});
-					};
+					});
 				}
 
 				return target[name];
 			},
 		});
+
+		return proxy;
 	};
 
 	return router;

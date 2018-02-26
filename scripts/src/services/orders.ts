@@ -53,17 +53,17 @@ export interface OrderResult {
 }
 
 export interface OpenOrder {
-	order_id: string;
+	id: string;
 	blockchain_data?: BlockchainData;
-	expiration: string;
+	expiration_date: string;
 }
 
 export interface Order {
-	order_id: string;
-	blockchain_data: BlockchainData;
+	id: string;
 	result?: OrderResult;
 	status: "completed" | "failed" | "pending";
 	completion_date: string; // UTC ISO
+	blockchain_data: BlockchainData;
 	offer_type: "earn" | "spend";
 	title: string;
 	description: string;
@@ -92,8 +92,8 @@ export async function createOrder(offerId: string, userId: string): Promise<Open
 	openOrdersDB.set(openOrder.id, openOrder);
 
 	return {
-		order_id: openOrder.id,
-		expiration: openOrder.expiration.toISOString(),
+		id: openOrder.id,
+		expiration_date: openOrder.expiration.toISOString(),
 	};
 }
 
@@ -139,7 +139,7 @@ export async function submitEarn(orderId: string, form: string, walletAddress: s
 function orderDbToApi(order: db.Order): Order {
 	return {
 		status: order.status,
-		order_id: order.id,
+		id: order.id,
 		completion_date: order.createdDate.toISOString(),
 		blockchain_data: order.blockchainData,
 		offer_type: order.type,
@@ -169,10 +169,7 @@ export async function cancelOrder(options): Promise<void> {
 }
 
 export async function getOrderHistory(
-	userId: string,
-	limit?: number,
-	before?: string,
-	after?: string): Promise<OrderList> {
+	userId: string, limit?: number, before?: string, after?: string): Promise<OrderList> {
 
 	// XXX use the cursor input values
 	const orders: db.Order[] = await db.Order.find({ userId });

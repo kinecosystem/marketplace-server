@@ -67,10 +67,8 @@
 			var dataAsString = null;
 
 			function buttonClick() {
-				var response = {
-					id: dataAsJson.question.id,
-					answer: dataAsJson.question.answers[Math.floor(Math.random() * dataAsJson.question.answers.length)]
-				};
+				var randomIndex = Math.floor(Math.random() * dataAsJson.question.answers.length);
+				var response = { [dataAsJson.question.id]: dataAsJson.question.answers[randomIndex]	};
 
 				console.log(JSON.stringify(response));
 				KinNative.handleResult(JSON.stringify(response));

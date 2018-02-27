@@ -1,4 +1,5 @@
 .idea
 scripts/bin
+tests/src/**/*.js
 node_modules
 database.sqlite

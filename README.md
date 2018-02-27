@@ -22,3 +22,18 @@ In any jetbrains based IDE (webstorm, pycharm, intellij, etc):
    1. Go to Preferences > Languages & Frameworks > TypeScript > TSLint
    2. Check the **Enable** box
    3. Make sure that the **Search for tslint.json** options is selected under **Configuration file**.
+
+### Testing
+For testing, first make sure that the files are compiled:
+```
+marketplace-server> npm run build
+```
+Or, if you want to avoid the *clean* and *lint* part:
+```
+marketplace-server> npm run transpile
+```
+
+After the scripts are compiled, run the tests:
+```
+marketplace-server> npm test
+```

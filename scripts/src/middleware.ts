@@ -12,7 +12,7 @@ export function init(app: express.Express) {
 	app.use(logRequest);
 }
 
-export function logRequest(req, res, next) {
-	logger.info(`start handling request: ${ req.path }`);
+export function logRequest(req: express.Request, res, next) {
+	logger.info(`start handling request: ${ req.method } ${ req.path } with ${ req.rawHeaders }`);
 	next();
 }

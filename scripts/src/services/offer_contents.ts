@@ -6,7 +6,7 @@ export interface Question {
 }
 
 export interface Poll {
-	pages: any;
+	pages: Array<{ title: string, question: Question }>;
 }
 
 export const poll1: Poll = {

@@ -2,7 +2,7 @@ import { Paging } from "./index";
 import { PollAnswer } from "./offers";
 import * as offerDb from "../models/offers";
 import * as db from "../models/orders";
-import { generateId, IdPrefix } from "../utils";
+import { generateId, IdPrefix, delay } from "../utils";
 import { getLogger } from "../logging";
 import * as offerContents from "./offer_contents";
 
@@ -120,6 +120,7 @@ export async function submitEarn(orderId: string, form: string, walletAddress: s
 		offerId: openOrder.offerId,
 		amount: offer.amount,
 		type: "earn",
+		status: "pending",
 		meta: {
 			title: offer.meta.title,
 			description: offer.meta.description,
@@ -141,7 +142,7 @@ function orderDbToApi(order: db.Order): Order {
 	return {
 		status: order.status,
 		id: order.id,
-		completion_date: order.createdDate.toISOString(),
+		completion_date: order.createdDate.toISOString(), // XXX don't we need completion_date in DB?
 		blockchain_data: order.blockchainData,
 		offer_type: order.type,
 		title: order.meta.title,
@@ -154,11 +155,13 @@ function orderDbToApi(order: db.Order): Order {
 async function payTo(walletAddress: string, amount: number, orderId: string) {
 	// async in a payment service written in python
 	// with GlobalLock(orderId) {
+	await delay(1000);
 	logger.info(`paying ${amount} to ${walletAddress} with meta ${orderId}`);
 	const txId: string = generateId();
 	const order = await db.Order.findOneById(orderId);
 	order.blockchainData = { transaction_id: txId };
-	order.save();
+	order.status = "completed";
+	await order.save();
 }
 
 export async function submitSpend(orderId: string): Promise<void> {
@@ -173,7 +176,7 @@ export async function getOrderHistory(
 	userId: string, limit?: number, before?: string, after?: string): Promise<OrderList> {
 
 	// XXX use the cursor input values
-	const orders: db.Order[] = await db.Order.find({ userId });
+	const orders: db.Order[] = await db.Order.find({ where: { userId }, order: { createdDate: "DESC" } });
 
 	return {
 		orders: orders.map(order => {

@@ -8,7 +8,9 @@
     "url": "https://github.com/kinfoundation/marketplace-server"
   },
   "dependencies": {
+    "@types/axios": "^0.14.0",
     "@types/moment": "^2.13.0",
+    "axios": "^0.18.0",
     "body-parser": "^1.18.2",
     "cookie-parser": "^1.4.3",
     "express": "^4.16.2",
@@ -20,6 +22,7 @@
     "pg-hstore": "2.3.2",
     "reflect-metadata": "^0.1.12",
     "typeorm": "^0.1.12",
+    "uuid4": "^1.0.0",
     "winston": "^2.4.0"
   },
   "devDependencies": {

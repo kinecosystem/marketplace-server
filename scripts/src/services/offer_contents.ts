@@ -9,6 +9,8 @@ export interface Poll {
 	pages: Array<{ title: string, question: Question }>;
 }
 
+export type Answers = { [key: string]: string };
+
 export const poll1: Poll = {
 	pages: [{
 		title: "What color do you like?",
@@ -34,16 +36,17 @@ export async function getOffer(offerId: string): Promise<db.OfferContent> {
 }
 
 export async function isValid(offerId: string, form: string): Promise<boolean> {
-	const parsed = JSON.parse(form);
+	const parsed: Answers = JSON.parse(form);
 
-	const offer: db.OfferContent = await getOffer(offerId);
+	const offer = await getOffer(offerId);
 	const poll: Poll = JSON.parse(offer.content);
 
+	// go over poll data, look for questions and check that answer is within question options
 	for (const page of poll.pages) {
-		const qId: string = page.question.id;
-		const ans: string[] = page.question.answers;
+		const qId = page.question.id;
+		const ans = page.question.answers;
 
-		if (ans.includes(parsed[qId])) {
+		if (!ans.includes(parsed[qId])) {
 			return false;
 		}
 	}

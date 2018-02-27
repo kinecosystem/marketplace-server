@@ -46,6 +46,7 @@
     "start": "node scripts/bin/index",
     "create-db": "node scripts/bin/create",
     "restart": "npm-run-all build start",
+    "test-system": "node scripts/bin/mock_client",
     "test": "echo \"Error: no tests yet\" && exit 0"
   },
   "author": "",

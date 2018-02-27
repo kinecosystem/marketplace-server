@@ -108,7 +108,7 @@ export async function submitEarn(orderId: string, form: string, walletAddress: s
 	}
 
 	// validate form
-	if (!offerContents.isValid(openOrder.offerId, form)) {
+	if (!await offerContents.isValid(openOrder.offerId, form)) {
 		throw Error(`submitted form is invalid for ${orderId}`);
 	}
 

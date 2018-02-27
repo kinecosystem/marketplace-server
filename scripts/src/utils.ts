@@ -32,6 +32,7 @@ export enum IdPrefix {
 
 const ID_LENGTH = 10;
 const ID_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
 export function generateId(prefix: IdPrefix = IdPrefix.None): string {
 	let id = "";
 
@@ -52,4 +53,8 @@ export function normalizeError(error: string | Error | any): string {
 	}
 
 	return error.toString();
+}
+
+export function delay(ms: number) {
+	return new Promise(resolve => setTimeout(resolve, ms));
 }

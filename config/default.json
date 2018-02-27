@@ -13,6 +13,6 @@
 		"password": "password",
 		"database": "database.sqlite",
 		"synchronize": true,
-		"logging": true
+		"logging": false
 	}
 }

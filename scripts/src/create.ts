@@ -4,18 +4,7 @@ import { Order } from "./models/orders";
 
 import { init as initModels } from "./models";
 import { getConfig } from "./config";
-
-const poll = {
-	pages: [{
-		description: "what color do you like?",
-		answers: ["red", "green", "blue"],
-		title: "hi there",
-	}, {
-		description: "whats up?",
-		answers: ["good", "bad", "ok"],
-		title: "hi there",
-	}],
-};
+import { poll1, poll2 } from "./services/offer_contents";
 
 async function createOffers(): Promise<Offer[]> {
 	const earns = [
@@ -36,6 +25,7 @@ async function createOffers(): Promise<Offer[]> {
 
 	const offers: Offer[] = [];
 
+	let i = 1;
 	for (const img of earns) {
 		const owner = new OfferOwner();
 		owner.name = "dunkin donuts";
@@ -52,7 +42,10 @@ async function createOffers(): Promise<Offer[]> {
 		const content = new OfferContent();
 		content.contentType = "poll";
 		content.offerId = offer.id;
-		content.content = JSON.stringify(poll);
+
+		content.content = JSON.stringify([poll1, poll2][i]);
+		i = 1 - i;
+
 		await content.save();
 
 		offers.push(offer);

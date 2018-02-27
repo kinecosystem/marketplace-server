@@ -62,7 +62,7 @@ app.use((err: any, req: express.Request, res: express.Response) => {
 	}
 
 	logger.error(message);
-	res.status(500).send({ status, error: "Server error" });
+	res.status(500).send({ status, error: err.message || "Server error" });
 });
 
 // initializing db and models

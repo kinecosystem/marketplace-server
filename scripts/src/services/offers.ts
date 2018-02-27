@@ -1,5 +1,6 @@
 import { Paging, ServiceResult } from "./index";
 import * as db from "../models/offers";
+import * as offerContents from "./offer_contents";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -33,7 +34,7 @@ export async function getOffers(userId: string, appId: string): Promise<OfferLis
 	const dbOffers = await db.Offer.find();
 	const offers: Offer[] = await Promise.all(
 		dbOffers.map(async offer => {
-			const content: db.OfferContent = await db.OfferContent.findOne({ offerId: offer.id });
+			const content: db.OfferContent = await offerContents.getOffer(offer.id);
 			return {
 				id: offer.id,
 				title: offer.meta.title,

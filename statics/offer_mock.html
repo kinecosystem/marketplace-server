@@ -55,20 +55,22 @@
 		<script>
 			/**
 			 * type for the data is:
-			 * {
+			 * { pages: [{
 			 *     title: string;
 			 *     question: {
 			 *         id: string;
 			 *         answers: string[];
 			 *     }
+			 * }, ...]
 			 * }
 			 */
 			var dataAsJson = null;
 			var dataAsString = null;
 
 			function buttonClick() {
-				var randomIndex = Math.floor(Math.random() * dataAsJson.question.answers.length);
-				var response = { [dataAsJson.question.id]: dataAsJson.question.answers[randomIndex]	};
+				var question = dataAsJson.pages[0].question;
+				var randomIndex = Math.floor(Math.random() * question.answers.length);
+				var response = { [question.id]: question.answers[randomIndex] };
 
 				console.log(JSON.stringify(response));
 				KinNative.handleResult(JSON.stringify(response));
@@ -82,7 +84,7 @@
 					try {
 						dataAsJson = JSON.parse(data);
 					} catch (e) {
-						el.innerText = "received invalid data";
+						el.innerText = "received invalid data " + data;
 						return;
 					}
 

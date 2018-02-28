@@ -3,3 +3,5 @@ scripts/bin
 tests/src/**/*.js
 node_modules
 database.sqlite
+.tags
+.DS_Store

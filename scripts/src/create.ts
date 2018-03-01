@@ -4,36 +4,24 @@ import { Order } from "./models/orders";
 
 import { init as initModels } from "./models";
 import { getConfig } from "./config";
-import { poll1, poll2 } from "./services/offer_contents";
+import { animalPoll, kikPoll, Poll } from "./services/offer_contents";
 
 async function createOffers(): Promise<Offer[]> {
-	const earns = [
-		"earn_offer1.png",
-		"earn_offer2.png",
-		"earn_offer3.png",
-		"earn_offer4.png",
-		"earn_offer5.png",
-	];
-	const spends = [
-		"spend_offer1.png",
-		"spend_offer2.png",
-		"spend_offer3.png",
-		"spend_offer4.png",
-		"spend_offer5.png",
-	];
 	const assetsBase = getConfig().assets_base;
 
 	const offers: Offer[] = [];
 
-	let i = 1;
-	for (const img of earns) {
+	async function createEarn(
+		brand: string, title: string, description: string, image: string, amount: number,
+		orderTitle: string, orderDescription: string, poll: Poll): Promise<Offer> {
+
 		const owner = new OfferOwner();
-		owner.name = "dunkin donuts";
+		owner.name = brand;
 		await owner.save();
 
 		const offer = new Offer();
-		offer.amount = 4000;
-		offer.meta = { title: "Tell us about yourself", image: assetsBase + img, description: "the description" };
+		offer.amount = amount;
+		offer.meta = { title, image, description, order_meta: { title: orderTitle, description: orderDescription } };
 		offer.ownerId = owner.id;
 		offer.type = "earn";
 		offer.cap = { total: 100, used: 0, per_user: 2 };
@@ -43,22 +31,27 @@ async function createOffers(): Promise<Offer[]> {
 		content.contentType = "poll";
 		content.offerId = offer.id;
 
-		content.content = JSON.stringify([poll1, poll2][i]);
-		i = 1 - i;
+		content.content = JSON.stringify(poll);
 
 		await content.save();
 
-		offers.push(offer);
+		return offer;
 	}
 
-	for (const img of spends) {
+	async function createSpend(
+		brand: string, title: string, description: string, image: string, amount: number,
+		orderTitle: string, orderDescription: string, orderCallToAction: string): Promise<Offer> {
+
 		const owner = new OfferOwner();
-		owner.name = "spotify";
+		owner.name = brand;
 		await owner.save();
 
 		const offer = new Offer();
-		offer.amount = 8000;
-		offer.meta = { title: "Tell us about yourself", image: assetsBase + img, description: "$10 gift card" };
+		offer.amount = amount;
+		offer.meta = {
+			title, image, description,
+			order_meta: { title: orderTitle, description: orderDescription, call_to_action: orderCallToAction }
+		};
 		offer.ownerId = owner.id;
 		offer.type = "spend";
 		offer.cap = { total: 100, used: 0, per_user: 2 };
@@ -70,8 +63,40 @@ async function createOffers(): Promise<Offer[]> {
 		content.content = "approve payment";
 		await content.save();
 
-		offers.push(offer);
+		return offer;
 	}
+
+	offers.push(await createEarn("Dunkin Donuts", "Sweet tooth?", "Answer a poll",
+		assetsBase + "earn_offer1.png", 2000, "Dunkin Donuts", "Completed Poll",
+		animalPoll));
+	offers.push(await createEarn("Kik", "Tell us more", "Answer a poll",
+		assetsBase + "earn_offer2.png", 2500, "Kik", "Completed Poll",
+		kikPoll));
+	offers.push(await createEarn("Kin", "Learn More", "Kin Tutorial",
+		assetsBase + "earn_offer3.png", 1500, "Kin", "Completed Tutorial",
+		kikPoll));
+	offers.push(await createEarn("McDonald's", "Big Mac fan?", "Answer a poll",
+		assetsBase + "earn_offer4.png", 2750, "McDonald's", "Completed Poll",
+		animalPoll));
+	offers.push(await createEarn("Nike", "Run or walk?", "Answer a poll",
+		assetsBase + "earn_offer5.png", 3000, "Nike", "Completed Poll",
+		animalPoll));
+
+	offers.push(await createSpend("Spotify", "Get Coupon", "month subscription",
+		assetsBase + "earn_spend1.png", 6000, "Spotify", "month subscription",
+		"show coupon"));
+	offers.push(await createSpend("Sound Cloud", "Get Coupon", "month subscription",
+		assetsBase + "earn_spend2.png", 6000, "Sound Cloud", "month subscription",
+		"show coupon"));
+	offers.push(await createSpend("asos", "Get Coupon", "month subscription",
+		assetsBase + "earn_spend3.png", 6000, "asos", "month subscription",
+		"show coupon"));
+	offers.push(await createSpend("Dunkin Donuts", "Get Coupon", "month subscription",
+		assetsBase + "earn_spend4.png", 6000, "Dunkin Donuts", "month subscription",
+		"show coupon"));
+	offers.push(await createSpend("Sephora", "Get Coupon", "month subscription",
+		assetsBase + "earn_spend5.png", 6000, "Sephora", "month subscription",
+		"show coupon"));
 
 	return offers;
 }
@@ -149,7 +174,7 @@ initModels().then(async () => {
 	await createOrders(user2.id);
 
 	console.log(`created user1: user_id: ${user1.appUserId}, app_id: ${user1.appId}, device_id: ${authToken1.deviceId},`
-	 + ` token: ${authToken1.id}`);
+		+ ` token: ${authToken1.id}`);
 	console.log(`created user2: user_id: ${user2.appUserId}, app_id: ${user2.appId}, device_id: ${authToken2.deviceId},`
-	 + ` token: ${authToken2.id}`);
+		+ ` token: ${authToken2.id}`);
 });

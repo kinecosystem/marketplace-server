@@ -9,24 +9,31 @@ export interface Question {
 }
 
 export interface Poll {
-	pages: Array<{ title: string, question: Question }>;
+	pages: Array<{ title: string, description: string, question: Question }>;
 }
 
 export type Answers = { [key: string]: string };
 
-export const poll1: Poll = {
+export const kikPoll: Poll = {
 	pages: [{
-		title: "What color do you like?",
+		title: "Who do you primarily chat with on Kik?",
+		description: `Finish the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
 		question: {
 			id: "favourite_color",
-			answers: ["red", "green", "blue"],
+			answers: [
+				"New friends I've met on Kik",
+				"Friends I've met elsewhere online",
+				"Friends I know from real life",
+				"An equal mix of all three!",
+			],
 		},
 	}],
 };
 
-export const poll2: Poll = {
+export const animalPoll: Poll = {
 	pages: [{
 		title: "Whats your favourite animal?",
+		description: "Who doesn't love animals!?",
 		question: {
 			id: "favourite_animal",
 			answers: ["dog", "cat", "monkey", "mouse"],

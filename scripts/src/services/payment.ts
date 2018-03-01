@@ -2,6 +2,7 @@
 import { getLogger } from "../logging";
 import { getConfig } from "../config";
 import * as axios from "axios";
+import { performance } from "perf_hooks";
 
 const config = getConfig();
 const logger = getLogger();
@@ -28,7 +29,9 @@ export async function payTo(walletAddress: string, appId: string, amount: number
 		order_id: orderId,
 		callback: config.payment_complete_callback,
 	};
+	const t = performance.now();
 	await axios.default.post(config.payment_service + "/orders", payload);
+	console.log("wallet creation took " + (performance.now() - t) + "ms");
 }
 
 export async function createWallet(walletAddress: string, appId: string) {
@@ -36,7 +39,9 @@ export async function createWallet(walletAddress: string, appId: string) {
 		wallet_address: walletAddress,
 		app_id: appId,
 	};
+	const t = performance.now();
 	await axios.default.post(config.payment_service + "/wallets", payload);
+	console.log("wallet creation took " + (performance.now() - t) + "ms");
 }
 
 export async function getWalletData(walletAddress: string) {

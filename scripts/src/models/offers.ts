@@ -1,12 +1,14 @@
-import { Column, Entity, Index, PrimaryColumn } from "typeorm";
+import { Column, Entity, Index, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, Model, register as Register } from "./index";
 import { IdPrefix } from "../utils";
+import { OrderMeta } from "./orders";
 
 export type OfferMeta = {
 	title: string;
 	image: string;
 	description: string;
+	order_meta: OrderMeta;
 };
 
 export type Cap = {
@@ -21,6 +23,21 @@ export type AssetValue = {
 
 export type OfferType = "spend" | "earn";
 export type ContentType = "poll" | "coupon";
+
+@Entity({ name: "offer_owners" })
+@Register
+export class OfferOwner extends Model {
+	@Column()
+	public name: string;
+
+	public get offers(): Promise<Offer[]> {
+		return Offer.find({ ownerId: this.id });
+	}
+
+	public constructor() {
+		super();
+	}
+}
 
 @Entity({ name: "offers" })
 @Register
@@ -40,6 +57,11 @@ export class Offer extends CreationDateModel {
 	@Column({ name: "owner_id" })
 	public ownerId: string;
 
+	// @ManyToOne(type => OfferOwner, owner => owner.offers) // XXX requires a generated value
+	public get owner(): Promise<OfferOwner> {
+		return OfferOwner.findOneById(this.ownerId);
+	}
+
 	public constructor() {
 		super(IdPrefix.Offer);
 	}
@@ -56,17 +78,6 @@ export class OfferContent extends Model {
 
 	@Column({ name: "content_type" })
 	public contentType: ContentType;
-
-	public constructor() {
-		super();
-	}
-}
-
-@Entity({ name: "offer_owners" })
-@Register
-export class OfferOwner extends Model {
-	@Column()
-	public name: string;
 
 	public constructor() {
 		super();

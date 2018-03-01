@@ -4,11 +4,10 @@ import { CreationDateModel, register as Register } from "./index";
 import { IdPrefix } from "../utils";
 import { AssetValue, OfferType } from "./offers";
 
-export type TransactionMeta = {
+export type OrderMeta = {
 	title: string;
-	image: string;
 	description: string;
-	call_to_action: string;
+	call_to_action?: string;
 };
 
 export type BlockchainData = {
@@ -39,7 +38,7 @@ export class Order extends CreationDateModel {
 	public offerId: string;
 
 	@Column("simple-json")
-	public meta: TransactionMeta;
+	public meta: OrderMeta;
 
 	@Column("simple-json", { nullable: true }) // the asset?
 	public value: AssetValue | FailureReason;

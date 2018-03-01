@@ -23,21 +23,6 @@ export interface EarnResult {
 	sender_address: string;
 }
 
-export interface EarnSubmission {
-	recipient_address: string;
-	completed_form?: PollAnswer;
-}
-
-export interface SpendSubmission {
-	transaction_id: string;
-	sender_address?: string;
-}
-
-export interface SubmissionResult {
-	order_id: string;
-	content: SpendResult | EarnResult;
-}
-
 export interface OrderList {
 	orders: Order[];
 	paging: Paging;
@@ -123,10 +108,9 @@ export async function submitEarn(orderId: string, form: string, walletAddress: s
 		type: "earn",
 		status: "pending",
 		meta: {
-			title: offer.meta.title,
-			description: offer.meta.description,
-			image: offer.meta.image,
-			call_to_action: offer.meta.description,
+			title: offer.meta.order_meta.title,
+			description: offer.meta.order_meta.description,
+			call_to_action: offer.meta.order_meta.call_to_action,
 		},
 	});
 	offer.cap.used += 1;

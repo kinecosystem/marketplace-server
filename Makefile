@@ -20,5 +20,8 @@ db:
 	rm database.sqlite
 	npm run create-db
 
+db-prod: db
+	chown -R ubuntu:www-data .
+
 
 .PHONY: test run build install

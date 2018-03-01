@@ -15,6 +15,7 @@
 		"synchronize": true,
 		"logging": false
 	},
-	"payment_service": "http://localhost:5000",
-	"payment_complete_callback": "http://localhost:3000/v1/internal/payments"
+	"payment_service": "http://payment-service.kinmarketplace.com",
+	"payment_complete_callback": "http://api.kinmarketplace.com/v1/internal/payments"
+
 }

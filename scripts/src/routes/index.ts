@@ -5,6 +5,7 @@ import { authenticate } from "../auth";
 import { init as initOffers, getOffers, createOrder } from "./offers";
 import { init as initUsers, getUser, signinUser, activateUser } from "./users";
 import { init as initOrders, getOrder, cancelOrder, getOrderHistory, submitEarn } from "./orders";
+import { init as initInternal, paymentComplete, paymentFailed } from "./internal";
 
 export type Context = {
 	token: db.AuthToken;
@@ -105,6 +106,13 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 		router()
 			.authenticated()
 			.post("/me/activate", activateUser));
+
+	// XXX should be in a separate executable
+	app.use(createPath("internal", pathPrefix),
+		router().post("/payments"), paymentComplete);
+
+	app.use(createPath("internal", pathPrefix),
+		router().post("/failed-payments"), paymentFailed);
 }
 
 function createPath(path: string, prefix?: string): string {

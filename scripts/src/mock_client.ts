@@ -11,13 +11,13 @@ class Client {
 
 	public token = "";
 
-	public async register() {
+	public async register(appId: string, userId: string, walletAddress: string) {
 		const res = await axios.default.post(BASE + "/v1/users", {
 			sign_in_type: "whitelist",
-			user_id: "doody2",
+			user_id: userId,
 			device_id: "my_device",
-			app_id: "kik",
-			public_address: "GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H",
+			app_id: appId,
+			public_address: walletAddress,
 		}, this.getConfig());
 
 		this.token = res.data.token;
@@ -60,7 +60,7 @@ class Client {
 
 async function main() {
 	const c = new Client();
-	await c.register();
+	await c.register("kik", "doody6", "GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 	const offers = await c.getOffers();
 	let earn: Offer;
 
@@ -75,13 +75,31 @@ async function main() {
 	console.log(`got order ${openOrder.id}`);
 
 	// fill in the poll
+	console.log("poll " + earn.content);
 	const poll: Poll = JSON.parse(earn.content);
+
 	const content = JSON.stringify({ [poll.pages[0].question.id]: poll.pages[0].question.answers[0] });
+	console.log("answers " + content);
 
 	await c.submitOrder(openOrder.id, content);
-	console.log(`got order after submit ${JSON.stringify(await c.getOrder(openOrder.id), null, 2)}`);
-	await delay(1200);
+
+	// poll on order payment
+	let order = await c.getOrder(openOrder.id);
+	console.log(`completion date: ${order.completion_date}`);
+	for (let i = 0; i < 30 && order.status === "pending"; i++) {
+		order = await c.getOrder(openOrder.id);
+		await delay(1000);
+	}
+	console.log(`completion date: ${order.completion_date}`);
+
+	if (order.status === "completed") {
+		console.log("order completed!");
+	} else {
+		console.log("order still pending :(");
+	}
+
+	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
 	console.log(`order history ${JSON.stringify((await c.getOrders()).orders.slice(0, 2), null, 2)}`);
 }
 
-main().then(() => console.log("done")).catch( err => console.log(`got error ${err.message}:\n${err.stack}`) );
+main().then(() => console.log("done")).catch(err => console.log(`got error ${err.message}:\n${err.stack}`));

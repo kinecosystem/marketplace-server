@@ -2,6 +2,7 @@ import * as jsonwebtoken from "jsonwebtoken";
 import * as db from "../models/users";
 import { getLogger } from "../logging";
 import { getManager } from "typeorm";
+import * as payment from "./payment";
 
 const logger = getLogger();
 
@@ -63,6 +64,7 @@ export function validateJWT(jwt: string): { appUserId: string, appId: string } {
 
 export function validateWhitelist(appUserId: string, appId: string): { appUserId: string, appId: string } {
 	// check if userId is whitelisted in app
+	logger.info(`checking if ${appUserId} is whitelisted for ${appId}`);
 	return { appUserId, appId };
 }
 
@@ -76,12 +78,15 @@ export async function getOrCreateUserCredentials(
 	if (!user) {
 		// new user
 		user = new db.User(appUserId, appId, walletAddress);
-		user.activatedDate = new Date(); // XXX skip TOS
+		user.activatedDate = new Date(); // XXX this will make client skip TOS
 		await user.save();
 		// create wallet with lumens:
-		// kin.sdk.createWallet(user.walletAddress);
-		logger.info(`creating STELLAR wallet for new user ${user.id}`);
+		logger.info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
+		await payment.createWallet(user.walletAddress, user.appId);
 	} else {
+		if (user.walletAddress !== walletAddress) {
+			logger.warning(`existing user registered with new wallet ${user.walletAddress} !== ${walletAddress}`);
+		}
 		logger.info(`returning existing user ${user.id}`);
 	}
 

@@ -2,9 +2,10 @@ import { Paging } from "./index";
 import { PollAnswer } from "./offers";
 import * as offerDb from "../models/offers";
 import * as db from "../models/orders";
-import { generateId, IdPrefix, delay } from "../utils";
+import { generateId, IdPrefix } from "../utils";
 import { getLogger } from "../logging";
 import * as offerContents from "./offer_contents";
+import * as payment from "./payment";
 
 const logger = getLogger();
 
@@ -98,7 +99,7 @@ export async function createOrder(offerId: string, userId: string): Promise<Open
 	};
 }
 
-export async function submitEarn(orderId: string, form: string, walletAddress: string): Promise<Order> {
+export async function submitEarn(orderId: string, form: string, walletAddress: string, appId: string): Promise<Order> {
 	const openOrder: db.OpenOrder = openOrdersDB.get(orderId);
 	if (!openOrder) {
 		throw Error(`no such order ${orderId}`);
@@ -133,7 +134,7 @@ export async function submitEarn(orderId: string, form: string, walletAddress: s
 	await order.save();
 	openOrdersDB.delete(openOrder.id);
 
-	payTo(walletAddress, order.amount, order.id);
+	await payment.payTo(walletAddress, appId, order.amount, order.id);
 
 	return orderDbToApi(order);
 }
@@ -142,7 +143,7 @@ function orderDbToApi(order: db.Order): Order {
 	return {
 		status: order.status,
 		id: order.id,
-		completion_date: order.createdDate.toISOString(), // XXX don't we need completion_date in DB?
+		completion_date: (order.completionDate || order.createdDate).toISOString(), // XXX should we separate the dates?
 		blockchain_data: order.blockchainData,
 		offer_type: order.type,
 		title: order.meta.title,
@@ -150,18 +151,6 @@ function orderDbToApi(order: db.Order): Order {
 		call_to_action: order.meta.call_to_action,
 		amount: order.amount,
 	};
-}
-
-async function payTo(walletAddress: string, amount: number, orderId: string) {
-	// async in a payment service written in python
-	// with GlobalLock(orderId) {
-	await delay(1000);
-	logger.info(`paying ${amount} to ${walletAddress} with meta ${orderId}`);
-	const txId: string = generateId();
-	const order = await db.Order.findOneById(orderId);
-	order.blockchainData = { transaction_id: txId };
-	order.status = "completed";
-	await order.save();
 }
 
 export async function submitSpend(orderId: string): Promise<void> {

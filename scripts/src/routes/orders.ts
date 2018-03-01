@@ -43,7 +43,8 @@ export async function submitEarn(req: Request, res) {
 	const order = await submitEarnService(
 		req.params.order_id,
 		req.body.content,
-		req.context.user.walletAddress);
+		req.context.user.walletAddress,
+		req.context.user.appId);
 	res.status(200).send(order);
 }
 

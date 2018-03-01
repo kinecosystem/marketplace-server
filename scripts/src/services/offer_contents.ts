@@ -1,4 +1,7 @@
 import * as db from "../models/offers";
+import { getLogger } from "../logging";
+
+const logger = getLogger();
 
 export interface Question {
 	id: string;
@@ -36,11 +39,16 @@ export async function getOffer(offerId: string): Promise<db.OfferContent> {
 }
 
 export async function isValid(offerId: string, form: string): Promise<boolean> {
-	const parsed: Answers = JSON.parse(form);
+	let parsed: Answers;
+	try {
+		parsed = JSON.parse(form);
+	} catch (error) {
+		logger.error(`failed parsing content <${form}> for offer ${offerId}`);
+		throw Error(`failed parsing content <${form}> for offer ${offerId}`);
+	}
 
 	const offer = await getOffer(offerId);
 	const poll: Poll = JSON.parse(offer.content);
-
 	// go over poll data, look for questions and check that answer is within question options
 	for (const page of poll.pages) {
 		const qId = page.question.id;

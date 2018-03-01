@@ -2,7 +2,7 @@ import { Column, Entity } from "typeorm";
 
 import { CreationDateModel, register as Register } from "./index";
 import { IdPrefix } from "../utils";
-import { OfferType } from "./offers";
+import { AssetValue, OfferType } from "./offers";
 
 export type TransactionMeta = {
 	title: string;
@@ -15,6 +15,10 @@ export type BlockchainData = {
 	transaction_id?: string;
 	sender_address?: string;
 	recipient_address?: string;
+};
+
+export type FailureReason = {
+	reason: string;
 };
 
 export type OrderStatus = "completed" | "failed" | "pending";
@@ -38,13 +42,16 @@ export class Order extends CreationDateModel {
 	public meta: TransactionMeta;
 
 	@Column("simple-json", { nullable: true }) // the asset?
-	public value: any;
+	public value: AssetValue | FailureReason;
 
 	@Column()
 	public amount: number;
 
 	@Column()
 	public status: OrderStatus;
+
+	@Column({ name: "completion_date", nullable: true })
+	public completionDate: Date;
 
 	public constructor() {
 		super(IdPrefix.Transaction);

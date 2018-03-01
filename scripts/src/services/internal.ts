@@ -2,6 +2,7 @@ import * as db from "../models/orders";
 
 import { getLogger } from "../logging";
 import moment = require("moment");
+
 const logger = getLogger();
 
 export interface CompletedPayment {
@@ -15,11 +16,8 @@ export interface CompletedPayment {
 }
 
 export async function paymentComplete(payment: CompletedPayment) {
-	let order: db.Order;
-
-	try {
-		order = await db.Order.findOneById(payment.id);
-	} catch (error) {
+	const order = await db.Order.findOneById(payment.id);
+	if (!order) {
 		logger.error(`received payment for unknown order id ${payment.id}`);
 		return;
 	}
@@ -53,6 +51,10 @@ export async function paymentComplete(payment: CompletedPayment) {
 
 export async function paymentFailed(payment: CompletedPayment, reason: string) {
 	const order = await db.Order.findOneById(payment.id);
+	if (!order) {
+		logger.error(`received payment for unknown order id ${payment.id}`);
+		return;
+	}
 
 	order.blockchainData = {
 		transaction_id: payment.transaction_id,

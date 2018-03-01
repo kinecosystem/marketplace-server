@@ -83,19 +83,19 @@ async function createOffers(): Promise<Offer[]> {
 		animalPoll));
 
 	offers.push(await createSpend("Spotify", "Get Coupon", "month subscription",
-		assetsBase + "earn_spend1.png", 6000, "Spotify", "month subscription",
+		assetsBase + "spend_offer1.png", 6000, "Spotify", "month subscription",
 		"show coupon"));
 	offers.push(await createSpend("Sound Cloud", "Get Coupon", "month subscription",
-		assetsBase + "earn_spend2.png", 6000, "Sound Cloud", "month subscription",
+		assetsBase + "spend_offer2.png", 6000, "Sound Cloud", "month subscription",
 		"show coupon"));
 	offers.push(await createSpend("asos", "Get Coupon", "month subscription",
-		assetsBase + "earn_spend3.png", 6000, "asos", "month subscription",
+		assetsBase + "spend_offer3.png", 6000, "asos", "month subscription",
 		"show coupon"));
 	offers.push(await createSpend("Dunkin Donuts", "Get Coupon", "month subscription",
-		assetsBase + "earn_spend4.png", 6000, "Dunkin Donuts", "month subscription",
+		assetsBase + "spend_offer4.png", 6000, "Dunkin Donuts", "month subscription",
 		"show coupon"));
 	offers.push(await createSpend("Sephora", "Get Coupon", "month subscription",
-		assetsBase + "earn_spend5.png", 6000, "Sephora", "month subscription",
+		assetsBase + "spend_offer5.png", 6000, "Sephora", "month subscription",
 		"show coupon"));
 
 	return offers;

@@ -1,3 +1,7 @@
+/**
+ * This file populates a demo database for the sole sake of mocking data to populate our SDK client.
+ * All the names of companies, products and KIN values are completely made up and are used for TESTING only.
+ */
 import { User, AuthToken, Application } from "./models/users";
 import { Offer, OfferContent, AppOffer, Asset, OfferOwner } from "./models/offers";
 import { Order } from "./models/orders";

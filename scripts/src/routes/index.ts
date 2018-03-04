@@ -3,7 +3,7 @@ import * as express from "express";
 import * as db from "../models/users";
 import { authenticate } from "../auth";
 import { getOffers, createOrder } from "./offers";
-import { getUser, signinUser, activateUser } from "./users";
+import { getUser, signInUser, activateUser } from "./users";
 import { getOrder, cancelOrder, getOrderHistory, submitEarn } from "./orders";
 import { paymentComplete, paymentFailed } from "./internal";
 
@@ -98,7 +98,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 			.get("/", getUser));
 	app.use(createPath("users", pathPrefix),
 		router()
-			.post("/", signinUser));
+			.post("/", signInUser));
 	app.use(createPath("users", pathPrefix),
 		router()
 			.authenticated()

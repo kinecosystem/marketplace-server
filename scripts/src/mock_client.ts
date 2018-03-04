@@ -4,6 +4,7 @@ import { Offer, OfferList } from "./services/offers";
 import { OpenOrder, Order, OrderList } from "./services/orders";
 import { Poll } from "./services/offer_contents";
 import { delay } from "./utils";
+import { Application } from "./models/applications";
 
 const BASE = "http://localhost:3000";
 
@@ -11,15 +12,21 @@ class Client {
 
 	public token = "";
 
-	public async register(appId: string, userId: string, walletAddress: string) {
+	public async register(appId: string, apiKey: string, userId: string, walletAddress: string) {
 		const res = await axios.default.post(BASE + "/v1/users", {
 			sign_in_type: "whitelist",
 			user_id: userId,
 			device_id: "my_device",
 			app_id: appId,
+			api_key: Application.KIK_API_KEY,
 			public_address: walletAddress,
 		}, this.getConfig());
 
+		this.token = res.data.token;
+	}
+
+	public async activate() {
+		const res = await axios.default.post(BASE + "/v1/users/me/activate");
 		this.token = res.data.token;
 	}
 
@@ -60,8 +67,12 @@ class Client {
 
 async function main() {
 	const c = new Client();
-	await c.register("kik", "doody6", "GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
+	await c.register("kik", Application.KIK_API_KEY, "doody6", "GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
+
+	await c.activate();
+
 	const offers = await c.getOffers();
+
 	let earn: Offer;
 
 	for (const offer of offers.offers) {

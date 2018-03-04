@@ -2,7 +2,8 @@
  * This file populates a demo database for the sole sake of mocking data to populate our SDK client.
  * All the names of companies, products and KIN values are completely made up and are used for TESTING only.
  */
-import { User, AuthToken, Application } from "./models/users";
+import { User, AuthToken } from "./models/users";
+import { Application } from "./models/applications";
 import { Offer, OfferContent, AppOffer, Asset, OfferOwner } from "./models/offers";
 import { Order } from "./models/orders";
 
@@ -149,14 +150,39 @@ async function createOrders(userId: string) {
 	await order.save();
 }
 
+async function createApp() {
+	const jwtPublic = "-----BEGIN PUBLIC KEY-----\n" +
+		"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDdlatRjRjogo3WojgGHFHYLugdUWAY9iR3fy4arWNA1KoS8" +
+		"kVw33cJibXr8bvwUAUparCwlvdbH6dvEOfou0/gCFQsHUfQrSDv+MuSUMAe8jzKE4qW+jK+xQU9a03GUnKHkk" +
+		"le+Q0pX/g6jXZ7r1/xAK5Do2kQ+X5xK9cipRgEKwIDAQAB\n" +
+		"-----END PUBLIC KEY-----";
+	const jwtPrivate = "-----BEGIN RSA PRIVATE KEY-----\n" +
+		"MIICWwIBAAKBgQDdlatRjRjogo3WojgGHFHYLugdUWAY9iR3fy4arWNA1KoS8kVw33cJibXr8bvwUAUparCwl" +
+		"vdbH6dvEOfou0/gCFQsHUfQrSDv+MuSUMAe8jzKE4qW+jK+xQU9a03GUnKHkkle+Q0pX/g6jXZ7r1/xAK5Do2" +
+		"kQ+X5xK9cipRgEKwIDAQABAoGAD+onAtVye4ic7VR7V50DF9bOnwRwNXrARcDhq9LWNRrRGElESYYTQ6EbatX" +
+		"S3MCyjjX2eMhu/aF5YhXBwkppwxg+EOmXeh+MzL7Zh284OuPbkglAaGhV9bb6/5CpuGb1esyPbYW+Ty2PC0GS" +
+		"ZfIXkXs76jXAu9TOBvD0ybc2YlkCQQDywg2R/7t3Q2OE2+yo382CLJdrlSLVROWKwb4tb2PjhY4XAwV8d1vy0" +
+		"RenxTB+K5Mu57uVSTHtrMK0GAtFr833AkEA6avx20OHo61Yela/4k5kQDtjEf1N0LfI+BcWZtxsS3jDM3i1Hp" +
+		"0KSu5rsCPb8acJo5RO26gGVrfAsDcIXKC+bQJAZZ2XIpsitLyPpuiMOvBbzPavd4gY6Z8KWrfYzJoI/Q9FuBo" +
+		"6rKwl4BFoToD7WIUS+hpkagwWiz+6zLoX1dbOZwJACmH5fSSjAkLRi54PKJ8TFUeOP15h9sQzydI8zJU+upvD" +
+		"EKZsZc/UhT/SySDOxQ4G/523Y0sz/OZtSWcol/UMgQJALesy++GdvoIDLfJX5GBQpuFgFenRiRDabxrE9MNUZ" +
+		"2aPFaFp+DyAe+b4nDwuJaW2LURbr8AEZga7oQj0uYxcYw==\n" +
+		"  -----END RSA PRIVATE KEY-----";
+
+	const app = new Application("kik", "Kik Messenger", { 1: jwtPublic });
+	app.apiKey = Application.KIK_API_KEY;  // XXX temporary run-over apiKey for testing
+	await app.save();
+	return app;
+}
+
 initModels().then(async () => {
 	const user1 = await (new User("doody", "kik", "wallet1")).save();
 	const user2 = await (new User("nitzan", "kik", "wallet2")).save();
 
-	const authToken1 = await (new AuthToken(user1.id, "device1", true)).save();
-	const authToken2 = await (new AuthToken(user2.id, "device2", true)).save();
+	const authToken1 = await (new AuthToken(user1.id, "device1")).save();
+	const authToken2 = await (new AuthToken(user2.id, "device2")).save();
 
-	const app = await (new Application("kik", "jwt")).save();
+	const app = await createApp();
 
 	const offers: Offer[] = await createOffers();
 
@@ -181,4 +207,6 @@ initModels().then(async () => {
 		+ ` token: ${authToken1.id}`);
 	console.log(`created user2: user_id: ${user2.appUserId}, app_id: ${user2.appId}, device_id: ${authToken2.deviceId},`
 		+ ` token: ${authToken2.id}`);
+}).catch((error: Error) => {
+	console.log("error: " + error.message + "\n" + error.stack);
 });

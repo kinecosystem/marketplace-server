@@ -17,7 +17,7 @@ test-system:
 	npm run test-system
 
 db:
-	rm database.sqlite
+	rm -f database.sqlite
 	npm run create-db
 
 db-prod: db

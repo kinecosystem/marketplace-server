@@ -4,10 +4,7 @@ import { getLogger } from "../logging";
 import { getOffers as getOffersService } from "../services/offers";
 import { createOrder as createOrderService } from "../services/orders";
 
-let logger;
-export function init() {
-	logger = getLogger();
-}
+const logger = getLogger();
 
 /**
  * Return a list of offers

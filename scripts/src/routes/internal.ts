@@ -7,10 +7,7 @@ import {
 	paymentFailed as paymentFailedService,
 } from "../services/internal";
 
-let logger;
-export function init() {
-	logger = getLogger();
-}
+const logger = getLogger();
 
 export async function paymentComplete(req: Request, res) {
 	await paymentCompleteService(req.body as CompletedPayment);

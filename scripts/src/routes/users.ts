@@ -9,10 +9,7 @@ import {
 import { getLogger } from "../logging";
 import * as db from "../models/users";
 
-let logger;
-export function init() {
-	logger = getLogger();
-}
+const logger = getLogger();
 
 // get a user
 export async function getUser(req, res) {

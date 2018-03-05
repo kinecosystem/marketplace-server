@@ -9,10 +9,7 @@ import {
 	OrderList,
 } from "../services/orders";
 
-let logger;
-export function init() {
-	logger = getLogger();
-}
+const logger = getLogger();
 
 /**
  * get an order

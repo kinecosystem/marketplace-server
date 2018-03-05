@@ -2,10 +2,10 @@ import * as express from "express";
 
 import * as db from "../models/users";
 import { authenticate } from "../auth";
-import { init as initOffers, getOffers, createOrder } from "./offers";
-import { init as initUsers, getUser, signinUser, activateUser } from "./users";
-import { init as initOrders, getOrder, cancelOrder, getOrderHistory, submitEarn } from "./orders";
-import { init as initInternal, paymentComplete, paymentFailed } from "./internal";
+import { getOffers, createOrder } from "./offers";
+import { getUser, signinUser, activateUser } from "./users";
+import { getOrder, cancelOrder, getOrderHistory, submitEarn } from "./orders";
+import { paymentComplete, paymentFailed } from "./internal";
 
 export type Context = {
 	token: db.AuthToken;
@@ -67,7 +67,6 @@ function router(): ExtendedRouter {
 }
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
-	initOffers();
 	app.use(createPath("offers", pathPrefix),
 		router()
 			.authenticated()
@@ -77,7 +76,6 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 			.authenticated()
 			.post("/:offer_id/orders", createOrder));
 
-	initOrders();
 	app.use(createPath("orders", pathPrefix),
 		router()
 			.authenticated()
@@ -95,7 +93,6 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 			.authenticated()
 			.delete("/:order_id", cancelOrder));
 
-	initUsers();
 	app.use(createPath("users", pathPrefix),
 		router()
 			.get("/", getUser));

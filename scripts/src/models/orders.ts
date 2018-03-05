@@ -17,7 +17,7 @@ export type BlockchainData = {
 };
 
 export type FailureReason = {
-	reason: string;
+	failure_message: string;
 };
 
 export type OrderStatus = "completed" | "failed" | "pending";

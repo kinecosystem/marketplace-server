@@ -54,7 +54,7 @@ export async function validateWhitelist(
 		return { appUserId, appId, apiKey };
 	}
 	// XXX raise an exception
-	logger.warning(`user ${appUserId} not found in whitelist for app ${appId}`);
+	logger.warn(`user ${appUserId} not found in whitelist for app ${appId}`);
 	return { appUserId, appId, apiKey };
 }
 

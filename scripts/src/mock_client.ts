@@ -5,6 +5,7 @@ import { OpenOrder, Order, OrderList } from "./services/orders";
 import { Poll } from "./services/offer_contents";
 import { delay } from "./utils";
 import { Application } from "./models/applications";
+import { ApiError } from "./middleware";
 
 const BASE = "http://localhost:3000";
 
@@ -13,46 +14,66 @@ class Client {
 	public token = "";
 
 	public async register(appId: string, apiKey: string, userId: string, walletAddress: string) {
-		const res = await axios.default.post(BASE + "/v1/users", {
+		const res = await this._post("/v1/users", {
 			sign_in_type: "whitelist",
 			user_id: userId,
 			device_id: "my_device",
 			app_id: appId,
 			api_key: Application.KIK_API_KEY,
 			public_address: walletAddress,
-		}, this.getConfig());
+		});
 
 		this.token = res.data.token;
 	}
 
 	public async activate() {
-		const res = await axios.default.post(BASE + "/v1/users/me/activate");
+		const res = await this._post("/v1/users/me/activate");
 		this.token = res.data.token;
 	}
 
 	public async getOffers(): Promise<OfferList> {
-		const res = await axios.default.get(BASE + "/v1/offers", this.getConfig());
+		const res = await this._get("/v1/offers");
 		return res.data as OfferList;
 	}
 
 	public async createOrder(offerId: string): Promise<OpenOrder> {
-		const res = await axios.default.post(BASE + `/v1/offers/${offerId}/orders`, {}, this.getConfig());
+		const res = await this._post(`/v1/offers/${offerId}/orders`);
 		return res.data as OpenOrder;
 	}
 
 	public async submitOrder(orderId: string, content: string): Promise<Order> {
-		const res = await axios.default.post(BASE + `/v1/orders/${orderId}`, { content }, this.getConfig());
+		const res = await this._post(`/v1/orders/${orderId}`, { content });
 		return res.data as Order;
 	}
 
 	public async getOrder(orderId: string): Promise<Order> {
-		const res = await axios.default.get(BASE + `/v1/orders/${orderId}`, this.getConfig());
+		const res = await this._get(`/v1/orders/${orderId}`);
 		return res.data as Order;
 	}
 
 	public async getOrders(): Promise<OrderList> {
-		const res = await axios.default.get(BASE + "/v1/orders", this.getConfig());
+		const res = await this._get("/v1/orders");
 		return res.data as OrderList;
+	}
+
+	private async _get(url: string): Promise<any> {
+		try {
+			return await axios.default.get(BASE + url, this.getConfig());
+		} catch (error) {
+			const ex: axios.AxiosError = error;
+			const apiError: ApiError = ex.response.data;
+			throw Error(`server error ${ex.response.status}(${apiError.status}): ${apiError.error}`);
+		}
+	}
+
+	private async _post(url: string, data: any = {}): Promise<any> {
+		try {
+			return await axios.default.post(BASE + url, data, this.getConfig());
+		} catch (error) {
+			const ex: axios.AxiosError = error;
+			const apiError: ApiError = ex.response.data;
+			throw Error(`server error ${ex.response.status}(${apiError.status}): ${apiError.error}`);
+		}
 	}
 
 	private getConfig() {
@@ -65,9 +86,23 @@ class Client {
 	}
 }
 
-async function main() {
+async function didNotApproveTOS() {
 	const c = new Client();
-	await c.register("kik", Application.KIK_API_KEY, "doody6", "GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
+	await c.register("kik", Application.KIK_API_KEY, "new_user_123",
+		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
+	const offers = await c.getOffers();
+	try {
+		await c.createOrder(offers.offers[0].id);
+	} catch (error) {
+		return; // ok!
+	}
+	throw Error("expected to throw have to complete TOS");
+}
+
+async function earnFlow() {
+	const c = new Client();
+	await c.register("kik", Application.KIK_API_KEY, "doody98ds",
+		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 
 	await c.activate();
 
@@ -111,6 +146,11 @@ async function main() {
 
 	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
 	console.log(`order history ${JSON.stringify((await c.getOrders()).orders.slice(0, 2), null, 2)}`);
+}
+
+async function main() {
+	await earnFlow();
+	await didNotApproveTOS();
 }
 
 main().then(() => console.log("done")).catch(err => console.log(`got error ${err.message}:\n${err.stack}`));

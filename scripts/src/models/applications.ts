@@ -1,5 +1,5 @@
 import { generateId, IdPrefix } from "../utils";
-import { BaseEntity, Column, Entity, Index } from "typeorm";
+import { Column, Entity, Index } from "typeorm";
 import { CreationDateModel, register as Register } from "./index";
 
 export type StringMap = { [key: string]: string; };  // key => value pairs

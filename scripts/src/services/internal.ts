@@ -63,7 +63,7 @@ export async function paymentFailed(payment: CompletedPayment, reason: string) {
 	};
 	order.completionDate = moment(payment.timestamp).toDate();
 	order.status = "failed";
-	order.value = { reason };
+	order.value = { failure_message: reason };
 	await order.save();
 	logger.info(`failed order with payment <${payment.id}, ${payment.transaction_id}>`);
 }

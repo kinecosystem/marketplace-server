@@ -1,27 +1,13 @@
 import { Paging } from "./index";
-import { PollAnswer } from "./offers";
 import * as offerDb from "../models/offers";
 import * as db from "../models/orders";
 import { generateId, IdPrefix } from "../utils";
 import { getLogger } from "../logging";
 import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
+import moment = require("moment");
 
 const logger = getLogger();
-
-export interface SpendResult {
-	offer_type: "SpendResult";
-	asset: {
-		coupon_code: string;
-		asset_type: "coupon_code";
-	};
-}
-
-export interface EarnResult {
-	offer_type: "EarnResult";
-	transaction_id: string;
-	sender_address: string;
-}
 
 export interface OrderList {
 	orders: Order[];
@@ -36,7 +22,7 @@ export interface BlockchainData {
 
 export interface OrderResult {
 	coupon_code?: string;
-	reason?: string;
+	failure_message?: string;
 }
 
 export interface OpenOrder {
@@ -48,10 +34,10 @@ export interface OpenOrder {
 export interface Order {
 	id: string;
 	result?: OrderResult;
-	status: "completed" | "failed" | "pending";
+	status: db.OrderStatus;
 	completion_date: string; // UTC ISO
 	blockchain_data: BlockchainData;
-	offer_type: "earn" | "spend";
+	offer_type: offerDb.OfferType;
 	title: string;
 	description: string;
 	call_to_action?: string;
@@ -67,14 +53,15 @@ export async function getOrder(orderId: string): Promise<Order> {
 }
 
 const openOrdersDB = new Map<string, db.OpenOrder>();
-const expirationTime = (10 * 60 * 1000); // 10 minutes
-const graceTime = (10 * 60 * 1000); // 10 minutes
+const expirationMin = 10; // 10 minutes
+const graceMin = 10; // 10 minutes
 
 export async function createOrder(offerId: string, userId: string): Promise<OpenOrder> {
-	const expiration = new Date();
-	expiration.setTime(expiration.getTime() + expirationTime);
-
-	const openOrder: db.OpenOrder = { expiration, id: generateId(IdPrefix.Transaction), offerId, userId };
+	const openOrder: db.OpenOrder = {
+		expiration: moment().add(expirationMin, "minutes").toDate(),
+		id: generateId(IdPrefix.Transaction),
+		offerId,
+		userId };
 
 	openOrdersDB.set(openOrder.id, openOrder);
 
@@ -126,6 +113,7 @@ export async function submitEarn(orderId: string, form: string, walletAddress: s
 function orderDbToApi(order: db.Order): Order {
 	return {
 		status: order.status,
+		result: order.value,
 		id: order.id,
 		completion_date: (order.completionDate || order.createdDate).toISOString(), // XXX should we separate the dates?
 		blockchain_data: order.blockchainData,
@@ -146,10 +134,10 @@ export async function cancelOrder(options): Promise<void> {
 }
 
 export async function getOrderHistory(
-	userId: string, limit?: number, before?: string, after?: string): Promise<OrderList> {
+	userId: string, limit: number = 25, before?: string, after?: string): Promise<OrderList> {
 
 	// XXX use the cursor input values
-	const orders: db.Order[] = await db.Order.find({ where: { userId }, order: { createdDate: "DESC" } });
+	const orders: db.Order[] = await db.Order.find({ where: { userId }, order: { createdDate: "DESC" }, take: limit });
 
 	return {
 		orders: orders.map(order => {
@@ -160,8 +148,8 @@ export async function getOrderHistory(
 				after: "MTAxNTExOTQ1MjAwNzI5NDE",
 				before: "NDMyNzQyODI3OTQw",
 			},
-			previous: "https://graph.facebook.com/me/albums?limit=25&before=NDMyNzQyODI3OTQw",
-			next: "https://graph.facebook.com/me/albums?limit=25&after=MTAxNTExOTQ1MjAwNzI5NDE=",
+			previous: "https://api.kinmarketplace.com/v1/orders?limit=25&before=NDMyNzQyODI3OTQw",
+			next: "https://api.kinmarketplace.com/v1/orders?limit=25&after=MTAxNTExOTQ1MjAwNzI5NDE=",
 		},
 	};
 }

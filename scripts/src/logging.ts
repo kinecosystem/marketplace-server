@@ -7,6 +7,7 @@ export interface LogTarget {
 	name: string;
 	type: "console" | "file";
 	level: "debug" | "info" | "warn" | "error";
+	format?: "string" | "json" | "pretty-json"; // default to "string"
 	timestamp?: boolean | (() => string | boolean);
 }
 
@@ -33,7 +34,7 @@ export function getLogger(): winston.LoggerInstance {
 	return defaultLogger;
 }
 
-type WinstonTransportOptions = GenericTransportOptions & GenericTextTransportOptions;
+type WinstonTransportOptions = GenericTransportOptions & GenericTextTransportOptions & { stringify?: boolean };
 function createTarget(target: LogTarget): winston.TransportInstance {
 	let cls: { new (options: WinstonTransportOptions): winston.TransportInstance };
 	const defaults: WinstonTransportOptions = {
@@ -43,6 +44,14 @@ function createTarget(target: LogTarget): winston.TransportInstance {
 		level: target.level,
 		timestamp: target.timestamp,
 	};
+
+	if (target.format === "json" || target.format === "pretty-json") {
+		options.json = true;
+	}
+
+	if (target.format === "json") {
+		(options.stringify as boolean) = true;
+	}
 
 	switch (target.type) {
 		case "console":

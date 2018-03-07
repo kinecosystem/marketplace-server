@@ -1,9 +1,12 @@
+import { getManager } from "typeorm";
+import { LoggerInstance } from "winston";
+
 import * as db from "../models/users";
 import { getLogger } from "../logging";
-import { getManager } from "typeorm";
+
 import * as payment from "./payment";
 
-const logger = getLogger();
+const defaultLogger = getLogger();
 
 export type AuthToken = {
 	token: string;
@@ -11,7 +14,7 @@ export type AuthToken = {
 	expiration_date: string;
 };
 
-function AuthTokenDbToApi(authToken: db.AuthToken, user: db.User): AuthToken {
+function AuthTokenDbToApi(authToken: db.AuthToken, user: db.User, logger: LoggerInstance = defaultLogger): AuthToken {
 	return { token: authToken.id, activated: user.activated, expiration_date: authToken.expireDate.toISOString() };
 }
 
@@ -19,7 +22,7 @@ export async function getOrCreateUserCredentials(
 	appUserId: string,
 	appId: string,
 	walletAddress: string,
-	deviceId: string): Promise<AuthToken> {
+	deviceId: string, logger: LoggerInstance = defaultLogger): Promise<AuthToken> {
 
 	let user = await db.User.findOne({ appId, appUserId });
 	if (!user) {
@@ -44,7 +47,8 @@ export async function getOrCreateUserCredentials(
 	return AuthTokenDbToApi(authToken, user);
 }
 
-export async function activateUser(authToken: db.AuthToken, user: db.User): Promise<AuthToken> {
+export async function activateUser(
+		authToken: db.AuthToken, user: db.User, logger: LoggerInstance = defaultLogger): Promise<AuthToken> {
 	if (!user.activated) {
 		await getManager().transaction(async mgr => {
 			user.activatedDate = new Date();

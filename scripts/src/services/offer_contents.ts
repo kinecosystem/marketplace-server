@@ -1,7 +1,9 @@
+import { LoggerInstance } from "winston";
+
 import * as db from "../models/offers";
 import { getLogger } from "../logging";
 
-const logger = getLogger();
+const defaultLogger = getLogger();
 
 export interface Question {
 	id: string;
@@ -41,11 +43,11 @@ export const animalPoll: Poll = {
 	}],
 };
 
-export async function getOffer(offerId: string): Promise<db.OfferContent> {
+export async function getOffer(offerId: string, logger: LoggerInstance = defaultLogger): Promise<db.OfferContent> {
 	return await db.OfferContent.findOne({ offerId });
 }
 
-export async function isValid(offerId: string, form: string): Promise<boolean> {
+export async function isValid(offerId: string, form: string, logger: LoggerInstance = defaultLogger): Promise<boolean> {
 	let parsed: Answers;
 	try {
 		parsed = JSON.parse(form);

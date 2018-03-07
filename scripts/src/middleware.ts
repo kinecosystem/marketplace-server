@@ -21,6 +21,10 @@ declare module "express" {
 	}
 }
 
+/**
+ * augments the request object with a request-id and a logger.
+ * the logger should be then used when logging inside request handlers, which will then add some more info per log
+ */
 function requestLogger(req: express.Request, res, next) {
 	const methods = ["debug", "info", "warn", "error"];
 	const id = generateId();
@@ -42,7 +46,7 @@ function requestLogger(req: express.Request, res, next) {
 		}
 	});
 
-	// id & logger are readonly and so cannot be assigned, unless casted to any
+	// id & logger are readonly and so cannot be assigned, unless cast to any
 	(req as any).id = id;
 	(req as any).logger = proxy;
 	next();

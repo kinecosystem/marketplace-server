@@ -1,13 +1,16 @@
-import { Paging } from "./index";
-import * as offerDb from "../models/offers";
-import * as db from "../models/orders";
-import { generateId, IdPrefix } from "../utils";
+import moment = require("moment");
+import { LoggerInstance } from "winston";
+
 import { getLogger } from "../logging";
+import * as db from "../models/orders";
+import * as offerDb from "../models/offers";
+import { generateId, IdPrefix } from "../utils";
+
+import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
-import moment = require("moment");
 
-const logger = getLogger();
+const defaultLogger = getLogger();
 
 export interface OrderList {
 	orders: Order[];
@@ -44,7 +47,7 @@ export interface Order {
 	amount: number;
 }
 
-export async function getOrder(orderId: string): Promise<Order> {
+export async function getOrder(orderId: string, logger: LoggerInstance = defaultLogger): Promise<Order> {
 	const order = await db.Order.findOneById(orderId);
 	if (!order) {
 		throw Error(`no such order ${orderId}`); // XXX throw and exception that is convert-able to json
@@ -56,7 +59,7 @@ const openOrdersDB = new Map<string, db.OpenOrder>();
 const expirationMin = 10; // 10 minutes
 const graceMin = 10; // 10 minutes
 
-export async function createOrder(offerId: string, userId: string): Promise<OpenOrder> {
+export async function createOrder(offerId: string, userId: string, logger: LoggerInstance = defaultLogger): Promise<OpenOrder> {
 	const openOrder: db.OpenOrder = {
 		expiration: moment().add(expirationMin, "minutes").toDate(),
 		id: generateId(IdPrefix.Transaction),
@@ -71,7 +74,9 @@ export async function createOrder(offerId: string, userId: string): Promise<Open
 	};
 }
 
-export async function submitEarn(orderId: string, form: string, walletAddress: string, appId: string): Promise<Order> {
+export async function submitEarn(
+		orderId: string, form: string, walletAddress: string,
+		appId: string, logger: LoggerInstance = defaultLogger): Promise<Order> {
 	const openOrder: db.OpenOrder = openOrdersDB.get(orderId);
 	if (!openOrder) {
 		throw Error(`no such order ${orderId}`);
@@ -110,7 +115,7 @@ export async function submitEarn(orderId: string, form: string, walletAddress: s
 	return orderDbToApi(order);
 }
 
-function orderDbToApi(order: db.Order): Order {
+function orderDbToApi(order: db.Order, logger: LoggerInstance = defaultLogger): Order {
 	return {
 		status: order.status,
 		result: order.value,
@@ -125,16 +130,19 @@ function orderDbToApi(order: db.Order): Order {
 	};
 }
 
-export async function submitSpend(orderId: string): Promise<void> {
+export async function submitSpend(orderId: string, logger: LoggerInstance = defaultLogger): Promise<void> {
 	return;
 }
 
-export async function cancelOrder(options): Promise<void> {
+export async function cancelOrder(options, logger: LoggerInstance = defaultLogger): Promise<void> {
 	return;
 }
 
 export async function getOrderHistory(
-	userId: string, limit: number = 25, before?: string, after?: string): Promise<OrderList> {
+	userId: string,
+	logger: LoggerInstance = defaultLogger,
+	limit: number = 25,
+	before?: string, after?: string): Promise<OrderList> {
 
 	// XXX use the cursor input values
 	const orders: db.Order[] = await db.Order.find({ where: { userId }, order: { createdDate: "DESC" }, take: limit });

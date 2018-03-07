@@ -1,6 +1,12 @@
-import { Paging, ServiceResult } from "./index";
+import { LoggerInstance } from "winston";
+
 import * as db from "../models/offers";
+import { getLogger } from "../logging";
+
+import { Paging, ServiceResult } from "./index";
 import * as offerContents from "./offer_contents";
+
+const defaultLogger = getLogger();
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -23,7 +29,8 @@ export interface OfferList {
 	paging: Paging;
 }
 
-export async function getOffers(userId: string, appId: string): Promise<OfferList> {
+export async function getOffers(
+	userId: string, appId: string, logger: LoggerInstance = defaultLogger): Promise<OfferList> {
 	// const appOffers = await getManager().query(
 	// `SELECT offers.*
 	//  FROM offers

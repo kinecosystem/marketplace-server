@@ -1,7 +1,7 @@
-import { BaseEntity, Column, Entity, Index } from "typeorm";
+import { Column, Entity } from "typeorm";
 
-import { CreationDateModel, Model, register as Register } from "./index";
-import { generateId, IdPrefix } from "../utils";
+import { CreationDateModel, register as Register } from "./index";
+import { IdPrefix } from "../utils";
 import * as moment from "moment";
 
 @Entity({ name: "users" })

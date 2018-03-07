@@ -38,9 +38,7 @@ function proxyOverRouter(router: express.Router, proxy: ExtendedRouter, obj: any
 
 const AUTHENTICATED_METHODS = ["get", "delete", "post", "put", "patch"];
 
-enum AuthScopes {
-	tos = 1,
-}
+enum AuthScopes { TOS }
 
 function router(): ExtendedRouter {
 	const router = express.Router() as ExtendedRouter;
@@ -54,7 +52,7 @@ function router(): ExtendedRouter {
 							const token = await authenticate(req);
 							const user = await db.User.findOneById(token.userId);
 							// XXX scopes should be per token and should not consider user data
-							if (scopes.includes(AuthScopes.tos) && (!user.activated || token.createdDate < user.activatedDate)) {
+							if (scopes.includes(AuthScopes.TOS) && (!user.activated || token.createdDate < user.activatedDate)) {
 								throw Error("user did not approve TOS or using a pre activated token");
 							}
 							req.context = { user, token };
@@ -81,7 +79,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 			.get("/", getOffers));
 	app.use(createPath("offers", pathPrefix),
 		router()
-			.authenticated(AuthScopes.tos)
+			.authenticated(AuthScopes.TOS)
 			.post("/:offer_id/orders", createOrder));
 
 	app.use(createPath("orders", pathPrefix),
@@ -94,11 +92,11 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 			.get("/:order_id", getOrder));
 	app.use(createPath("orders", pathPrefix),
 		router()
-			.authenticated(AuthScopes.tos)
+			.authenticated(AuthScopes.TOS)
 			.post("/:order_id", submitEarn));
 	app.use(createPath("orders", pathPrefix),
 		router()
-			.authenticated(AuthScopes.tos)
+			.authenticated(AuthScopes.TOS)
 			.delete("/:order_id", cancelOrder));
 
 	app.use(createPath("users", pathPrefix),

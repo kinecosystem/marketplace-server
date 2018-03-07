@@ -2,6 +2,7 @@
  * This file populates a demo database for the sole sake of mocking data to populate our SDK client.
  * All the names of companies, products and KIN values are completely made up and are used for TESTING only.
  */
+import * as fs from "fs";
 import { User, AuthToken } from "./models/users";
 import { Application } from "./models/applications";
 import { Offer, OfferContent, AppOffer, Asset, OfferOwner } from "./models/offers";
@@ -151,23 +152,8 @@ async function createOrders(userId: string) {
 }
 
 async function createApp() {
-	const jwtPublic = "-----BEGIN PUBLIC KEY-----\n" +
-		"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDdlatRjRjogo3WojgGHFHYLugdUWAY9iR3fy4arWNA1KoS8" +
-		"kVw33cJibXr8bvwUAUparCwlvdbH6dvEOfou0/gCFQsHUfQrSDv+MuSUMAe8jzKE4qW+jK+xQU9a03GUnKHkk" +
-		"le+Q0pX/g6jXZ7r1/xAK5Do2kQ+X5xK9cipRgEKwIDAQAB\n" +
-		"-----END PUBLIC KEY-----";
-	const jwtPrivate = "-----BEGIN RSA PRIVATE KEY-----\n" +
-		"MIICWwIBAAKBgQDdlatRjRjogo3WojgGHFHYLugdUWAY9iR3fy4arWNA1KoS8kVw33cJibXr8bvwUAUparCwl" +
-		"vdbH6dvEOfou0/gCFQsHUfQrSDv+MuSUMAe8jzKE4qW+jK+xQU9a03GUnKHkkle+Q0pX/g6jXZ7r1/xAK5Do2" +
-		"kQ+X5xK9cipRgEKwIDAQABAoGAD+onAtVye4ic7VR7V50DF9bOnwRwNXrARcDhq9LWNRrRGElESYYTQ6EbatX" +
-		"S3MCyjjX2eMhu/aF5YhXBwkppwxg+EOmXeh+MzL7Zh284OuPbkglAaGhV9bb6/5CpuGb1esyPbYW+Ty2PC0GS" +
-		"ZfIXkXs76jXAu9TOBvD0ybc2YlkCQQDywg2R/7t3Q2OE2+yo382CLJdrlSLVROWKwb4tb2PjhY4XAwV8d1vy0" +
-		"RenxTB+K5Mu57uVSTHtrMK0GAtFr833AkEA6avx20OHo61Yela/4k5kQDtjEf1N0LfI+BcWZtxsS3jDM3i1Hp" +
-		"0KSu5rsCPb8acJo5RO26gGVrfAsDcIXKC+bQJAZZ2XIpsitLyPpuiMOvBbzPavd4gY6Z8KWrfYzJoI/Q9FuBo" +
-		"6rKwl4BFoToD7WIUS+hpkagwWiz+6zLoX1dbOZwJACmH5fSSjAkLRi54PKJ8TFUeOP15h9sQzydI8zJU+upvD" +
-		"EKZsZc/UhT/SySDOxQ4G/523Y0sz/OZtSWcol/UMgQJALesy++GdvoIDLfJX5GBQpuFgFenRiRDabxrE9MNUZ" +
-		"2aPFaFp+DyAe+b4nDwuJaW2LURbr8AEZga7oQj0uYxcYw==\n" +
-		"  -----END RSA PRIVATE KEY-----";
+	const jwtPublic = fs.readFileSync("./examples/jwt_public_key.pem", "utf-8");
+	const jwtPrivate = fs.readFileSync("./examples/jwt_private_key.pem", "utf-8");
 
 	const app = new Application("kik", "Kik Messenger", { 1: jwtPublic });
 	app.apiKey = Application.KIK_API_KEY;  // XXX temporary run-over apiKey for testing

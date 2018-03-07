@@ -28,17 +28,17 @@ export type ApiError = {
 };
 
 export function generalErrorHandler(err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
-	let message = "Error";
-
-	message += `\n\tmethod: ${ req.method }`;
-	message += `\n\tpath: ${ req.url }`;
-	message += `\n\tpayload: ${ JSON.stringify(req.body) }`;
+	let message = `Error
+	method: ${ req.method }
+	path: ${ req.url }
+	payload: ${ JSON.stringify(req.body) }
+	`;
 
 	if (err instanceof Error) {
-		message += `\n\tmessage: ${ err.message }`;
-		message += `\n\tstack: ${ err.stack }`;
+		message += `message: ${ err.message }
+	stack: ${ err.stack }`;
 	} else {
-		message += `\n\tmessage: ${ err.toString() }`;
+		message += `message: ${ err.toString() }`;
 	}
 
 	logger.error(message);

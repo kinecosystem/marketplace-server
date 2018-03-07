@@ -56,13 +56,16 @@ class Client {
 		return res.data as OrderList;
 	}
 
+	private handleAxiosError(ex: axios.AxiosError): never {
+		const apiError: ApiError = ex.response.data;
+		throw Error(`server error ${ex.response.status}(${apiError.status}): ${apiError.error}`);
+	}
+
 	private async _get(url: string): Promise<any> {
 		try {
 			return await axios.default.get(BASE + url, this.getConfig());
 		} catch (error) {
-			const ex: axios.AxiosError = error;
-			const apiError: ApiError = ex.response.data;
-			throw Error(`server error ${ex.response.status}(${apiError.status}): ${apiError.error}`);
+			this.handleAxiosError(error);
 		}
 	}
 
@@ -70,9 +73,7 @@ class Client {
 		try {
 			return await axios.default.post(BASE + url, data, this.getConfig());
 		} catch (error) {
-			const ex: axios.AxiosError = error;
-			const apiError: ApiError = ex.response.data;
-			throw Error(`server error ${ex.response.status}(${apiError.status}): ${apiError.error}`);
+			this.handleAxiosError(error);
 		}
 	}
 
@@ -87,12 +88,12 @@ class Client {
 }
 
 async function didNotApproveTOS() {
-	const c = new Client();
-	await c.register("kik", Application.KIK_API_KEY, "new_user_123",
+	const client = new Client();
+	await client.register("kik", Application.KIK_API_KEY, "new_user_123",
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
-	const offers = await c.getOffers();
+	const offers = await client.getOffers();
 	try {
-		await c.createOrder(offers.offers[0].id);
+		await client.createOrder(offers.offers[0].id);
 	} catch (error) {
 		return; // ok!
 	}
@@ -100,13 +101,13 @@ async function didNotApproveTOS() {
 }
 
 async function earnFlow() {
-	const c = new Client();
-	await c.register("kik", Application.KIK_API_KEY, "doody98ds",
+	const client = new Client();
+	await client.register("kik", Application.KIK_API_KEY, "doody98ds",
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 
-	await c.activate();
+	await client.activate();
 
-	const offers = await c.getOffers();
+	const offers = await client.getOffers();
 
 	let earn: Offer;
 
@@ -117,7 +118,7 @@ async function earnFlow() {
 	}
 
 	console.log(`requesting order for offer: ${earn.id}: ${earn.content}`);
-	const openOrder = await c.createOrder(earn.id);
+	const openOrder = await client.createOrder(earn.id);
 	console.log(`got order ${openOrder.id}`);
 
 	// fill in the poll
@@ -127,13 +128,13 @@ async function earnFlow() {
 	const content = JSON.stringify({ [poll.pages[0].question.id]: poll.pages[0].question.answers[0] });
 	console.log("answers " + content);
 
-	await c.submitOrder(openOrder.id, content);
+	await client.submitOrder(openOrder.id, content);
 
 	// poll on order payment
-	let order = await c.getOrder(openOrder.id);
+	let order = await client.getOrder(openOrder.id);
 	console.log(`completion date: ${order.completion_date}`);
 	for (let i = 0; i < 30 && order.status === "pending"; i++) {
-		order = await c.getOrder(openOrder.id);
+		order = await client.getOrder(openOrder.id);
 		await delay(1000);
 	}
 	console.log(`completion date: ${order.completion_date}`);
@@ -145,7 +146,7 @@ async function earnFlow() {
 	}
 
 	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
-	console.log(`order history ${JSON.stringify((await c.getOrders()).orders.slice(0, 2), null, 2)}`);
+	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
 }
 
 async function main() {

@@ -11,8 +11,6 @@ import { createRoutes } from "./routes/index";
 import { init as initModels } from "./models/index";
 import { init as initCustomMiddleware, notFoundHandler, generalErrorHandler } from "./middleware";
 
-// make sure that the model files are used, this is only for now because they are not really used
-
 function createApp() {
 	const app = express();
 	app.set("port", config.port);

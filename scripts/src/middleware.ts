@@ -3,21 +3,63 @@ import { LoggerInstance } from "winston";
 import * as bearerToken from "express-bearer-token";
 
 import { getLogger } from "./logging";
+import { generateId } from "./utils";
 
 let logger: LoggerInstance;
 export function init(app: express.Express) {
 	logger = getLogger();
 
+	app.use(requestLogger);
 	app.use(bearerToken());
 	app.use(logRequest);
 }
 
-export function logRequest(req: express.Request, res, next) {
-	logger.info(`start handling request: ${ req.method } ${ req.path } with ${ req.rawHeaders }`);
+declare module "express" {
+	interface Request {
+		readonly id: string;
+		readonly logger: LoggerInstance;
+	}
+}
+
+function requestLogger(req: express.Request, res, next) {
+	const methods = ["debug", "info", "warn", "error"];
+	const id = generateId();
+	const proxy = new Proxy(logger, {
+		get(target, name) {
+			if (typeof name === "string" && methods.includes(name)) {
+				return function(...args: any[]) {
+					if (typeof args[args.length - 1] === "object") {
+						args[args.length - 1] = Object.assign({}, args[args.length - 1], { reqId: id });
+					} else {
+						args = [...args, { reqId: id }];
+					}
+
+					target[name](...args);
+				};
+			}
+
+			return target[name];
+		}
+	});
+
+	// id & logger are readonly and so cannot be assigned, unless casted to any
+	(req as any).id = id;
+	(req as any).logger = proxy;
 	next();
 }
 
-export function notFoundHandler(req: express.Request, res: express.Response, next: express.NextFunction) {
+function logRequest(req: express.Request, res, next) {
+	const start = new Date();
+	req.logger.info(`start handling request ${ req.id }: ${ req.method } ${ req.path }`, req.headers);
+
+	res.on("finish", () => {
+		req.logger.info(`finished handling request ${ req.id }`, { start: start.getTime(), end: new Date().getTime() });
+	});
+
+	next();
+}
+
+export function notFoundHandler(req: express.Request, res: express.Response) {
 	// log.error(`Error 404 on ${req.url}.`);
 	res.status(404).send({ status: 404, error: "Not found" });
 }
@@ -27,7 +69,10 @@ export type ApiError = {
 	error: string;
 };
 
-export function generalErrorHandler(err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
+/**
+ * The "next" arg is needed even though it's not used, otherwise express won't understand that it's an error handler
+ */
+export function generalErrorHandler(err: any, req: express.Request, res: express.Response, next) {
 	let message = `Error
 	method: ${ req.method }
 	path: ${ req.url }

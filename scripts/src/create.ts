@@ -2,7 +2,9 @@
  * This file populates a demo database for the sole sake of mocking data to populate our SDK client.
  * All the names of companies, products and KIN values are completely made up and are used for TESTING only.
  */
-import { User, AuthToken, Application } from "./models/users";
+import * as fs from "fs";
+import { User, AuthToken } from "./models/users";
+import { Application } from "./models/applications";
 import { Offer, OfferContent, AppOffer, Asset, OfferOwner } from "./models/offers";
 import { Order } from "./models/orders";
 
@@ -149,14 +151,24 @@ async function createOrders(userId: string) {
 	await order.save();
 }
 
+async function createApp() {
+	const jwtPublic = fs.readFileSync("./examples/jwt_public_key.pem", "utf-8");
+	const jwtPrivate = fs.readFileSync("./examples/jwt_private_key.pem", "utf-8");
+
+	const app = new Application("kik", "Kik Messenger", { 1: jwtPublic });
+	app.apiKey = Application.KIK_API_KEY;  // XXX temporary run-over apiKey for testing
+	await app.save();
+	return app;
+}
+
 initModels().then(async () => {
 	const user1 = await (new User("doody", "kik", "wallet1")).save();
 	const user2 = await (new User("nitzan", "kik", "wallet2")).save();
 
-	const authToken1 = await (new AuthToken(user1.id, "device1", true)).save();
-	const authToken2 = await (new AuthToken(user2.id, "device2", true)).save();
+	const authToken1 = await (new AuthToken(user1.id, "device1")).save();
+	const authToken2 = await (new AuthToken(user2.id, "device2")).save();
 
-	const app = await (new Application("kik", "jwt")).save();
+	const app = await createApp();
 
 	const offers: Offer[] = await createOffers();
 
@@ -181,4 +193,6 @@ initModels().then(async () => {
 		+ ` token: ${authToken1.id}`);
 	console.log(`created user2: user_id: ${user2.appUserId}, app_id: ${user2.appId}, device_id: ${authToken2.deviceId},`
 		+ ` token: ${authToken2.id}`);
+}).catch((error: Error) => {
+	console.log("error: " + error.message + "\n" + error.stack);
 });

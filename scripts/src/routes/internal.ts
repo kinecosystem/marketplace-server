@@ -1,4 +1,4 @@
-import { Request } from "express";
+import { Request, Response } from "express";
 
 import { getLogger } from "../logging";
 import {
@@ -14,7 +14,7 @@ export async function paymentComplete(req: Request, res) {
 	res.status(200).send({ status: "ok" });
 }
 
-export async function paymentFailed(req: Request, res) {
+export async function paymentFailed(req: Request, res: Response) {
 	await paymentFailedService(req.body as CompletedPayment, req.query.reason);
 	res.status(200).send({ status: "ok" });
 }

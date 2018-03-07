@@ -9,7 +9,7 @@ const logger = initLogger(...config.loggers);
 
 import { createRoutes } from "./routes/index";
 import { init as initModels } from "./models/index";
-import { init as initCustomMiddleware } from "./middleware";
+import { init as initCustomMiddleware, notFoundHandler, generalErrorHandler } from "./middleware";
 
 // make sure that the model files are used, this is only for now because they are not really used
 
@@ -35,29 +35,9 @@ export const app: express.Express = createApp();
 createRoutes(app, "/v1");
 
 // catch 404
-app.use((req, res) => {
-	// log.error(`Error 404 on ${req.url}.`);
-	res.status(404).send({ status: 404, error: "Not found" });
-});
-
+app.use(notFoundHandler);
 // catch errors
-app.use((err: any, req: express.Request, res: express.Response) => {
-	let message = "Error\n";
-
-	message += `\tmethod: ${ req.method }`;
-	message += `\tpath: ${ req.url }`;
-	message += `\tpayload: ${ req.body }`;
-
-	if (err instanceof Error) {
-		message += `\tmessage: ${ err.message }`;
-		message += `\tstack: ${ err.stack }`;
-	} else {
-		message += `\tmessage: ${ err.toString() }`;
-	}
-
-	logger.error(message);
-	res.status(500).send({ status, error: err.message || "Server error" });
-});
+app.use(generalErrorHandler);
 
 // initializing db and models
 initModels().then(msg => {

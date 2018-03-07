@@ -3,7 +3,7 @@ import * as express from "express";
 import * as db from "../models/users";
 import { authenticate } from "../auth";
 import { getOffers, createOrder } from "./offers";
-import { getUser, signinUser, activateUser } from "./users";
+import { getUser, signInUser, activateUser } from "./users";
 import { getOrder, cancelOrder, getOrderHistory, submitEarn } from "./orders";
 import { paymentComplete, paymentFailed } from "./internal";
 
@@ -21,7 +21,7 @@ declare module "express" {
 }
 
 type ExtendedRouter = express.Router & {
-	authenticated(): express.Router;
+	authenticated(...scopes: AuthScopes[]): express.Router;
 };
 
 function proxyOverRouter(router: express.Router, proxy: ExtendedRouter, obj: any): typeof obj {
@@ -38,10 +38,12 @@ function proxyOverRouter(router: express.Router, proxy: ExtendedRouter, obj: any
 
 const AUTHENTICATED_METHODS = ["get", "delete", "post", "put", "patch"];
 
+enum AuthScopes { TOS }
+
 function router(): ExtendedRouter {
 	const router = express.Router() as ExtendedRouter;
 
-	router.authenticated = function() {
+	router.authenticated = function(...scopes: AuthScopes[]) {
 		const proxy = new Proxy(this, {
 			get(target, name) {
 				if (typeof name === "string" && AUTHENTICATED_METHODS.includes(name)) {
@@ -49,6 +51,10 @@ function router(): ExtendedRouter {
 						return target[name](path, async (req: express.Request, res: express.Response, next: express.NextFunction) => {
 							const token = await authenticate(req);
 							const user = await db.User.findOneById(token.userId);
+							// XXX scopes should be per token and should not consider user data
+							if (scopes.includes(AuthScopes.TOS) && (!user.activated || token.createdDate < user.activatedDate)) {
+								throw Error("user did not approve TOS or using a pre activated token");
+							}
 							req.context = { user, token };
 
 							return handler(req, res, next);
@@ -73,7 +79,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 			.get("/", getOffers));
 	app.use(createPath("offers", pathPrefix),
 		router()
-			.authenticated()
+			.authenticated(AuthScopes.TOS)
 			.post("/:offer_id/orders", createOrder));
 
 	app.use(createPath("orders", pathPrefix),
@@ -86,11 +92,11 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 			.get("/:order_id", getOrder));
 	app.use(createPath("orders", pathPrefix),
 		router()
-			.authenticated()
+			.authenticated(AuthScopes.TOS)
 			.post("/:order_id", submitEarn));
 	app.use(createPath("orders", pathPrefix),
 		router()
-			.authenticated()
+			.authenticated(AuthScopes.TOS)
 			.delete("/:order_id", cancelOrder));
 
 	app.use(createPath("users", pathPrefix),
@@ -98,7 +104,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 			.get("/", getUser));
 	app.use(createPath("users", pathPrefix),
 		router()
-			.post("/", signinUser));
+			.post("/", signInUser));
 	app.use(createPath("users", pathPrefix),
 		router()
 			.authenticated()

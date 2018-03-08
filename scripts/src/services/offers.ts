@@ -1,5 +1,8 @@
-import { Paging, ServiceResult } from "./index";
+import { LoggerInstance } from "winston";
+
 import * as db from "../models/offers";
+
+import { Paging, ServiceResult } from "./index";
 import * as offerContents from "./offer_contents";
 
 export interface PollAnswer {
@@ -23,7 +26,8 @@ export interface OfferList {
 	paging: Paging;
 }
 
-export async function getOffers(userId: string, appId: string): Promise<OfferList> {
+export async function getOffers(
+	userId: string, appId: string, logger: LoggerInstance): Promise<OfferList> {
 	// const appOffers = await getManager().query(
 	// `SELECT offers.*
 	//  FROM offers
@@ -34,7 +38,7 @@ export async function getOffers(userId: string, appId: string): Promise<OfferLis
 	const dbOffers = await db.Offer.find();
 	const offers: Offer[] = await Promise.all(
 		dbOffers.map(async offer => {
-			const content: db.OfferContent = await offerContents.getOffer(offer.id);
+			const content: db.OfferContent = await offerContents.getOffer(offer.id, logger);
 			return {
 				id: offer.id,
 				title: offer.meta.title,

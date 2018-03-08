@@ -1,6 +1,5 @@
 import { Request } from "express";
 
-import { getLogger } from "../logging";
 import {
 	cancelOrder as cancelOrderService,
 	getOrder as getOrderService,
@@ -9,13 +8,11 @@ import {
 	OrderList,
 } from "../services/orders";
 
-const logger = getLogger();
-
 /**
  * get an order
  */
 export async function getOrder(req, res) {
-	const order = await getOrderService(req.params.order_id);
+	const order = await getOrderService(req.params.order_id, req.logger);
 	res.status(200).send(order);
 }
 
@@ -41,7 +38,7 @@ export async function submitEarn(req: Request, res) {
 		req.params.order_id,
 		req.body.content,  // XXX should be: EarnSubmission { content: string }
 		req.context.user.walletAddress,
-		req.context.user.appId);
+		req.context.user.appId, req.logger);
 	res.status(200).send(order);
 }
 
@@ -53,7 +50,7 @@ export async function submitEarn(req: Request, res) {
  * order.delete()
  */
 export async function cancelOrder(req, res) {
-	await cancelOrderService(req.params.order_id);
+	await cancelOrderService(req.params.order_id, req.logger);
 	res.status(204).send();
 }
 
@@ -61,7 +58,7 @@ export async function cancelOrder(req, res) {
  * get user history
  */
 export async function getOrderHistory(req: Request, res) {
-	const orderList: OrderList = await getOrderHistoryService(req.context.user.id);
+	const orderList: OrderList = await getOrderHistoryService(req.context.user.id, req.logger);
 	res.status(200).send(orderList);
 }
 

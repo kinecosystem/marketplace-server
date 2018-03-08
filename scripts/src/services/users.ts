@@ -1,9 +1,9 @@
-import * as db from "../models/users";
-import { getLogger } from "../logging";
 import { getManager } from "typeorm";
-import * as payment from "./payment";
+import { LoggerInstance } from "winston";
 
-const logger = getLogger();
+import * as db from "../models/users";
+
+import * as payment from "./payment";
 
 export type AuthToken = {
 	token: string;
@@ -11,7 +11,7 @@ export type AuthToken = {
 	expiration_date: string;
 };
 
-function AuthTokenDbToApi(authToken: db.AuthToken, user: db.User): AuthToken {
+function AuthTokenDbToApi(authToken: db.AuthToken, user: db.User, logger: LoggerInstance): AuthToken {
 	return { token: authToken.id, activated: user.activated, expiration_date: authToken.expireDate.toISOString() };
 }
 
@@ -19,7 +19,7 @@ export async function getOrCreateUserCredentials(
 	appUserId: string,
 	appId: string,
 	walletAddress: string,
-	deviceId: string): Promise<AuthToken> {
+	deviceId: string, logger: LoggerInstance): Promise<AuthToken> {
 
 	let user = await db.User.findOne({ appId, appUserId });
 	if (!user) {
@@ -29,7 +29,7 @@ export async function getOrCreateUserCredentials(
 
 		// create wallet with lumens:
 		logger.info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
-		await payment.createWallet(user.walletAddress, user.appId);
+		await payment.createWallet(user.walletAddress, user.appId, logger);
 	} else {
 		if (user.walletAddress !== walletAddress) {
 			logger.warn(`existing user registered with new wallet ${user.walletAddress} !== ${walletAddress}`);
@@ -41,10 +41,11 @@ export async function getOrCreateUserCredentials(
 	const authToken = await (new db.AuthToken(user.id, deviceId).save());
 	// XXX should we check for non soon to expire tokens and return them first
 
-	return AuthTokenDbToApi(authToken, user);
+	return AuthTokenDbToApi(authToken, user, logger);
 }
 
-export async function activateUser(authToken: db.AuthToken, user: db.User): Promise<AuthToken> {
+export async function activateUser(
+		authToken: db.AuthToken, user: db.User, logger: LoggerInstance): Promise<AuthToken> {
 	if (!user.activated) {
 		await getManager().transaction(async mgr => {
 			user.activatedDate = new Date();
@@ -62,5 +63,5 @@ export async function activateUser(authToken: db.AuthToken, user: db.User): Prom
 		logger.info(`existing user activated ${user.id}`);
 	}
 
-	return AuthTokenDbToApi(authToken, user);
+	return AuthTokenDbToApi(authToken, user, logger);
 }

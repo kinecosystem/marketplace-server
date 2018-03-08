@@ -2,10 +2,10 @@ import * as http from "http";
 
 import { app } from "./app";
 import { getConfig } from "./config";
-import { getLogger } from "./logging";
+import { getDefaultLogger } from "./logging";
 
 const config = getConfig();
-const logger = getLogger();
+const logger = getDefaultLogger();
 
 const server = http.createServer(app);
 server.listen(config.port);

@@ -1,17 +1,14 @@
 import { Request } from "express";
 
-import { getLogger } from "../logging";
 import { getOffers as getOffersService } from "../services/offers";
 import { createOrder as createOrderService } from "../services/orders";
-
-const logger = getLogger();
 
 /**
  * Return a list of offers
  */
 export async function getOffers(req: Request, res, next) {
 	try {
-		const data = await getOffersService(req.context.user.id, req.context.user.appId);
+		const data = await getOffersService(req.context.user.id, req.context.user.appId, req.logger);
 		res.status(200).send(data);
 	} catch (err) {
 		next(err);
@@ -40,6 +37,6 @@ export async function getOffers(req: Request, res, next) {
  *   return order
  */
 export async function createOrder(req: Request, res) {
-	const order = await createOrderService(req.params.offer_id, req.context.user.id);
+	const order = await createOrderService(req.params.offer_id, req.context.user.id, req.logger);
 	res.status(201).send(order);
 }

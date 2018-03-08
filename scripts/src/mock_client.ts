@@ -7,14 +7,35 @@ import { delay } from "./utils";
 import { Application } from "./models/applications";
 import { ApiError } from "./middleware";
 import { TUTORIAL_DESCRIPTION } from "./create";
+import * as StellarSdk from "stellar-sdk";
 
 const BASE = "http://localhost:3000";
+class Stellar {
+	public server; // StellarSdk.Server
+	public kinAsset; // StellarSdk.Asset
+
+	public constructor(network: "production" | "testnet") {
+		if (network === "testnet") {
+			this.server = new StellarSdk.Server("https://horizon-testnet.stellar.org");
+			this.kinAsset = new StellarSdk.Asset("KIN", "GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V");
+		} // else - get production values
+	}
+}
+
+const STELLAR = new Stellar("testnet");
 
 class Client {
 
 	public token = "";
+	private keyPair;
 
-	public async register(appId: string, apiKey: string, userId: string, walletAddress: string) {
+	public async register(appId: string, apiKey: string, userId: string, walletAddress?: string) {
+		if (walletAddress) {
+			this.keyPair = StellarSdk.Keypair.fromPublicKey(walletAddress);
+		} else {
+			walletAddress = this.createWallet();
+		}
+
 		const res = await this._post("/v1/users", {
 			sign_in_type: "whitelist",
 			user_id: userId,
@@ -25,6 +46,21 @@ class Client {
 		});
 
 		this.token = res.data.token;
+	}
+
+	public async pay(recipientAddress: string, amount: number) /* transactionResult */ {
+		const account =  new StellarSdk.Account(this.keyPair.publicKey(), sequence);
+		const transaction = new StellarSdk.TransactionBuilder(account)
+		// this operation funds the new account with XLM
+		.addOperation(StellarSdk.Operation.payment({
+			destination: recipientAddress,
+			asset: STELLAR.kinAsset,
+			amount
+		}))
+		.build();
+
+		transaction.sign(this.keyPair); // sign the transaction
+		return await STELLAR.server.submitTransaction(transaction);
 	}
 
 	public async activate() {
@@ -42,13 +78,27 @@ class Client {
 		return res.data as OpenOrder;
 	}
 
-	public async submitOrder(orderId: string, content: string): Promise<Order> {
+	public async submitOrder(orderId: string, content?: string): Promise<Order> {
 		const res = await this._post(`/v1/orders/${orderId}`, { content });
 		return res.data as Order;
 	}
 
 	public async getOrder(orderId: string): Promise<Order> {
 		const res = await this._get(`/v1/orders/${orderId}`);
+		return res.data as Order;
+	}
+
+	public async cancelOrder(orderId: string): Promise<void> {
+		const res = await this._delete(`/v1/orders/${orderId}`);
+	}
+
+	public async changeOrder(orderId: string, data: any): Promise<Order> {
+		const res = await this._patch(`/v1/orders/${orderId}`, data);
+		return res.data as Order;
+	}
+
+	public async changeOrderToFailed(orderId: string, error: string, code: number, message: string): Promise<Order> {
+		const res = await this._patch(`/v1/orders/${orderId}`, { error: { error, code, message } });
 		return res.data as Order;
 	}
 
@@ -60,6 +110,22 @@ class Client {
 	private handleAxiosError(ex: axios.AxiosError): never {
 		const apiError: ApiError = ex.response.data;
 		throw Error(`server error ${ex.response.status}(${apiError.status}): ${apiError.error}`);
+	}
+
+	private async _delete(url: string): Promise<any> {
+		try {
+			return await axios.default.delete(BASE + url, this.getConfig());
+		} catch (error) {
+			this.handleAxiosError(error);
+		}
+	}
+
+	private async _patch(url: string, data: any): Promise<any> {
+		try {
+			return await axios.default.patch(BASE + url, data, this.getConfig());
+		} catch (error) {
+			this.handleAxiosError(error);
+		}
 	}
 
 	private async _get(url: string): Promise<any> {
@@ -85,6 +151,11 @@ class Client {
 				"Authorization": `Bearer ${this.token}`,
 			},
 		};
+	}
+
+	private createWallet(): string {
+		this.keyPair = StellarSdk.Keypair.random();
+		return this.keyPair.publicKey();
 	}
 }
 

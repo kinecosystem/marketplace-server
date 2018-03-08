@@ -25,6 +25,7 @@
     "pg-hstore": "2.3.2",
     "reflect-metadata": "^0.1.12",
     "source-map-support": "^0.5.4",
+    "stellar-sdk": "^0.8.0",
     "supertest": "^3.0.0",
     "ts-jest": "^22.0.4",
     "typeorm": "^0.1.12",

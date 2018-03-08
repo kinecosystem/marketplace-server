@@ -3,11 +3,9 @@ import * as axios from "axios";
 import { LoggerInstance } from "winston";
 import { performance } from "perf_hooks";
 
-import { getNopLogger } from "../logging";
 import { getConfig } from "../config";
 
 const config = getConfig();
-const defaultLogger = getNopLogger();
 
 interface PaymentRequest {
 	amount: number;
@@ -23,7 +21,7 @@ interface WalletCreationRequest {
 }
 
 export async function payTo(
-		walletAddress: string, appId: string, amount: number, orderId: string, logger: LoggerInstance = defaultLogger) {
+		walletAddress: string, appId: string, amount: number, orderId: string, logger: LoggerInstance) {
 	logger.info(`paying ${amount} to ${walletAddress} with meta ${orderId}`);
 	const payload: PaymentRequest = {
 		amount,
@@ -37,7 +35,7 @@ export async function payTo(
 	console.log("wallet creation took " + (performance.now() - t) + "ms");
 }
 
-export async function createWallet(walletAddress: string, appId: string, logger: LoggerInstance = defaultLogger) {
+export async function createWallet(walletAddress: string, appId: string, logger: LoggerInstance) {
 	const payload: WalletCreationRequest = {
 		wallet_address: walletAddress,
 		app_id: appId,
@@ -47,13 +45,13 @@ export async function createWallet(walletAddress: string, appId: string, logger:
 	console.log("wallet creation took " + (performance.now() - t) + "ms");
 }
 
-export async function getWalletData(walletAddress: string, logger: LoggerInstance = defaultLogger) {
+export async function getWalletData(walletAddress: string, logger: LoggerInstance) {
 	// XXX missing definitions
 	const res = await axios.default.get(config.payment_service + "/wallets/" + walletAddress);
 	return res.data;
 }
 
-export async function getPaymentData(orderId: string, logger: LoggerInstance = defaultLogger) {
+export async function getPaymentData(orderId: string, logger: LoggerInstance) {
 	// XXX missing definitions
 	const res = await axios.default.get(config.payment_service + "/orders/" + orderId);
 	return res.data;

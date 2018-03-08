@@ -2,9 +2,6 @@ import * as jsonwebtoken from "jsonwebtoken";
 import { LoggerInstance } from "winston";
 
 import { Application, AppWhitelists } from "../models/applications";
-import { getNopLogger } from "../logging";
-
-const defaultLogger = getNopLogger();
 
 type JWTClaims = {
 	iss: string; // issuer
@@ -33,7 +30,7 @@ export type SignInContext = {
 	apiKey: string;
 };
 
-export async function validateJWT(jwt: string, logger: LoggerInstance = defaultLogger): Promise<SignInContext> {
+export async function validateJWT(jwt: string, logger: LoggerInstance): Promise<SignInContext> {
 	const decoded = jsonwebtoken.decode(jwt, { complete: true }) as JWTContent;
 	const appId = decoded.payload.iss;
 	const appUserId = decoded.payload.user_id;
@@ -49,7 +46,7 @@ export async function validateJWT(jwt: string, logger: LoggerInstance = defaultL
 }
 
 export async function validateWhitelist(
-	appUserId: string, appId: string, apiKey: string, logger: LoggerInstance = defaultLogger): Promise<SignInContext> {
+	appUserId: string, appId: string, apiKey: string, logger: LoggerInstance): Promise<SignInContext> {
 	// check if userId is whitelisted in app
 	logger.info(`checking if ${appUserId} is whitelisted for ${appId}`);
 	const result = await AppWhitelists.findOne({ appUserId, appId });
@@ -61,7 +58,7 @@ export async function validateWhitelist(
 	return { appUserId, appId, apiKey };
 }
 
-export async function validateApiKey(apiKey: string, appId: string, logger: LoggerInstance = defaultLogger) {
+export async function validateApiKey(apiKey: string, appId: string, logger) {
 	const app = await Application.findOne({ apiKey });
 	if (!app || app.id !== appId) {
 		throw Error("invalid api_key, app_id pair");

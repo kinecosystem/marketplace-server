@@ -1,7 +1,6 @@
 import moment = require("moment");
 import { LoggerInstance } from "winston";
 
-import { getNopLogger } from "../logging";
 import * as db from "../models/orders";
 import * as offerDb from "../models/offers";
 import { generateId, IdPrefix } from "../utils";
@@ -9,8 +8,6 @@ import { generateId, IdPrefix } from "../utils";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
-
-const defaultLogger = getNopLogger();
 
 export interface OrderList {
 	orders: Order[];
@@ -47,12 +44,12 @@ export interface Order {
 	amount: number;
 }
 
-export async function getOrder(orderId: string, logger: LoggerInstance = defaultLogger): Promise<Order> {
+export async function getOrder(orderId: string, logger: LoggerInstance): Promise<Order> {
 	const order = await db.Order.findOneById(orderId);
 	if (!order) {
 		throw Error(`no such order ${orderId}`); // XXX throw and exception that is convert-able to json
 	}
-	return orderDbToApi(order);
+	return orderDbToApi(order, logger);
 }
 
 const openOrdersDB = new Map<string, db.OpenOrder>();
@@ -60,7 +57,7 @@ const expirationMin = 10; // 10 minutes
 const graceMin = 10; // 10 minutes
 
 export async function createOrder(
-		offerId: string, userId: string, logger: LoggerInstance = defaultLogger): Promise<OpenOrder> {
+		offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
 	const openOrder: db.OpenOrder = {
 		expiration: moment().add(expirationMin, "minutes").toDate(),
 		id: generateId(IdPrefix.Transaction),
@@ -76,8 +73,7 @@ export async function createOrder(
 }
 
 export async function submitEarn(
-		orderId: string, form: string, walletAddress: string,
-		appId: string, logger: LoggerInstance = defaultLogger): Promise<Order> {
+		orderId: string, form: string, walletAddress: string, appId: string, logger: LoggerInstance): Promise<Order> {
 	const openOrder: db.OpenOrder = openOrdersDB.get(orderId);
 	if (!openOrder) {
 		throw Error(`no such order ${orderId}`);
@@ -87,7 +83,7 @@ export async function submitEarn(
 	}
 
 	// validate form
-	if (!await offerContents.isValid(openOrder.offerId, form)) {
+	if (!await offerContents.isValid(openOrder.offerId, form, logger)) {
 		throw Error(`submitted form is invalid for ${orderId}`);
 	}
 
@@ -111,12 +107,12 @@ export async function submitEarn(
 	await order.save();
 	openOrdersDB.delete(openOrder.id);
 
-	await payment.payTo(walletAddress, appId, order.amount, order.id);
+	await payment.payTo(walletAddress, appId, order.amount, order.id, logger);
 
-	return orderDbToApi(order);
+	return orderDbToApi(order, logger);
 }
 
-function orderDbToApi(order: db.Order, logger: LoggerInstance = defaultLogger): Order {
+function orderDbToApi(order: db.Order, logger: LoggerInstance): Order {
 	return {
 		status: order.status,
 		result: order.value,
@@ -131,17 +127,17 @@ function orderDbToApi(order: db.Order, logger: LoggerInstance = defaultLogger): 
 	};
 }
 
-export async function submitSpend(orderId: string, logger: LoggerInstance = defaultLogger): Promise<void> {
+export async function submitSpend(orderId: string, logger: LoggerInstance): Promise<void> {
 	return;
 }
 
-export async function cancelOrder(options, logger: LoggerInstance = defaultLogger): Promise<void> {
+export async function cancelOrder(options, logger: LoggerInstance): Promise<void> {
 	return;
 }
 
 export async function getOrderHistory(
 	userId: string,
-	logger: LoggerInstance = defaultLogger,
+	logger: LoggerInstance,
 	limit: number = 25,
 	before?: string, after?: string): Promise<OrderList> {
 
@@ -150,7 +146,7 @@ export async function getOrderHistory(
 
 	return {
 		orders: orders.map(order => {
-			return orderDbToApi(order);
+			return orderDbToApi(order, logger);
 		}),
 		paging: {
 			cursors: {

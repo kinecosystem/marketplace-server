@@ -1,12 +1,9 @@
 import { LoggerInstance } from "winston";
 
 import * as db from "../models/offers";
-import { getNopLogger } from "../logging";
 
 import { Paging, ServiceResult } from "./index";
 import * as offerContents from "./offer_contents";
-
-const defaultLogger = getNopLogger();
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -30,7 +27,7 @@ export interface OfferList {
 }
 
 export async function getOffers(
-	userId: string, appId: string, logger: LoggerInstance = defaultLogger): Promise<OfferList> {
+	userId: string, appId: string, logger: LoggerInstance): Promise<OfferList> {
 	// const appOffers = await getManager().query(
 	// `SELECT offers.*
 	//  FROM offers
@@ -41,7 +38,7 @@ export async function getOffers(
 	const dbOffers = await db.Offer.find();
 	const offers: Offer[] = await Promise.all(
 		dbOffers.map(async offer => {
-			const content: db.OfferContent = await offerContents.getOffer(offer.id);
+			const content: db.OfferContent = await offerContents.getOffer(offer.id, logger);
 			return {
 				id: offer.id,
 				title: offer.meta.title,

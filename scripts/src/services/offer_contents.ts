@@ -1,9 +1,6 @@
 import { LoggerInstance } from "winston";
 
 import * as db from "../models/offers";
-import { getNopLogger } from "../logging";
-
-const defaultLogger = getNopLogger();
 
 export interface Question {
 	id: string;
@@ -43,11 +40,11 @@ export const animalPoll: Poll = {
 	}],
 };
 
-export async function getOffer(offerId: string, logger: LoggerInstance = defaultLogger): Promise<db.OfferContent> {
+export async function getOffer(offerId: string, logger: LoggerInstance): Promise<db.OfferContent> {
 	return await db.OfferContent.findOne({ offerId });
 }
 
-export async function isValid(offerId: string, form: string, logger: LoggerInstance = defaultLogger): Promise<boolean> {
+export async function isValid(offerId: string, form: string, logger: LoggerInstance): Promise<boolean> {
 	let parsed: Answers;
 	try {
 		parsed = JSON.parse(form);
@@ -56,7 +53,7 @@ export async function isValid(offerId: string, form: string, logger: LoggerInsta
 		throw Error(`failed parsing content <${form}> for offer ${offerId}`);
 	}
 
-	const offer = await getOffer(offerId);
+	const offer = await getOffer(offerId, logger);
 	const poll: Poll = JSON.parse(offer.content);
 	// go over poll data, look for questions and check that answer is within question options
 	for (const page of poll.pages) {

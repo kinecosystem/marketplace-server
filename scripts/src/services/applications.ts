@@ -58,7 +58,7 @@ export async function validateWhitelist(
 	return { appUserId, appId, apiKey };
 }
 
-export async function validateApiKey(apiKey: string, appId: string, logger) {
+export async function validateApiKey(apiKey: string, appId: string, logger: LoggerInstance) {
 	const app = await Application.findOne({ apiKey });
 	if (!app || app.id !== appId) {
 		throw Error("invalid api_key, app_id pair");

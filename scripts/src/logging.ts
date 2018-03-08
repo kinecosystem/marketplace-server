@@ -21,16 +21,23 @@ export interface FileTarget extends LogTarget {
 	file: string;
 }
 
+let nopLogger: winston.LoggerInstance;
 let defaultLogger: winston.LoggerInstance;
 
 export function initLogger(...targets: LogTarget[]): winston.LoggerInstance {
+	nopLogger = new winston.Logger();
+
 	const options: winston.LoggerOptions = {};
 	options.transports = targets.map(target => createTarget(target));
 	defaultLogger = new winston.Logger(options);
 	return defaultLogger;
 }
 
-export function getLogger(): winston.LoggerInstance {
+export function getNopLogger(): winston.LoggerInstance {
+	return nopLogger;
+}
+
+export function getDefaultLogger(): winston.LoggerInstance {
 	return defaultLogger;
 }
 

@@ -2,9 +2,9 @@ import * as jsonwebtoken from "jsonwebtoken";
 import { LoggerInstance } from "winston";
 
 import { Application, AppWhitelists } from "../models/applications";
-import { getLogger } from "../logging";
+import { getNopLogger } from "../logging";
 
-const defaultLogger = getLogger();
+const defaultLogger = getNopLogger();
 
 type JWTClaims = {
 	iss: string; // issuer

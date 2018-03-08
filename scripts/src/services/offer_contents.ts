@@ -1,9 +1,9 @@
 import { LoggerInstance } from "winston";
 
 import * as db from "../models/offers";
-import { getLogger } from "../logging";
+import { getNopLogger } from "../logging";
 
-const defaultLogger = getLogger();
+const defaultLogger = getNopLogger();
 
 export interface Question {
 	id: string;

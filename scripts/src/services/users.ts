@@ -2,11 +2,11 @@ import { getManager } from "typeorm";
 import { LoggerInstance } from "winston";
 
 import * as db from "../models/users";
-import { getLogger } from "../logging";
+import { getNopLogger } from "../logging";
 
 import * as payment from "./payment";
 
-const defaultLogger = getLogger();
+const defaultLogger = getNopLogger();
 
 export type AuthToken = {
 	token: string;

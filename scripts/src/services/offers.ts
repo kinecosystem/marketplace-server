@@ -1,12 +1,12 @@
 import { LoggerInstance } from "winston";
 
 import * as db from "../models/offers";
-import { getLogger } from "../logging";
+import { getNopLogger } from "../logging";
 
 import { Paging, ServiceResult } from "./index";
 import * as offerContents from "./offer_contents";
 
-const defaultLogger = getLogger();
+const defaultLogger = getNopLogger();
 
 export interface PollAnswer {
 	content_type: "PollAnswer";

@@ -2,12 +2,12 @@ import * as express from "express";
 import { LoggerInstance } from "winston";
 import * as bearerToken from "express-bearer-token";
 
-import { getLogger } from "./logging";
+import { getDefaultLogger } from "./logging";
 import { generateId } from "./utils";
 
 let logger: LoggerInstance;
 export function init(app: express.Express) {
-	logger = getLogger();
+	logger = getDefaultLogger();
 
 	app.use(requestLogger);
 	app.use(bearerToken());

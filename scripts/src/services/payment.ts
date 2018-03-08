@@ -3,11 +3,11 @@ import * as axios from "axios";
 import { LoggerInstance } from "winston";
 import { performance } from "perf_hooks";
 
-import { getLogger } from "../logging";
+import { getNopLogger } from "../logging";
 import { getConfig } from "../config";
 
 const config = getConfig();
-const defaultLogger = getLogger();
+const defaultLogger = getNopLogger();
 
 interface PaymentRequest {
 	amount: number;

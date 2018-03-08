@@ -1,7 +1,7 @@
 import moment = require("moment");
 import { LoggerInstance } from "winston";
 
-import { getLogger } from "../logging";
+import { getNopLogger } from "../logging";
 import * as db from "../models/orders";
 import * as offerDb from "../models/offers";
 import { generateId, IdPrefix } from "../utils";
@@ -10,7 +10,7 @@ import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
 
-const defaultLogger = getLogger();
+const defaultLogger = getNopLogger();
 
 export interface OrderList {
 	orders: Order[];
@@ -59,7 +59,8 @@ const openOrdersDB = new Map<string, db.OpenOrder>();
 const expirationMin = 10; // 10 minutes
 const graceMin = 10; // 10 minutes
 
-export async function createOrder(offerId: string, userId: string, logger: LoggerInstance = defaultLogger): Promise<OpenOrder> {
+export async function createOrder(
+		offerId: string, userId: string, logger: LoggerInstance = defaultLogger): Promise<OpenOrder> {
 	const openOrder: db.OpenOrder = {
 		expiration: moment().add(expirationMin, "minutes").toDate(),
 		id: generateId(IdPrefix.Transaction),

@@ -2,9 +2,9 @@ import moment = require("moment");
 import { LoggerInstance } from "winston";
 
 import * as db from "../models/orders";
-import { getLogger } from "../logging";
+import { getNopLogger } from "../logging";
 
-const defaultLogger = getLogger();
+const defaultLogger = getNopLogger();
 
 export interface CompletedPayment {
 	id: string;

@@ -8,11 +8,36 @@ import { Application } from "./models/applications";
 import { ApiError } from "./middleware";
 import { TUTORIAL_DESCRIPTION } from "./create";
 import * as StellarSdk from "stellar-sdk";
+import { AuthToken } from "./services/users";
 
 const BASE = "http://localhost:3000";
+
+interface Asset {
+	issuer: string;
+	code: string;
+}
+interface Operation {
+	data: string;
+}
+interface TransactionResult {
+	data: string;
+}
+
+interface KeyPair {
+	publicKey(): string;
+}
+
+interface Transaction {
+	sign(k: KeyPair);
+}
+
+interface Server {
+	submitTransaction(t: Transaction): TransactionResult;
+}
+
 class Stellar {
-	public server; // StellarSdk.Server
-	public kinAsset; // StellarSdk.Asset
+	public server: Server; // StellarSdk.Server
+	public kinAsset: Asset; // StellarSdk.Asset
 
 	public constructor(network: "production" | "testnet") {
 		if (network === "testnet") {
@@ -26,8 +51,8 @@ const STELLAR = new Stellar("testnet");
 
 class Client {
 
-	public token = "";
-	private keyPair;
+	public authToken: AuthToken;
+	private keyPair: KeyPair;
 
 	public async register(appId: string, apiKey: string, userId: string, walletAddress?: string) {
 		if (walletAddress) {
@@ -45,27 +70,25 @@ class Client {
 			public_address: walletAddress,
 		});
 
-		this.token = res.data.token;
+		this.authToken = res.data;
+		this.establishTrustLine();
 	}
 
-	public async pay(recipientAddress: string, amount: number) /* transactionResult */ {
-		const account =  new StellarSdk.Account(this.keyPair.publicKey(), sequence);
-		const transaction = new StellarSdk.TransactionBuilder(account)
-		// this operation funds the new account with XLM
-		.addOperation(StellarSdk.Operation.payment({
+	public get isActive(): boolean {
+		return this.authToken.activated;
+	}
+
+	public async pay(recipientAddress: string, amount: number): Promise<TransactionResult> {
+		return await this.stellarOperation(StellarSdk.Operation.payment({
 			destination: recipientAddress,
 			asset: STELLAR.kinAsset,
 			amount
-		}))
-		.build();
-
-		transaction.sign(this.keyPair); // sign the transaction
-		return await STELLAR.server.submitTransaction(transaction);
+		}));
 	}
 
 	public async activate() {
 		const res = await this._post("/v1/users/me/activate");
-		this.token = res.data.token;
+		this.authToken = res.data;
 	}
 
 	public async getOffers(): Promise<OfferList> {
@@ -148,7 +171,7 @@ class Client {
 		return {
 			headers: {
 				"x-request-id": uuid4(),
-				"Authorization": `Bearer ${this.token}`,
+				"Authorization": `Bearer ${this.authToken.token}`,
 			},
 		};
 	}
@@ -156,6 +179,24 @@ class Client {
 	private createWallet(): string {
 		this.keyPair = StellarSdk.Keypair.random();
 		return this.keyPair.publicKey();
+	}
+
+	private async stellarOperation(operation: Operation): Promise<TransactionResult> {
+		const accountResponse = StellarSdk.Server.loadAccount(this.keyPair.publicKey());
+		accountResponse.incrementSequenceNumber();
+
+		const transaction = new StellarSdk.TransactionBuilder(accountResponse).addOperation(operation).build();
+
+		transaction.sign(this.keyPair); // sign the transaction
+		return await STELLAR.server.submitTransaction(transaction);
+	}
+
+	private async establishTrustLine(): Promise<TransactionResult> {
+		return await this.stellarOperation(StellarSdk.Operation.allowTrust({
+			trustor: STELLAR.kinAsset.issuer,
+			assetCode: STELLAR.kinAsset.code,
+			authorize: true,
+		}));
 	}
 }
 

@@ -28,6 +28,8 @@
 		"no-unused-expression": [true, "allow-fast-null-checks"],
 		"variable-name": [true, "allow-leading-underscore"],
 		"only-arrow-functions": false,
-		"trailing-comma": false
+		"trailing-comma": false,
+		"no-empty-interface": false,
+		"no-empty": false
 	}
 }

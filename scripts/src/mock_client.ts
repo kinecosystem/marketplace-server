@@ -3,44 +3,23 @@ import * as uuid4 from "uuid4";
 import { Offer, OfferList } from "./services/offers";
 import { OpenOrder, Order, OrderList } from "./services/orders";
 import { Poll, Tutorial } from "./services/offer_contents";
-import { delay } from "./utils";
+import { delay, generateId } from "./utils";
 import { Application } from "./models/applications";
 import { ApiError } from "./middleware";
 import { TUTORIAL_DESCRIPTION } from "./create";
 import * as StellarSdk from "stellar-sdk";
 import { AuthToken } from "./services/users";
+import { AbstractOperation } from "stellar-sdk";
 
-const BASE = "http://localhost:3000";
-
-interface Asset {
-	issuer: string;
-	code: string;
-}
-interface Operation {
-	data: string;
-}
-interface TransactionResult {
-	data: string;
-}
-
-interface KeyPair {
-	publicKey(): string;
-}
-
-interface Transaction {
-	sign(k: KeyPair);
-}
-
-interface Server {
-	submitTransaction(t: Transaction): TransactionResult;
-}
+const BASE = "http://api.kinmarketplace.com";
 
 class Stellar {
-	public server: Server; // StellarSdk.Server
-	public kinAsset: Asset; // StellarSdk.Asset
+	public server: StellarSdk.Server; // StellarSdk.Server
+	public kinAsset: StellarSdk.Asset; // StellarSdk.Asset
 
 	public constructor(network: "production" | "testnet") {
 		if (network === "testnet") {
+			StellarSdk.Network.useTestNetwork();
 			this.server = new StellarSdk.Server("https://horizon-testnet.stellar.org");
 			this.kinAsset = new StellarSdk.Asset("KIN", "GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V");
 		} // else - get production values
@@ -52,7 +31,7 @@ const STELLAR = new Stellar("testnet");
 class Client {
 
 	public authToken: AuthToken;
-	private keyPair: KeyPair;
+	private keyPair: StellarSdk.KeyPair;
 
 	public async register(appId: string, apiKey: string, userId: string, walletAddress?: string) {
 		if (walletAddress) {
@@ -71,19 +50,21 @@ class Client {
 		});
 
 		this.authToken = res.data;
-		this.establishTrustLine();
+		await this.establishTrustLine();
 	}
 
 	public get isActive(): boolean {
 		return this.authToken.activated;
 	}
 
-	public async pay(recipientAddress: string, amount: number): Promise<TransactionResult> {
-		return await this.stellarOperation(StellarSdk.Operation.payment({
+	public async pay(recipientAddress: string, amount: number): Promise<StellarSdk.TransactionResult> {
+		const op = StellarSdk.Operation.payment({
 			destination: recipientAddress,
 			asset: STELLAR.kinAsset,
 			amount
-		}));
+		});
+
+		return await this.stellarOperation(op);
 	}
 
 	public async activate() {
@@ -171,7 +152,7 @@ class Client {
 		return {
 			headers: {
 				"x-request-id": uuid4(),
-				"Authorization": `Bearer ${this.authToken.token}`,
+				"Authorization": this.authToken ? `Bearer ${this.authToken.token}` : "",
 			},
 		};
 	}
@@ -181,22 +162,30 @@ class Client {
 		return this.keyPair.publicKey();
 	}
 
-	private async stellarOperation(operation: Operation): Promise<TransactionResult> {
-		const accountResponse = StellarSdk.Server.loadAccount(this.keyPair.publicKey());
-		accountResponse.incrementSequenceNumber();
-
+	private async stellarOperation(operation: StellarSdk.AbstractOperation): Promise<StellarSdk.TransactionResult> {
+		const accountResponse = await STELLAR.server.loadAccount(this.keyPair.publicKey());
 		const transaction = new StellarSdk.TransactionBuilder(accountResponse).addOperation(operation).build();
 
 		transaction.sign(this.keyPair); // sign the transaction
 		return await STELLAR.server.submitTransaction(transaction);
 	}
 
-	private async establishTrustLine(): Promise<TransactionResult> {
-		return await this.stellarOperation(StellarSdk.Operation.allowTrust({
-			trustor: STELLAR.kinAsset.issuer,
-			assetCode: STELLAR.kinAsset.code,
-			authorize: true,
-		}));
+	private async establishTrustLine(): Promise<StellarSdk.TransactionResult> {
+		const op = StellarSdk.Operation.changeTrust({
+			asset: STELLAR.kinAsset
+		});
+
+		for (let i = 0; i < 3; i++) {
+			try {
+				return await this.stellarOperation(op);
+			} catch (e) {
+				if (i === 2) {
+					throw e;
+				}
+
+				await delay(3000);
+			}
+		}
 	}
 }
 
@@ -211,15 +200,6 @@ async function didNotApproveTOS() {
 		return; // ok!
 	}
 	throw Error("expected to throw have to complete TOS");
-}
-
-async function spend() {
-	const client = new Client();
-	await client.register("kik", Application.KIK_API_KEY, "doody",
-		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
-	await client.activate();
-
-	console.log(`order history ${JSON.stringify((await client.getOrders()).orders, null, 2)}`);
 }
 
 async function earnFlow() {
@@ -271,7 +251,12 @@ async function earnFlow() {
 	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
 }
 
-async function earnTutorial() {
+async function fn() {
+	const client = new Client();
+	await client.register("kik", Application.KIK_API_KEY, generateId());
+}
+
+async function tutorialFlow() {
 	const client = new Client();
 	await client.register("kik", Application.KIK_API_KEY, "doody98ds",
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
@@ -322,10 +307,11 @@ async function earnTutorial() {
 }
 
 async function main() {
-	await spend();
-	await earnFlow();
-	await didNotApproveTOS();
-	await earnTutorial();
+	/*await earnFlow();
+	await didNotApproveTOS();*/
+	await fn();
 }
 
-main().then(() => console.log("done")).catch(err => console.log(`got error ${err.message}:\n${err.stack}`));
+main()
+	.then(() => console.log("done"))
+	.catch(err => console.log(err.message));

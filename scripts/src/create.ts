@@ -10,7 +10,7 @@ import { Order } from "./models/orders";
 
 import { init as initModels } from "./models";
 import { getConfig } from "./config";
-import { animalPoll, kikPoll, Poll } from "./services/offer_contents";
+import { animalPoll, kikPoll, Poll, CouponInfo, CouponOrderContent } from "./services/offer_contents";
 
 async function createOffers(): Promise<Offer[]> {
 	const assetsBase = getConfig().assets_base;
@@ -46,7 +46,8 @@ async function createOffers(): Promise<Offer[]> {
 
 	async function createSpend(
 		brand: string, title: string, description: string, image: string, amount: number,
-		orderTitle: string, orderDescription: string, orderCallToAction: string): Promise<Offer> {
+		orderTitle: string, orderDescription: string, orderCallToAction: string, orderContent: CouponOrderContent,
+		coupon: CouponInfo): Promise<Offer> {
 
 		const owner = new OfferOwner();
 		owner.name = brand;
@@ -56,7 +57,12 @@ async function createOffers(): Promise<Offer[]> {
 		offer.amount = amount;
 		offer.meta = {
 			title, image, description,
-			order_meta: { title: orderTitle, description: orderDescription, call_to_action: orderCallToAction }
+			order_meta: {
+				title: orderTitle,
+				description: orderDescription,
+				call_to_action: orderCallToAction,
+				content: JSON.stringify(orderContent)
+			}
 		};
 		offer.ownerId = owner.id;
 		offer.type = "spend";
@@ -66,7 +72,7 @@ async function createOffers(): Promise<Offer[]> {
 		const content = new OfferContent();
 		content.contentType = "coupon";
 		content.offerId = offer.id;
-		content.content = "approve payment";
+		content.content = JSON.stringify(coupon);
 		await content.save();
 
 		return offer;
@@ -89,20 +95,90 @@ async function createOffers(): Promise<Offer[]> {
 		animalPoll));
 
 	offers.push(await createSpend("Spotify", "Get Coupon", "month subscription",
-		assetsBase + "spend_offer1.png", 6000, "Spotify", "month subscription",
-		"show coupon"));
+		assetsBase + "spend_offer1.png", 8000, "Spotify", "month subscription",
+		"show coupon", {
+			title: "Your redeem code",
+			description: "How to redeem:",
+			link: "spotify.com/redeem"
+		}, {
+			title: "Redeem code",
+			description: "Get a 1 week subscription for Spotify. Click on balance to get your code",
+			amount: 8000,
+			image: assetsBase + "coupon_1.png",
+			confirmation: {
+				title: "Thank you",
+				description: "We will notify you when your redeem code is ready",
+				image: assetsBase + "coupon_1.png"
+			}
+		}));
 	offers.push(await createSpend("Sound Cloud", "Get Coupon", "month subscription",
 		assetsBase + "spend_offer2.png", 6000, "Sound Cloud", "month subscription",
-		"show coupon"));
+		"show coupon", {
+			title: "Your redeem code",
+			description: "How to redeem:",
+			link: "Soundcloud.com/redeem"
+		}, {
+			title: "Redeem code",
+			description: "Get a 1 week subscription for Soundcloud. Click on balance to get your code",
+			amount: 6000,
+			image: assetsBase + "coupon_2.png",
+			confirmation: {
+				title: "Thank you",
+				description: "We will notify you when your gift card is ready",
+				image: assetsBase + "coupon_2.png"
+			}
+		}));
 	offers.push(await createSpend("asos", "Get Coupon", "month subscription",
 		assetsBase + "spend_offer3.png", 6000, "asos", "month subscription",
-		"show coupon"));
+		"show coupon", {
+			title: "Your redeem code",
+			description: "How to redeem:",
+			link: "asos.com/redeem"
+		}, {
+			title: "Redeem code",
+			description: "Get a $5 gift card for Asos. Click on balance to get your code",
+			amount: 6000,
+			image: assetsBase + "coupon_3.png",
+			confirmation: {
+				title: "Thank you",
+				description: "We will notify you when your gift card is ready",
+				image: assetsBase + "coupon_3.png"
+			}
+		}));
 	offers.push(await createSpend("Dunkin Donuts", "Get Coupon", "month subscription",
 		assetsBase + "spend_offer4.png", 6000, "Dunkin Donuts", "month subscription",
-		"show coupon"));
+		"show coupon", {
+			title: "Your redeem code",
+			description: "How to redeem:",
+			link: "DunkinDonut.com/redeem"
+		}, {
+			title: "Redeem code",
+			description: "Get a $5 gift card for Dunkin Donuts. Click on balance to get your code",
+			amount: 6000,
+			image: assetsBase + "coupon_4.png",
+			confirmation: {
+				title: "Thank you",
+				description: "We will notify you when your gift card is ready",
+				image: assetsBase + "coupon_4.png"
+			}
+		}));
 	offers.push(await createSpend("Sephora", "Get Coupon", "month subscription",
 		assetsBase + "spend_offer5.png", 6000, "Sephora", "month subscription",
-		"show coupon"));
+		"show coupon", {
+			title: "Your redeem code",
+			description: "How to redeem:",
+			link: "Sephora.com/redeem"
+		}, {
+			title: "Redeem code",
+			description: "Get a $5 gift card for Sephora. Click on balance to get your code",
+			amount: 6000,
+			image: assetsBase + "coupon_5.png",
+			confirmation: {
+				title: "Thank you",
+				description: "We will notify you when your gift card is ready",
+				image: assetsBase + "coupon_5.png"
+			}
+		}));
 
 	return offers;
 }
@@ -111,8 +187,12 @@ function orderFromOffer(offer: Offer, userId: string): Order {
 	const order = new Order();
 	order.userId = userId;
 	order.offerId = offer.id;
-	order.meta = Object.assign({}, offer.meta, { call_to_action: "press here" });
-	order.blockchainData = { transaction_id: "xxx", recipient_address: "reere", sender_address: "err" };
+	order.meta = offer.meta.order_meta;
+	order.blockchainData = {
+		transaction_id: "A123123123123123",
+		recipient_address: "G123123123123",
+		sender_address: "G123123123123"
+	};
 	order.amount = offer.amount;
 	order.type = offer.type;
 
@@ -151,12 +231,12 @@ async function createOrders(userId: string) {
 	await order.save();
 }
 
-async function createApp() {
+async function createApp(appId, apiKey, name) {
 	const jwtPublic = fs.readFileSync("./examples/jwt_public_key.pem", "utf-8");
 	const jwtPrivate = fs.readFileSync("./examples/jwt_private_key.pem", "utf-8");
 
-	const app = new Application("kik", "Kik Messenger", { 1: jwtPublic });
-	app.apiKey = Application.KIK_API_KEY;  // XXX temporary run-over apiKey for testing
+	const app = new Application(appId, name, { 1: jwtPublic });
+	app.apiKey = apiKey;  // XXX temporary run-over apiKey for testing
 	await app.save();
 	return app;
 }
@@ -168,15 +248,18 @@ initModels().then(async () => {
 	const authToken1 = await (new AuthToken(user1.id, "device1")).save();
 	const authToken2 = await (new AuthToken(user2.id, "device2")).save();
 
-	const app = await createApp();
+	const app1 = await createApp("kik", Application.KIK_API_KEY, "Kik Messenger");
+	const app2 = await createApp("sample", Application.SAMPLE_API_KEY, "Sample Application");
 
 	const offers: Offer[] = await createOffers();
 
 	for (const offer of offers) {
-		const appOffer = new AppOffer();
-		appOffer.appId = app.id;
-		appOffer.offerId = offer.id;
-		await appOffer.save();
+		for (const app of [app1, app2]) {
+			const appOffer = new AppOffer();
+			appOffer.appId = app.id;
+			appOffer.offerId = offer.id;
+			await appOffer.save();
+		}
 		for (let i = 0; i < offer.cap.total; i++) {
 			const asset = new Asset();
 			asset.offerId = offer.id;

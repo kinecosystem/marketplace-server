@@ -40,6 +40,24 @@ export const animalPoll: Poll = {
 	}],
 };
 
+export interface CouponInfo {
+	title: string;
+	description: string;
+	amount: number;
+	image: string;
+	confirmation: {
+		title: string;
+		description: string;
+		image: string;
+	};
+}
+
+export interface CouponOrderContent {
+	title: string;
+	description: string;
+	link: string;
+}
+
 export async function getOffer(offerId: string, logger: LoggerInstance): Promise<db.OfferContent> {
 	return await db.OfferContent.findOne({ offerId });
 }

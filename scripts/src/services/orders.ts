@@ -8,6 +8,8 @@ import { generateId, IdPrefix } from "../utils";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
+import { AssetValue } from "../models/offers";
+import { FailureReason } from "../models/orders";
 
 export interface OrderList {
 	orders: Order[];
@@ -20,11 +22,6 @@ export interface BlockchainData {
 	recipient_address?: string;
 }
 
-export interface OrderResult {
-	coupon_code?: string;
-	failure_message?: string;
-}
-
 export interface OpenOrder {
 	id: string;
 	blockchain_data?: BlockchainData;
@@ -33,7 +30,8 @@ export interface OpenOrder {
 
 export interface Order {
 	id: string;
-	result?: OrderResult;
+	result?: AssetValue | FailureReason;
+	content?: string; // json serialized payload of the coupon page
 	status: db.OrderStatus;
 	completion_date: string; // UTC ISO
 	blockchain_data: BlockchainData;
@@ -96,11 +94,7 @@ export async function submitEarn(
 		amount: offer.amount,
 		type: "earn",
 		status: "pending",
-		meta: {
-			title: offer.meta.order_meta.title,
-			description: offer.meta.order_meta.description,
-			call_to_action: offer.meta.order_meta.call_to_action,
-		},
+		meta: offer.meta.order_meta,
 	});
 	offer.cap.used += 1;
 	await offer.save();
@@ -123,6 +117,7 @@ function orderDbToApi(order: db.Order, logger: LoggerInstance): Order {
 		title: order.meta.title,
 		description: order.meta.description,
 		call_to_action: order.meta.call_to_action,
+		content: order.meta.content,
 		amount: order.amount,
 	};
 }

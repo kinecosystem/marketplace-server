@@ -8,6 +8,7 @@ export type OrderMeta = {
 	title: string;
 	description: string;
 	call_to_action?: string;
+	content?: string;
 };
 
 export type BlockchainData = {
@@ -40,7 +41,7 @@ export class Order extends CreationDateModel {
 	@Column("simple-json")
 	public meta: OrderMeta;
 
-	@Column("simple-json", { nullable: true }) // the asset?
+	@Column("simple-json", { nullable: true }) // the asset or JWT payment confirmation
 	public value: AssetValue | FailureReason;
 
 	@Column()

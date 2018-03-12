@@ -10,7 +10,7 @@ import { Order } from "./models/orders";
 
 import { init as initModels } from "./models";
 import { getConfig } from "./config";
-import { animalPoll, kikPoll, Poll, CouponInfo, CouponOrderContent } from "./services/offer_contents";
+import { animalPoll, kikPoll, tutorial, Poll, Tutorial, CouponInfo, CouponOrderContent } from "./services/offer_contents";
 
 async function createOffers(): Promise<Offer[]> {
 	const assetsBase = getConfig().assets_base;
@@ -19,7 +19,7 @@ async function createOffers(): Promise<Offer[]> {
 
 	async function createEarn(
 		brand: string, title: string, description: string, image: string, amount: number,
-		orderTitle: string, orderDescription: string, poll: Poll): Promise<Offer> {
+		orderTitle: string, orderDescription: string, poll: Poll | Tutorial): Promise<Offer> {
 
 		const owner = new OfferOwner();
 		owner.name = brand;
@@ -77,6 +77,10 @@ async function createOffers(): Promise<Offer[]> {
 
 		return offer;
 	}
+
+	offers.push(await createEarn("Dunkin Donuts", "Getting Started", "Learn about Kin",
+		assetsBase + "earn_offer1.png", 6000, "Getting started tutorial", "Completed Tutorial",
+		tutorial));
 
 	offers.push(await createEarn("Dunkin Donuts", "Sweet tooth?", "Answer a poll",
 		assetsBase + "earn_offer1.png", 2000, "Dunkin Donuts", "Completed Poll",

@@ -100,6 +100,15 @@ async function didNotApproveTOS() {
 	throw Error("expected to throw have to complete TOS");
 }
 
+async function spend() {
+	const client = new Client();
+	await client.register("kik", Application.KIK_API_KEY, "doody",
+		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
+	await client.activate();
+
+	console.log(`order history ${JSON.stringify((await client.getOrders()).orders, null, 2)}`);
+}
+
 async function earnFlow() {
 	const client = new Client();
 	await client.register("kik", Application.KIK_API_KEY, "doody98ds",
@@ -150,6 +159,7 @@ async function earnFlow() {
 }
 
 async function main() {
+	await spend();
 	await earnFlow();
 	await didNotApproveTOS();
 }

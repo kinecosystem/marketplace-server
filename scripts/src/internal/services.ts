@@ -1,6 +1,7 @@
 import moment = require("moment");
 import { LoggerInstance } from "winston";
 
+import { pick } from "../utils";
 import * as db from "../models/orders";
 import { Asset } from "../models/offers";
 
@@ -61,11 +62,7 @@ export async function paymentFailed(payment: CompletedPayment, reason: string, l
 		return;
 	}
 
-	order.blockchainData = {
-		transaction_id: payment.transaction_id,
-		sender_address: payment.sender_address,
-		recipient_address: payment.recipient_address,
-	};
+	order.blockchainData = pick(payment, "transaction_id", "sender_address", "recipient_address");
 	order.completionDate = moment(payment.timestamp).toDate();
 	order.status = "failed";
 	order.value = { failure_message: reason };

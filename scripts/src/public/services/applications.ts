@@ -1,7 +1,7 @@
 import * as jsonwebtoken from "jsonwebtoken";
 import { LoggerInstance } from "winston";
 
-import { Application, AppWhitelists } from "../models/applications";
+import { Application, AppWhitelists } from "../../models/applications";
 
 type JWTClaims = {
 	iss: string; // issuer

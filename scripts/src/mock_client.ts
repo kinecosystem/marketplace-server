@@ -1,14 +1,14 @@
 import * as axios from "axios";
 import * as uuid4 from "uuid4";
-import { Offer, OfferList } from "./services/offers";
-import { OpenOrder, Order, OrderList } from "./services/orders";
-import { Poll, Tutorial } from "./services/offer_contents";
+import { TUTORIAL_DESCRIPTION } from "./create";
+import { Offer, OfferList } from "./public/services/offers";
+import { OpenOrder, Order, OrderList } from "./public/services/orders";
+import { Poll, Tutorial } from "./public/services/offer_contents";
 import { delay, generateId } from "./utils";
 import { Application } from "./models/applications";
-import { ApiError } from "./middleware";
-import { TUTORIAL_DESCRIPTION } from "./create";
+import { ApiError } from "./public/middleware";
 import * as StellarSdk from "stellar-sdk";
-import { AuthToken } from "./services/users";
+import { AuthToken } from "./public/services/users";
 import { AbstractOperation } from "stellar-sdk";
 
 const BASE = "http://api.kinmarketplace.com";
@@ -251,6 +251,56 @@ async function earnFlow() {
 	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
 }
 
+async function earnTutorial() {
+	const client = new Client();
+	await client.register("kik", Application.KIK_API_KEY, "doody98ds",
+		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
+
+	await client.activate();
+
+	const offers = await client.getOffers();
+
+	let earn: Offer;
+
+	for (const offer of offers.offers) {
+		if (offer.title === "Getting Started") {
+			console.log("offer", offer);
+			earn = offer;
+		}
+	}
+
+	console.log(`requesting order for offer: ${earn.id}: ${earn.content}`);
+	const openOrder = await client.createOrder(earn.id);
+	console.log(`got order ${openOrder.id}`);
+
+	// fill in the poll
+	console.log("poll " + earn.content);
+	const poll: Tutorial = JSON.parse(earn.content);
+
+	const content = JSON.stringify({ });
+	console.log("answers " + content);
+
+	await client.submitOrder(openOrder.id, content);
+
+	// poll on order payment
+	let order = await client.getOrder(openOrder.id);
+	console.log(`completion date: ${order.completion_date}`);
+	for (let i = 0; i < 30 && order.status === "pending"; i++) {
+		order = await client.getOrder(openOrder.id);
+		await delay(1000);
+	}
+	console.log(`completion date: ${order.completion_date}`);
+
+	if (order.status === "completed") {
+		console.log("order completed!");
+	} else {
+		console.log("order still pending :(");
+	}
+
+	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
+	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
+}
+
 async function fn() {
 	const client = new Client();
 	await client.register("kik", Application.KIK_API_KEY, generateId());
@@ -310,6 +360,7 @@ async function main() {
 	/*await earnFlow();
 	await didNotApproveTOS();*/
 	await fn();
+	await earnTutorial();
 }
 
 main()

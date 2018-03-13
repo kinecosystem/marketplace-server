@@ -1,17 +1,12 @@
 import * as express from "express";
 import { LoggerInstance } from "winston";
-import * as bearerToken from "express-bearer-token";
 
 import { getDefaultLogger } from "./logging";
 import { generateId } from "./utils";
 
 let logger: LoggerInstance;
-export function init(app: express.Express) {
+export function init() {
 	logger = getDefaultLogger();
-
-	app.use(requestLogger);
-	app.use(bearerToken());
-	app.use(logRequest);
 }
 
 declare module "express" {
@@ -25,7 +20,7 @@ declare module "express" {
  * augments the request object with a request-id and a logger.
  * the logger should be then used when logging inside request handlers, which will then add some more info per log
  */
-function requestLogger(req: express.Request, res, next) {
+export function requestLogger(req: express.Request, res, next) {
 	const methods = ["debug", "info", "warn", "error"];
 	const id = generateId();
 	const proxy = new Proxy(logger, {
@@ -52,7 +47,7 @@ function requestLogger(req: express.Request, res, next) {
 	next();
 }
 
-function logRequest(req: express.Request, res, next) {
+export function logRequest(req: express.Request, res, next) {
 	const start = new Date();
 	req.logger.info(`start handling request ${ req.id }: ${ req.method } ${ req.path }`, req.headers);
 

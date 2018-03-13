@@ -10,14 +10,30 @@ const config = getConfig();
 interface PaymentRequest {
 	amount: number;
 	app_id: string;
-	wallet_address: string;
-	order_id: string;
+	recipient_address: string;
+	id: string;
 	callback: string;
 }
 
-interface WalletCreationRequest {
+export interface Payment {
+	amount: number;
+	app_id: string;
+	recipient_address: string;
+	id: string;
+	transaction_id: string;
+	sender_address: string;
+	timestamp: string;
+}
+
+interface WalletRequest {
 	app_id: string;
 	wallet_address: string;
+}
+
+export interface Wallet {
+	wallet_address: string;
+	kin_balance: number;
+	native_balance: number;
 }
 
 export async function payTo(
@@ -26,17 +42,17 @@ export async function payTo(
 	const payload: PaymentRequest = {
 		amount,
 		app_id: appId,
-		wallet_address: walletAddress,
-		order_id: orderId,
+		recipient_address: walletAddress,
+		id: orderId,
 		callback: config.payment_complete_callback,
 	};
 	const t = performance.now();
-	await axios.default.post(config.payment_service + "/orders", payload);
+	await axios.default.post(config.payment_service + "/payments", payload);
 	console.log("wallet creation took " + (performance.now() - t) + "ms");
 }
 
 export async function createWallet(walletAddress: string, appId: string, logger: LoggerInstance) {
-	const payload: WalletCreationRequest = {
+	const payload: WalletRequest = {
 		wallet_address: walletAddress,
 		app_id: appId,
 	};
@@ -45,14 +61,12 @@ export async function createWallet(walletAddress: string, appId: string, logger:
 	console.log("wallet creation took " + (performance.now() - t) + "ms");
 }
 
-export async function getWalletData(walletAddress: string, logger: LoggerInstance) {
-	// XXX missing definitions
+export async function getWalletData(walletAddress: string, logger: LoggerInstance): Promise<Wallet> {
 	const res = await axios.default.get(config.payment_service + "/wallets/" + walletAddress);
 	return res.data;
 }
 
-export async function getPaymentData(orderId: string, logger: LoggerInstance) {
-	// XXX missing definitions
-	const res = await axios.default.get(config.payment_service + "/orders/" + orderId);
+export async function getPaymentData(orderId: string, logger: LoggerInstance): Promise<Payment> {
+	const res = await axios.default.get(config.payment_service + "/payments/" + orderId);
 	return res.data;
 }

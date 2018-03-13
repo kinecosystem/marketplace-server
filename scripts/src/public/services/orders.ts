@@ -1,11 +1,11 @@
 import moment = require("moment");
 import { LoggerInstance } from "winston";
 
-import * as db from "../models/orders";
-import { FailureReason } from "../models/orders";
-import * as offerDb from "../models/offers";
-import { AssetValue } from "../models/offers";
-import { generateId, IdPrefix } from "../utils";
+import { FailureReason } from "../../models/orders";
+import { AssetValue } from "../../models/offers";
+import * as db from "../../models/orders";
+import * as offerDb from "../../models/offers";
+import { generateId, IdPrefix } from "../../utils";
 
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";

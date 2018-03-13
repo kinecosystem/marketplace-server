@@ -9,7 +9,7 @@ import { AppOffer, Asset, Offer, OfferContent, OfferOwner } from "./models/offer
 import { OpenOrder, Order } from "./models/orders";
 
 import { init as initModels } from "./models";
-import { getConfig } from "./config";
+import { getConfig } from "./public/config";
 import {
 	animalPoll,
 	CouponInfo,
@@ -18,7 +18,7 @@ import {
 	Poll,
 	tutorial,
 	Tutorial
-} from "./services/offer_contents";
+} from "./public/services/offer_contents";
 import { IdPrefix, generateId } from "./utils";
 
 export const TUTORIAL_DESCRIPTION = "Kin Tutorial";

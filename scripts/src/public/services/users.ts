@@ -1,7 +1,7 @@
 import { getManager } from "typeorm";
 import { LoggerInstance } from "winston";
 
-import * as db from "../models/users";
+import * as db from "../../models/users";
 
 import * as payment from "./payment";
 

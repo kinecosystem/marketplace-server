@@ -1,6 +1,6 @@
 import { LoggerInstance } from "winston";
 
-import * as db from "../models/offers";
+import * as db from "../../models/offers";
 
 import { Paging, ServiceResult } from "./index";
 import * as offerContents from "./offer_contents";

@@ -16,6 +16,7 @@ export interface Offer {
 	description: string;
 	image: string;
 	amount: number;
+  blockchain_data: db.BlockchainData;
 	content: string;
 	content_type: "coupon" | "poll";
 	offer_type: "earn" | "spend";
@@ -45,6 +46,7 @@ export async function getOffers(
 				description: offer.meta.description,
 				image: offer.meta.image,
 				amount: offer.amount,
+        blockchain_data: offer.blockchainData,
 				offer_type: offer.type,
 				content: content.content,
 				content_type: content.contentType,

@@ -2,19 +2,13 @@ import { Column, Entity } from "typeorm";
 
 import { CreationDateModel, register as Register } from "./index";
 import { IdPrefix } from "../utils";
-import { AssetValue, OfferType } from "./offers";
+import { BlockchainData, AssetValue, OfferType } from "./offers";
 
 export type OrderMeta = {
 	title: string;
 	description: string;
 	call_to_action?: string;
 	content?: string;
-};
-
-export type BlockchainData = {
-	transaction_id?: string;
-	sender_address?: string;
-	recipient_address?: string;
 };
 
 export type FailureReason = {

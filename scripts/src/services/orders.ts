@@ -16,15 +16,8 @@ export interface OrderList {
 	paging: Paging;
 }
 
-export interface BlockchainData {
-	transaction_id?: string;
-	sender_address?: string;
-	recipient_address?: string;
-}
-
 export interface OpenOrder {
 	id: string;
-	blockchain_data?: BlockchainData;
 	expiration_date: string;
 }
 

@@ -4,6 +4,12 @@ import { CreationDateModel, Model, register as Register } from "./index";
 import { IdPrefix } from "../utils";
 import { OrderMeta } from "./orders";
 
+export type BlockchainData = {
+	transaction_id?: string;
+	sender_address?: string;
+	recipient_address?: string;
+};
+
 export type OfferMeta = {
 	title: string;
 	image: string;
@@ -53,6 +59,9 @@ export class Offer extends CreationDateModel {
 
 	@Column()
 	public type: OfferType;
+
+	@Column("simple-json", { name: "blockchain_data" })
+	public blockchainData: BlockchainData;
 
 	@Column({ name: "owner_id" })
 	public ownerId: string;

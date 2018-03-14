@@ -31,6 +31,7 @@ async function createOffers(): Promise<Offer[]> {
 		offer.ownerId = owner.id;
 		offer.type = "earn";
 		offer.cap = { total: 100, used: 0, per_user: 2 };
+    offer.blockchainData = { sender_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" };
 		await offer.save();
 
 		const content = new OfferContent();
@@ -67,6 +68,7 @@ async function createOffers(): Promise<Offer[]> {
 		offer.ownerId = owner.id;
 		offer.type = "spend";
 		offer.cap = { total: 100, used: 0, per_user: 2 };
+    offer.blockchainData = { recipient_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" };
 		await offer.save();
 
 		const content = new OfferContent();

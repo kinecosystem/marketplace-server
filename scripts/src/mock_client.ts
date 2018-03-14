@@ -170,7 +170,7 @@ async function earnTutorial() {
 	let earn: Offer;
 
 	for (const offer of offers.offers) {
-		if (offer.title === "Getting Started") {
+		if (offer.description === "Kin Tutorial") {
 			console.log("offer", offer);
 			earn = offer;
 		}

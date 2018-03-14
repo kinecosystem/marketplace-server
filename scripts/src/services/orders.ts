@@ -93,11 +93,6 @@ export async function submitOrder(
 		throw Error(`order ${orderId} expired`);
 	}
 	const offer = await offerDb.Offer.findOneById(openOrder.offerId);
-	if (offer.type === "earn") {
-		await submitEarn(openOrder, offer, form, walletAddress, appId, logger);
-	} else {
-		await submitSpend(openOrder, offer, walletAddress, appId, logger);
-	}
 
 	// transition open order to pending order
 	const order = Object.assign(new db.Order(), {
@@ -112,6 +107,13 @@ export async function submitOrder(
 	offer.cap.used += 1;
 	await offer.save();
 	await order.save();
+
+	if (offer.type === "earn") {
+		await submitEarn(openOrder, offer, form, walletAddress, appId, logger);
+	} else {
+		await submitSpend(openOrder, offer, walletAddress, appId, logger);
+	}
+
 	openOrdersDB.delete(openOrder.id);
 	return orderDbToApi(order, logger);
 }

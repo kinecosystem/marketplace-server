@@ -24,7 +24,7 @@ export type Answers = { [key: string]: string };
 
 export const kikPoll: Poll = {
 	pages: [{
-		type: PageType.ImageAndText,
+		type: PageType.FullPageMultiChoice,
 		title: "Who do you primarily chat with on Kik?",
 		description: `Finish the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
 		question: {

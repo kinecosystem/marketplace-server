@@ -67,6 +67,8 @@ function orderDbToApi(order: db.Order, logger: LoggerInstance): Order {
 
 export async function createOrder(
 	offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
+	// offer cap logic
+
 	const openOrder: db.OpenOrder = {
 		expiration: moment().add(expirationMin, "minutes").toDate(),
 		id: generateId(IdPrefix.Transaction),
@@ -85,6 +87,7 @@ export async function createOrder(
 export async function submitOrder(
 	orderId: string, form: string | undefined, walletAddress: string, appId: string, logger: LoggerInstance): Promise<Order> {
 
+	// validate order
 	const openOrder: db.OpenOrder = openOrdersDB.get(orderId);
 	if (!openOrder) {
 		throw Error(`no such order ${orderId}`);
@@ -92,59 +95,51 @@ export async function submitOrder(
 	if (new Date() > openOrder.expiration) {
 		throw Error(`order ${orderId} expired`);
 	}
+
 	const offer = await offerDb.Offer.findOneById(openOrder.offerId);
 
+	if (offer.type === "earn") {
+		// validate form
+		if (!await offerContents.isValid(offer.id, form, logger)) {
+			throw Error(`submitted form is invalid for ${openOrder.id}`);
+		}
+	}
+
 	// transition open order to pending order
-	const order = Object.assign(new db.Order(), {
-		id: openOrder.id,
-		userId: openOrder.userId,
-		offerId: openOrder.offerId,
-		amount: offer.amount,
-		type: offer.type,
-		status: "pending",
-		meta: offer.meta.order_meta,
-	});
+	const order = new db.Order(openOrder, offer);
 	offer.cap.used += 1;
 	await offer.save();
 	await order.save();
+	openOrdersDB.delete(openOrder.id);
 
+	// pay or start timer for payment
 	if (offer.type === "earn") {
-		await submitEarn(openOrder, offer, form, walletAddress, appId, logger);
+		await payment.payTo(walletAddress, appId, offer.amount, order.id, logger);
 	} else {
-		await submitSpend(openOrder, offer, walletAddress, appId, logger);
+		await submitSpend(order, offer, walletAddress, appId, logger);
 	}
 
-	openOrdersDB.delete(openOrder.id);
 	return orderDbToApi(order, logger);
 }
 
-async function submitEarn(
-	openOrder: db.OpenOrder, offer: offerDb.Offer, form: string, walletAddress: string, appId: string, logger: LoggerInstance): Promise<void> {
-	// validate form
-	if (!await offerContents.isValid(offer.id, form, logger)) {
-		throw Error(`submitted form is invalid for ${openOrder.id}`);
-	}
-
-	await payment.payTo(walletAddress, appId, offer.amount, openOrder.id, logger);
-}
-
 export async function submitSpend(
-	openOrder: db.OpenOrder, offer: offerDb.Offer, walletAddress: string, appId: string, logger: LoggerInstance): Promise<void> {
-	// start a timer for order.expiration + grace till this order becomes failed
-	async function makeFailed() {
+	order: db.Order, offer: offerDb.Offer, walletAddress: string, appId: string, logger: LoggerInstance): Promise<void> {
+	async function makeFailed(orderId: string) {
 		// XXX lock on order.id
-		const order = await db.Order.findOneById(openOrder.id);
+		const order = await db.Order.findOneById(orderId);
 		order.status = "failed";
-		const offer = await offerDb.Offer.findOneById(openOrder.offerId);
+		const offer = await offerDb.Offer.findOneById(order.offerId);
 		offer.cap.used -= 1;
 		await offer.save();
 		await order.save();
 	}
 
-	// XXX simulate payment complete
-	// setTimeout(makeFailed, openOrder.expiration);
+	// start a timer for order.expiration + grace till this order becomes failed
+	// setTimeout(makeFailed, order.expiration, order.id);
+
+	// simulate payment complete // XXX delete this
 	const payment: CompletedPayment = {
-		id: openOrder.id,
+		id: order.id,
 		app_id: appId,
 		transaction_id: "some transaction",
 		recipient_address: offer.blockchainData.recipient_address, // offer received the kin
@@ -157,8 +152,14 @@ export async function submitSpend(
 	return;
 }
 
-export async function cancelOrder(options, logger: LoggerInstance): Promise<void> {
-	return;
+export async function cancelOrder(orderId: string, logger: LoggerInstance): Promise<void> {
+	// you can only delete an open order - not a pending order
+	// validate order
+	const openOrder: db.OpenOrder = openOrdersDB.get(orderId);
+	if (!openOrder) {
+		throw Error(`no such order ${orderId}`);
+	}
+	openOrdersDB.delete(openOrder.id);
 }
 
 export async function getOrderHistory(

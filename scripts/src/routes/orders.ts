@@ -4,7 +4,7 @@ import {
 	cancelOrder as cancelOrderService,
 	getOrder as getOrderService,
 	getOrderHistory as getOrderHistoryService,
-	submitEarn as submitEarnService,
+	submitOrder as submitOrderService,
 	OrderList,
 } from "../services/orders";
 
@@ -33,12 +33,13 @@ export async function getOrder(req, res) {
  *   PaymentService.payTo(User.find(userId).walletAddress, order.amount, memo=order.id)
  * return ok
  */
-export async function submitEarn(req: Request, res) {
-	const order = await submitEarnService(
+export async function submitOrder(req: Request, res) {
+	const order = await submitOrderService(
 		req.params.order_id,
-		req.body.content,  // XXX should be: EarnSubmission { content: string }
+		req.body.content,
 		req.context.user.walletAddress,
-		req.context.user.appId, req.logger);
+		req.context.user.appId,
+		req.logger);
 	res.status(200).send(order);
 }
 

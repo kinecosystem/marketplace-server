@@ -27,7 +27,7 @@ export interface Order {
 	content?: string; // json serialized payload of the coupon page
 	status: db.OrderStatus;
 	completion_date: string; // UTC ISO
-	blockchain_data: BlockchainData;
+	blockchain_data: offerDb.BlockchainData;
 	offer_type: offerDb.OfferType;
 	title: string;
 	description: string;
@@ -47,58 +47,6 @@ const openOrdersDB = new Map<string, db.OpenOrder>();
 const expirationMin = 10; // 10 minutes
 const graceMin = 10; // 10 minutes
 
-export async function createOrder(
-		offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
-	const openOrder: db.OpenOrder = {
-		expiration: moment().add(expirationMin, "minutes").toDate(),
-		id: generateId(IdPrefix.Transaction),
-		offerId,
-		userId };
-
-	openOrdersDB.set(openOrder.id, openOrder);
-
-	return {
-		id: openOrder.id,
-		expiration_date: openOrder.expiration.toISOString(),
-	};
-}
-
-export async function submitEarn(
-		orderId: string, form: string, walletAddress: string, appId: string, logger: LoggerInstance): Promise<Order> {
-	const openOrder: db.OpenOrder = openOrdersDB.get(orderId);
-	if (!openOrder) {
-		throw Error(`no such order ${orderId}`);
-	}
-	if (new Date() > openOrder.expiration) {
-		throw Error(`order ${orderId} expired`);
-	}
-
-	// validate form
-	if (!await offerContents.isValid(openOrder.offerId, form, logger)) {
-		throw Error(`submitted form is invalid for ${orderId}`);
-	}
-
-	const offer: offerDb.Offer = await offerDb.Offer.findOneById(openOrder.offerId);
-	// create a transaction Order
-	const order = Object.assign(new db.Order(), {
-		id: openOrder.id,
-		userId: openOrder.userId,
-		offerId: openOrder.offerId,
-		amount: offer.amount,
-		type: "earn",
-		status: "pending",
-		meta: offer.meta.order_meta,
-	});
-	offer.cap.used += 1;
-	await offer.save();
-	await order.save();
-	openOrdersDB.delete(openOrder.id);
-
-	await payment.payTo(walletAddress, appId, order.amount, order.id, logger);
-
-	return orderDbToApi(order, logger);
-}
-
 function orderDbToApi(order: db.Order, logger: LoggerInstance): Order {
 	return {
 		status: order.status,
@@ -115,7 +63,81 @@ function orderDbToApi(order: db.Order, logger: LoggerInstance): Order {
 	};
 }
 
-export async function submitSpend(orderId: string, logger: LoggerInstance): Promise<void> {
+export async function createOrder(
+	offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
+	const openOrder: db.OpenOrder = {
+		expiration: moment().add(expirationMin, "minutes").toDate(),
+		id: generateId(IdPrefix.Transaction),
+		offerId,
+		userId
+	};
+
+	openOrdersDB.set(openOrder.id, openOrder);
+
+	return {
+		id: openOrder.id,
+		expiration_date: openOrder.expiration.toISOString(),
+	};
+}
+
+export async function submitOrder(
+	orderId: string, form: string | undefined, walletAddress: string, appId: string, logger: LoggerInstance): Promise<Order> {
+
+	const openOrder: db.OpenOrder = openOrdersDB.get(orderId);
+	if (!openOrder) {
+		throw Error(`no such order ${orderId}`);
+	}
+	if (new Date() > openOrder.expiration) {
+		throw Error(`order ${orderId} expired`);
+	}
+	const offer = await offerDb.Offer.findOneById(openOrder.offerId);
+	if (offer.type === "earn") {
+		await submitEarn(openOrder, offer, form, walletAddress, appId, logger);
+	} else {
+		await submitSpend(openOrder, offer, logger);
+	}
+
+	// transition open order to pending order
+	const order = Object.assign(new db.Order(), {
+		id: openOrder.id,
+		userId: openOrder.userId,
+		offerId: openOrder.offerId,
+		amount: offer.amount,
+		type: offer.type,
+		status: "pending",
+		meta: offer.meta.order_meta,
+	});
+	offer.cap.used += 1;
+	await offer.save();
+	await order.save();
+	openOrdersDB.delete(openOrder.id);
+	return orderDbToApi(order, logger);
+}
+
+async function submitEarn(
+	openOrder: db.OpenOrder, offer: offerDb.Offer, form: string, walletAddress: string, appId: string, logger: LoggerInstance): Promise<void> {
+	// validate form
+	if (!await offerContents.isValid(offer.id, form, logger)) {
+		throw Error(`submitted form is invalid for ${openOrder.id}`);
+	}
+
+	await payment.payTo(walletAddress, appId, offer.amount, openOrder.id, logger);
+}
+
+export async function submitSpend(
+	openOrder: db.OpenOrder, offer: offerDb.Offer, logger: LoggerInstance): Promise<void> {
+	// start a timer for order.expiration + grace till this order becomes failed
+	async function makeFailed() {
+		// XXX lock on order.id
+		const order = await db.Order.findOneById(openOrder.id);
+		order.status = "failed";
+		const offer = await offerDb.Offer.findOneById(openOrder.offerId);
+		offer.cap.used -= 1;
+		await offer.save();
+		await order.save();
+	}
+
+	// setTimeout(makeFailed, openOrder.expiration);
 	return;
 }
 

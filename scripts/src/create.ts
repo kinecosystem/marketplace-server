@@ -10,7 +10,15 @@ import { Order } from "./models/orders";
 
 import { init as initModels } from "./models";
 import { getConfig } from "./config";
-import { animalPoll, kikPoll, tutorial, Poll, Tutorial, CouponInfo, CouponOrderContent } from "./services/offer_contents";
+import {
+	animalPoll,
+	kikPoll,
+	tutorial,
+	Poll,
+	Tutorial,
+	CouponInfo,
+	CouponOrderContent
+} from "./services/offer_contents";
 
 async function createOffers(): Promise<Offer[]> {
 	const assetsBase = getConfig().assets_base;
@@ -31,7 +39,7 @@ async function createOffers(): Promise<Offer[]> {
 		offer.ownerId = owner.id;
 		offer.type = "earn";
 		offer.cap = { total: 100, used: 0, per_user: 2 };
-    offer.blockchainData = { sender_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" };
+		offer.blockchainData = { sender_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" };
 		await offer.save();
 
 		const content = new OfferContent();
@@ -68,7 +76,7 @@ async function createOffers(): Promise<Offer[]> {
 		offer.ownerId = owner.id;
 		offer.type = "spend";
 		offer.cap = { total: 100, used: 0, per_user: 2 };
-    offer.blockchainData = { recipient_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" };
+		offer.blockchainData = { recipient_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" };
 		await offer.save();
 
 		const content = new OfferContent();

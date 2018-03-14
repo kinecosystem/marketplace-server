@@ -4,7 +4,7 @@ import * as db from "../models/users";
 import { authenticate } from "../auth";
 import { getOffers, createOrder } from "./offers";
 import { getUser, signInUser, activateUser } from "./users";
-import { getOrder, cancelOrder, getOrderHistory, submitEarn } from "./orders";
+import { getOrder, cancelOrder, getOrderHistory, submitOrder } from "./orders";
 import { paymentComplete, paymentFailed } from "./internal";
 
 export type Context = {
@@ -93,7 +93,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.use(createPath("orders", pathPrefix),
 		router()
 			.authenticated(AuthScopes.TOS)
-			.post("/:order_id", submitEarn));
+			.post("/:order_id", submitOrder));
 	app.use(createPath("orders", pathPrefix),
 		router()
 			.authenticated(AuthScopes.TOS)

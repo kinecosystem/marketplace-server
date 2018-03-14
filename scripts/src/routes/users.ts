@@ -58,6 +58,6 @@ export async function signInUser(req, res) {
  * user activates by approving TOS
  */
 export async function activateUser(req: Request, res) {
-	const { token, activated } = await activateUserService(req.context.token, req.context.user, req.logger);
-	res.status(200).send({ token, activated });
+	const { token, activated, expiration_date } = await activateUserService(req.context.token, req.context.user, req.logger);
+	res.status(200).send({ token, activated, expiration_date });
 }

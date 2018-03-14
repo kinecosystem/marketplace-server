@@ -10,6 +10,8 @@ import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
 import { AssetValue } from "../models/offers";
 import { FailureReason } from "../models/orders";
+import { Asset } from "../models/offers";
+import { CompletedPayment, paymentComplete } from "./internal";
 
 export interface OrderList {
 	orders: Order[];
@@ -94,7 +96,7 @@ export async function submitOrder(
 	if (offer.type === "earn") {
 		await submitEarn(openOrder, offer, form, walletAddress, appId, logger);
 	} else {
-		await submitSpend(openOrder, offer, logger);
+		await submitSpend(openOrder, offer, walletAddress, appId, logger);
 	}
 
 	// transition open order to pending order
@@ -125,7 +127,7 @@ async function submitEarn(
 }
 
 export async function submitSpend(
-	openOrder: db.OpenOrder, offer: offerDb.Offer, logger: LoggerInstance): Promise<void> {
+	openOrder: db.OpenOrder, offer: offerDb.Offer, walletAddress: string, appId: string, logger: LoggerInstance): Promise<void> {
 	// start a timer for order.expiration + grace till this order becomes failed
 	async function makeFailed() {
 		// XXX lock on order.id
@@ -137,7 +139,19 @@ export async function submitSpend(
 		await order.save();
 	}
 
+	// XXX simulate payment complete
 	// setTimeout(makeFailed, openOrder.expiration);
+	const payment: CompletedPayment = {
+		id: openOrder.id,
+		app_id: appId,
+		transaction_id: "some transaction",
+		recipient_address: offer.blockchainData.recipient_address, // offer received the kin
+		sender_address: walletAddress, // user sent the kin
+		amount: offer.amount,
+		timestamp: (new Date()).toISOString(),
+	};
+
+	paymentComplete(payment, logger);
 	return;
 }
 

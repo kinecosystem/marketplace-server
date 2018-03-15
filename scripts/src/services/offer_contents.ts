@@ -26,7 +26,7 @@ export const kikPoll: Poll = {
 	pages: [{
 		type: PageType.FullPageMultiChoice,
 		title: "Who do you primarily chat with on Kik?",
-		description: `Finish the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
+		description: `Complete the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
 		question: {
 			id: "favourite_color",
 			answers: [
@@ -77,7 +77,7 @@ export const tutorial: Tutorial = {
 			image: "https://s3.amazonaws.com/htmlpoll.kinecosystem.com/kinlogoTut%403x.png",
 			title: "What is Kin?",
 			bodyHtml: "Kin is a new currency for use in everyday digital services. In our Marketplace you\’ll be able to earn Kin by completing tasks and spend Kin on top brands",
-			footerHtml: "Finish the tutorial and earn <span style='color:#047cfc;'>6,000</span> Kin",
+			footerHtml: "Complete the tutorial and earn <span style='color:#047cfc;'>6,000</span> Kin",
 			buttonText: "Next",
 		},
 		{
@@ -85,7 +85,7 @@ export const tutorial: Tutorial = {
 			image: "https://s3.amazonaws.com/htmlpoll.kinecosystem.com/kinMarketplaceIcon%403x.png",
 			title: "Kin Marketplace",
 			bodyHtml: "The Kin Marketplace experience provides you with a core wallet functionally which includes a place to view your balance as well as incoming/outgoing payments. The Marketplace is a home base where you can engage in the earn/spend opportunities.",
-			footerHtml: "Finish the tutorial and earn <span style='color:#047cfc;'>6,000</span> Kin",
+			footerHtml: "Complete the tutorial and earn <span style='color:#047cfc;'>6,000</span> Kin",
 			buttonText: "Next",
 		},
 		{
@@ -93,7 +93,7 @@ export const tutorial: Tutorial = {
 			image: "https://s3.amazonaws.com/htmlpoll.kinecosystem.com/walletsIcon%403x.png",
 			title: "How to earn/spend Kin?",
 			bodyHtml: "You can earn Kin by investing a little time to complete tasks such as answering short surveys, watching a video or reading a tutorial just like this one.",
-			footerHtml: "Finish the tutorial and earn <span style='color:#047cfc;'>6,000</span> Kin",
+			footerHtml: "Complete the tutorial and earn <span style='color:#047cfc;'>6,000</span> Kin",
 			buttonText: "Got It",
 		},
 	],

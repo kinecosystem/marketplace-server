@@ -72,39 +72,40 @@ async function createOffers(): Promise<Offer[]> {
 		const content = new OfferContent();
 		content.contentType = "coupon";
 		content.offerId = offer.id;
-		content.content = JSON.stringify(coupon);
+		content.content = JSON.stringify(Object.assign(coupon, { amount })); // replace coupon amount with offer amount
 		await content.save();
 
 		return offer;
 	}
 
-	offers.push(await createEarn("Kin", "Learn More", "Kin Tutorial",
-		assetsBase + "earn_offer3.png", 1500, "Getting started tutorial", "Completed Tutorial",
-		tutorial));
-
 	offers.push(await createEarn("Dunkin Donuts", "Sweet tooth?", "Answer a poll",
-		assetsBase + "earn_offer1.png", 2000, "Dunkin Donuts", "Completed Poll",
+		assetsBase + "earn_offer1.png", 2, "Dunkin Donuts", "Completed Poll",
 		animalPoll));
 	offers.push(await createEarn("Kik", "Tell us more", "Answer a poll",
-		assetsBase + "earn_offer2.png", 2500, "Kik", "Completed Poll",
+		assetsBase + "earn_offer2.png", 3, "Kik", "Completed Poll",
 		kikPoll));
+	offers.push(await createEarn("Kin", "Learn More", "Kin Tutorial",
+		assetsBase + "earn_offer3.png", 1, "Getting started tutorial", "Completed Tutorial",
+		tutorial));
 	offers.push(await createEarn("McDonald's", "Big Mac fan?", "Answer a poll",
-		assetsBase + "earn_offer4.png", 2750, "McDonald's", "Completed Poll",
+		assetsBase + "earn_offer4.png", 3, "McDonald's", "Completed Poll",
 		animalPoll));
 	offers.push(await createEarn("Nike", "Run or walk?", "Answer a poll",
-		assetsBase + "earn_offer5.png", 3000, "Nike", "Completed Poll",
+		assetsBase + "earn_offer5.png", 3, "Nike", "Completed Poll",
 		animalPoll));
 
 	offers.push(await createSpend("Spotify", "Get Coupon", "month subscription",
-		assetsBase + "spend_offer1.png", 8000, "Spotify", "month subscription",
+		assetsBase + "spend_offer1.png", 8, "Spotify", "month subscription",
 		"show coupon", {
 			title: "Your redeem code",
 			description: "How to redeem:",
-			link: "spotify.com/redeem"
+			link: "spotify.com/redeem",
+			image: assetsBase + "coupon_1.png"
+
 		}, {
 			title: "Redeem code",
 			description: "Get a 1 week subscription for Spotify. Click on balance to get your code",
-			amount: 8000,
+			amount: 8,
 			image: assetsBase + "coupon_1.png",
 			confirmation: {
 				title: "Thank you",
@@ -113,15 +114,17 @@ async function createOffers(): Promise<Offer[]> {
 			}
 		}));
 	offers.push(await createSpend("Sound Cloud", "Get Coupon", "month subscription",
-		assetsBase + "spend_offer2.png", 6000, "Sound Cloud", "month subscription",
+		assetsBase + "spend_offer2.png", 6, "Sound Cloud", "month subscription",
 		"show coupon", {
 			title: "Your redeem code",
 			description: "How to redeem:",
-			link: "Soundcloud.com/redeem"
+			link: "Soundcloud.com/redeem",
+			image: assetsBase + "coupon_2.png"
+
 		}, {
 			title: "Redeem code",
 			description: "Get a 1 week subscription for Soundcloud. Click on balance to get your code",
-			amount: 6000,
+			amount: 6,
 			image: assetsBase + "coupon_2.png",
 			confirmation: {
 				title: "Thank you",
@@ -130,15 +133,17 @@ async function createOffers(): Promise<Offer[]> {
 			}
 		}));
 	offers.push(await createSpend("asos", "Get Coupon", "month subscription",
-		assetsBase + "spend_offer3.png", 6000, "asos", "month subscription",
+		assetsBase + "spend_offer3.png", 6, "asos", "month subscription",
 		"show coupon", {
 			title: "Your redeem code",
 			description: "How to redeem:",
-			link: "asos.com/redeem"
+			link: "asos.com/redeem",
+			image: assetsBase + "coupon_3.png"
+
 		}, {
 			title: "Redeem code",
 			description: "Get a $5 gift card for Asos. Click on balance to get your code",
-			amount: 6000,
+			amount: 6,
 			image: assetsBase + "coupon_3.png",
 			confirmation: {
 				title: "Thank you",
@@ -147,15 +152,17 @@ async function createOffers(): Promise<Offer[]> {
 			}
 		}));
 	offers.push(await createSpend("Dunkin Donuts", "Get Coupon", "month subscription",
-		assetsBase + "spend_offer4.png", 6000, "Dunkin Donuts", "month subscription",
+		assetsBase + "spend_offer4.png", 6, "Dunkin Donuts", "month subscription",
 		"show coupon", {
 			title: "Your redeem code",
 			description: "How to redeem:",
-			link: "DunkinDonut.com/redeem"
+			link: "DunkinDonut.com/redeem",
+			image: assetsBase + "coupon_4.png"
+
 		}, {
 			title: "Redeem code",
 			description: "Get a $5 gift card for Dunkin Donuts. Click on balance to get your code",
-			amount: 6000,
+			amount: 6,
 			image: assetsBase + "coupon_4.png",
 			confirmation: {
 				title: "Thank you",
@@ -164,15 +171,17 @@ async function createOffers(): Promise<Offer[]> {
 			}
 		}));
 	offers.push(await createSpend("Sephora", "Get Coupon", "month subscription",
-		assetsBase + "spend_offer5.png", 6000, "Sephora", "month subscription",
+		assetsBase + "spend_offer5.png", 6, "Sephora", "month subscription",
 		"show coupon", {
 			title: "Your redeem code",
 			description: "How to redeem:",
-			link: "Sephora.com/redeem"
+			link: "Sephora.com/redeem",
+			image: assetsBase + "coupon_5.png"
+
 		}, {
 			title: "Redeem code",
 			description: "Get a $5 gift card for Sephora. Click on balance to get your code",
-			amount: 6000,
+			amount: 6,
 			image: assetsBase + "coupon_5.png",
 			confirmation: {
 				title: "Thank you",

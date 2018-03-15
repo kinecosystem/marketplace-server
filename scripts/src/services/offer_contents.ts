@@ -67,6 +67,7 @@ export interface CouponOrderContent {
 	title: string;
 	description: string;
 	link: string;
+	image: string;
 }
 
 export const tutorial: Tutorial = {

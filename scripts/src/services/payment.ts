@@ -36,8 +36,16 @@ export interface Wallet {
 	native_balance: number;
 }
 
+export interface Watcher {
+	wallet_addresses: [string];
+	callback: string;
+	service_id?: string;
+}
+
+const SERVICE_ID = "marketplace";
+
 export async function payTo(
-		walletAddress: string, appId: string, amount: number, orderId: string, logger: LoggerInstance) {
+	walletAddress: string, appId: string, amount: number, orderId: string, logger: LoggerInstance) {
 	logger.info(`paying ${amount} to ${walletAddress} with meta ${orderId}`);
 	const payload: PaymentRequest = {
 		amount,
@@ -68,5 +76,11 @@ export async function getWalletData(walletAddress: string, logger: LoggerInstanc
 
 export async function getPaymentData(orderId: string, logger: LoggerInstance): Promise<Payment> {
 	const res = await axios.default.get(config.payment_service + "/payments/" + orderId);
+	return res.data;
+}
+
+export async function setWatcherEndpoint(addresses: [string]): Promise<Watcher> {
+	const payload: Watcher = { wallet_addresses: addresses, callback: config.payment_complete_callback };
+	const res = await axios.default.put(config.payment_service + "/watchers/" + SERVICE_ID, payload);
 	return res.data;
 }

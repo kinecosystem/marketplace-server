@@ -257,18 +257,36 @@ async function createApp(appId, apiKey, name) {
 	const jwtPublic = fs.readFileSync("./examples/jwt_public_key.pem", "utf-8");
 	const jwtPrivate = fs.readFileSync("./examples/jwt_private_key.pem", "utf-8");
 
-	const app = new Application(appId, name, { 1: jwtPublic });
+	const app = Application.Create({
+		id: appId,
+		name,
+		jwtPublicKeys: { 1: jwtPublic }
+	});
 	app.apiKey = apiKey;  // XXX temporary run-over apiKey for testing
 	await app.save();
 	return app;
 }
 
 initModels().then(async () => {
-	const user1 = await (new User("doody", "kik", "wallet1")).save();
-	const user2 = await (new User("nitzan", "kik", "wallet2")).save();
+	const user1 = await (User.Create({
+		appUserId: "doody",
+		appId: "kik",
+		walletAddress: "wallet1"
+	})).save();
+	const user2 = await (User.Create({
+		appUserId: "nitzan",
+		appId: "kik",
+		walletAddress: "wallet2"
+	})).save();
 
-	const authToken1 = await (new AuthToken(user1.id, "device1")).save();
-	const authToken2 = await (new AuthToken(user2.id, "device2")).save();
+	const authToken1 = await (AuthToken.Create({
+		userId: user1.id,
+		deviceId: "device1"
+	})).save();
+	const authToken2 = await (AuthToken.Create({
+		userId: user2.id,
+		deviceId: "device2"
+	})).save();
 
 	const app1 = await createApp("kik", Application.KIK_API_KEY, "Kik Messenger");
 	const app2 = await createApp("sample", Application.SAMPLE_API_KEY, "Sample Application");

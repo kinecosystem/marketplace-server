@@ -1,7 +1,8 @@
 import { Column, Entity } from "typeorm";
 
+import { generateId, IdPrefix } from "../utils";
+
 import { CreationDateModel, register as Register } from "./index";
-import { IdPrefix } from "../utils";
 import { BlockchainData, Offer, OfferType, OrderValue } from "./offers";
 
 export type OrderMeta = {
@@ -20,6 +21,10 @@ export type OrderStatus = "completed" | "failed" | "pending";
 @Entity({ name: "orders" })
 @Register
 export class Order extends CreationDateModel {
+	protected static initializers = CreationDateModel.copyInitializers({
+		id: () => generateId(IdPrefix.Transaction)
+	});
+
 	@Column()
 	public type: OfferType;
 
@@ -46,27 +51,6 @@ export class Order extends CreationDateModel {
 
 	@Column({ name: "completion_date", nullable: true })
 	public completionDate: Date;
-
-	/**
-	 * create an order in pending state from an open order and offer
-	 */
-	public constructor() // XXX nitzan - I don't want a default constructor, but Register requires this
-	public constructor(openOrder: OpenOrder, offer: Offer)
-	public constructor(openOrder?: OpenOrder, offer?: Offer) {
-		super(IdPrefix.Transaction);
-		if (!openOrder || !offer) {
-			return; // XXX see ECO-110
-		}
-		Object.assign(this, {
-			id: openOrder.id,
-			userId: openOrder.userId,
-			offerId: openOrder.offerId,
-			amount: offer.amount,
-			type: offer.type,
-			status: "pending",
-			meta: offer.meta.order_meta,
-		});
-	}
 }
 
 export type OpenOrder = {

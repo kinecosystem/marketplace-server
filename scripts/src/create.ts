@@ -3,22 +3,23 @@
  * All the names of companies, products and KIN values are completely made up and are used for TESTING only.
  */
 import * as fs from "fs";
-import { User, AuthToken } from "./models/users";
+import { AuthToken, User } from "./models/users";
 import { Application } from "./models/applications";
-import { Offer, OfferContent, AppOffer, Asset, OfferOwner } from "./models/offers";
-import { Order } from "./models/orders";
+import { AppOffer, Asset, Offer, OfferContent, OfferOwner } from "./models/offers";
+import { OpenOrder, Order } from "./models/orders";
 
 import { init as initModels } from "./models";
 import { getConfig } from "./config";
 import {
 	animalPoll,
-	kikPoll,
-	tutorial,
-	Poll,
-	Tutorial,
 	CouponInfo,
-	CouponOrderContent
+	CouponOrderContent,
+	kikPoll,
+	Poll,
+	tutorial,
+	Tutorial
 } from "./services/offer_contents";
+import { IdPrefix, generateId } from "./utils";
 
 async function createOffers(): Promise<Offer[]> {
 	const assetsBase = getConfig().assets_base;
@@ -204,17 +205,18 @@ async function createOffers(): Promise<Offer[]> {
 }
 
 function orderFromOffer(offer: Offer, userId: string): Order {
-	const order = new Order();
-	order.userId = userId;
-	order.offerId = offer.id;
-	order.meta = offer.meta.order_meta;
+	const order = new Order({
+		id: generateId(IdPrefix.Transaction),
+		userId,
+		offerId: offer.id,
+		expiration: new Date()
+	}, offer);
+
 	order.blockchainData = {
 		transaction_id: "A123123123123123",
 		recipient_address: "G123123123123",
 		sender_address: "G123123123123"
 	};
-	order.amount = offer.amount;
-	order.type = offer.type;
 
 	return order;
 }

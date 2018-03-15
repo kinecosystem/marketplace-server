@@ -54,6 +54,9 @@ export class Order extends CreationDateModel {
 	public constructor(openOrder: OpenOrder, offer: Offer)
 	public constructor(openOrder?: OpenOrder, offer?: Offer) {
 		super(IdPrefix.Transaction);
+		if (!openOrder || !offer) {
+			return; // XXX see ECO-110
+		}
 		Object.assign(this, {
 			id: openOrder.id,
 			userId: openOrder.userId,

@@ -12,3 +12,5 @@ export function getConfig(): Config {
 
 	return getConfigBase(`${ path }.json`);
 }
+
+getConfig();

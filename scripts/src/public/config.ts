@@ -16,3 +16,6 @@ export function getConfig(): Config {
 
 	return getConfigBase(`${ path }.json`);
 }
+
+// call this to set the config to use, so that who ever calls the base getConfig will work
+getConfig();

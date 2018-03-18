@@ -6,10 +6,11 @@ import * as fs from "fs";
 import { AuthToken, User } from "./models/users";
 import { Application } from "./models/applications";
 import { AppOffer, Asset, Offer, OfferContent, OfferOwner } from "./models/offers";
-import { OpenOrder, Order } from "./models/orders";
+import { Order } from "./models/orders";
 
-import { init as initModels } from "./models";
 import { getConfig } from "./public/config";
+import { generateId, IdPrefix } from "./utils";
+import { init as initModels } from "./models";
 import {
 	animalPoll,
 	CouponInfo,
@@ -19,7 +20,6 @@ import {
 	tutorial,
 	Tutorial
 } from "./public/services/offer_contents";
-import { IdPrefix, generateId } from "./utils";
 
 export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
 

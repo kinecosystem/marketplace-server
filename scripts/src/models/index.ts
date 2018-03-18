@@ -4,13 +4,9 @@ import { BaseEntity, Column, createConnection, PrimaryColumn, Connection, Connec
 import { getConfig } from "../config";
 import { normalizeError, path, IdPrefix, generateId } from "../utils";
 
-const dbConfig = Object.assign(getConfig().db);
-if (dbConfig.type === "sqlite" && !/^[./]/.test(dbConfig.database)) {
-	dbConfig.database = path(dbConfig.database);
-}
-
 const entities: ModelConstructor[] = [];
 let connection: Connection;
+let dbConfig: ConnectionOptions;
 let initPromise: Promise<string>;
 
 export type ModelConstructor = { new(): Model };
@@ -43,7 +39,11 @@ export function init(): Promise<string> {
 		return initPromise;
 	}
 
-	dbConfig.entities = entities;
+	dbConfig = Object.assign(getConfig().db);
+	if (dbConfig.type === "sqlite" && !/^[./]/.test(dbConfig.database)) {
+		(dbConfig as any).database = path(dbConfig.database);
+	}
+	(dbConfig as any).entities = entities;
 
 	initPromise = createConnection(dbConfig)
 		.then(conn => {

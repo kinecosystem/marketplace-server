@@ -20,6 +20,8 @@ export interface Tutorial {
 	pages: Array<{ type: PageType.ImageAndText, title: string, image: string, bodyHtml: string, footerHtml: string, buttonText: string }>;
 }
 
+export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
+
 export type Answers = { [key: string]: string };
 
 export const kikPoll: Poll = {

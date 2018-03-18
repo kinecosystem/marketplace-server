@@ -18,10 +18,8 @@ import {
 	kikPoll,
 	Poll,
 	tutorial,
-	Tutorial
+	Tutorial, TUTORIAL_DESCRIPTION
 } from "./public/services/offer_contents";
-
-export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
 
 async function createOffers(): Promise<Offer[]> {
 	const assetsBase = getConfig().assets_base;

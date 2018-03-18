@@ -52,7 +52,7 @@
     "transpile": "tsc -p scripts",
     "lint": "./node_modules/.bin/tslint -p ./scripts",
     "build": "npm-run-all clean lint transpile",
-    "start": "node scripts/bin/index",
+    "start": "node scripts/bin/public/index",
     "create-db": "node scripts/bin/create",
     "restart": "npm-run-all build start",
     "test-system": "node scripts/bin/mock_client",

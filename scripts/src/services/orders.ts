@@ -110,7 +110,7 @@ export async function submitOrder(
 	offer.cap.used += 1;
 	await offer.save();
 	await order.save();
-	openOrdersDB.delete(openOrder.id);
+	openOrdersDB.delete(orderId);
 
 	// pay or start timer for payment
 	if (offer.type === "earn") {
@@ -159,7 +159,7 @@ export async function cancelOrder(orderId: string, logger: LoggerInstance): Prom
 	if (!openOrder) {
 		throw Error(`no such order ${orderId}`);
 	}
-	openOrdersDB.delete(openOrder.id);
+	openOrdersDB.delete(orderId);
 }
 
 export async function getOrderHistory(

@@ -21,6 +21,8 @@ import {
 } from "./services/offer_contents";
 import { IdPrefix, generateId } from "./utils";
 
+export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
+
 async function createOffers(): Promise<Offer[]> {
 	const assetsBase = getConfig().assets_base;
 
@@ -95,7 +97,7 @@ async function createOffers(): Promise<Offer[]> {
 	offers.push(await createEarn("Kik", "Tell us more", "Answer a poll",
 		assetsBase + "earn_offer2.png", 30, "Kik", "Completed Poll",
 		kikPoll));
-	offers.push(await createEarn("Kin", "Learn More", "Kin Tutorial",
+	offers.push(await createEarn("Kin", "Learn More", TUTORIAL_DESCRIPTION,
 		assetsBase + "earn_offer3.png", 10, "Getting started tutorial", "Completed Tutorial",
 		tutorial));
 	offers.push(await createEarn("McDonald's", "Big Mac fan?", "Answer a poll",

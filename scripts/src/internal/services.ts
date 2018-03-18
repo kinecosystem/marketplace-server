@@ -3,7 +3,8 @@ import { LoggerInstance } from "winston";
 
 import { pick } from "../utils";
 import * as db from "../models/orders";
-import { Asset } from "../models/offers";
+import { Asset, Offer } from "../models/offers";
+import { setWatcherEndpoint, Watcher } from "../public/services/payment";
 
 export interface CompletedPayment {
 	id: string;
@@ -68,4 +69,22 @@ export async function paymentFailed(payment: CompletedPayment, reason: string, l
 	order.value = { failure_message: reason };
 	await order.save();
 	logger.info(`failed order with payment <${payment.id}, ${payment.transaction_id}>`);
+}
+
+export async function initPaymentCallbacks(logger: LoggerInstance): Promise<Watcher> {
+	const offers = await Offer.find(); // get all active offers
+	const addresses: string[] = removeDups(offers
+		.map(offer => offer.blockchainData.recipient_address)
+		.filter(address => address !== undefined));
+
+	logger.info("setting payment watching addresses", { addresses });
+	return await setWatcherEndpoint(addresses);
+}
+
+function removeDups(arr: string[]): string[] {
+	const temp = {};
+	for (const item of arr) {
+		temp[item] = true;
+	}
+	return Object.keys(temp);
 }

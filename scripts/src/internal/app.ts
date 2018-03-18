@@ -8,6 +8,7 @@ const config = getConfig();
 const logger = initLogger(...config.loggers);
 
 import { createRoutes } from "./routes";
+import { initPaymentCallbacks } from "./services";
 import { init as initModels } from "../models/index";
 import { init as initCustomMiddleware, notFoundHandler, generalErrorHandler } from "./middleware";
 
@@ -36,5 +37,8 @@ app.use(generalErrorHandler);
 
 // initializing db and models
 initModels().then(msg => {
-	logger.debug(msg);
+	logger.debug("init db", { msg });
+	initPaymentCallbacks(logger).then(res => {
+		logger.debug("init payment result", { res });
+	});
 });

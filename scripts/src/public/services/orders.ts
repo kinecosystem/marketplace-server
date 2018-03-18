@@ -135,19 +135,19 @@ export async function submitSpend(
 
 	// start a timer for order.expiration + grace till this order becomes failed
 	// setTimeout(makeFailed, order.expiration, order.id);
-
-	// simulate payment complete // XXX delete this
-	const payment: CompletedPayment = {
-		id: order.id,
-		app_id: appId,
-		transaction_id: "some transaction",
-		recipient_address: offer.blockchainData.recipient_address, // offer received the kin
-		sender_address: walletAddress, // user sent the kin
-		amount: offer.amount,
-		timestamp: (new Date()).toISOString(),
-	};
-
-	paymentComplete(payment, logger);
+	//
+	// // simulate payment complete // XXX delete this
+	// const payment: CompletedPayment = {
+	// 	id: order.id,
+	// 	app_id: appId,
+	// 	transaction_id: "some transaction",
+	// 	recipient_address: offer.blockchainData.recipient_address, // offer received the kin
+	// 	sender_address: walletAddress, // user sent the kin
+	// 	amount: offer.amount,
+	// 	timestamp: (new Date()).toISOString(),
+	// };
+	//
+	// paymentComplete(payment, logger);
 	return;
 }
 

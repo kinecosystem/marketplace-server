@@ -1,9 +1,8 @@
 import * as axios from "axios";
 import * as uuid4 from "uuid4";
-import { TUTORIAL_DESCRIPTION } from "./create";
 import { Offer, OfferList } from "./public/services/offers";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
-import { Poll, Tutorial } from "./public/services/offer_contents";
+import { Poll, Tutorial, TUTORIAL_DESCRIPTION } from "./public/services/offer_contents";
 import { delay, generateId } from "./utils";
 import { Application } from "./models/applications";
 import { ApiError } from "./public/middleware";
@@ -11,7 +10,8 @@ import * as StellarSdk from "stellar-sdk";
 import { AuthToken } from "./public/services/users";
 import { AbstractOperation } from "stellar-sdk";
 
-const BASE = "http://api.kinmarketplace.com";
+const BASE = "http://localhost:3000";
+// const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
 
 class Stellar {
 	public server: StellarSdk.Server; // StellarSdk.Server
@@ -365,4 +365,4 @@ async function main() {
 
 main()
 	.then(() => console.log("done"))
-	.catch(err => console.log(err.message));
+	.catch(err => console.log(err.message + "\n" + err.stack));

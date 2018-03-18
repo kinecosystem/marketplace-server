@@ -1,7 +1,6 @@
 import * as express from "express";
-import * as bearerToken from "express-bearer-token";
 
-import { init as baseInit, requestLogger, logRequest } from "../middleware";
+import { init as baseInit, logRequest, requestLogger } from "../middleware";
 
 export * from "../middleware";
 

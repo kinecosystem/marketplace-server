@@ -1,8 +1,6 @@
 import moment = require("moment");
 import { LoggerInstance } from "winston";
 
-import { FailureReason } from "../../models/orders";
-import { AssetValue } from "../../models/offers";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { generateId, IdPrefix } from "../../utils";
@@ -10,7 +8,9 @@ import { generateId, IdPrefix } from "../../utils";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
-import { CompletedPayment, paymentComplete } from "./internal";
+import { CompletedPayment, paymentComplete } from "../../internal/services";
+import { AssetValue } from "../../models/offers";
+import { FailureReason } from "../../models/orders";
 
 export interface OrderList {
 	orders: Order[];

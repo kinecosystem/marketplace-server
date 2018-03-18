@@ -1,4 +1,5 @@
 import { ConnectionOptions } from "typeorm";
+import "source-map-support/register";
 
 import { LogTarget } from "./logging";
 

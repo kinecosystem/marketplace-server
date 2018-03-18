@@ -8,7 +8,7 @@ import { Application } from "./models/applications";
 import { ApiError } from "./public/middleware";
 import * as StellarSdk from "stellar-sdk";
 import { AuthToken } from "./public/services/users";
-import { AbstractOperation } from "stellar-sdk";
+import { Operation, xdr, Memo } from "stellar-sdk";
 
 const BASE = "http://localhost:3000";
 // const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
@@ -31,14 +31,19 @@ const STELLAR = new Stellar("testnet");
 class Client {
 
 	public authToken: AuthToken;
-	private keyPair: StellarSdk.KeyPair = null;
+	private keyPair: StellarSdk.Keypair = null;
+	private appId: string;
 
 	public async register(appId: string, apiKey: string, userId: string, walletAddress?: string) {
-		const hasPrivateKey = !walletAddress;
+		const generatedWallet = !walletAddress;
 		if (walletAddress) {
-			this.keyPair = StellarSdk.Keypair.fromPublicKey(walletAddress);
-		} else {
-			walletAddress = this.createWallet();
+			if (walletAddress.startsWith("S")) {
+				this.keyPair = StellarSdk.Keypair.fromSecret(walletAddress);
+			} else {
+				this.keyPair = StellarSdk.Keypair.fromPublicKey(walletAddress);
+			}
+		} else { // generate a keypair
+			this.createWallet();
 		}
 
 		const res = await this._post("/v1/users", {
@@ -47,12 +52,13 @@ class Client {
 			device_id: "my_device",
 			app_id: appId,
 			api_key: Application.KIK_API_KEY,
-			public_address: walletAddress,
+			public_address: this.keyPair.publicKey(),
 		});
 
+		this.appId = appId;
 		this.authToken = res.data;
 
-		if (hasPrivateKey) {
+		if (generatedWallet) {
 			await this.establishTrustLine();
 		}
 	}
@@ -61,14 +67,14 @@ class Client {
 		return this.authToken.activated;
 	}
 
-	public async pay(recipientAddress: string, amount: number): Promise<StellarSdk.TransactionResult> {
+	public async pay(recipientAddress: string, amount: number, orderId: string): Promise<any> {
 		const op = StellarSdk.Operation.payment({
 			destination: recipientAddress,
 			asset: STELLAR.kinAsset,
-			amount
+			amount: amount.toString()
 		});
-
-		return await this.stellarOperation(op);
+		const memoText = `1-${this.appId}-${orderId}`;
+		return await this.stellarOperation(op, memoText);
 	}
 
 	public async activate() {
@@ -161,22 +167,27 @@ class Client {
 		};
 	}
 
-	private createWallet(): string {
+	private createWallet(): void {
 		this.keyPair = StellarSdk.Keypair.random();
-		return this.keyPair.publicKey();
 	}
 
-	private async stellarOperation(operation: StellarSdk.AbstractOperation): Promise<StellarSdk.TransactionResult> {
+	private async stellarOperation(operation: xdr.Operation<Operation.Operation>, memoText?: string): Promise<any> {
 		const accountResponse = await STELLAR.server.loadAccount(this.keyPair.publicKey());
-		const transaction = new StellarSdk.TransactionBuilder(accountResponse).addOperation(operation).build();
+		const transactionBuilder = new StellarSdk.TransactionBuilder(accountResponse);
+		transactionBuilder.addOperation(operation);
+		if (memoText) {
+			transactionBuilder.addMemo(Memo.text(memoText));
+		}
+		const transaction = transactionBuilder.build();
 
-		transaction.sign(this.keyPair); // sign the transaction
+		transaction.sign(this.keyPair);
 		return await STELLAR.server.submitTransaction(transaction);
 	}
 
-	private async establishTrustLine(): Promise<StellarSdk.TransactionResult> {
+	private async establishTrustLine(): Promise<any> {
 		const op = StellarSdk.Operation.changeTrust({
-			asset: STELLAR.kinAsset
+			asset: STELLAR.kinAsset,
+			limit: "" // XXX BUG this should be optional
 		});
 
 		for (let i = 0; i < 3; i++) {
@@ -206,6 +217,46 @@ async function didNotApproveTOS() {
 	throw Error("expected to throw have to complete TOS");
 }
 
+async function spendFlow() {
+	const client = new Client();
+	await client.register("kik", Application.KIK_API_KEY, "rich_user", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.activate();
+	const offers = await client.getOffers();
+
+	let selectedOffer: Offer;
+
+	for (const offer of offers.offers) {
+		if (offer.offer_type === "spend") {
+			selectedOffer = offer;
+		}
+	}
+	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
+	const openOrder = await client.createOrder(selectedOffer.id);
+	console.log(`got order ${openOrder.id}`);
+	// pay for the offer
+	client.pay(selectedOffer.blockchain_data.recipient_address, selectedOffer.amount, openOrder.id);
+
+	await client.submitOrder(openOrder.id);
+
+	// poll on order payment
+	let order = await client.getOrder(openOrder.id);
+	console.log(`completion date: ${order.completion_date}`);
+	for (let i = 0; i < 30 && order.status === "pending"; i++) {
+		order = await client.getOrder(openOrder.id);
+		await delay(1000);
+	}
+	console.log(`completion date: ${order.completion_date}`);
+
+	if (order.status === "completed") {
+		console.log("order completed!");
+	} else {
+		throw new Error("order still pending :(");
+	}
+
+	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
+	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
+}
+
 async function earnFlow() {
 	const client = new Client();
 	await client.register("kik", Application.KIK_API_KEY, "doody98ds",
@@ -214,21 +265,21 @@ async function earnFlow() {
 
 	const offers = await client.getOffers();
 
-	let earn: Offer;
+	let selectedOffer: Offer;
 
 	for (const offer of offers.offers) {
 		if (offer.offer_type === "earn") {
-			earn = offer;
+			selectedOffer = offer;
 		}
 	}
 
-	console.log(`requesting order for offer: ${earn.id}: ${earn.content}`);
-	const openOrder = await client.createOrder(earn.id);
+	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
+	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 
 	// fill in the poll
-	console.log("poll " + earn.content);
-	const poll: Poll = JSON.parse(earn.content);
+	console.log("poll " + selectedOffer.content);
+	const poll: Poll = JSON.parse(selectedOffer.content);
 
 	const content = JSON.stringify({ [poll.pages[0].question.id]: poll.pages[0].question.answers[0] });
 	console.log("answers " + content);
@@ -247,7 +298,7 @@ async function earnFlow() {
 	if (order.status === "completed") {
 		console.log("order completed!");
 	} else {
-		console.log("order still pending :(");
+		throw new Error("order still pending :(");
 	}
 
 	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
@@ -263,22 +314,22 @@ async function earnTutorial() {
 
 	const offers = await client.getOffers();
 
-	let earn: Offer;
+	let selectedOffer: Offer;
 
 	for (const offer of offers.offers) {
 		if (offer.description === TUTORIAL_DESCRIPTION) {
 			console.log("offer", offer);
-			earn = offer;
+			selectedOffer = offer;
 		}
 	}
 
-	console.log(`requesting order for offer: ${earn.id}: ${earn.content}`);
-	const openOrder = await client.createOrder(earn.id);
+	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content.slice(0, 10)}`);
+	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 
 	// fill in the poll
-	console.log("poll " + earn.content);
-	const poll: Tutorial = JSON.parse(earn.content);
+	console.log("poll " + selectedOffer.content.slice(0, 10));
+	const poll: Tutorial = JSON.parse(selectedOffer.content);
 
 	const content = JSON.stringify({ });
 	console.log("answers " + content);
@@ -297,7 +348,7 @@ async function earnTutorial() {
 	if (order.status === "completed") {
 		console.log("order completed!");
 	} else {
-		console.log("order still pending :(");
+		throw new Error("order still pending :(");
 	}
 
 	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
@@ -310,10 +361,11 @@ async function testRegisterNewUser() {
 }
 
 async function main() {
-	await earnFlow();
-	await didNotApproveTOS();
-	await testRegisterNewUser();
-	await earnTutorial();
+	// await earnFlow();
+	// await didNotApproveTOS();
+	// await testRegisterNewUser();
+	// await earnTutorial();
+	await spendFlow();
 }
 
 main()

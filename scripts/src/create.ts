@@ -90,19 +90,19 @@ async function createOffers(): Promise<Offer[]> {
 	}
 
 	offers.push(await createEarn("Dunkin Donuts", "Sweet tooth?", "Answer a poll",
-		assetsBase + "earn_offer1.png", 2, "Dunkin Donuts", "Completed Poll",
+		assetsBase + "earn_offer1.png", 20, "Dunkin Donuts", "Completed Poll",
 		animalPoll));
 	offers.push(await createEarn("Kik", "Tell us more", "Answer a poll",
-		assetsBase + "earn_offer2.png", 3, "Kik", "Completed Poll",
+		assetsBase + "earn_offer2.png", 30, "Kik", "Completed Poll",
 		kikPoll));
 	offers.push(await createEarn("Kin", "Learn More", "Kin Tutorial",
-		assetsBase + "earn_offer3.png", 1, "Getting started tutorial", "Completed Tutorial",
+		assetsBase + "earn_offer3.png", 10, "Getting started tutorial", "Completed Tutorial",
 		tutorial));
 	offers.push(await createEarn("McDonald's", "Big Mac fan?", "Answer a poll",
-		assetsBase + "earn_offer4.png", 3, "McDonald's", "Completed Poll",
+		assetsBase + "earn_offer4.png", 30, "McDonald's", "Completed Poll",
 		animalPoll));
 	offers.push(await createEarn("Nike", "Run or walk?", "Answer a poll",
-		assetsBase + "earn_offer5.png", 3, "Nike", "Completed Poll",
+		assetsBase + "earn_offer5.png", 30, "Nike", "Completed Poll",
 		animalPoll));
 
 	offers.push(await createSpend("Spotify", "Get Coupon", "month subscription",

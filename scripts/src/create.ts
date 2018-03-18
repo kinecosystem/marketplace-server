@@ -226,7 +226,7 @@ async function createOrders(userId: string) {
 	let order = orderFromOffer(offers[0], userId);
 	order.status = "completed";
 	const asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
-	order.value = asset.value;
+	order.value = asset.asOrderValue(); // {coupon_code: 'xxxxxx', type: 'coupon'}
 	await order.save();
 
 	order = orderFromOffer(offers[1], userId);

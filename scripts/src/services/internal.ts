@@ -41,7 +41,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	if (order.type === "spend") {
 		// XXX can we call findOne?
 		const asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
-		order.value = asset.value;
+		order.value = asset.asOrderValue();
 		asset.ownerId = order.userId;
 		await asset.save();  // XXX should be in a transaction with order.save
 	} else {

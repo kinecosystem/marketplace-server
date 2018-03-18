@@ -2,7 +2,7 @@ import { Column, Entity } from "typeorm";
 
 import { CreationDateModel, register as Register } from "./index";
 import { IdPrefix } from "../utils";
-import { BlockchainData, AssetValue, OfferType, Offer } from "./offers";
+import { BlockchainData, Offer, OfferType, OrderValue } from "./offers";
 
 export type OrderMeta = {
 	title: string;
@@ -36,7 +36,7 @@ export class Order extends CreationDateModel {
 	public meta: OrderMeta;
 
 	@Column("simple-json", { nullable: true }) // the asset or JWT payment confirmation
-	public value: AssetValue | FailureReason;
+	public value: OrderValue | FailureReason;
 
 	@Column()
 	public amount: number;

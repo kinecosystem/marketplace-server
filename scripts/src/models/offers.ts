@@ -1,4 +1,4 @@
-import { Column, Entity, Index, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
+import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, Model, register as Register } from "./index";
 import { IdPrefix } from "../utils";
@@ -21,10 +21,6 @@ export type Cap = {
 	total: number;
 	used: number;
 	per_user: number;
-};
-
-export type AssetValue = {
-	coupon_code: string;
 };
 
 export type OfferType = "spend" | "earn";
@@ -108,6 +104,12 @@ export class AppOffer extends Model {
 	}
 }
 
+export type AssetValue = {
+	coupon_code: string;
+};
+
+export type OrderValue = AssetValue & { type: string };
+
 @Entity({ name: "assets" })
 @Register
 export class Asset extends CreationDateModel {
@@ -125,5 +127,9 @@ export class Asset extends CreationDateModel {
 
 	public constructor() {
 		super();
+	}
+
+	public asOrderValue(): OrderValue {
+		return Object.assign({ type: this.type }, this.value);
 	}
 }

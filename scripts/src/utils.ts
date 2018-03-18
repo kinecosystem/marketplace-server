@@ -64,3 +64,11 @@ export function pick<T, K extends keyof T>(obj: T, ...props: K[]): Pick<T, K> {
 	props.forEach(name => newObj[name] = obj[name]);
 	return newObj;
 }
+
+export function removeDups(arr: string[]): string[] {
+	const temp = {};
+	for (const item of arr) {
+		temp[item] = true;
+	}
+	return Object.keys(temp);
+}

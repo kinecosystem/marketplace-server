@@ -9,6 +9,7 @@ import { ApiError } from "./public/middleware";
 import * as StellarSdk from "stellar-sdk";
 import { AuthToken } from "./public/services/users";
 import { Operation, xdr, Memo } from "stellar-sdk";
+import { TransactionRecord } from "stellar-sdk";
 
 const BASE = "http://localhost:3000";
 // const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
@@ -59,7 +60,8 @@ class Client {
 		this.authToken = res.data;
 
 		if (generatedWallet) {
-			await this.establishTrustLine();
+			const res = await this.establishTrustLine();
+			console.log("trust tx hash: " + res.hash);
 		}
 	}
 
@@ -67,7 +69,7 @@ class Client {
 		return this.authToken.activated;
 	}
 
-	public async pay(recipientAddress: string, amount: number, orderId: string): Promise<any> {
+	public async pay(recipientAddress: string, amount: number, orderId: string): Promise<TransactionRecord> {
 		const op = StellarSdk.Operation.payment({
 			destination: recipientAddress,
 			asset: STELLAR.kinAsset,
@@ -75,6 +77,16 @@ class Client {
 		});
 		const memoText = `1-${this.appId}-${orderId}`;
 		return await this.stellarOperation(op, memoText);
+	}
+
+	public streamPayments() {
+		const es = STELLAR.server.payments()
+			.cursor("now")
+						.stream({
+								onmessage: () => { // XXX BUG should receive message
+									console.log();
+								}
+						});
 	}
 
 	public async activate() {
@@ -171,7 +183,7 @@ class Client {
 		this.keyPair = StellarSdk.Keypair.random();
 	}
 
-	private async stellarOperation(operation: xdr.Operation<Operation.Operation>, memoText?: string): Promise<any> {
+	private async stellarOperation(operation: xdr.Operation<Operation.Operation>, memoText?: string): Promise<TransactionRecord> {
 		const accountResponse = await STELLAR.server.loadAccount(this.keyPair.publicKey());
 		const transactionBuilder = new StellarSdk.TransactionBuilder(accountResponse);
 		transactionBuilder.addOperation(operation);
@@ -184,10 +196,10 @@ class Client {
 		return await STELLAR.server.submitTransaction(transaction);
 	}
 
-	private async establishTrustLine(): Promise<any> {
+	private async establishTrustLine(): Promise<TransactionRecord> {
 		const op = StellarSdk.Operation.changeTrust({
 			asset: STELLAR.kinAsset,
-			limit: "" // XXX BUG this should be optional
+			limit: undefined // XXX BUG this should be optional
 		});
 
 		for (let i = 0; i < 3; i++) {
@@ -219,7 +231,7 @@ async function didNotApproveTOS() {
 
 async function spendFlow() {
 	const client = new Client();
-	await client.register("kik", Application.KIK_API_KEY, "rich_user", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.register("kik", Application.KIK_API_KEY, "rich_user1", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 	const offers = await client.getOffers();
 
@@ -234,8 +246,8 @@ async function spendFlow() {
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 	// pay for the offer
-	client.pay(selectedOffer.blockchain_data.recipient_address, selectedOffer.amount, openOrder.id);
-
+	const res = await client.pay(selectedOffer.blockchain_data.recipient_address, selectedOffer.amount, openOrder.id);
+	console.log("pay result hash: " + res.hash);
 	await client.submitOrder(openOrder.id);
 
 	// poll on order payment
@@ -363,9 +375,9 @@ async function testRegisterNewUser() {
 async function main() {
 	// await earnFlow();
 	// await didNotApproveTOS();
-	// await testRegisterNewUser();
+	await testRegisterNewUser();
 	// await earnTutorial();
-	await spendFlow();
+	// await spendFlow();
 }
 
 main()

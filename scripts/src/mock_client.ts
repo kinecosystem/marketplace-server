@@ -6,6 +6,7 @@ import { Poll, Tutorial } from "./services/offer_contents";
 import { delay } from "./utils";
 import { Application } from "./models/applications";
 import { ApiError } from "./middleware";
+import { TUTORIAL_DESCRIPTION } from "./create";
 
 const BASE = "http://localhost:3000";
 
@@ -170,7 +171,7 @@ async function earnTutorial() {
 	let earn: Offer;
 
 	for (const offer of offers.offers) {
-		if (offer.title === "Getting Started") {
+		if (offer.description === TUTORIAL_DESCRIPTION) {
 			console.log("offer", offer);
 			earn = offer;
 		}

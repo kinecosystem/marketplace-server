@@ -3,14 +3,25 @@
  * All the names of companies, products and KIN values are completely made up and are used for TESTING only.
  */
 import * as fs from "fs";
-import { User, AuthToken } from "./models/users";
+import { AuthToken, User } from "./models/users";
 import { Application } from "./models/applications";
-import { Offer, OfferContent, AppOffer, Asset, OfferOwner } from "./models/offers";
-import { Order } from "./models/orders";
+import { AppOffer, Asset, Offer, OfferContent, OfferOwner } from "./models/offers";
+import { OpenOrder, Order } from "./models/orders";
 
 import { init as initModels } from "./models";
 import { getConfig } from "./config";
-import { animalPoll, kikPoll, tutorial, Poll, Tutorial, CouponInfo, CouponOrderContent } from "./services/offer_contents";
+import {
+	animalPoll,
+	CouponInfo,
+	CouponOrderContent,
+	kikPoll,
+	Poll,
+	tutorial,
+	Tutorial
+} from "./services/offer_contents";
+import { IdPrefix, generateId } from "./utils";
+
+export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
 
 async function createOffers(): Promise<Offer[]> {
 	const assetsBase = getConfig().assets_base;
@@ -31,6 +42,7 @@ async function createOffers(): Promise<Offer[]> {
 		offer.ownerId = owner.id;
 		offer.type = "earn";
 		offer.cap = { total: 100, used: 0, per_user: 2 };
+		offer.blockchainData = { sender_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" };
 		await offer.save();
 
 		const content = new OfferContent();
@@ -67,6 +79,7 @@ async function createOffers(): Promise<Offer[]> {
 		offer.ownerId = owner.id;
 		offer.type = "spend";
 		offer.cap = { total: 100, used: 0, per_user: 2 };
+		offer.blockchainData = { recipient_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" };
 		await offer.save();
 
 		const content = new OfferContent();
@@ -79,19 +92,19 @@ async function createOffers(): Promise<Offer[]> {
 	}
 
 	offers.push(await createEarn("Dunkin Donuts", "Sweet tooth?", "Answer a poll",
-		assetsBase + "earn_offer1.png", 2, "Dunkin Donuts", "Completed Poll",
+		assetsBase + "earn_offer1.png", 20, "Dunkin Donuts", "Completed Poll",
 		animalPoll));
 	offers.push(await createEarn("Kik", "Tell us more", "Answer a poll",
-		assetsBase + "earn_offer2.png", 3, "Kik", "Completed Poll",
+		assetsBase + "earn_offer2.png", 30, "Kik", "Completed Poll",
 		kikPoll));
-	offers.push(await createEarn("Kin", "Learn More", "Kin Tutorial",
-		assetsBase + "earn_offer3.png", 1, "Getting started tutorial", "Completed Tutorial",
+	offers.push(await createEarn("Kin", "Learn More", TUTORIAL_DESCRIPTION,
+		assetsBase + "earn_offer3.png", 10, "Getting started tutorial", "Completed Tutorial",
 		tutorial));
 	offers.push(await createEarn("McDonald's", "Big Mac fan?", "Answer a poll",
-		assetsBase + "earn_offer4.png", 3, "McDonald's", "Completed Poll",
+		assetsBase + "earn_offer4.png", 30, "McDonald's", "Completed Poll",
 		animalPoll));
 	offers.push(await createEarn("Nike", "Run or walk?", "Answer a poll",
-		assetsBase + "earn_offer5.png", 3, "Nike", "Completed Poll",
+		assetsBase + "earn_offer5.png", 30, "Nike", "Completed Poll",
 		animalPoll));
 
 	offers.push(await createSpend("Spotify", "Get Coupon", "month subscription",
@@ -194,17 +207,18 @@ async function createOffers(): Promise<Offer[]> {
 }
 
 function orderFromOffer(offer: Offer, userId: string): Order {
-	const order = new Order();
-	order.userId = userId;
-	order.offerId = offer.id;
-	order.meta = offer.meta.order_meta;
+	const order = new Order({
+		id: generateId(IdPrefix.Transaction),
+		userId,
+		offerId: offer.id,
+		expiration: new Date()
+	}, offer);
+
 	order.blockchainData = {
 		transaction_id: "A123123123123123",
 		recipient_address: "G123123123123",
 		sender_address: "G123123123123"
 	};
-	order.amount = offer.amount;
-	order.type = offer.type;
 
 	return order;
 }
@@ -214,7 +228,7 @@ async function createOrders(userId: string) {
 	let order = orderFromOffer(offers[0], userId);
 	order.status = "completed";
 	const asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
-	order.value = asset.value;
+	order.value = asset.asOrderValue(); // {coupon_code: 'xxxxxx', type: 'coupon'}
 	await order.save();
 
 	order = orderFromOffer(offers[1], userId);

@@ -2,6 +2,7 @@ import moment = require("moment");
 import { LoggerInstance } from "winston";
 
 import * as db from "../models/orders";
+import { Asset } from "../models/offers";
 
 export interface CompletedPayment {
 	id: string;
@@ -25,26 +26,32 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		return;
 	}
 
-	if (order.type === "earn") {
-		// validate payment
-		if (order.amount !== payment.amount) {
-			logger.error(`payment <${payment.id}, ${payment.transaction_id}>` +
-				`amount mismatch ${order.amount} !== ${payment.amount}`);
-		}
-
-		order.blockchainData = {
-			transaction_id: payment.transaction_id,
-			sender_address: payment.sender_address,
-			recipient_address: payment.recipient_address,
-		};
-		order.completionDate = moment(payment.timestamp).toDate();
-		order.status = "completed";
-		await order.save();
-		logger.info(`completed order with payment <${payment.id}, ${payment.transaction_id}>`);
-	} else {
-		// spend
-		logger.error(`spend flow not yet implemented`);
+	// validate payment
+	if (order.amount !== payment.amount) {
+		logger.error(`payment <${payment.id}, ${payment.transaction_id}>` +
+			`amount mismatch ${order.amount} !== ${payment.amount}`);
 	}
+
+	order.blockchainData = {
+		transaction_id: payment.transaction_id,
+		sender_address: payment.sender_address,
+		recipient_address: payment.recipient_address,
+	};
+
+	if (order.type === "spend") {
+		// XXX can we call findOne?
+		const asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
+		order.value = asset.asOrderValue();
+		asset.ownerId = order.userId;
+		await asset.save();  // XXX should be in a transaction with order.save
+	} else {
+		// earn offer - no extra steps
+	}
+
+	order.completionDate = moment(payment.timestamp).toDate();
+	order.status = "completed";
+	await order.save();
+	logger.info(`completed order with payment <${payment.id}, ${payment.transaction_id}>`);
 }
 
 export async function paymentFailed(payment: CompletedPayment, reason: string, logger: LoggerInstance) {

@@ -1,8 +1,14 @@
-import { Column, Entity, Index, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
+import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, Model, register as Register } from "./index";
 import { IdPrefix } from "../utils";
 import { OrderMeta } from "./orders";
+
+export type BlockchainData = {
+	transaction_id?: string;
+	sender_address?: string;
+	recipient_address?: string;
+};
 
 export type OfferMeta = {
 	title: string;
@@ -15,10 +21,6 @@ export type Cap = {
 	total: number;
 	used: number;
 	per_user: number;
-};
-
-export type AssetValue = {
-	coupon_code: string;
 };
 
 export type OfferType = "spend" | "earn";
@@ -53,6 +55,9 @@ export class Offer extends CreationDateModel {
 
 	@Column()
 	public type: OfferType;
+
+	@Column("simple-json", { name: "blockchain_data" })
+	public blockchainData: BlockchainData;
 
 	@Column({ name: "owner_id" })
 	public ownerId: string;
@@ -99,6 +104,12 @@ export class AppOffer extends Model {
 	}
 }
 
+export type AssetValue = {
+	coupon_code: string;
+};
+
+export type OrderValue = AssetValue & { type: string };
+
 @Entity({ name: "assets" })
 @Register
 export class Asset extends CreationDateModel {
@@ -116,5 +127,9 @@ export class Asset extends CreationDateModel {
 
 	public constructor() {
 		super();
+	}
+
+	public asOrderValue(): OrderValue {
+		return Object.assign({ type: this.type }, this.value);
 	}
 }

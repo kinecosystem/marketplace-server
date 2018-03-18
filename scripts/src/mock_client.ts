@@ -301,7 +301,7 @@ async function earnTutorial() {
 	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
 }
 
-async function fn() {
+async function testRegisterNewUser() {
 	const client = new Client();
 	await client.register("kik", Application.KIK_API_KEY, generateId());
 }
@@ -357,9 +357,9 @@ async function tutorialFlow() {
 }
 
 async function main() {
-	/*await earnFlow();
-	await didNotApproveTOS();*/
-	await fn();
+	await earnFlow();
+	await didNotApproveTOS();
+	await testRegisterNewUser();
 	await earnTutorial();
 }
 

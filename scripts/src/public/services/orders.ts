@@ -8,10 +8,9 @@ import { generateId, IdPrefix } from "../../utils";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
-import { AssetValue } from "../models/offers";
-import { FailureReason } from "../models/orders";
-import { Asset } from "../models/offers";
-import { CompletedPayment, paymentComplete } from "./internal";
+import { CompletedPayment, paymentComplete } from "../../internal/services";
+import { AssetValue } from "../../models/offers";
+import { FailureReason } from "../../models/orders";
 
 export interface OrderList {
 	orders: Order[];

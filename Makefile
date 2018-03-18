@@ -1,4 +1,8 @@
-all: run
+all:
+	trap 'kill %1' SIGINT; make run & make run-internal
+
+split: 
+	tmux new-session 'make run-internal' \; split-window 'make run' \;
 
 install:
 	npm i
@@ -8,6 +12,9 @@ build:
 
 run:
 	npm run start
+
+run-internal:
+	npm run start-internal
 
 test:
 	npm run transpile

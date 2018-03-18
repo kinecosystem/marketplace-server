@@ -31,9 +31,10 @@ const STELLAR = new Stellar("testnet");
 class Client {
 
 	public authToken: AuthToken;
-	private keyPair: StellarSdk.KeyPair;
+	private keyPair: StellarSdk.KeyPair = null;
 
 	public async register(appId: string, apiKey: string, userId: string, walletAddress?: string) {
+		const hasPrivateKey = !walletAddress;
 		if (walletAddress) {
 			this.keyPair = StellarSdk.Keypair.fromPublicKey(walletAddress);
 		} else {
@@ -50,7 +51,10 @@ class Client {
 		});
 
 		this.authToken = res.data;
-		await this.establishTrustLine();
+
+		if (hasPrivateKey) {
+			await this.establishTrustLine();
+		}
 	}
 
 	public get isActive(): boolean {
@@ -206,7 +210,6 @@ async function earnFlow() {
 	const client = new Client();
 	await client.register("kik", Application.KIK_API_KEY, "doody98ds",
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
-
 	await client.activate();
 
 	const offers = await client.getOffers();
@@ -263,7 +266,7 @@ async function earnTutorial() {
 	let earn: Offer;
 
 	for (const offer of offers.offers) {
-		if (offer.title === "Getting Started") {
+		if (offer.description === TUTORIAL_DESCRIPTION) {
 			console.log("offer", offer);
 			earn = offer;
 		}
@@ -304,56 +307,6 @@ async function earnTutorial() {
 async function testRegisterNewUser() {
 	const client = new Client();
 	await client.register("kik", Application.KIK_API_KEY, generateId());
-}
-
-async function tutorialFlow() {
-	const client = new Client();
-	await client.register("kik", Application.KIK_API_KEY, "doody98ds",
-		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
-
-	await client.activate();
-
-	const offers = await client.getOffers();
-
-	let earn: Offer;
-
-	for (const offer of offers.offers) {
-		if (offer.description === TUTORIAL_DESCRIPTION) {
-			console.log("offer", offer);
-			earn = offer;
-		}
-	}
-
-	console.log(`requesting order for offer: ${earn.id}: ${earn.content}`);
-	const openOrder = await client.createOrder(earn.id);
-	console.log(`got order ${openOrder.id}`);
-
-	// fill in the poll
-	console.log("poll " + earn.content);
-	const poll: Tutorial = JSON.parse(earn.content);
-
-	const content = JSON.stringify({});
-	console.log("answers " + content);
-
-	await client.submitOrder(openOrder.id, content);
-
-	// poll on order payment
-	let order = await client.getOrder(openOrder.id);
-	console.log(`completion date: ${order.completion_date}`);
-	for (let i = 0; i < 30 && order.status === "pending"; i++) {
-		order = await client.getOrder(openOrder.id);
-		await delay(1000);
-	}
-	console.log(`completion date: ${order.completion_date}`);
-
-	if (order.status === "completed") {
-		console.log("order completed!");
-	} else {
-		console.log("order still pending :(");
-	}
-
-	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
-	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
 }
 
 async function main() {

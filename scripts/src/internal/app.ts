@@ -2,11 +2,14 @@ import * as express from "express";
 import "express-async-errors";  // handle async/await errors in middleware
 
 import { getConfig } from "./config";
-import { createRoutes } from "./routes";
-
-import { init as initCustomMiddleware, notFoundHandler, generalErrorHandler } from "./middleware";
+import { initLogger } from "../logging";
 
 const config = getConfig();
+const logger = initLogger(...config.loggers);
+
+import { createRoutes } from "./routes";
+import { init as initModels } from "../models/index";
+import { init as initCustomMiddleware, notFoundHandler, generalErrorHandler } from "./middleware";
 
 function createApp() {
 	const app = express();
@@ -30,3 +33,8 @@ createRoutes(app);
 app.use(notFoundHandler);
 // catch errors
 app.use(generalErrorHandler);
+
+// initializing db and models
+initModels().then(msg => {
+	logger.debug(msg);
+});

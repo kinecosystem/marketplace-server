@@ -185,7 +185,7 @@ async function earnTutorial() {
 	console.log("poll " + earn.content);
 	const poll: Tutorial = JSON.parse(earn.content);
 
-	const content = JSON.stringify({ });
+	const content = JSON.stringify({});
 	console.log("answers " + content);
 
 	await client.submitOrder(openOrder.id, content);

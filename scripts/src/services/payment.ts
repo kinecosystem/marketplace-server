@@ -10,49 +10,78 @@ const config = getConfig();
 interface PaymentRequest {
 	amount: number;
 	app_id: string;
-	wallet_address: string;
-	order_id: string;
+	recipient_address: string;
+	id: string;
 	callback: string;
 }
 
-interface WalletCreationRequest {
+export interface Payment {
+	amount: number;
+	app_id: string;
+	recipient_address: string;
+	id: string;
+	transaction_id: string;
+	sender_address: string;
+	timestamp: string;
+}
+
+interface WalletRequest {
 	app_id: string;
 	wallet_address: string;
 }
 
+export interface Wallet {
+	wallet_address: string;
+	kin_balance: number;
+	native_balance: number;
+}
+
+export interface Watcher {
+	wallet_addresses: [string];
+	callback: string;
+	service_id?: string;
+}
+
+const SERVICE_ID = "marketplace";
+
 export async function payTo(
-		walletAddress: string, appId: string, amount: number, orderId: string, logger: LoggerInstance) {
+	walletAddress: string, appId: string, amount: number, orderId: string, logger: LoggerInstance) {
 	logger.info(`paying ${amount} to ${walletAddress} with meta ${orderId}`);
 	const payload: PaymentRequest = {
 		amount,
 		app_id: appId,
-		wallet_address: walletAddress,
-		order_id: orderId,
+		recipient_address: walletAddress,
+		id: orderId,
 		callback: config.payment_complete_callback,
 	};
 	const t = performance.now();
-	await axios.default.post(config.payment_service + "/orders", payload);
-	console.log("wallet creation took " + (performance.now() - t) + "ms");
+	await axios.default.post(`${config.payment_service}/payments`, payload);
+	console.log("pay to took " + (performance.now() - t) + "ms");
 }
 
 export async function createWallet(walletAddress: string, appId: string, logger: LoggerInstance) {
-	const payload: WalletCreationRequest = {
+	const payload: WalletRequest = {
 		wallet_address: walletAddress,
 		app_id: appId,
 	};
 	const t = performance.now();
-	await axios.default.post(config.payment_service + "/wallets", payload);
-	console.log("wallet creation took " + (performance.now() - t) + "ms");
+	await axios.default.post(`${config.payment_service}/wallets`, payload);
+	logger.info("wallet creation took " + (performance.now() - t) + "ms");
 }
 
-export async function getWalletData(walletAddress: string, logger: LoggerInstance) {
-	// XXX missing definitions
-	const res = await axios.default.get(config.payment_service + "/wallets/" + walletAddress);
+export async function getWalletData(walletAddress: string, logger: LoggerInstance): Promise<Wallet> {
+	const res = await axios.default.get(`${config.payment_service}/wallets/${walletAddress}`);
 	return res.data;
 }
 
-export async function getPaymentData(orderId: string, logger: LoggerInstance) {
-	// XXX missing definitions
-	const res = await axios.default.get(config.payment_service + "/orders/" + orderId);
+export async function getPaymentData(orderId: string, logger: LoggerInstance): Promise<Payment> {
+	const res = await axios.default.get(`${config.payment_service}/payments/${orderId}`);
+	return res.data;
+}
+
+export async function setWatcherEndpoint(addresses: [string]): Promise<Watcher> {
+	// XXX should be called from the internal server api upon creation
+	const payload: Watcher = { wallet_addresses: addresses, callback: config.payment_complete_callback };
+	const res = await axios.default.put(`${config.payment_service}/watchers/${SERVICE_ID}`, payload);
 	return res.data;
 }

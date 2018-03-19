@@ -32,7 +32,7 @@ const STELLAR = new Stellar("testnet");
 class Client {
 
 	public authToken: AuthToken;
-	private keyPair: StellarSdk.Keypair = null;
+	private keyPair: StellarSdk.Keypair;
 	private appId: string;
 
 	public async register(appId: string, apiKey: string, userId: string, walletAddress?: string) {

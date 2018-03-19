@@ -5,7 +5,7 @@ import { pick } from "../utils";
 import * as db from "../models/orders";
 import { Asset, Offer } from "../models/offers";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
-import { removeDups } from "../utils";
+import { removeDuplicates } from "../utils";
 
 export interface CompletedPayment {
 	id: string;
@@ -76,9 +76,9 @@ export async function paymentFailed(payment: CompletedPayment, reason: string, l
  * register to get callbacks for incoming payments for all the active offers
  */
 export async function initPaymentCallbacks(logger: LoggerInstance): Promise<Watcher> {
-	const offers = await Offer.find({ type: "spend" }); // get all active spend offers
+	const offers = await Offer.find<Offer>({ type: "spend" }); // get all active spend offers
 	// create a list of unique addresses
-	const addresses: string[] = removeDups(offers.map(offer => offer.blockchainData.recipient_address));
+	const addresses = removeDuplicates(offers.map(offer => offer.blockchainData.recipient_address!));
 
 	logger.info("setting payment watching addresses", { addresses });
 	return await setWatcherEndpoint(addresses);

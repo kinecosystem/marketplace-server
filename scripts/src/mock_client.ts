@@ -231,6 +231,7 @@ async function didNotApproveTOS() {
 
 async function spendFlow() {
 	const client = new Client();
+	// this address is prefunded with test kin
 	await client.register("kik", Application.KIK_API_KEY, "rich_user1", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 	const offers = await client.getOffers();
@@ -335,12 +336,12 @@ async function earnTutorial() {
 		}
 	}
 
-	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content.slice(0, 10)}`);
+	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content.slice(0, 100)}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 
 	// fill in the poll
-	console.log("poll " + selectedOffer.content.slice(0, 10));
+	console.log("poll " + selectedOffer.content.slice(0, 100));
 	const poll: Tutorial = JSON.parse(selectedOffer.content);
 
 	const content = JSON.stringify({ });
@@ -373,11 +374,11 @@ async function testRegisterNewUser() {
 }
 
 async function main() {
-	// await earnFlow();
-	// await didNotApproveTOS();
+	await earnFlow();
+	await didNotApproveTOS();
 	await testRegisterNewUser();
-	// await earnTutorial();
-	// await spendFlow();
+	await earnTutorial();
+	await spendFlow();
 }
 
 main()

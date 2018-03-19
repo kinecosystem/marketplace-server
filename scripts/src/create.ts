@@ -202,18 +202,19 @@ async function createOffers(): Promise<Offer[]> {
 }
 
 function orderFromOffer(offer: Offer, userId: string): Order {
-	const order = new Order({
-		id: generateId(IdPrefix.Transaction),
+	const order = Order.new({
 		userId,
 		offerId: offer.id,
-		expiration: new Date()
-	}, offer);
-
-	order.blockchainData = {
-		transaction_id: "A123123123123123",
-		recipient_address: "G123123123123",
-		sender_address: "G123123123123"
-	};
+		amount: offer.amount,
+		type: offer.type,
+		status: "pending",
+		meta: offer.meta.order_meta,
+		blockchainData: {
+			transaction_id: "A123123123123123",
+			recipient_address: "G123123123123",
+			sender_address: "G123123123123"
+		}
+	});
 
 	return order;
 }

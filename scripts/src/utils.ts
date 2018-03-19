@@ -64,3 +64,7 @@ export function pick<T, K extends keyof T>(obj: T, ...props: K[]): Pick<T, K> {
 	props.forEach(name => newObj[name] = obj[name]);
 	return newObj;
 }
+
+export function removeDuplicates<T>(arr: T[]): T[] {
+	return Array.from(new Set(arr));
+}

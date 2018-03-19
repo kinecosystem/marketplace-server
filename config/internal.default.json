@@ -1,5 +1,5 @@
 {
-	"port": 3000,
+	"port": 3001,
 	"loggers": [{
 		"name": "console",
 		"type": "console",
@@ -14,5 +14,7 @@
 		"database": "database.sqlite",
 		"synchronize": true,
 		"logging": false
-	}
+	},
+	"payment_service": "http://localhost:5000",
+	"payment_complete_callback": "http://localhost:3001/v1/internal/payments"
 }

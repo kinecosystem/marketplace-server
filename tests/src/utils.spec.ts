@@ -1,6 +1,6 @@
 import * as path from "path";
 
-import * as utils from "../../scripts/src/utils";
+import * as utils from "../../scripts/bin/utils";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {
@@ -48,5 +48,10 @@ describe("util functions", () => {
 
 		const o = new Date();
 		expect(utils.normalizeError(o)).toEqual(o.toString());
+	});
+
+	test("remove duplicates", () => {
+		expect(utils.removeDuplicates(["1", "2", "3", "3"]).sort()).toEqual(["1", "2", "3"].sort());
+		expect(utils.removeDuplicates(["1000", "1", "1000", "1"]).sort()).toEqual(["1000", "1"].sort());
 	});
 });

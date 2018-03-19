@@ -2,13 +2,14 @@ import * as express from "express";
 import "express-async-errors";  // handle async/await errors in middleware
 
 import { getConfig } from "./config";
-import { initLogger } from "./logging";
+import { initLogger } from "../logging";
 
 const config = getConfig();
 const logger = initLogger(...config.loggers);
 
-import { createRoutes } from "./routes/index";
-import { init as initModels } from "./models/index";
+import { createRoutes } from "./routes";
+import { initPaymentCallbacks } from "./services";
+import { init as initModels } from "../models/index";
 import { init as initCustomMiddleware, notFoundHandler, generalErrorHandler } from "./middleware";
 
 function createApp() {
@@ -19,9 +20,6 @@ function createApp() {
 	app.use(bodyParser.json());
 	app.use(bodyParser.urlencoded({ extended: false }));
 
-	const cookieParser = require("cookie-parser");
-	app.use(cookieParser());
-
 	initCustomMiddleware(app);
 
 	return app;
@@ -30,7 +28,7 @@ function createApp() {
 export const app: express.Express = createApp();
 
 // routes
-createRoutes(app, "/v1");
+createRoutes(app);
 
 // catch 404
 app.use(notFoundHandler);
@@ -39,5 +37,8 @@ app.use(generalErrorHandler);
 
 // initializing db and models
 initModels().then(msg => {
-	logger.debug(msg);
+	logger.debug("init db", { msg });
+	initPaymentCallbacks(logger).then(res => {
+		logger.debug("init payment result", { res });
+	});
 });

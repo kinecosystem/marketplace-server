@@ -8,6 +8,7 @@
 
     "sourceMap": true,
     "declaration": true,
+    "alwaysStrict": true,
     "skipLibCheck": true,
     "removeComments": true,
     "skipDefaultLibCheck": true,

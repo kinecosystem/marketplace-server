@@ -1,8 +1,9 @@
 import * as http from "http";
 
+import { getDefaultLogger } from "../logging";
+
 import { app } from "./app";
 import { getConfig } from "./config";
-import { getDefaultLogger } from "./logging";
 
 const config = getConfig();
 const logger = getDefaultLogger();

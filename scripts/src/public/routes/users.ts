@@ -10,7 +10,7 @@ import {
 	validateWhitelist,
 	validateApiKey
 } from "../services/applications";
-import * as db from "../models/users";
+import * as db from "../../models/users";
 
 // get a user
 export async function getUser(req, res) {

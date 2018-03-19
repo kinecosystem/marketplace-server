@@ -1,7 +1,7 @@
 import mock = require("supertest");
 
 import { init as initModels, close as closeModels } from "../../../scripts/bin/models/index";
-import { app } from "../../../scripts/bin/app";
+import { app } from "../../../scripts/bin/public/app";
 
 describe("api tests for /users", async () => {
 	beforeAll(async () => {

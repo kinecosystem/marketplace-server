@@ -15,9 +15,9 @@ const BASE = "http://localhost:3000";
 // const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
 
 class Stellar {
+	public static MEMO_VERSION = 1;
 	public server: StellarSdk.Server; // StellarSdk.Server
 	public kinAsset: StellarSdk.Asset; // StellarSdk.Asset
-
 	public constructor(network: "production" | "testnet") {
 		if (network === "testnet") {
 			StellarSdk.Network.useTestNetwork();
@@ -75,7 +75,7 @@ class Client {
 			asset: STELLAR.kinAsset,
 			amount: amount.toString()
 		});
-		const memoText = `1-${this.appId}-${orderId}`;
+		const memoText = `${Stellar.MEMO_VERSION}-${this.appId}-${orderId}`;
 		return await this.stellarOperation(op, memoText);
 	}
 

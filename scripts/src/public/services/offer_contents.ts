@@ -1,6 +1,6 @@
 import { LoggerInstance } from "winston";
 
-import * as db from "../models/offers";
+import * as db from "../../models/offers";
 
 export interface Question {
 	id: string;
@@ -19,6 +19,8 @@ export interface Poll {
 export interface Tutorial {
 	pages: Array<{ type: PageType.ImageAndText, title: string, image: string, bodyHtml: string, footerHtml: string, buttonText: string }>;
 }
+
+export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
 
 export type Answers = { [key: string]: string };
 

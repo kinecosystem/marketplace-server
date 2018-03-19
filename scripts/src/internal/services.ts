@@ -1,8 +1,11 @@
 import moment = require("moment");
 import { LoggerInstance } from "winston";
 
+import { pick } from "../utils";
 import * as db from "../models/orders";
-import { Asset } from "../models/offers";
+import { Asset, Offer } from "../models/offers";
+import { setWatcherEndpoint, Watcher } from "../public/services/payment";
+import { removeDuplicates } from "../utils";
 
 export interface CompletedPayment {
 	id: string;
@@ -61,14 +64,22 @@ export async function paymentFailed(payment: CompletedPayment, reason: string, l
 		return;
 	}
 
-	order.blockchainData = {
-		transaction_id: payment.transaction_id,
-		sender_address: payment.sender_address,
-		recipient_address: payment.recipient_address,
-	};
+	order.blockchainData = pick(payment, "transaction_id", "sender_address", "recipient_address");
 	order.completionDate = moment(payment.timestamp).toDate();
 	order.status = "failed";
 	order.value = { failure_message: reason };
 	await order.save();
 	logger.info(`failed order with payment <${payment.id}, ${payment.transaction_id}>`);
+}
+
+/**
+ * register to get callbacks for incoming payments for all the active offers
+ */
+export async function initPaymentCallbacks(logger: LoggerInstance): Promise<Watcher> {
+	const offers = await Offer.find<Offer>({ type: "spend" }); // get all active spend offers
+	// create a list of unique addresses
+	const addresses = removeDuplicates(offers.map(offer => offer.blockchainData.recipient_address!));
+
+	logger.info("setting payment watching addresses", { addresses });
+	return await setWatcherEndpoint(addresses);
 }

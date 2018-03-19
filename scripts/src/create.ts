@@ -6,10 +6,11 @@ import * as fs from "fs";
 import { AuthToken, User } from "./models/users";
 import { Application } from "./models/applications";
 import { AppOffer, Asset, Offer, OfferContent, OfferOwner } from "./models/offers";
-import { OpenOrder, Order } from "./models/orders";
+import { Order } from "./models/orders";
 
+import { getConfig } from "./public/config";
+import { generateId, IdPrefix } from "./utils";
 import { init as initModels } from "./models";
-import { getConfig } from "./config";
 import {
 	animalPoll,
 	CouponInfo,
@@ -17,11 +18,8 @@ import {
 	kikPoll,
 	Poll,
 	tutorial,
-	Tutorial
-} from "./services/offer_contents";
-import { IdPrefix, generateId } from "./utils";
-
-export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
+	Tutorial, TUTORIAL_DESCRIPTION
+} from "./public/services/offer_contents";
 
 async function createOffers(): Promise<Offer[]> {
 	const assetsBase = getConfig().assets_base;
@@ -289,7 +287,7 @@ initModels().then(async () => {
 			asset.offerId = offer.id;
 			asset.ownerId = null;
 			asset.type = "coupon";
-			asset.value = { coupon_code: "xxxxxxxxxxx" };
+			asset.value = { coupon_code: "xxxxxxxxxxx-" + i };
 			await asset.save();
 		}
 	}

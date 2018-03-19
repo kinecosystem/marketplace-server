@@ -1,0 +1,21 @@
+{
+	"port": 3000,
+	"loggers": [{
+		"name": "console",
+		"type": "console",
+		"format": "pretty-json"
+	}],
+	"assets_base": "https://s3.amazonaws.com/kinmarketplace-assets/version1/",
+	"db": {
+		"type": "sqlite",
+		"host": "localhost",
+		"port": 3306,
+		"username": "username",
+		"password": "password",
+		"database": "database.sqlite",
+		"synchronize": true,
+		"logging": false
+	},
+	"payment_service": "http://localhost:5000",
+	"payment_complete_callback": "http://localhost:3001/v1/internal/payments"
+}

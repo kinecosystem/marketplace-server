@@ -1,16 +1,13 @@
 import { Column, Entity } from "typeorm";
 
-import { CreationDateModel, register as Register } from "./index";
+import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
 import { generateId, IdPrefix } from "../utils";
 import * as moment from "moment";
 
 @Entity({ name: "users" })
 @Register
+@Initializer("id", () => generateId(IdPrefix.User))
 export class User extends CreationDateModel {
-	protected static initializers = CreationDateModel.copyInitializers({
-		id: () => generateId(IdPrefix.User)
-	});
-
 	@Column({ name: "app_id" })
 	public appId: string;
 
@@ -30,11 +27,8 @@ export class User extends CreationDateModel {
 
 @Entity({ name: "auth_tokens" })
 @Register
+@Initializer("expireDate", () => moment().add(14, "days").toDate())
 export class AuthToken extends CreationDateModel {
-	protected static initializers = CreationDateModel.copyInitializers({
-		expireDate: () => moment().add(14, "days").toDate()
-	});
-
 	@Column({ name: "expire_date" })
 	public expireDate: Date;
 

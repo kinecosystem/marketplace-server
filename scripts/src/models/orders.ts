@@ -2,8 +2,8 @@ import { Column, Entity } from "typeorm";
 
 import { generateId, IdPrefix } from "../utils";
 
-import { CreationDateModel, register as Register } from "./index";
-import { BlockchainData, Offer, OfferType, OrderValue } from "./offers";
+import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
+import { BlockchainData, OfferType, OrderValue } from "./offers";
 
 export type OrderMeta = {
 	title: string;
@@ -20,11 +20,8 @@ export type OrderStatus = "completed" | "failed" | "pending";
 
 @Entity({ name: "orders" })
 @Register
+@Initializer("id", () => generateId(IdPrefix.Transaction))
 export class Order extends CreationDateModel {
-	protected static initializers = CreationDateModel.copyInitializers({
-		id: () => generateId(IdPrefix.Transaction)
-	});
-
 	@Column()
 	public type: OfferType;
 

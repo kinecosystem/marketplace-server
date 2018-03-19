@@ -24,7 +24,7 @@ export async function getOrCreateUserCredentials(
 	let user = await db.User.findOne({ appId, appUserId });
 	if (!user) {
 		// new user
-		user = db.User.Create({ appUserId, appId, walletAddress });
+		user = db.User.new({ appUserId, appId, walletAddress });
 		await user.save();
 
 		// create wallet with lumens:
@@ -38,7 +38,7 @@ export async function getOrCreateUserCredentials(
 	}
 
 	// XXX should be a scope object
-	const authToken = await (db.AuthToken.Create({ userId: user.id, deviceId }).save());
+	const authToken = await (db.AuthToken.new({ userId: user.id, deviceId }).save());
 	// XXX should we check for non soon to expire tokens and return them first
 
 	return AuthTokenDbToApi(authToken, user, logger);
@@ -51,7 +51,7 @@ export async function activateUser(
 			user.activatedDate = new Date();
 			await mgr.save(user);
 
-			authToken = db.AuthToken.Create(authToken);
+			authToken = db.AuthToken.new(authToken);
 			await mgr.save(authToken);
 			// XXX should we deactivate old tokens?
 		});

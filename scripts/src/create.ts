@@ -30,25 +30,26 @@ async function createOffers(): Promise<Offer[]> {
 		brand: string, title: string, description: string, image: string, amount: number,
 		orderTitle: string, orderDescription: string, poll: Poll | Tutorial): Promise<Offer> {
 
-		const owner = new OfferOwner();
-		owner.name = brand;
+		const owner = OfferOwner.new({
+			name: brand
+		});
 		await owner.save();
 
-		const offer = new Offer();
-		offer.amount = amount;
-		offer.meta = { title, image, description, order_meta: { title: orderTitle, description: orderDescription } };
-		offer.ownerId = owner.id;
-		offer.type = "earn";
-		offer.cap = { total: 100, used: 0, per_user: 2 };
-		offer.blockchainData = { sender_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" };
+		const offer = Offer.new({
+			amount,
+			type: "earn",
+			ownerId: owner.id,
+			cap: { total: 100, used: 0, per_user: 2 },
+			blockchainData: { sender_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" },
+			meta: { title, image, description, order_meta: { title: orderTitle, description: orderDescription } }
+		});
 		await offer.save();
 
-		const content = new OfferContent();
-		content.contentType = "poll";
-		content.offerId = offer.id;
-
-		content.content = JSON.stringify(poll);
-
+		const content = OfferContent.new({
+			contentType: "poll",
+			offerId: offer.id,
+			content: JSON.stringify(poll)
+		});
 		await content.save();
 
 		return offer;
@@ -59,31 +60,32 @@ async function createOffers(): Promise<Offer[]> {
 		orderTitle: string, orderDescription: string, orderCallToAction: string, orderContent: CouponOrderContent,
 		coupon: CouponInfo): Promise<Offer> {
 
-		const owner = new OfferOwner();
-		owner.name = brand;
+		const owner = OfferOwner.new({ name: brand });
 		await owner.save();
 
-		const offer = new Offer();
-		offer.amount = amount;
-		offer.meta = {
-			title, image, description,
-			order_meta: {
-				title: orderTitle,
-				description: orderDescription,
-				call_to_action: orderCallToAction,
-				content: JSON.stringify(orderContent)
-			}
-		};
-		offer.ownerId = owner.id;
-		offer.type = "spend";
-		offer.cap = { total: 100, used: 0, per_user: 2 };
-		offer.blockchainData = { recipient_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" };
+		const offer = Offer.new({
+			amount,
+			type: "spend",
+			ownerId: owner.id,
+			cap: { total: 100, used: 0, per_user: 2 },
+			meta: {
+				title, image, description,
+				order_meta: {
+					title: orderTitle,
+					description: orderDescription,
+					call_to_action: orderCallToAction,
+					content: JSON.stringify(orderContent)
+				}
+			},
+			blockchainData: { recipient_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" }
+		});
 		await offer.save();
 
-		const content = new OfferContent();
-		content.contentType = "coupon";
-		content.offerId = offer.id;
-		content.content = JSON.stringify(Object.assign(coupon, { amount })); // replace coupon amount with offer amount
+		const content = OfferContent.new({
+			contentType: "coupon",
+			offerId: offer.id,
+			content: JSON.stringify(Object.assign(coupon, { amount })) // replace coupon amount with offer amount
+		});
 		await content.save();
 
 		return offer;
@@ -112,7 +114,6 @@ async function createOffers(): Promise<Offer[]> {
 			description: "How to redeem:",
 			link: "spotify.com/redeem",
 			image: assetsBase + "coupon_1.png"
-
 		}, {
 			title: "Redeem code",
 			description: "Get a 1 week subscription for Spotify. Click on balance to get your code",
@@ -131,7 +132,6 @@ async function createOffers(): Promise<Offer[]> {
 			description: "How to redeem:",
 			link: "Soundcloud.com/redeem",
 			image: assetsBase + "coupon_2.png"
-
 		}, {
 			title: "Redeem code",
 			description: "Get a 1 week subscription for Soundcloud. Click on balance to get your code",
@@ -150,7 +150,6 @@ async function createOffers(): Promise<Offer[]> {
 			description: "How to redeem:",
 			link: "asos.com/redeem",
 			image: assetsBase + "coupon_3.png"
-
 		}, {
 			title: "Redeem code",
 			description: "Get a $5 gift card for Asos. Click on balance to get your code",
@@ -169,7 +168,6 @@ async function createOffers(): Promise<Offer[]> {
 			description: "How to redeem:",
 			link: "DunkinDonut.com/redeem",
 			image: assetsBase + "coupon_4.png"
-
 		}, {
 			title: "Redeem code",
 			description: "Get a $5 gift card for Dunkin Donuts. Click on balance to get your code",
@@ -188,7 +186,6 @@ async function createOffers(): Promise<Offer[]> {
 			description: "How to redeem:",
 			link: "Sephora.com/redeem",
 			image: assetsBase + "coupon_5.png"
-
 		}, {
 			title: "Redeem code",
 			description: "Get a $5 gift card for Sephora. Click on balance to get your code",
@@ -257,7 +254,7 @@ async function createApp(appId, apiKey, name) {
 	const jwtPublic = fs.readFileSync("./examples/jwt_public_key.pem", "utf-8");
 	const jwtPrivate = fs.readFileSync("./examples/jwt_private_key.pem", "utf-8");
 
-	const app = Application.Create({
+	const app = Application.new({
 		id: appId,
 		name,
 		jwtPublicKeys: { 1: jwtPublic }
@@ -268,22 +265,22 @@ async function createApp(appId, apiKey, name) {
 }
 
 initModels().then(async () => {
-	const user1 = await (User.Create({
+	const user1 = await (User.new({
 		appUserId: "doody",
 		appId: "kik",
 		walletAddress: "wallet1"
 	})).save();
-	const user2 = await (User.Create({
+	const user2 = await (User.new({
 		appUserId: "nitzan",
 		appId: "kik",
 		walletAddress: "wallet2"
 	})).save();
 
-	const authToken1 = await (AuthToken.Create({
+	const authToken1 = await (AuthToken.new({
 		userId: user1.id,
 		deviceId: "device1"
 	})).save();
-	const authToken2 = await (AuthToken.Create({
+	const authToken2 = await (AuthToken.new({
 		userId: user2.id,
 		deviceId: "device2"
 	})).save();
@@ -295,17 +292,18 @@ initModels().then(async () => {
 
 	for (const offer of offers) {
 		for (const app of [app1, app2]) {
-			const appOffer = new AppOffer();
-			appOffer.appId = app.id;
-			appOffer.offerId = offer.id;
+			const appOffer = AppOffer.new({
+				appId: app.id,
+				offerId: offer.id
+			});
 			await appOffer.save();
 		}
 		for (let i = 0; i < offer.cap.total; i++) {
-			const asset = new Asset();
-			asset.offerId = offer.id;
-			asset.ownerId = null;
-			asset.type = "coupon";
-			asset.value = { coupon_code: `XXXX-${offer.id}-${i}` };
+			const asset = Asset.new({
+				offerId: offer.id,
+				type: "coupon",
+				value: { coupon_code: `XXXX-${offer.id}-${i}` }
+			});
 			await asset.save();
 		}
 	}

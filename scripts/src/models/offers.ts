@@ -1,6 +1,6 @@
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
-import { CreationDateModel, Model, register as Register } from "./index";
+import { CreationDateModel, Model, register as Register, initializer as Initializer } from "./index";
 import { generateId, IdPrefix } from "../utils";
 import { OrderMeta } from "./orders";
 
@@ -39,11 +39,8 @@ export class OfferOwner extends Model {
 
 @Entity({ name: "offers" })
 @Register
+@Initializer("id", () => generateId(IdPrefix.Offer))
 export class Offer extends CreationDateModel {
-	protected static initializers = CreationDateModel.copyInitializers({
-		id: () => generateId(IdPrefix.Offer)
-	});
-
 	@Column()
 	public amount: number;
 

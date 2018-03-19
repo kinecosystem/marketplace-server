@@ -37,9 +37,9 @@
     "winston": "^2.4.0"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^7.2.5",
     "@types/body-parser": "^1.16.8",
     "@types/express": "^4.11.0",
+    "@types/jsonwebtoken": "^7.2.5",
     "@types/sequelize": "^4.27.4",
     "@types/winston": "^2.3.7",
     "npm-run-all": "^4.0.1",
@@ -47,7 +47,7 @@
     "sqlite3": "3.1.13",
     "tslint": "^5.9.1",
     "tslint-eslint-rules": "^4.1.1",
-    "typescript": "^2.6.2"
+    "typescript": "^2.7.2"
   },
   "scripts": {
     "clean": "rimraf scripts/bin",

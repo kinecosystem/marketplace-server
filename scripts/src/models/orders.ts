@@ -11,12 +11,12 @@ export type OrderMeta = {
 	call_to_action?: string;
 	content?: string;
 };
-
-export type FailureReason = {
-	failure_message: string;
-};
-
 export type OrderStatus = "completed" | "failed" | "pending";
+export type OrderError = {
+	code: number;
+	error: string;
+	message?: string;
+};
 
 @Entity({ name: "orders" })
 @Register
@@ -38,7 +38,10 @@ export class Order extends CreationDateModel {
 	public meta: OrderMeta;
 
 	@Column("simple-json", { nullable: true }) // the asset or JWT payment confirmation
-	public value: OrderValue | FailureReason;
+	public value: OrderValue;
+
+	@Column("simple-json", { nullable: true })
+	public error: OrderError;
 
 	@Column()
 	public amount: number;

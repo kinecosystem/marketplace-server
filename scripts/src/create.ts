@@ -229,7 +229,7 @@ async function createOrders(userId: string) {
 
 	order = orderFromOffer(offers[1], userId);
 	order.status = "failed";
-	order.value = { failure_message: "transaction timed out" };
+	order.error = { message: "transaction timed out", error: "timeout", code: 4081 };
 	await order.save();
 
 	order = orderFromOffer(offers[2], userId);
@@ -243,7 +243,7 @@ async function createOrders(userId: string) {
 
 	order = orderFromOffer(offers[1], userId);
 	order.status = "failed";
-	order.value = { failure_message: "transaction timed out" };
+	order.error = { message: "transaction timed out", error: "timeout", code: 4081 };
 	await order.save();
 
 	order = orderFromOffer(offers[2], userId);

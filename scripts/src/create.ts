@@ -287,7 +287,7 @@ initModels().then(async () => {
 			asset.offerId = offer.id;
 			asset.ownerId = null;
 			asset.type = "coupon";
-			asset.value = { coupon_code: "xxxxxxxxxxx-" + i };
+			asset.value = { coupon_code: `XXXX-${offer.id}-${i}` };
 			await asset.save();
 		}
 	}

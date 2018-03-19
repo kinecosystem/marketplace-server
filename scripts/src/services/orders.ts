@@ -2,15 +2,14 @@ import moment = require("moment");
 import { LoggerInstance } from "winston";
 
 import * as db from "../models/orders";
+import { FailureReason } from "../models/orders";
 import * as offerDb from "../models/offers";
+import { AssetValue } from "../models/offers";
 import { generateId, IdPrefix } from "../utils";
 
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
-import { AssetValue } from "../models/offers";
-import { FailureReason } from "../models/orders";
-import { Asset } from "../models/offers";
 import { CompletedPayment, paymentComplete } from "./internal";
 
 export interface OrderList {
@@ -25,6 +24,7 @@ export interface OpenOrder {
 
 export interface Order {
 	id: string;
+	offer_id: string;
 	result?: AssetValue | FailureReason;
 	content?: string; // json serialized payload of the coupon page
 	status: db.OrderStatus;
@@ -51,9 +51,10 @@ const graceMin = 10; // 10 minutes
 
 function orderDbToApi(order: db.Order, logger: LoggerInstance): Order {
 	return {
+		id: order.id,
+		offer_id: order.offerId,
 		status: order.status,
 		result: order.value,
-		id: order.id,
 		completion_date: (order.completionDate || order.createdDate).toISOString(), // XXX should we separate the dates?
 		blockchain_data: order.blockchainData,
 		offer_type: order.type,

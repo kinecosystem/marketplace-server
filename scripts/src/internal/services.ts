@@ -33,13 +33,11 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	if (order.amount !== payment.amount) {
 		logger.error(`payment <${payment.id}, ${payment.transaction_id}>` +
 			`amount mismatch ${order.amount} !== ${payment.amount}`);
+		// XXX 1. monitor
+		// 2. don't complete the transaction? complete only if the server got more than expected?
 	}
 
-	order.blockchainData = {
-		transaction_id: payment.transaction_id,
-		sender_address: payment.sender_address,
-		recipient_address: payment.recipient_address,
-	};
+	order.blockchainData = pick(payment, "transaction_id", "sender_address", "recipient_address");
 
 	if (order.type === "spend") {
 		// XXX can we call findOne?
@@ -51,9 +49,14 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		// earn offer - no extra steps
 	}
 
+	if (order.status === "failed") {
+		logger.info("a failed order turned completed", { order });
+		order.error = null;
+	}
 	order.completionDate = moment(payment.timestamp).toDate();
 	order.status = "completed";
 	await order.save();
+
 	logger.info(`completed order with payment <${payment.id}, ${payment.transaction_id}>`);
 }
 
@@ -67,7 +70,7 @@ export async function paymentFailed(payment: CompletedPayment, reason: string, l
 	order.blockchainData = pick(payment, "transaction_id", "sender_address", "recipient_address");
 	order.completionDate = moment(payment.timestamp).toDate();
 	order.status = "failed";
-	order.value = { failure_message: reason };
+	order.error = { message: reason, error: "blockchain_error", code: 5001 };  // XXX where do I define this error + codes?
 	await order.save();
 	logger.info(`failed order with payment <${payment.id}, ${payment.transaction_id}>`);
 }

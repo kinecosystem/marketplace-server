@@ -5,7 +5,6 @@ import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { AssetValue } from "../../models/offers";
 import { generateId, IdPrefix } from "../../utils";
-import { FailureReason } from "../../models/orders";
 
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
@@ -24,7 +23,8 @@ export interface OpenOrder {
 export interface Order {
 	id: string;
 	offer_id: string;
-	result?: AssetValue | FailureReason;
+	result?: AssetValue;
+	error?: db.OrderError;
 	content?: string; // json serialized payload of the coupon page
 	status: db.OrderStatus;
 	completion_date: string; // UTC ISO
@@ -54,6 +54,7 @@ function orderDbToApi(order: db.Order, logger: LoggerInstance): Order {
 		offer_id: order.offerId,
 		status: order.status,
 		result: order.value,
+		error: order.error,
 		completion_date: (order.completionDate || order.createdDate).toISOString(), // XXX should we separate the dates?
 		blockchain_data: order.blockchainData,
 		offer_type: order.type,

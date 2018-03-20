@@ -101,7 +101,7 @@ export const tutorial: Tutorial = {
 	],
 };
 
-export async function getOffer(offerId: string, logger: LoggerInstance): Promise<db.OfferContent> {
+export async function getOffer(offerId: string, logger: LoggerInstance): Promise<db.OfferContent | undefined> {
 	return await db.OfferContent.findOne({ offerId });
 }
 

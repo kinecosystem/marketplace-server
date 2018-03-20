@@ -1,5 +1,5 @@
 import * as express from "express";
-import { LoggerInstance } from "winston";
+import { LeveledLogMethod, LoggerInstance } from "winston";
 
 import { getDefaultLogger } from "./logging";
 import { generateId } from "./utils";
@@ -20,11 +20,11 @@ declare module "express" {
  * augments the request object with a request-id and a logger.
  * the logger should be then used when logging inside request handlers, which will then add some more info per log
  */
-export function requestLogger(req: express.Request, res, next) {
+export function requestLogger(req: express.Request, res: express.Response, next: express.NextFunction) {
 	const methods = ["debug", "info", "warn", "error"];
 	const id = generateId();
 	const proxy = new Proxy(logger, {
-		get(target, name) {
+		get(target, name: keyof LoggerInstance) {
 			if (typeof name === "string" && methods.includes(name)) {
 				return function(...args: any[]) {
 					if (typeof args[args.length - 1] === "object") {
@@ -33,7 +33,7 @@ export function requestLogger(req: express.Request, res, next) {
 						args = [...args, { reqId: id }];
 					}
 
-					target[name](...args);
+					(target[name] as any)(...args);
 				};
 			}
 
@@ -47,7 +47,7 @@ export function requestLogger(req: express.Request, res, next) {
 	next();
 }
 
-export function logRequest(req: express.Request, res, next) {
+export function logRequest(req: express.Request, res: express.Response, next: express.NextFunction) {
 	const start = new Date();
 	req.logger.info(`start handling request ${ req.id }: ${ req.method } ${ req.path }`, req.headers);
 
@@ -71,7 +71,7 @@ export type ApiError = {
 /**
  * The "next" arg is needed even though it's not used, otherwise express won't understand that it's an error handler
  */
-export function generalErrorHandler(err: any, req: express.Request, res: express.Response, next) {
+export function generalErrorHandler(err: any, req: express.Request, res: express.Response) {
 	let message = `Error
 	method: ${ req.method }
 	path: ${ req.url }

@@ -17,6 +17,6 @@ export function getConfig<T extends Config>(filePath?: string): T {
 		return config as T;
 	}
 
-	config = require(path(filePath));
+	config = require(path(filePath!));
 	return config as T;
 }

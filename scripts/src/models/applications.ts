@@ -12,13 +12,13 @@ export class Application extends CreationDateModel {
 	public static SAMPLE_API_KEY = "A1111111111";  // XXX testing purposes
 
 	@Column({ name: "name" })
-	public name: string;
+	public name!: string;
 
 	@Column({ name: "api_key" })
-	public apiKey: string;
+	public apiKey!: string;
 
 	@Column("simple-json", { name: "jwt_public_keys" })
-	public jwtPublicKeys: StringMap;
+	public jwtPublicKeys!: StringMap;
 }
 
 @Entity({ name: "app_whitelists" })
@@ -26,8 +26,8 @@ export class Application extends CreationDateModel {
 @Register
 export class AppWhitelists extends CreationDateModel {
 	@Column({ name: "app_id" })
-	public appId: string;
+	public appId!: string;
 
 	@Column({ name: "app_user_id" })
-	public appUserId: string;
+	public appUserId!: string;
 }

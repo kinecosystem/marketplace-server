@@ -251,7 +251,7 @@ async function createOrders(userId: string) {
 	await order.save();
 }
 
-async function createApp(appId, apiKey, name) {
+async function createApp(appId: string, apiKey: string, name: string) {
 	const jwtPublic = fs.readFileSync("./examples/jwt_public_key.pem", "utf-8");
 	const jwtPrivate = fs.readFileSync("./examples/jwt_private_key.pem", "utf-8");
 

@@ -38,19 +38,27 @@ export async function getOffers(
 	// );
 	const dbOffers = await db.Offer.find();
 	const offers: Offer[] = await Promise.all(
-		dbOffers.map(async offer => {
-			const content: db.OfferContent = await offerContents.getOffer(offer.id, logger);
-			return {
-				id: offer.id,
-				title: offer.meta.title,
-				description: offer.meta.description,
-				image: offer.meta.image,
-				amount: offer.amount,
-				blockchain_data: offer.blockchainData,
-				offer_type: offer.type,
-				content: content.content,
-				content_type: content.contentType,
-			};
-		}));
+		dbOffers
+			.map(async offer => {
+				const content = await offerContents.getOffer(offer.id, logger);
+
+				if (!content) {
+					return null;
+				}
+
+				return {
+					id: offer.id,
+					title: offer.meta.title,
+					description: offer.meta.description,
+					image: offer.meta.image,
+					amount: offer.amount,
+					blockchain_data: offer.blockchainData,
+					offer_type: offer.type,
+					content: content.content,
+					content_type: content.contentType,
+				};
+			})
+			.filter<Offer>(offer => offer !== null));
+	
 	return { offers, paging: { cursors: {} } };
 }

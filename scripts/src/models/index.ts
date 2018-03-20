@@ -3,6 +3,7 @@ import { BaseEntity, Column, createConnection, PrimaryColumn, Connection, Connec
 
 import { getConfig } from "../config";
 import { normalizeError, path, IdPrefix, generateId } from "../utils";
+import { ObjectType } from "typeorm/common/ObjectType";
 
 const entities: ModelConstructor[] = [];
 let connection: Connection;
@@ -10,28 +11,59 @@ let dbConfig: ConnectionOptions;
 let initPromise: Promise<string>;
 
 export type ModelConstructor = { new(): Model };
+export type ModelMemberInitializer = () => any;
 export abstract class Model extends BaseEntity {
+	public static new<T extends Model>(this: ObjectType<T>, data?: Partial<T>): T {
+		const instance = Object.assign(BaseEntity.create(), data) as T;
+
+		for (const [name, initializer] of (this as typeof Model).initializers.entries()) {
+			if (!instance[name]) {
+				instance[name] = initializer();
+			}
+		}
+
+		return instance;
+	}
+
+	protected static initializers = new Map<string, ModelMemberInitializer>([["id", () => generateId(IdPrefix.None)]]);
+	protected static copyInitializers(add?: { [name: string]: ModelMemberInitializer }): Map<string, ModelMemberInitializer> {
+		const map = new Map<string, ModelMemberInitializer>(this.initializers);
+		if (add) {
+			Object.keys(add).forEach(name => map.set(name, add[name]));
+		}
+
+		return map;
+	}
+
 	@PrimaryColumn()
 	public id: string;
-
-	protected constructor(prefix: IdPrefix = IdPrefix.None) {
-		super();
-		this.id = generateId(prefix);
-	}
 }
 
 export abstract class CreationDateModel extends Model {
+	protected static initializers = Model.copyInitializers({ createdDate: () => new Date() });
+
 	@Column({ name: "created_date" })
 	public createdDate: Date;
-
-	protected constructor(prefix?: IdPrefix) {
-		super(prefix);
-		this.createdDate = new Date();
-	}
 }
 
 export function register(ctor: ModelConstructor) {
 	entities.push(ctor);
+}
+
+export function initializer(propName: string, fn: ModelMemberInitializer) {
+	return initializers({ [propName]: fn });
+}
+
+export function initializers(props: { [name: string]: ModelMemberInitializer }) {
+	// ctor is also { initializers: Map<string, ModelMemberInitializer> }, but it's protected
+	return (ctor: ModelConstructor) => {
+		const parent = Object.getPrototypeOf(ctor.prototype).constructor;
+		if (parent.initializers === (ctor as any).initializers) {
+			(ctor as any).initializers = new Map<string, ModelMemberInitializer>(parent.initializers);
+		}
+
+		Object.keys(props).forEach(name => (ctor as any).initializers.set(name, props[name]));
+	};
 }
 
 export function init(): Promise<string> {

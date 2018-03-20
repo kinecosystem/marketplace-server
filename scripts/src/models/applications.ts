@@ -1,11 +1,12 @@
 import { generateId, IdPrefix } from "../utils";
 import { Column, Entity, Index } from "typeorm";
-import { CreationDateModel, register as Register } from "./index";
+import { CreationDateModel, Model, register as Register, initializer as Initializer } from "./index";
 
 export type StringMap = { [key: string]: string; };  // key => value pairs
 
 @Entity({ name: "applications" })
 @Register
+@Initializer("apiKey", () => generateId(IdPrefix.App))
 export class Application extends CreationDateModel {
 	public static KIK_API_KEY = "A1234567890";  // XXX testing purposes
 	public static SAMPLE_API_KEY = "A1111111111";  // XXX testing purposes
@@ -18,13 +19,6 @@ export class Application extends CreationDateModel {
 
 	@Column("simple-json", { name: "jwt_public_keys" })
 	public jwtPublicKeys: StringMap;
-
-	constructor();
-	constructor(appId: string, name: string, jwtPublicKeys: StringMap);
-	constructor(appId?: string, name?: string, jwtPublicKeys?: StringMap) {
-		super(null);
-		Object.assign(this, { id: appId, name, jwtPublicKeys, apiKey: generateId(IdPrefix.App) });
-	}
 }
 
 @Entity({ name: "app_whitelists" })
@@ -36,8 +30,4 @@ export class AppWhitelists extends CreationDateModel {
 
 	@Column({ name: "app_user_id" })
 	public appUserId: string;
-
-	constructor() {
-		super();
-	}
 }

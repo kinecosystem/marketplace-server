@@ -3,13 +3,13 @@ import { LoggerInstance } from "winston";
 
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
+import { AssetValue } from "../../models/offers";
 import { generateId, IdPrefix } from "../../utils";
+import { FailureReason } from "../../models/orders";
 
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
-import { AssetValue } from "../../models/offers";
-import { FailureReason } from "../../models/orders";
 
 export interface OrderList {
 	orders: Order[];
@@ -106,7 +106,15 @@ export async function submitOrder(
 	}
 
 	// transition open order to pending order
-	const order = new db.Order(openOrder, offer);
+	const order = db.Order.new({
+		id: openOrder.id,
+		userId: openOrder.userId,
+		offerId: openOrder.offerId,
+		amount: offer.amount,
+		type: offer.type,
+		status: "pending",
+		meta: offer.meta.order_meta,
+	});
 	offer.cap.used += 1;
 	await offer.save();
 	await order.save();

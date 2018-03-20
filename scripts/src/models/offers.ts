@@ -1,7 +1,7 @@
 import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
-import { CreationDateModel, Model, register as Register } from "./index";
-import { IdPrefix } from "../utils";
+import { CreationDateModel, Model, register as Register, initializer as Initializer } from "./index";
+import { generateId, IdPrefix } from "../utils";
 import { OrderMeta } from "./orders";
 
 export type BlockchainData = {
@@ -35,14 +35,11 @@ export class OfferOwner extends Model {
 	public get offers(): Promise<Offer[]> {
 		return Offer.find({ ownerId: this.id });
 	}
-
-	public constructor() {
-		super();
-	}
 }
 
 @Entity({ name: "offers" })
 @Register
+@Initializer("id", () => generateId(IdPrefix.Offer))
 export class Offer extends CreationDateModel {
 	@Column()
 	public amount: number;
@@ -66,10 +63,6 @@ export class Offer extends CreationDateModel {
 	public get owner(): Promise<OfferOwner> {
 		return OfferOwner.findOneById(this.ownerId);
 	}
-
-	public constructor() {
-		super(IdPrefix.Offer);
-	}
 }
 
 @Entity({ name: "offer_contents" })
@@ -83,10 +76,6 @@ export class OfferContent extends Model {
 
 	@Column({ name: "content_type" })
 	public contentType: ContentType;
-
-	public constructor() {
-		super();
-	}
 }
 
 @Entity({ name: "app_offers" })
@@ -98,10 +87,6 @@ export class AppOffer extends Model {
 
 	@PrimaryColumn({ name: "app_id" })
 	public appId: string;
-
-	public constructor() {
-		super();
-	}
 }
 
 export type AssetValue = {
@@ -124,10 +109,6 @@ export class Asset extends CreationDateModel {
 
 	@Column("simple-json")
 	public value: AssetValue;
-
-	public constructor() {
-		super();
-	}
 
 	public asOrderValue(): OrderValue {
 		return Object.assign({ type: this.type }, this.value);

@@ -51,15 +51,7 @@ export function register(ctor: ModelConstructor) {
 }
 
 export function initializer(propName: string, fn: ModelMemberInitializer) {
-	// ctor is also { initializers: Map<string, ModelMemberInitializer> }, but it's protected
-	return (ctor: ModelConstructor) => {
-		const parent = Object.getPrototypeOf(ctor.prototype).constructor;
-		if (parent.initializers === (ctor as any).initializers) {
-			(ctor as any).initializers = new Map<string, ModelMemberInitializer>(parent.initializers);
-		}
-
-		(ctor as any).initializers.set(propName, fn);
-	};
+	return initializers({ [propName]: fn });
 }
 
 export function initializers(props: { [name: string]: ModelMemberInitializer }) {

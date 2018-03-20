@@ -111,7 +111,7 @@ export async function submitOrder(
 		userId: openOrder.userId,
 		offerId: openOrder.offerId,
 		amount: offer.amount,
-		type: "earn",
+		type: offer.type,
 		status: "pending",
 		meta: offer.meta.order_meta,
 	});

@@ -14,7 +14,7 @@ export type ModelConstructor = { new(): Model };
 export type ModelMemberInitializer = () => any;
 export abstract class Model extends BaseEntity {
 	public static new<T extends Model>(this: ObjectType<T>, data?: Partial<T>): T {
-		const instance = Object.assign(BaseEntity.create(), data) as T;
+		const instance = (this as typeof BaseEntity).create(data) as T;
 
 		for (const [name, initializer] of (this as typeof Model).initializers.entries()) {
 			if (!instance[name]) {

@@ -4,6 +4,7 @@ import { LoggerInstance } from "winston";
 import * as db from "../../models/users";
 
 import * as payment from "./payment";
+import { pick } from "../../utils";
 
 export type AuthToken = {
 	token: string;
@@ -51,7 +52,7 @@ export async function activateUser(
 			user.activatedDate = new Date();
 			await mgr.save(user);
 
-			authToken = db.AuthToken.new(authToken);
+			authToken = db.AuthToken.new(pick(authToken, "userId", "deviceId"));
 			await mgr.save(authToken);
 			// XXX should we deactivate old tokens?
 		});

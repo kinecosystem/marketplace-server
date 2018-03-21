@@ -35,7 +35,7 @@ export enum IdPrefix {
 const ID_LENGTH = 20;
 const ID_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-export function generateId(prefix: IdPrefix = IdPrefix.None): string {
+export function generateId(prefix: IdPrefix | string = IdPrefix.None): string {
 	let id = "";
 
 	while (id.length < ID_LENGTH) {

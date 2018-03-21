@@ -1,12 +1,11 @@
 import moment = require("moment");
 import { LoggerInstance } from "winston";
 
-import { pick } from "../utils";
+import * as metrics from "../metrics";
 import * as db from "../models/orders";
 import { Asset, Offer } from "../models/offers";
+import { pick, removeDuplicates } from "../utils";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
-import { removeDuplicates } from "../utils";
-import * as metrics from "../metrics";
 
 export interface CompletedPayment {
 	id: string;
@@ -55,16 +54,18 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		order.error = undefined;
 	}
 
-	order.completionDate = moment(payment.timestamp).toDate();
+	order.currentStatusDate = moment(payment.timestamp).toDate();
 	order.status = "completed";
 	await order.save();
 
 	metrics.completeOrder(order.type, order.offerId);
-	logger.info(`completed order with payment <${payment.id}, ${payment.transaction_id}>`);
+	logger.info(`completed order with payment <${ payment.id }, ${ payment.transaction_id }>`);
 }
 
 export async function paymentFailed(payment: CompletedPayment, reason: string, logger: LoggerInstance) {
-	const order = await db.Order.findOneById(payment.id);
+	// TODO: doody, decide what you wanna do here
+
+	/*const order = await db.Order.findOneById(payment.id);
 	if (!order) {
 		logger.error(`received payment for unknown order id ${payment.id}`);
 		return;
@@ -75,7 +76,7 @@ export async function paymentFailed(payment: CompletedPayment, reason: string, l
 	order.status = "failed";
 	order.error = { message: reason, error: "blockchain_error", code: 5001 };  // XXX where do I define this error + codes?
 	await order.save();
-	logger.info(`failed order with payment <${payment.id}, ${payment.transaction_id}>`);
+	logger.info(`failed order with payment <${payment.id}, ${payment.transaction_id}>`);*/
 }
 
 /**

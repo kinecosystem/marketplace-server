@@ -1,13 +1,16 @@
 import { LoggerInstance } from "winston";
 
+import { lock } from "../../redis";
+import * as metrics from "../../metrics";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { AssetValue } from "../../models/offers";
 
 import { Paging } from "./index";
-import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
-import * as metrics from "../../metrics";
+import * as offerContents from "./offer_contents";
+
+const createOrderResourceId = "locks:orders:create";
 
 export interface OrderList {
 	orders: Order[];
@@ -38,21 +41,24 @@ export interface Order {
 export async function getOrder(orderId: string, logger: LoggerInstance): Promise<Order> {
 	const order = await db.Order.findOneById(orderId);
 	if (!order) {
-		throw Error(`no such order ${orderId}`); // XXX throw and exception that is convert-able to json
+		throw Error(`no such order ${ orderId }`); // XXX throw and exception that is convert-able to json
 	}
-	return orderDbToApi(order, logger);
+
+	return orderDbToApi(order);
 }
 
-const graceMin = 10; // 10 minutes
+function orderDbToApi(order: db.Order): Order {
+	if (order.status === "opened") {
+		throw new Error("opened orders should not be returned");
+	}
 
-function orderDbToApi(order: db.Order, logger: LoggerInstance): Order {
 	return {
 		id: order.id,
 		offer_id: order.offerId,
 		status: order.status,
 		result: order.value,
 		error: order.error,
-		completion_date: (order.completionDate || order.createdDate).toISOString(), // XXX should we separate the dates?
+		completion_date: (order.currentStatusDate || order.createdDate).toISOString(), // XXX should we separate the dates?
 		blockchain_data: order.blockchainData!,
 		offer_type: order.type,
 		title: order.meta.title,
@@ -63,103 +69,111 @@ function orderDbToApi(order: db.Order, logger: LoggerInstance): Order {
 	};
 }
 
-export async function createOrder(
-	offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
-	// offer cap logic
+export async function createOrder(offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
+	const offer = await offerDb.Offer.findOneById(offerId);
+	if (!offer) {
+		throw new Error(`cannot create order, offer ${ offerId } not found`);
+	}
 
-	const openOrder = new db.OpenOrder(offerId, userId);
+	let order = await db.Order.findOne({ where: {
+			userId,
+			offerId,
+			status: "opened"
+		}
+	});
 
-	await openOrder.save();
+	if (!order) {
+		order = await lock(createOrderResourceId, async () => {
+			const total = await db.Order.count({
+				where: {
+					offerId
+				}
+			});
+
+			if (total === offer.cap.total) {
+				return undefined;
+			}
+
+			const forUser = await db.Order.count({
+				where: {
+					userId,
+					offerId
+				}
+			});
+
+			if (forUser === offer.cap.per_user) {
+				return undefined;
+			}
+
+			const order = db.Order.new({
+				userId,
+				offerId,
+				amount: offer.amount,
+				type: offer.type,
+				status: "opened",
+				meta: offer.meta.order_meta
+			});
+			await order.save();
+			return order;
+		});
+	}
+
+	if (!order) {
+		throw new Error(`offer ${ offerId } cap reached`);
+	}
 
 	return {
-		id: openOrder.id,
-		expiration_date: openOrder.expiration.toISOString(),
+		id: order.id,
+		expiration_date: order.expirationDate!.toISOString(),
 	};
 }
 
 export async function submitOrder(
 	orderId: string, form: string | undefined, walletAddress: string, appId: string, logger: LoggerInstance): Promise<Order> {
 
-	const openOrder = await db.OpenOrder.findOneById(orderId);
-	if (!openOrder) {
-		throw Error(`no such order ${orderId}`);
+	const order = await db.Order.findOneById(orderId);
+	if (!order) {
+		throw Error(`no such open order ${ orderId }`);
 	}
-	if (new Date() > openOrder.expiration) {
-		throw Error(`order ${orderId} expired`);
+	if (new Date() > order.expirationDate!) {
+		throw Error(`open order ${ orderId } has expired`);
 	}
 
-	const offer = await offerDb.Offer.findOneById(openOrder.offerId);
+	const offer = await offerDb.Offer.findOneById(order.offerId);
 	if (!offer) {
-		throw new Error(`no such offer ${ openOrder.offerId }`);
+		throw Error(`no such offer ${ order.offerId }`);
 	}
-
 	if (offer.type === "earn") {
 		// validate form
 		if (!await offerContents.isValid(offer.id, form, logger)) {
-			throw Error(`submitted form is invalid for ${openOrder.id}`);
+			throw Error(`submitted form is invalid for ${ order.id }`);
 		}
 	}
 
-	// transition open order to pending order
-	const order = db.Order.new({
-		id: openOrder.id,
-		userId: openOrder.userId,
-		offerId: openOrder.offerId,
-		amount: offer.amount,
-		type: offer.type,
-		status: "pending",
-		meta: offer.meta.order_meta,
-	});
-	offer.cap.used += 1;
-	await offer.save();
+	order.status = "pending";
+	order.currentStatusDate = new Date();
 	await order.save();
-	await openOrder.delete();
 
-	// pay or start timer for payment
 	if (offer.type === "earn") {
 		await payment.payTo(walletAddress, appId, offer.amount, order.id, logger);
-	} else {
-		await submitSpend(order, offer, walletAddress, appId, logger);
 	}
+
 	metrics.submitOrder(offer.type, offer.id);
-
-	return orderDbToApi(order, logger);
-}
-
-export async function submitSpend(
-	order: db.Order, offer: offerDb.Offer, walletAddress: string, appId: string, logger: LoggerInstance): Promise<void> {
-	async function makeFailed(orderId: string) {
-		// XXX lock on order.id
-		const order = await db.Order.findOneById(orderId);
-		if (!order) {
-			throw new Error(`no order ${ orderId }`);
-		}
-
-		order.status = "failed";
-		const offer = await offerDb.Offer.findOneById(order.offerId);
-		if (!offer) {
-			throw new Error(`no offer ${ order.offerId }`);
-		}
-
-		offer.cap.used -= 1;
-		await offer.save();
-		await order.save();
-	}
-
-	// start a timer for order.expiration + grace till this order becomes failed
-	// setTimeout(makeFailed, order.expiration, order.id);
-	return;
+	return orderDbToApi(order);
 }
 
 export async function cancelOrder(orderId: string, logger: LoggerInstance): Promise<void> {
 	// you can only delete an open order - not a pending order
-	// validate order
-
-	const openOrder = await db.OpenOrder.findOneById(orderId);
-	if (!openOrder) {
-		throw Error(`no such order ${orderId}`);
+	const order = await db.Order.findOneById(orderId);
+	if (!order) {
+		throw Error(`no such order ${ orderId }`);
 	}
-	await openOrder.delete();
+
+	if (order.status !== "opened") {
+		throw Error("only opened orders can be canceled");
+	}
+
+	await order.remove();
 }
 
 export async function getOrderHistory(
@@ -173,7 +187,7 @@ export async function getOrderHistory(
 
 	return {
 		orders: orders.map(order => {
-			return orderDbToApi(order, logger);
+			return orderDbToApi(order);
 		}),
 		paging: {
 			cursors: {

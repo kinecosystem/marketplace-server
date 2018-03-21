@@ -37,7 +37,7 @@ export async function getOffers(
 	//  AND app_offers.app_id = ${appId}`
 	// );
 	const dbOffers = await db.Offer.find();
-	const offers: Offer[] = await Promise.all(
+	const offers = await Promise.all(
 		dbOffers
 			.map(async offer => {
 				const content = await offerContents.getOffer(offer.id, logger);
@@ -58,7 +58,7 @@ export async function getOffers(
 					content_type: content.contentType,
 				};
 			})
-			.filter<Offer>(offer => offer !== null));
-	
+			.filter(offer => offer !== null)) as Offer[];
+
 	return { offers, paging: { cursors: {} } };
 }

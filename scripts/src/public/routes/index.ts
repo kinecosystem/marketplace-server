@@ -7,8 +7,8 @@ import { getUser, signInUser, activateUser } from "./users";
 import { getOrder, cancelOrder, getOrderHistory, submitOrder } from "./orders";
 
 export type Context = {
-	token: db.AuthToken;
-	user: db.User;
+	token: db.AuthToken | undefined;
+	user: db.User | undefined;
 };
 
 // augment the express request object
@@ -43,15 +43,15 @@ function router(): ExtendedRouter {
 	const router = express.Router() as ExtendedRouter;
 
 	router.authenticated = function(...scopes: AuthScopes[]) {
-		const proxy = new Proxy(this, {
+		const proxy: ExtendedRouter = new Proxy(this, {
 			get(target, name) {
 				if (typeof name === "string" && AUTHENTICATED_METHODS.includes(name)) {
 					return proxyOverRouter(router, proxy, (path: string, handler: express.RequestHandler) => {
-						return target[name](path, async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+						return (target as any)[name](path, async (req: express.Request, res: express.Response, next: express.NextFunction) => {
 							const token = await authenticate(req);
 							const user = await db.User.findOneById(token.userId);
 							// XXX scopes should be per token and should not consider user data
-							if (scopes.includes(AuthScopes.TOS) && (!user.activated || token.createdDate < user.activatedDate)) {
+							if (scopes.includes(AuthScopes.TOS) && (!user || !user.activated || token.createdDate < user.activatedDate)) {
 								throw Error("user did not approve TOS or using a pre activated token");
 							}
 							req.context = { user, token };
@@ -61,7 +61,7 @@ function router(): ExtendedRouter {
 					});
 				}
 
-				return target[name];
+				return (target as any)[name];
 			},
 		});
 

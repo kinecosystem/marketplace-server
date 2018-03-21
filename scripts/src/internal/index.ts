@@ -4,7 +4,7 @@ import { initLogger } from "../logging";
 
 import { getConfig } from "./config";
 const config = getConfig();
-const logger = initLogger(...config.loggers);
+const logger = initLogger(...config.loggers!);
 
 import { app } from "./app";
 
@@ -16,7 +16,7 @@ server.on("listening", onListening);
 /**
  * Event listener for HTTP server "error" event.
  */
-function onError(error) {
+function onError(error: Error & { syscall: string; code: string; }) {
 	if (error.syscall !== "listen") {
 		throw error;
 	}

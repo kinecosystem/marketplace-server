@@ -1,8 +1,9 @@
 import * as express from "express";
-import { LeveledLogMethod, LoggerInstance } from "winston";
+import { LoggerInstance } from "winston";
 
 import { getDefaultLogger } from "./logging";
 import { generateId } from "./utils";
+import { Request, Response } from "express-serve-static-core";
 
 let logger: LoggerInstance;
 export function init() {
@@ -20,7 +21,7 @@ declare module "express" {
  * augments the request object with a request-id and a logger.
  * the logger should be then used when logging inside request handlers, which will then add some more info per log
  */
-export function requestLogger(req: express.Request, res: express.Response, next: express.NextFunction) {
+export const requestLogger = function(req: express.Request, res: express.Response, next: express.NextFunction) {
 	const methods = ["debug", "info", "warn", "error"];
 	const id = generateId();
 	const proxy = new Proxy(logger, {
@@ -45,9 +46,9 @@ export function requestLogger(req: express.Request, res: express.Response, next:
 	(req as any).id = id;
 	(req as any).logger = proxy;
 	next();
-}
+} as express.RequestHandler;
 
-export function logRequest(req: express.Request, res: express.Response, next: express.NextFunction) {
+export const logRequest = function(req: express.Request, res: express.Response, next: express.NextFunction) {
 	const start = new Date();
 	req.logger.info(`start handling request ${ req.id }: ${ req.method } ${ req.path }`, req.headers);
 
@@ -56,12 +57,12 @@ export function logRequest(req: express.Request, res: express.Response, next: ex
 	});
 
 	next();
-}
+} as express.RequestHandler;
 
-export function notFoundHandler(req: express.Request, res: express.Response) {
+export const notFoundHandler = function(req: Request, res: Response) {
 	// log.error(`Error 404 on ${req.url}.`);
 	res.status(404).send({ status: 404, error: "Not found" });
-}
+} as express.RequestHandler;
 
 export type ApiError = {
 	status: number;
@@ -71,7 +72,7 @@ export type ApiError = {
 /**
  * The "next" arg is needed even though it's not used, otherwise express won't understand that it's an error handler
  */
-export function generalErrorHandler(err: any, req: express.Request, res: express.Response) {
+export function generalErrorHandler(err: any, req: Request, res: Response, next: express.NextFunction) {
 	let message = `Error
 	method: ${ req.method }
 	path: ${ req.url }

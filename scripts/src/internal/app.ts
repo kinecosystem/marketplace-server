@@ -5,7 +5,7 @@ import { getConfig } from "./config";
 import { initLogger } from "../logging";
 
 const config = getConfig();
-const logger = initLogger(...config.loggers);
+const logger = initLogger(...config.loggers!);
 
 import { createRoutes } from "./routes";
 import { initPaymentCallbacks } from "./services";

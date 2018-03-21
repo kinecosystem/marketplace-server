@@ -6,7 +6,7 @@ import { initLogger } from "../logging";
 import { getConfig } from "./config";
 
 const config = getConfig();
-const logger = initLogger(...config.loggers);
+const logger = initLogger(...config.loggers!);
 
 import { createRoutes } from "./routes/index";
 import { init as initModels } from "../models/index";

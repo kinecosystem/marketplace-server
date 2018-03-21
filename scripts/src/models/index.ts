@@ -1,9 +1,10 @@
 import "reflect-metadata";
+import { ObjectType } from "typeorm/common/ObjectType";
+import { DeepPartial } from "typeorm/common/DeepPartial";
 import { BaseEntity, Column, createConnection, PrimaryColumn, Connection, ConnectionOptions } from "typeorm";
 
 import { getConfig } from "../config";
 import { normalizeError, path, IdPrefix, generateId } from "../utils";
-import { ObjectType } from "typeorm/common/ObjectType";
 
 const entities: ModelConstructor[] = [];
 let connection: Connection;
@@ -13,12 +14,12 @@ let initPromise: Promise<string>;
 export type ModelConstructor = { new(): Model };
 export type ModelMemberInitializer = () => any;
 export abstract class Model extends BaseEntity {
-	public static new<T extends Model>(this: ObjectType<T>, data?: Partial<T>): T {
-		const instance = (this as typeof BaseEntity).create(data) as T;
+	public static new<T extends Model>(this: ObjectType<T>, data?: DeepPartial<T>): T {
+		const instance = (this as typeof BaseEntity).create(data!) as T;
 
 		for (const [name, initializer] of (this as typeof Model).initializers.entries()) {
-			if (!instance[name]) {
-				instance[name] = initializer();
+			if (!instance[name as keyof Model]) {
+				instance[name as keyof Model] = initializer();
 			}
 		}
 
@@ -36,14 +37,14 @@ export abstract class Model extends BaseEntity {
 	}
 
 	@PrimaryColumn()
-	public id: string;
+	public id!: string;
 }
 
 export abstract class CreationDateModel extends Model {
 	protected static initializers = Model.copyInitializers({ createdDate: () => new Date() });
 
 	@Column({ name: "created_date" })
-	public createdDate: Date;
+	public createdDate!: Date;
 }
 
 export function register(ctor: ModelConstructor) {

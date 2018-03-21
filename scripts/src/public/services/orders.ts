@@ -89,7 +89,7 @@ export async function submitOrder(
 	orderId: string, form: string | undefined, walletAddress: string, appId: string, logger: LoggerInstance): Promise<Order> {
 
 	// validate order
-	const openOrder: db.OpenOrder = openOrdersDB.get(orderId);
+	const openOrder = openOrdersDB.get(orderId);
 	if (!openOrder) {
 		throw Error(`no such order ${orderId}`);
 	}
@@ -98,6 +98,9 @@ export async function submitOrder(
 	}
 
 	const offer = await offerDb.Offer.findOneById(openOrder.offerId);
+	if (!offer) {
+		throw new Error(`no such offer ${ openOrder.offerId }`);
+	}
 
 	if (offer.type === "earn") {
 		// validate form
@@ -136,8 +139,16 @@ export async function submitSpend(
 	async function makeFailed(orderId: string) {
 		// XXX lock on order.id
 		const order = await db.Order.findOneById(orderId);
+		if (!order) {
+			throw new Error(`no order ${ orderId }`);
+		}
+
 		order.status = "failed";
 		const offer = await offerDb.Offer.findOneById(order.offerId);
+		if (!offer) {
+			throw new Error(`no offer ${ order.offerId }`);
+		}
+
 		offer.cap.used -= 1;
 		await offer.save();
 		await order.save();
@@ -151,7 +162,7 @@ export async function submitSpend(
 export async function cancelOrder(orderId: string, logger: LoggerInstance): Promise<void> {
 	// you can only delete an open order - not a pending order
 	// validate order
-	const openOrder: db.OpenOrder = openOrdersDB.get(orderId);
+	const openOrder = openOrdersDB.get(orderId);
 	if (!openOrder) {
 		throw Error(`no such order ${orderId}`);
 	}

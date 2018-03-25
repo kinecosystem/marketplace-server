@@ -51,7 +51,7 @@ function router(): ExtendedRouter {
 							const token = await authenticate(req);
 							const user = await db.User.findOneById(token.userId);
 							// XXX scopes should be per token and should not consider user data
-							if (scopes.includes(AuthScopes.TOS) && (!user || !user.activated || token.createdDate < user.activatedDate)) {
+							if (scopes.includes(AuthScopes.TOS) && (!user || !user.activated || token.createdDate < user.activatedDate!)) {
 								throw Error("user did not approve TOS or using a pre activated token");
 							}
 							req.context = { user, token };

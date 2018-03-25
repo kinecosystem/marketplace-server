@@ -26,7 +26,7 @@ export class Order extends CreationDateModel {
 	public type!: OfferType;
 
 	@Column("simple-json", { name: "blockchain_data", nullable: true })
-	public blockchainData!: BlockchainData;
+	public blockchainData?: BlockchainData;
 
 	@Column({ name: "user_id" })
 	public userId!: string;
@@ -38,10 +38,10 @@ export class Order extends CreationDateModel {
 	public meta!: OrderMeta;
 
 	@Column("simple-json", { nullable: true }) // the asset or JWT payment confirmation
-	public value: OrderValue | undefined;
+	public value?: OrderValue;
 
 	@Column("simple-json", { nullable: true })
-	public error: OrderError | undefined;
+	public error?: OrderError;
 
 	@Column()
 	public amount!: number;
@@ -50,7 +50,7 @@ export class Order extends CreationDateModel {
 	public status!: OrderStatus;
 
 	@Column({ name: "completion_date", nullable: true })
-	public completionDate!: Date;
+	public completionDate?: Date;
 }
 
 export type OpenOrder = {

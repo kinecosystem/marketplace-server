@@ -105,7 +105,7 @@ export class Asset extends CreationDateModel {
 	public offerId!: string;
 
 	@Column({ name: "owner_id", nullable: true })
-	public ownerId!: string | null;  // User.id
+	public ownerId?: string;  // User.id
 
 	@Column("simple-json")
 	public value!: AssetValue;

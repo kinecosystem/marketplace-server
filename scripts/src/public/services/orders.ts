@@ -56,7 +56,7 @@ function orderDbToApi(order: db.Order, logger: LoggerInstance): Order {
 		result: order.value,
 		error: order.error,
 		completion_date: (order.completionDate || order.createdDate).toISOString(), // XXX should we separate the dates?
-		blockchain_data: order.blockchainData,
+		blockchain_data: order.blockchainData!,
 		offer_type: order.type,
 		title: order.meta.title,
 		description: order.meta.description,

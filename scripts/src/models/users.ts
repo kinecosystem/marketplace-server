@@ -18,7 +18,7 @@ export class User extends CreationDateModel {
 	public walletAddress!: string;
 
 	@Column({ name: "activated_date", nullable: true })
-	public activatedDate!: Date;
+	public activatedDate?: Date;
 
 	public get activated(): boolean {
 		return !!this.activatedDate;

@@ -3,8 +3,8 @@ import * as http from "http";
 import { ServerError } from "../utils";
 import { getDefaultLogger } from "../logging";
 
-import { app } from "./app";
 import { getConfig } from "./config";
+import { app } from "./app";
 
 const config = getConfig();
 const logger = getDefaultLogger();

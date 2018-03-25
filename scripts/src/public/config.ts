@@ -1,4 +1,4 @@
-import { Config as BaseConfig, getConfig as getConfigBase } from "../config";
+import { Config as BaseConfig, init as baseInit, getConfig as baseGetConfig } from "../config";
 
 export interface Config extends BaseConfig {
 	assets_base: string;
@@ -7,6 +7,10 @@ export interface Config extends BaseConfig {
 }
 
 export function getConfig(): Config {
+	return baseGetConfig();
+}
+
+function init(): void {
 	let path = "config/public.";
 	if (process.argv.length === 3) {
 		path += process.argv[2];
@@ -14,8 +18,7 @@ export function getConfig(): Config {
 		path += "default";
 	}
 
-	return getConfigBase(`${ path }.json`);
+	baseInit(`${ path }.json`);
 }
 
-// call this to set the config to use, so that who ever calls the base getConfig will work
-getConfig();
+init();

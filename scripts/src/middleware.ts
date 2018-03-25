@@ -50,7 +50,13 @@ export const requestLogger = function(req: express.Request, res: express.Respons
 
 export const logRequest = function(req: express.Request, res: express.Response, next: express.NextFunction) {
 	const start = new Date();
-	req.logger.info(`start handling request ${ req.id }: ${ req.method } ${ req.path }`, req.headers);
+	const data = Object.assign({}, req.headers);
+
+	if (req.query && Object.keys(req.query).length > 0) {
+		data.querystring = req.query;
+	}
+
+	req.logger.info(`start handling request ${ req.id }: ${ req.method } ${ req.path }`, data);
 
 	res.on("finish", () => {
 		req.logger.info(`finished handling request ${ req.id }`, { start: start.getTime(), end: new Date().getTime() });

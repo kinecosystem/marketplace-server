@@ -8,7 +8,7 @@ import { createOrder as createOrderService } from "../services/orders";
  */
 export const getOffers = async function(req: Request, res: Response, next: NextFunction) {
 	try {
-		const data = await getOffersService(req.context.user!.id, req.context.user!.appId, req.logger);
+		const data = await getOffersService(req.context.user!.id, req.context.user!.appId, req.params.type, req.logger);
 		res.status(200).send(data);
 	} catch (err) {
 		next(err);

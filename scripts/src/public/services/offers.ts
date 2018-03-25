@@ -28,7 +28,7 @@ export interface OfferList {
 }
 
 export async function getOffers(
-	userId: string, appId: string, logger: LoggerInstance): Promise<OfferList> {
+	userId: string, appId: string, type: "earn" | "spend", logger: LoggerInstance): Promise<OfferList> {
 	// const appOffers = await getManager().query(
 	// `SELECT offers.*
 	//  FROM offers
@@ -36,29 +36,30 @@ export async function getOffers(
 	//  ON offers.id = app_offers.offer_id
 	//  AND app_offers.app_id = ${appId}`
 	// );
-	const dbOffers = await db.Offer.find();
+
+	const order = type === "earn" ? "ASC" : "DESC";
+	const dbOffers = await db.Offer.find({ where: { type }, order: { amount: order } });
 	const offers = await Promise.all(
-		dbOffers
-			.map(async offer => {
-				const content = await offerContents.getOffer(offer.id, logger);
+		dbOffers.map(async offer => {
+			const content = await offerContents.getOffer(offer.id, logger);
 
-				if (!content) {
-					return null;
-				}
+			if (!content) {
+				return null;
+			}
 
-				return {
-					id: offer.id,
-					title: offer.meta.title,
-					description: offer.meta.description,
-					image: offer.meta.image,
-					amount: offer.amount,
-					blockchain_data: offer.blockchainData,
-					offer_type: offer.type,
-					content: content.content,
-					content_type: content.contentType,
-				};
-			})
-			.filter(offer => offer !== null)) as Offer[];
+			return {
+				id: offer.id,
+				title: offer.meta.title,
+				description: offer.meta.description,
+				image: offer.meta.image,
+				amount: offer.amount,
+				blockchain_data: offer.blockchainData,
+				offer_type: offer.type,
+				content: content.content,
+				content_type: content.contentType,
+			};
+		})
+		.filter(offer => offer !== null)) as Offer[];
 
 	return { offers, paging: { cursors: {} } };
 }

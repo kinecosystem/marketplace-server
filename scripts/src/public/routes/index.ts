@@ -72,7 +72,7 @@ function router(): ExtendedRouter {
 }
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
-	app.use(createPath("offers", pathPrefix),
+	app.use(createPath("offers/:type", pathPrefix),
 		router()
 			.authenticated()
 			.get("/", getOffers));

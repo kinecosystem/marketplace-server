@@ -1,5 +1,5 @@
 import * as express from "express";
-import { LoggerInstance } from "winston";
+import { LeveledLogMethod, LoggerInstance } from "winston";
 
 import { getDefaultLogger } from "./logging";
 import { generateId } from "./utils";
@@ -34,7 +34,7 @@ export const requestLogger = function(req: express.Request, res: express.Respons
 						args = [...args, { reqId: id }];
 					}
 
-					(target[name] as any)(...args);
+					(target[name] as (...args: any[]) => void)(...args);
 				};
 			}
 

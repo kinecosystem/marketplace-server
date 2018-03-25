@@ -8,8 +8,7 @@ import { Application } from "./models/applications";
 import { ApiError } from "./public/middleware";
 import * as StellarSdk from "stellar-sdk";
 import { AuthToken } from "./public/services/users";
-import { Operation, xdr, Memo } from "stellar-sdk";
-import { TransactionRecord } from "stellar-sdk";
+import { Operation, xdr, Memo, TransactionRecord } from "stellar-sdk";
 
 const BASE = "http://localhost:3000";
 // const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
@@ -197,24 +196,23 @@ class Client {
 
 	private async establishTrustLine(): Promise<TransactionRecord> {
 		const op = StellarSdk.Operation.changeTrust({
-			asset: STELLAR.kinAsset,
-			limit: "" // XXX BUG this should be optional
+			asset: STELLAR.kinAsset
 		});
 
-		let result: TransactionRecord;
+		let error: Error | undefined;
 		for (let i = 0; i < 3; i++) {
 			try {
-				result = await this.stellarOperation(op);
+				return await this.stellarOperation(op);
 			} catch (e) {
-				if (i === 2) {
-					throw e;
-				}
+				error = e;
 
-				await delay(3000);
+				if (i < 2) {
+					await delay(3000);
+				}
 			}
 		}
 
-		return result!;
+		throw error;
 	}
 }
 

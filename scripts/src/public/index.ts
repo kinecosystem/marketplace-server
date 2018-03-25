@@ -1,5 +1,6 @@
 import * as http from "http";
 
+import { ServerError } from "../utils";
 import { getDefaultLogger } from "../logging";
 
 import { app } from "./app";
@@ -16,7 +17,7 @@ server.on("listening", onListening);
 /**
  * Event listener for HTTP server "error" event.
  */
-function onError(error: Error & { syscall: string; code: string; }) {
+function onError(error: ServerError) {
 	if (error.syscall !== "listen") {
 		throw error;
 	}

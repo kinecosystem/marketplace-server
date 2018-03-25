@@ -81,9 +81,9 @@ type OptionsKey = keyof WinstonTransportOptions;
 function mergeOptions(defaults: WinstonTransportOptions, options: WinstonTransportOptions): WinstonTransportOptions {
 	const result = Object.assign({}, defaults);
 
-	Object.keys(options)
-		.filter(key => options[key as OptionsKey] !== null && options[key as OptionsKey] !== undefined)
-		.forEach(key => result[key as OptionsKey] = options[key as OptionsKey]);
+	(Object.keys(options) as OptionsKey[])
+		.filter(key => options[key] !== null && options[key] !== undefined)
+		.forEach(key => result[key] = options[key]);
 
 	return result;
 }

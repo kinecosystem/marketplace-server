@@ -2,8 +2,10 @@ import { Column, Entity } from "typeorm";
 
 import { generateId, IdPrefix } from "../utils";
 
-import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
+import { CreationDateModel, register as Register, initializer as Initializer, getRedis } from "./index";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
+import * as moment from "moment";
+import * as redis from "redis";
 
 export type OrderMeta = {
 	title: string;
@@ -53,10 +55,38 @@ export class Order extends CreationDateModel {
 	public completionDate?: Date;
 }
 
-export type OpenOrder = {
-	userId: string;
-	offerId: string;
-	expiration: Date;
-	id: string;
+const redisConn: redis.RedisClient = getRedis();
+
+export class OpenOrder {
+	public static expirationMin = 10; // 10 minutes
+
+	public static async findOneById(orderId: string): Promise<OpenOrder> {
+		const data: string = await redisConn.get(`OpenOrder:${orderId}`);
+		return JSON.parse(data) as OpenOrder;
+	}
+
+	public userId: string;
+	public offerId: string;
+	public expiration: Date;
+	public id: string;
+
 	// XXX maybe add offerType too
-};
+
+	public constructor(offerId: string, userId: string) {
+		Object.assign(this, {
+			expiration: moment().add(OpenOrder.expirationMin, "minutes").toDate(),
+			id: generateId(IdPrefix.Transaction),
+			offerId,
+			userId
+		});
+	}
+
+	public save() {
+		redisConn.set(`OpenOrder:${this.id}`, JSON.stringify(this));
+	}
+
+	public delete() {
+		redisConn.del(`OpenOrder:${this.id}`);
+	}
+
+}

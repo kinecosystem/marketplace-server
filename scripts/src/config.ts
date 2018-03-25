@@ -9,6 +9,7 @@ export interface Config {
 	port?: number;
 	loggers?: LogTarget[];
 	db: ConnectionOptions;
+	redis: "mock" | string;
 }
 
 let config: Config;

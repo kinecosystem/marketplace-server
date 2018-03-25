@@ -106,3 +106,15 @@ function createOnConnectedString(options: ConnectionOptions): string {
 
 	return msg;
 }
+
+import * as redis from "redis";
+
+export function getRedis(): redis.RedisClient {
+	return redis.createClient();
+	/*
+	if (getConfig().redis === "mock") {
+		return require("redis-mock");
+	} else {
+		return require("redis");
+	}*/
+}

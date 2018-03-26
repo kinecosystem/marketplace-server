@@ -13,6 +13,7 @@ let initPromise: Promise<string>;
 
 export type ModelConstructor = { new(): Model };
 export type ModelMemberInitializer = () => any;
+
 export abstract class Model extends BaseEntity {
 	public static new<T extends Model>(this: ObjectType<T>, data?: DeepPartial<T>): T {
 		const instance = (this as typeof BaseEntity).create(data!) as T;
@@ -27,6 +28,7 @@ export abstract class Model extends BaseEntity {
 	}
 
 	protected static initializers = new Map<string, ModelMemberInitializer>([["id", () => generateId(IdPrefix.None)]]);
+
 	protected static copyInitializers(add?: { [name: string]: ModelMemberInitializer }): Map<string, ModelMemberInitializer> {
 		const map = new Map<string, ModelMemberInitializer>(this.initializers);
 		if (add) {
@@ -110,6 +112,7 @@ function createOnConnectedString(options: ConnectionOptions): string {
 import * as redis from "redis";
 
 export function getRedis(): redis.RedisClient {
+
 	return redis.createClient();
 	/*
 	if (getConfig().redis === "mock") {

@@ -55,14 +55,22 @@ export class Order extends CreationDateModel {
 	public completionDate?: Date;
 }
 
-const redisConn: redis.RedisClient = getRedis();
+const redisClient: redis.RedisClient = getRedis();
+import { promisify } from "util";
+const getAsync = promisify(redisClient.get).bind(redisClient);
+const setAsync = promisify(redisClient.set).bind(redisClient);
+const delAsync = promisify(redisClient.del).bind(redisClient);
 
 export class OpenOrder {
 	public static expirationMin = 10; // 10 minutes
 
 	public static async findOneById(orderId: string): Promise<OpenOrder> {
-		const data: string = await redisConn.get(`OpenOrder:${orderId}`);
+		const data: string = await getAsync(OpenOrder.redisKey(orderId));
 		return JSON.parse(data) as OpenOrder;
+	}
+
+	private static redisKey(orderId: string) {
+		return `OpenOrder:${orderId}`;
 	}
 
 	public userId: string;
@@ -81,12 +89,12 @@ export class OpenOrder {
 		});
 	}
 
-	public save() {
-		redisConn.set(`OpenOrder:${this.id}`, JSON.stringify(this));
+	public async save() {
+		await setAsync(OpenOrder.redisKey(this.id), JSON.stringify(this));
 	}
 
-	public delete() {
-		redisConn.del(`OpenOrder:${this.id}`);
+	public async delete() {
+		await delAsync(OpenOrder.redisKey(this.id));
 	}
 
 }

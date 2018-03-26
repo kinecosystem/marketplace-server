@@ -68,7 +68,7 @@ export async function createOrder(
 
 	const openOrder = new db.OpenOrder(offerId, userId);
 
-	openOrder.save();
+	await openOrder.save();
 
 	return {
 		id: openOrder.id,
@@ -112,7 +112,7 @@ export async function submitOrder(
 	offer.cap.used += 1;
 	await offer.save();
 	await order.save();
-	openOrder.delete();
+	await openOrder.delete();
 
 	// pay or start timer for payment
 	if (offer.type === "earn") {
@@ -157,7 +157,7 @@ export async function cancelOrder(orderId: string, logger: LoggerInstance): Prom
 	if (!openOrder) {
 		throw Error(`no such order ${orderId}`);
 	}
-	openOrder.delete();
+	await openOrder.delete();
 }
 
 export async function getOrderHistory(

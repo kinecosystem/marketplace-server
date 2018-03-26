@@ -1,0 +1,24 @@
+version: "3"
+
+services:
+  base:
+    build:
+      dockerfile: Dockerfile.base
+      context: .
+    image: kinecosystem/marketplace-service-base
+
+  public:
+    build:
+      dockerfile: Dockerfile.public
+      context: .
+    image: kinecosystem/marketplace-service-public
+    ports:
+      - 3000:3000
+
+  internal:
+    build:
+      dockerfile: Dockerfile.internal
+      context: .
+    image: kinecosystem/marketplace-service-internal
+    ports:
+      - 3000:3001

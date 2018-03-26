@@ -16,6 +16,7 @@ import {
 	CouponInfo,
 	CouponOrderContent,
 	kikPoll,
+	kinPoll,
 	Poll,
 	tutorial,
 	Tutorial, TUTORIAL_DESCRIPTION
@@ -91,21 +92,15 @@ async function createOffers(): Promise<Offer[]> {
 		return offer;
 	}
 
-	offers.push(await createEarn("Dunkin Donuts", "Sweet tooth?", "Answer a poll",
-		assetsBase + "earn_offer1.png", 20, "Dunkin Donuts", "Completed Poll",
-		animalPoll));
-	offers.push(await createEarn("Kik", "Tell us more", "Answer a poll",
-		assetsBase + "earn_offer2.png", 30, "Kik", "Completed Poll",
-		kikPoll));
 	offers.push(await createEarn("Kin", "Learn More", TUTORIAL_DESCRIPTION,
-		assetsBase + "earn_offer3.png", 10, "Getting started tutorial", "Completed Tutorial",
+		assetsBase + "earn_offer3.png", 6000, "Getting started tutorial", "Completed Tutorial",
 		tutorial));
-	offers.push(await createEarn("McDonald's", "Big Mac fan?", "Answer a poll",
-		assetsBase + "earn_offer4.png", 30, "McDonald's", "Completed Poll",
-		animalPoll));
-	offers.push(await createEarn("Nike", "Run or walk?", "Answer a poll",
-		assetsBase + "earn_offer5.png", 30, "Nike", "Completed Poll",
-		animalPoll));
+	offers.push(await createEarn("Kik", "Tell us more", "Answer a poll",
+		assetsBase + "earn_offer2.png", 4000, "Kik", "Completed Poll",
+		kikPoll));
+	offers.push(await createEarn("Kin", "Tell us more", "Answer a poll",
+		assetsBase + "kin_poll.png", 4000, "Kin", "Completed Poll",
+		kinPoll));
 
 	offers.push(await createSpend("Spotify", "Get Coupon", "month subscription",
 		assetsBase + "spend_offer1.png", 8, "Spotify", "month subscription",

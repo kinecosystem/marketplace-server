@@ -1,5 +1,7 @@
+import { getManager } from "typeorm";
 import { LoggerInstance } from "winston";
 
+import { ModelFilters } from "../../models/index";
 import * as db from "../../models/offers";
 
 import { Paging, ServiceResult } from "./index";
@@ -27,18 +29,32 @@ export interface OfferList {
 	paging: Paging;
 }
 
-export async function getOffers(
-	userId: string, appId: string, type: "earn" | "spend", logger: LoggerInstance): Promise<OfferList> {
-	// const appOffers = await getManager().query(
-	// `SELECT offers.*
-	//  FROM offers
-	//  JOIN app_offers
-	//  ON offers.id = app_offers.offer_id
-	//  AND app_offers.app_id = ${appId}`
-	// );
+export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance): Promise<OfferList> {
+	const earnQuery = db.Offer
+		.createQueryBuilder()
+		.where("type = 'earn'")
+		.orderBy("amount", "ASC").getSql();
 
-	const order = type === "earn" ? "ASC" : "DESC";
-	const dbOffers = await db.Offer.find({ where: { type }, order: { amount: order } });
+	const spendQuery = db.Offer
+		.createQueryBuilder()
+		.where("type = 'spend'")
+		.orderBy("amount", "DESC").getSql();
+
+	let dbOffers: db.Offer[];
+	switch (filters.type) {
+		case "earn":
+			dbOffers = await getManager().query(earnQuery);
+			break;
+
+		case "spend":
+			dbOffers = await getManager().query(spendQuery);
+			break;
+
+		default:
+			dbOffers = await getManager().query(`${ earnQuery } UNION ${ spendQuery }`);
+			break;
+	}
+
 	const offers = await Promise.all(
 		dbOffers.map(async offer => {
 			const content = await offerContents.getOffer(offer.id, logger);

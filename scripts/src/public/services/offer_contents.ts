@@ -23,6 +23,7 @@ export interface Poll {
 }
 
 export type TutorialPage = { type: PageType.ImageAndText | PageType.EarnThankYou, title?: string, image?: string, bodyHtml?: string, footerHtml?: string, buttonText?: string };
+
 export interface Tutorial {
 	pages: TutorialPage[];
 }
@@ -37,7 +38,7 @@ export const kikPoll: Poll = {
 		title: "Who do you primarily chat with on Kik?",
 		description: `Complete the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
 		question: {
-			id: "favourite_color",
+			id: "who34",
 			answers: [
 				"New friends I've met on Kik",
 				"Friends I've met elsewhere online",
@@ -45,7 +46,103 @@ export const kikPoll: Poll = {
 				"An equal mix of all three!",
 			],
 		},
-	}],
+	}, {
+		type: PageType.FullPageMultiChoice,
+		title: "What do you like to use the most when chatting with others on Kik?",
+		description: `Complete the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
+		question: {
+			id: "what324",
+			answers: [
+				"Video chat", "Stickers", "Gifs", "Emojis", "Kik custom emojis", "Just regular text messages",
+			],
+		},
+	}, {
+		type: PageType.FullPageMultiChoice,
+		title: "If you could improve one thing about Kik, what would you improve?",
+		description: `Complete the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
+		question: {
+			id: "how3245",
+			answers: [
+				"Video Chat", "Public Groups", "Privacy Settings", "Speed/Reliability",
+			],
+		},
+	}, {
+		type: PageType.FullPageMultiChoice,
+		title: "What's your favorite thing to do on Kik?",
+		description: `Complete the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
+		question: {
+			id: "favourite_thing345",
+			answers: [
+				"Chatting 1:1 with friends", "Using chat bots", "Chatting 1:1 with new people", "Group Chats",
+			],
+		},
+	}, {
+		type: PageType.FullPageMultiChoice,
+		title: "How did you first hear about Kik?",
+		description: `Complete the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
+		question: {
+			id: "how432565",
+			answers: [
+				"Friends/Family", "Social Media", "Website/Search Engine", "Ads",
+			],
+		},
+	},
+	],
+};
+
+export const kinPoll: Poll = {
+	pages: [{
+		type: PageType.FullPageMultiChoice,
+		title: "How would you rate the Kin Marketplace experience so far?",
+		description: `Complete the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
+		question: {
+			id: "who34",
+			answers: [
+				"I'm loving it!", "OK", "I'm not sure", "I won't come back",
+			],
+		},
+	}, {
+		type: PageType.FullPageMultiChoice,
+		title: "How would you describe the Spend offers in the Marketplace?",
+		description: `Complete the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
+		question: {
+			id: "what324",
+			answers: [
+				"Excellent", "Good", "OK", "Not for me",
+			],
+		},
+	}, {
+		type: PageType.FullPageMultiChoice,
+		title: "What type of gift card would you chose to spend your Kin on?",
+		description: `Complete the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
+		question: {
+			id: "how3245",
+			answers: [
+				"Amazon", "Movie ticket", "Fast food", "Beauty", "Music", "Other", "I want to keep my Kin",
+			],
+		},
+	}, {
+		type: PageType.FullPageMultiChoice,
+		title: "Would you recommend the Kin marketplace experience to a friend?",
+		description: `Complete the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
+		question: {
+			id: "favourite_thing345",
+			answers: [
+				"For sure!", "I probably will", "I'm not sure", "I don't think so...",
+			],
+		},
+	}, {
+		type: PageType.FullPageMultiChoice,
+		title: "What is your favourite part of the Kin Marketplace experience?",
+		description: `Complete the poll to earn <span style='color:#047cfc;'>4,000</span> Kin`,
+		question: {
+			id: "how432565",
+			answers: [
+				"Completing Polls", "Getting Kin", "Browsing Gift Cards", "Spending Kin",
+			],
+		},
+	},
+	],
 };
 
 export const animalPoll: Poll = {

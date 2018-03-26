@@ -209,11 +209,11 @@ export const tutorial: Tutorial = {
 	],
 };
 
-export async function getOffer(offerId: string, logger: LoggerInstance): Promise<db.OfferContent> {
+export async function getOffer(offerId: string, logger: LoggerInstance): Promise<db.OfferContent | undefined> {
 	return await db.OfferContent.findOne({ offerId });
 }
 
-export async function isValid(offerId: string, form: string, logger: LoggerInstance): Promise<boolean> {
+export async function isValid(offerId: string, form: string | undefined, logger: LoggerInstance): Promise<boolean> {
 	// let parsed: Answers;
 	// try {
 	// 	parsed = JSON.parse(form);
@@ -233,5 +233,5 @@ export async function isValid(offerId: string, form: string, logger: LoggerInsta
 	// 		return false;
 	// 	}
 	// }
-	return true;
+	return form !== undefined;
 }

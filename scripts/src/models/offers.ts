@@ -30,7 +30,7 @@ export type ContentType = "poll" | "coupon";
 @Register
 export class OfferOwner extends Model {
 	@Column()
-	public name: string;
+	public name!: string;
 
 	public get offers(): Promise<Offer[]> {
 		return Offer.find({ ownerId: this.id });
@@ -42,25 +42,25 @@ export class OfferOwner extends Model {
 @Initializer("id", () => generateId(IdPrefix.Offer))
 export class Offer extends CreationDateModel {
 	@Column()
-	public amount: number;
+	public amount!: number;
 
 	@Column("simple-json")
-	public cap: Cap;
+	public cap!: Cap;
 
 	@Column("simple-json")
-	public meta: OfferMeta;
+	public meta!: OfferMeta;
 
 	@Column()
-	public type: OfferType;
+	public type!: OfferType;
 
 	@Column("simple-json", { name: "blockchain_data" })
-	public blockchainData: BlockchainData;
+	public blockchainData!: BlockchainData;
 
 	@Column({ name: "owner_id" })
-	public ownerId: string;
+	public ownerId!: string;
 
 	// @ManyToOne(type => OfferOwner, owner => owner.offers) // XXX requires a generated value
-	public get owner(): Promise<OfferOwner> {
+	public get owner(): Promise<OfferOwner | undefined> {
 		return OfferOwner.findOneById(this.ownerId);
 	}
 }
@@ -69,13 +69,13 @@ export class Offer extends CreationDateModel {
 @Register
 export class OfferContent extends Model {
 	@PrimaryColumn({ name: "offer_id" })
-	public offerId: string;
+	public offerId!: string;
 
 	@Column("simple-json")
-	public content: string;
+	public content!: string;
 
 	@Column({ name: "content_type" })
-	public contentType: ContentType;
+	public contentType!: ContentType;
 }
 
 @Entity({ name: "app_offers" })
@@ -83,10 +83,10 @@ export class OfferContent extends Model {
 @Index(["offerId", "appId"], { unique: true })
 export class AppOffer extends Model {
 	@PrimaryColumn({ name: "offer_id" })
-	public offerId: string;
+	public offerId!: string;
 
 	@PrimaryColumn({ name: "app_id" })
-	public appId: string;
+	public appId!: string;
 }
 
 export type AssetValue = {
@@ -99,16 +99,16 @@ export type OrderValue = AssetValue & { type: string };
 @Register
 export class Asset extends CreationDateModel {
 	@Column()
-	public type: "coupon";
+	public type!: "coupon";
 
 	@Column({ name: "offer_id" })
-	public offerId: string;
+	public offerId!: string;
 
 	@Column({ name: "owner_id", nullable: true })
-	public ownerId: string;  // User.id
+	public ownerId?: string;  // User.id
 
 	@Column("simple-json")
-	public value: AssetValue;
+	public value!: AssetValue;
 
 	public asOrderValue(): OrderValue {
 		return Object.assign({ type: this.type }, this.value);

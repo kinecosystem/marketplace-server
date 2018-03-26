@@ -8,16 +8,15 @@ import { Application } from "./models/applications";
 import { ApiError } from "./public/middleware";
 import * as StellarSdk from "stellar-sdk";
 import { AuthToken } from "./public/services/users";
-import { Operation, xdr, Memo } from "stellar-sdk";
-import { TransactionRecord } from "stellar-sdk";
+import { Operation, xdr, Memo, TransactionRecord } from "stellar-sdk";
 
 const BASE = "http://localhost:3000";
 // const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
 
 class Stellar {
 	public static MEMO_VERSION = 1;
-	public server: StellarSdk.Server; // StellarSdk.Server
-	public kinAsset: StellarSdk.Asset; // StellarSdk.Asset
+	public server!: StellarSdk.Server; // StellarSdk.Server
+	public kinAsset!: StellarSdk.Asset; // StellarSdk.Asset
 	public constructor(network: "production" | "testnet") {
 		if (network === "testnet") {
 			StellarSdk.Network.useTestNetwork();
@@ -30,10 +29,9 @@ class Stellar {
 const STELLAR = new Stellar("testnet");
 
 class Client {
-
-	public authToken: AuthToken;
-	private keyPair: StellarSdk.Keypair;
-	private appId: string;
+	public authToken!: AuthToken;
+	private keyPair!: StellarSdk.Keypair;
+	private appId!: string;
 
 	public async register(appId: string, apiKey: string, userId: string, walletAddress?: string) {
 		const generatedWallet = !walletAddress;
@@ -134,8 +132,8 @@ class Client {
 	}
 
 	private handleAxiosError(ex: axios.AxiosError): never {
-		const apiError: ApiError = ex.response.data;
-		throw Error(`server error ${ex.response.status}(${apiError.status}): ${apiError.error}`);
+		const apiError: ApiError = ex.response!.data;
+		throw Error(`server error ${ex.response!.status}(${apiError.status}): ${apiError.error}`);
 	}
 
 	private async _delete(url: string): Promise<any> {
@@ -198,21 +196,23 @@ class Client {
 
 	private async establishTrustLine(): Promise<TransactionRecord> {
 		const op = StellarSdk.Operation.changeTrust({
-			asset: STELLAR.kinAsset,
-			limit: undefined // XXX BUG this should be optional
+			asset: STELLAR.kinAsset
 		});
 
+		let error: Error | undefined;
 		for (let i = 0; i < 3; i++) {
 			try {
 				return await this.stellarOperation(op);
 			} catch (e) {
-				if (i === 2) {
-					throw e;
-				}
+				error = e;
 
-				await delay(3000);
+				if (i < 2) {
+					await delay(3000);
+				}
 			}
 		}
+
+		throw error;
 	}
 }
 
@@ -243,11 +243,12 @@ async function spendFlow() {
 			selectedOffer = offer;
 		}
 	}
-	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
+
+	console.log(`requesting order for offer: ${selectedOffer!.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 	// pay for the offer
-	const res = await client.pay(selectedOffer.blockchain_data.recipient_address, selectedOffer.amount, openOrder.id);
+	const res = await client.pay(selectedOffer.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
 	console.log("pay result hash: " + res.hash);
 	await client.submitOrder(openOrder.id);
 
@@ -286,7 +287,7 @@ async function earnFlow() {
 		}
 	}
 
-	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
+	console.log(`requesting order for offer: ${selectedOffer!.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 
@@ -336,7 +337,7 @@ async function earnTutorial() {
 		}
 	}
 
-	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content.slice(0, 100)}`);
+	console.log(`requesting order for offer: ${selectedOffer!.id}: ${selectedOffer.content.slice(0, 100)}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 

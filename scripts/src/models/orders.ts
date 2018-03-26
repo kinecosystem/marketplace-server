@@ -23,34 +23,34 @@ export type OrderError = {
 @Initializer("id", () => generateId(IdPrefix.Transaction))
 export class Order extends CreationDateModel {
 	@Column()
-	public type: OfferType;
+	public type!: OfferType;
 
 	@Column("simple-json", { name: "blockchain_data", nullable: true })
-	public blockchainData: BlockchainData;
+	public blockchainData?: BlockchainData;
 
 	@Column({ name: "user_id" })
-	public userId: string;
+	public userId!: string;
 
 	@Column({ name: "offer_id" })
-	public offerId: string;
+	public offerId!: string;
 
 	@Column("simple-json")
-	public meta: OrderMeta;
+	public meta!: OrderMeta;
 
 	@Column("simple-json", { nullable: true }) // the asset or JWT payment confirmation
-	public value: OrderValue;
+	public value?: OrderValue;
 
 	@Column("simple-json", { nullable: true })
-	public error: OrderError;
+	public error?: OrderError;
 
 	@Column()
-	public amount: number;
+	public amount!: number;
 
 	@Column()
-	public status: OrderStatus;
+	public status!: OrderStatus;
 
 	@Column({ name: "completion_date", nullable: true })
-	public completionDate: Date;
+	public completionDate?: Date;
 }
 
 export type OpenOrder = {

@@ -1,4 +1,4 @@
-import { Request } from "express";
+import { Request, RequestHandler, Response } from "express";
 
 import {
 	cancelOrder as cancelOrderService,
@@ -11,10 +11,10 @@ import {
 /**
  * get an order
  */
-export async function getOrder(req, res) {
+export const getOrder = async function(req: Request, res: Response) {
 	const order = await getOrderService(req.params.order_id, req.logger);
 	res.status(200).send(order);
-}
+} as any as RequestHandler;
 
 /**
  * submit an order - this is the earn payload requesting validation
@@ -33,15 +33,15 @@ export async function getOrder(req, res) {
  *   PaymentService.payTo(User.find(userId).walletAddress, order.amount, memo=order.id)
  * return ok
  */
-export async function submitOrder(req: Request, res) {
+export const submitOrder = async function(req: Request, res: Response) {
 	const order = await submitOrderService(
 		req.params.order_id,
 		req.body.content,
-		req.context.user.walletAddress,
-		req.context.user.appId,
+		req.context.user!.walletAddress,
+		req.context.user!.appId,
 		req.logger);
 	res.status(200).send(order);
-}
+} as any as RequestHandler;
 
 /**
  * cancel an order
@@ -50,18 +50,18 @@ export async function submitOrder(req: Request, res) {
  * assert order.userId == req.userId
  * order.delete()
  */
-export async function cancelOrder(req, res) {
+export const cancelOrder = async function(req: Request, res: Response) {
 	await cancelOrderService(req.params.order_id, req.logger);
 	res.status(204).send();
-}
+} as any as RequestHandler;
 
 /**
  * get user history
  */
-export async function getOrderHistory(req: Request, res) {
-	const orderList: OrderList = await getOrderHistoryService(req.context.user.id, req.logger);
+export const getOrderHistory = async function(req: Request, res: Response) {
+	const orderList: OrderList = await getOrderHistoryService(req.context.user!.id, req.logger);
 	res.status(200).send(orderList);
-}
+} as any as RequestHandler;
 
 /* // for incoming payments(spend)
  * // in the meanwhile, in a cron job:

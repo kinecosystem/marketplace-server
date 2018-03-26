@@ -77,9 +77,11 @@ function createTarget(target: LogTarget): winston.TransportInstance {
 	return new cls(mergeOptions(defaults, options));
 }
 
+type OptionsKey = keyof WinstonTransportOptions;
 function mergeOptions(defaults: WinstonTransportOptions, options: WinstonTransportOptions): WinstonTransportOptions {
 	const result = Object.assign({}, defaults);
-	Object.keys(options)
+
+	(Object.keys(options) as OptionsKey[])
 		.filter(key => options[key] !== null && options[key] !== undefined)
 		.forEach(key => result[key] = options[key]);
 

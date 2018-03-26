@@ -12,11 +12,11 @@ export interface Config {
 }
 
 let config: Config;
-export function getConfig<T extends Config>(filePath?: string): T {
-	if (config) {
-		return config as T;
-	}
 
-	config = require(path(filePath));
+export function init(filePath: string) {
+	config = require(path(filePath!));
+}
+
+export function getConfig<T extends Config>(): T {
 	return config as T;
 }

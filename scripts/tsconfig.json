@@ -6,6 +6,7 @@
     "module": "commonjs",
     "lib": ["dom","es2017"],
 
+    "strict": true,
     "sourceMap": true,
     "declaration": true,
     "alwaysStrict": true,

@@ -1,9 +1,10 @@
 import * as http from "http";
 
+import { ServerError } from "../utils";
 import { getDefaultLogger } from "../logging";
 
-import { app } from "./app";
 import { getConfig } from "./config";
+import { app } from "./app";
 
 const config = getConfig();
 const logger = getDefaultLogger();
@@ -16,7 +17,7 @@ server.on("listening", onListening);
 /**
  * Event listener for HTTP server "error" event.
  */
-function onError(error) {
+function onError(error: ServerError) {
 	if (error.syscall !== "listen") {
 		throw error;
 	}

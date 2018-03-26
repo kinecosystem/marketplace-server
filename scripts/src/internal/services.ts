@@ -51,8 +51,9 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 
 	if (order.status === "failed") {
 		logger.info("a failed order turned completed", { order });
-		order.error = null;
+		order.error = undefined;
 	}
+
 	order.completionDate = moment(payment.timestamp).toDate();
 	order.status = "completed";
 	await order.save();

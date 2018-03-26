@@ -38,8 +38,11 @@ export async function validateJWT(jwt: string, logger: LoggerInstance): Promise<
 	const jwtKeyId = decoded.header.key;
 
 	const app = await Application.findOneById(appId);
-	const publicKey = app.jwtPublicKeys[jwtKeyId];
+	if (!app) {
+		throw new Error(`app ${ appId } not found`);
+	}
 
+	const publicKey = app.jwtPublicKeys[jwtKeyId];
 	jsonwebtoken.verify(jwt, publicKey);  // throws
 
 	return { appUserId, appId, apiKey };

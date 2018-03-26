@@ -2,6 +2,8 @@ import * as _path from "path";
 
 const fromProjectRoot = _path.join.bind(path, __dirname, "../../");
 
+export type ServerError = Error & { syscall: string; code: string; };
+
 export function path(...paths: string[]): string {
 	return fromProjectRoot(...paths);
 }

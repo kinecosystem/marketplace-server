@@ -1,4 +1,4 @@
-import { Request } from "express";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 
 import { getOffers as getOffersService } from "../services/offers";
 import { createOrder as createOrderService } from "../services/orders";
@@ -6,14 +6,14 @@ import { createOrder as createOrderService } from "../services/orders";
 /**
  * Return a list of offers
  */
-export async function getOffers(req: Request, res, next) {
+export const getOffers = async function(req: Request, res: Response, next: NextFunction) {
 	try {
-		const data = await getOffersService(req.context.user.id, req.context.user.appId, req.logger);
+		const data = await getOffersService(req.context.user!.id, req.context.user!.appId, req.logger);
 		res.status(200).send(data);
 	} catch (err) {
 		next(err);
 	}
-}
+} as RequestHandler;
 
 /**
  * create an order for an offer
@@ -36,7 +36,7 @@ export async function getOffers(req: Request, res, next) {
  *   order = OpenOrders.create(offerId, userId) // this adds to the locked_cap
  *   return order
  */
-export async function createOrder(req: Request, res) {
-	const order = await createOrderService(req.params.offer_id, req.context.user.id, req.logger);
+export const createOrder = async function(req: Request, res: Response) {
+	const order = await createOrderService(req.params.offer_id, req.context.user!.id, req.logger);
 	res.status(201).send(order);
-}
+} as any as RequestHandler;

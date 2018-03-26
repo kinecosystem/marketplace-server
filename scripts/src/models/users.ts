@@ -9,16 +9,16 @@ import * as moment from "moment";
 @Initializer("id", () => generateId(IdPrefix.User))
 export class User extends CreationDateModel {
 	@Column({ name: "app_id" })
-	public appId: string;
+	public appId!: string;
 
 	@Column({ name: "app_user_id" })
-	public appUserId: string;
+	public appUserId!: string;
 
 	@Column({ name: "wallet_address" })
-	public walletAddress: string;
+	public walletAddress!: string;
 
 	@Column({ name: "activated_date", nullable: true })
-	public activatedDate: Date;
+	public activatedDate?: Date;
 
 	public get activated(): boolean {
 		return !!this.activatedDate;
@@ -30,16 +30,16 @@ export class User extends CreationDateModel {
 @Initializer("expireDate", () => moment().add(14, "days").toDate())
 export class AuthToken extends CreationDateModel {
 	@Column({ name: "expire_date" })
-	public expireDate: Date;
+	public expireDate!: Date;
 
 	@Column({ name: "device_id" })
-	public deviceId: string;
+	public deviceId!: string;
 
 	@Column({ name: "user_id" })
-	public userId: string;
+	public userId!: string;
 
 	@Column({ default: true })
-	public valid: boolean;
+	public valid!: boolean;
 
 	public isExpired(): boolean {
 		return new Date() > this.expireDate;

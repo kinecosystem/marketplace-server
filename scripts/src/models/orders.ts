@@ -66,7 +66,12 @@ export class OpenOrder {
 
 	public static async findOneById(orderId: string): Promise<OpenOrder> {
 		const data: string = await getAsync(OpenOrder.redisKey(orderId));
-		return JSON.parse(data) as OpenOrder;
+		if (!data) {
+			return undefined;
+		}
+		const parsed = JSON.parse(data) as OpenOrder;
+		parsed.expiration = moment(parsed.expiration).toDate(); // JSON.parse doesn't parse dates
+		return parsed;
 	}
 
 	private static redisKey(orderId: string) {

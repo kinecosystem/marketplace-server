@@ -13,19 +13,32 @@ export enum PageType {
 	"EarnThankYou",
 }
 
-export interface Poll {
-	pages: Array<{
-		type: PageType;
-		title: string;
-		description: string;
-		question: Question;
-	}>;
+export interface BaseEarnPage {
+	type: PageType;
+	title: string;
 }
 
-export type TutorialPage = { type: PageType.ImageAndText | PageType.EarnThankYou, title?: string, image?: string, bodyHtml?: string, footerHtml?: string, buttonText?: string };
+export interface PollPage extends BaseEarnPage {
+	description: string;
+	question: Question;
+}
+
+export interface EarnThankYouPage {
+	type: PageType.EarnThankYou;
+}
+
+export interface Poll {
+	pages: Array<PollPage | EarnThankYouPage>;
+}
+
+export type TutorialPage = {
+	type: PageType.ImageAndText,
+	title: string, image: string,
+	bodyHtml: string, footerHtml: string, buttonText: string
+};
 
 export interface Tutorial {
-	pages: TutorialPage[];
+	pages: Array<TutorialPage | EarnThankYouPage>;
 }
 
 export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
@@ -86,6 +99,8 @@ export const kikPoll: Poll = {
 				"Friends/Family", "Social Media", "Website/Search Engine", "Ads",
 			],
 		},
+	}, {
+		type: PageType.EarnThankYou,
 	},
 	],
 };
@@ -142,6 +157,9 @@ export const kinPoll: Poll = {
 			],
 		},
 	},
+		{
+			type: PageType.EarnThankYou,
+		},
 	],
 };
 

@@ -10,14 +10,21 @@ export interface Question {
 export enum PageType {
 	"FullPageMultiChoice",
 	"ImageAndText",
+	"EarnThankYou",
 }
 
 export interface Poll {
-	pages: Array<{ type: PageType, title: string, description: string, question: Question }>;
+	pages: Array<{
+		type: PageType;
+		title: string;
+		description: string;
+		question: Question;
+	}>;
 }
 
+export type TutorialPage = { type: PageType.ImageAndText | PageType.EarnThankYou, title?: string, image?: string, bodyHtml?: string, footerHtml?: string, buttonText?: string };
 export interface Tutorial {
-	pages: Array<{ type: PageType.ImageAndText, title: string, image: string, bodyHtml: string, footerHtml: string, buttonText: string }>;
+	pages: TutorialPage[];
 }
 
 export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
@@ -98,6 +105,10 @@ export const tutorial: Tutorial = {
 			footerHtml: "Complete the tutorial and earn <span style='color:#047cfc;'>6,000</span> Kin",
 			buttonText: "Got It",
 		},
+		{
+			type: PageType.EarnThankYou,
+		},
+
 	],
 };
 

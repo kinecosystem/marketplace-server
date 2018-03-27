@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import { promisify } from "util";
 import { ObjectType } from "typeorm/common/ObjectType";
 import { DeepPartial } from "typeorm/common/DeepPartial";
 import { BaseEntity, Column, createConnection, PrimaryColumn, Connection, ConnectionOptions } from "typeorm";
@@ -110,10 +111,29 @@ function createOnConnectedString(options: ConnectionOptions): string {
 	return msg;
 }
 
-export function getRedis(): RedisClient {
+export type RedisAsyncFunctions = {
+	get(key: string): Promise<string>;
+	set(key: string, value: string): Promise<"OK">;
+	del(key: string): Promise<number>;
+};
+export type RedisAsyncClient = RedisClient & {
+	async: RedisAsyncFunctions;
+}
+
+export function getRedis(): RedisAsyncClient {
+	let client: RedisAsyncClient;
+
 	if (getConfig().redis === "mock") {
-		return require("redis-mock").createClient();
+		client = require("redis-mock").createClient();
 	} else {
-		return require("redis").createClient(getConfig().redis);
+		client = require("redis").createClient(getConfig().redis);
 	}
+
+	client.async = {} as RedisAsyncFunctions;
+
+	["get", "set", "del"].forEach(name => {
+		(client.async as any)[name] =  promisify((client as any)[name]).bind(client);
+	});
+
+	return client;
 }

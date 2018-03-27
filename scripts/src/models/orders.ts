@@ -1,11 +1,8 @@
 import { Column, Entity } from "typeorm";
-
+import * as moment from "moment";
 import { generateId, IdPrefix } from "../utils";
-
 import { CreationDateModel, register as Register, initializer as Initializer, getRedis } from "./index";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
-import * as moment from "moment";
-import * as redis from "redis";
 
 export type OrderMeta = {
 	title: string;
@@ -55,17 +52,14 @@ export class Order extends CreationDateModel {
 	public completionDate?: Date;
 }
 
-const redisClient: redis.RedisClient = getRedis();
-import { promisify } from "util";
-const getAsync = promisify(redisClient.get).bind(redisClient);
-const setAsync = promisify(redisClient.set).bind(redisClient);
-const delAsync = promisify(redisClient.del).bind(redisClient);
+const redisClient = getRedis();
+
 
 export class OpenOrder {
 	public static expirationMin = 10; // 10 minutes
 
 	public static async findOneById(orderId: string): Promise<OpenOrder | undefined> {
-		const data: string = await getAsync(OpenOrder.redisKey(orderId));
+		const data: string = await redisClient.async.get(OpenOrder.redisKey(orderId));
 		if (!data) {
 			return undefined;
 		}
@@ -95,11 +89,11 @@ export class OpenOrder {
 	}
 
 	public async save() {
-		await setAsync(OpenOrder.redisKey(this.id), JSON.stringify(this));
+		await redisClient.async.set(OpenOrder.redisKey(this.id), JSON.stringify(this));
 	}
 
 	public async delete() {
-		await delAsync(OpenOrder.redisKey(this.id));
+		await redisClient.async.del(OpenOrder.redisKey(this.id));
 	}
 
 }

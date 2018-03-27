@@ -112,11 +112,9 @@ function createOnConnectedString(options: ConnectionOptions): string {
 import * as redis from "redis";
 
 export function getRedis(): redis.RedisClient {
-	return redis.createClient();
-	//
-	// if (getConfig().redis === "mock") {
-	// 	return require("redis-mock").createClient();
-	// } else {
-	// 	return require("redis").createClient();
-	// }
+	if (getConfig().redis === "mock") {
+		return require("redis-mock").createClient();
+	} else {
+		return require("redis").createClient(getConfig().redis);
+	}
 }

@@ -1,10 +1,9 @@
-import { getManager } from "typeorm";
 import { LoggerInstance } from "winston";
 
 import { ModelFilters } from "../../models/index";
 import * as db from "../../models/offers";
 
-import { Paging, ServiceResult } from "./index";
+import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 
 export interface PollAnswer {
@@ -29,53 +28,41 @@ export interface OfferList {
 	paging: Paging;
 }
 
+async function filterOffers(offers: db.Offer[], logger: LoggerInstance): Promise<Offer[]> {
+	return await Promise.all(
+		offers
+			.map(async offer => {
+				const content = await offerContents.getOffer(offer.id, logger);
+
+				if (!content) {
+					return null;
+				}
+
+				return {
+					id: offer.id,
+					title: offer.meta.title,
+					description: offer.meta.description,
+					image: offer.meta.image,
+					amount: offer.amount,
+					blockchain_data: offer.blockchainData,
+					offer_type: offer.type,
+					content: content.content,
+					content_type: content.contentType,
+				};
+			})
+			.filter(offer => offer !== null)) as Offer[];
+}
+
 export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance): Promise<OfferList> {
-	const earnQuery = db.Offer
-		.createQueryBuilder()
-		.where("type = 'earn'")
-		.orderBy("amount", "ASC").getSql();
+	let offers = [] as Offer[];
 
-	const spendQuery = db.Offer
-		.createQueryBuilder()
-		.where("type = 'spend'")
-		.orderBy("amount", "DESC").getSql();
-
-	let dbOffers: db.Offer[];
-	switch (filters.type) {
-		case "earn":
-			dbOffers = await getManager().query(earnQuery);
-			break;
-
-		case "spend":
-			dbOffers = await getManager().query(spendQuery);
-			break;
-
-		default:
-			dbOffers = await getManager().query(`${ earnQuery } UNION ${ spendQuery }`);
-			break;
+	if (filters.type !== "earn") {
+		offers = offers.concat(await filterOffers(await db.Offer.find({ where: { type: "earn" }, order: { amount: "ASC" } }), logger));
 	}
 
-	const offers = await Promise.all(
-		dbOffers.map(async offer => {
-			const content = await offerContents.getOffer(offer.id, logger);
-
-			if (!content) {
-				return null;
-			}
-
-			return {
-				id: offer.id,
-				title: offer.meta.title,
-				description: offer.meta.description,
-				image: offer.meta.image,
-				amount: offer.amount,
-				blockchain_data: offer.blockchainData,
-				offer_type: offer.type,
-				content: content.content,
-				content_type: content.contentType,
-			};
-		})
-		.filter(offer => offer !== null)) as Offer[];
+	if (filters.type !== "spend") {
+		offers = offers.concat(await filterOffers(await db.Offer.find({ where: { type: "spend" }, order: { amount: "DESC" } }), logger));
+	}
 
 	return { offers, paging: { cursors: {} } };
 }

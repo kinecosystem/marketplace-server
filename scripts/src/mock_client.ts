@@ -295,10 +295,12 @@ async function earnFlow() {
 	console.log("poll " + selectedOffer.content);
 	const poll: Poll = JSON.parse(selectedOffer.content);
 
-	const content = JSON.stringify({ [poll.pages[0].question.id]: poll.pages[0].question.answers[0] });
+	// TODO: Lior, you need to fix this.
+	/*const content = JSON.stringify({ [poll.pages[0].question.id]: poll.pages[0].question.answers[0] });
 	console.log("answers " + content);
 
-	await client.submitOrder(openOrder.id, content);
+	await client.submitOrder(openOrder.id, content);*/
+	await client.submitOrder(openOrder.id, "{}");
 
 	// poll on order payment
 	let order = await client.getOrder(openOrder.id);

@@ -2,7 +2,7 @@ all:
 	trap 'kill %1' SIGINT; make run & make run-internal
 
 split: 
-	tmux new-session 'make run-internal' \; split-window 'make run' \;
+	tmux new-session 'make run' \; split-window 'make run-internal' \;
 
 install:
 	npm i

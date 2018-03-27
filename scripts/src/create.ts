@@ -2,24 +2,24 @@
  * This file populates a demo database for the sole sake of mocking data to populate our SDK client.
  * All the names of companies, products and KIN values are completely made up and are used for TESTING only.
  */
+import { getConfig } from "./public/config"; // must be the first import
+
 import * as fs from "fs";
 import { AuthToken, User } from "./models/users";
 import { Application } from "./models/applications";
 import { AppOffer, Asset, Offer, OfferContent, OfferOwner } from "./models/offers";
 import { Order } from "./models/orders";
 
-import { getConfig } from "./public/config";
-import { generateId, IdPrefix } from "./utils";
 import { init as initModels } from "./models";
 import {
-	animalPoll,
 	CouponInfo,
 	CouponOrderContent,
 	kikPoll,
 	kinPoll,
 	Poll,
 	tutorial,
-	Tutorial, TUTORIAL_DESCRIPTION
+	Tutorial,
+	TUTORIAL_DESCRIPTION
 } from "./public/services/offer_contents";
 
 async function createOffers(): Promise<Offer[]> {

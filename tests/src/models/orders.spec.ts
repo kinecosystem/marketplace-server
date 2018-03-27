@@ -1,7 +1,7 @@
-import mock = require("supertest");
+import { getConfig } from "../../../scripts/bin/public/config";
+import { OpenOrder } from "../../../scripts/bin/models/orders";
 
-import { app } from "../../../scripts/bin/public/app";
-import { OpenOrder } from "../../../scripts/src/models/orders";
+getConfig();
 
 describe("test openApi Redis integration", async () => {
 	test("get should return what set inserted", async () => {

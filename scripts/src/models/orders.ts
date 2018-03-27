@@ -71,7 +71,7 @@ export class OpenOrder {
 		}
 		const parsed = JSON.parse(data) as OpenOrder;
 		parsed.expiration = moment(parsed.expiration).toDate(); // JSON.parse doesn't parse dates
-		return parsed;
+		return Object.assign(new OpenOrder(parsed.offerId, parsed.userId), parsed);
 	}
 
 	private static redisKey(orderId: string) {

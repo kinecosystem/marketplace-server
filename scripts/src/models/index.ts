@@ -5,6 +5,7 @@ import { BaseEntity, Column, createConnection, PrimaryColumn, Connection, Connec
 
 import { getConfig } from "../config";
 import { normalizeError, path, IdPrefix, generateId } from "../utils";
+import { RedisClient } from "redis";
 
 const entities: ModelConstructor[] = [];
 let connection: Connection;
@@ -109,9 +110,7 @@ function createOnConnectedString(options: ConnectionOptions): string {
 	return msg;
 }
 
-import * as redis from "redis";
-
-export function getRedis(): redis.RedisClient {
+export function getRedis(): RedisClient {
 	if (getConfig().redis === "mock") {
 		return require("redis-mock").createClient();
 	} else {

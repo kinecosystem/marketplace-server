@@ -64,7 +64,7 @@ const delAsync = promisify(redisClient.del).bind(redisClient);
 export class OpenOrder {
 	public static expirationMin = 10; // 10 minutes
 
-	public static async findOneById(orderId: string): Promise<OpenOrder> {
+	public static async findOneById(orderId: string): Promise<OpenOrder | undefined> {
 		const data: string = await getAsync(OpenOrder.redisKey(orderId));
 		if (!data) {
 			return undefined;
@@ -78,10 +78,10 @@ export class OpenOrder {
 		return `OpenOrder:${orderId}`;
 	}
 
-	public userId: string;
-	public offerId: string;
-	public expiration: Date;
-	public id: string;
+	public userId!: string;
+	public offerId!: string;
+	public expiration!: Date;
+	public id!: string;
 
 	// XXX maybe add offerType too
 

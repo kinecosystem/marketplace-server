@@ -17,6 +17,10 @@
 		"logging": false
 	},
 	"redis": "mock",
+	"statsd": {
+		"host": "localhost",
+		"port": 8125
+	},
 	"payment_service": "http://localhost:5000",
 	"payment_complete_callback": "http://localhost:3001/v1/internal/payments"
 }

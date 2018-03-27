@@ -21,6 +21,7 @@
     "express": "^4.16.2",
     "express-async-errors": "^2.1.2",
     "express-bearer-token": "^2.1.1",
+    "hot-shots": "^5.2.0",
     "jest": "^22.4.2",
     "jsonwebtoken": "^8.1.1",
     "moment": "^2.20.1",

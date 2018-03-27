@@ -2,7 +2,6 @@ import * as express from "express";
 import "express-async-errors";  // handle async/await errors in middleware
 
 import { initLogger } from "../logging";
-
 import { getConfig } from "./config";
 
 const config = getConfig();

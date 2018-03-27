@@ -5,6 +5,7 @@ import * as db from "../../models/users";
 
 import * as payment from "./payment";
 import { pick } from "../../utils";
+import { metrics } from "../../analytics";
 
 export type AuthToken = {
 	token: string;
@@ -31,11 +32,13 @@ export async function getOrCreateUserCredentials(
 		// create wallet with lumens:
 		logger.info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
 		await payment.createWallet(user.walletAddress, user.appId, logger);
+		metrics.userRegister(true, true);
 	} else {
 		if (user.walletAddress !== walletAddress) {
 			logger.warn(`existing user registered with new wallet ${user.walletAddress} !== ${walletAddress}`);
 		}
 		logger.info(`returning existing user ${user.id}`);
+		metrics.userRegister(false, false);
 	}
 
 	// XXX should be a scope object
@@ -60,8 +63,10 @@ export async function activateUser(
 		// XXX should implement some sort of authtoken scoping that will be encoded into the token:
 		// authToken.scope = {tos: true}
 		logger.info(`new user activated ${user.id}`);
+		metrics.userActivate(true);
 	} else {
 		logger.info(`existing user activated ${user.id}`);
+		metrics.userActivate(false);
 	}
 
 	return AuthTokenDbToApi(authToken, user, logger);

@@ -7,6 +7,7 @@ import { AssetValue } from "../../models/offers";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
+import { metrics } from "../../analytics";
 
 export interface OrderList {
 	orders: Order[];
@@ -120,6 +121,7 @@ export async function submitOrder(
 	} else {
 		await submitSpend(order, offer, walletAddress, appId, logger);
 	}
+	metrics.submitOrder(offer.type, offer.id);
 
 	return orderDbToApi(order, logger);
 }

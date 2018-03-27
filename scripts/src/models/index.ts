@@ -1,10 +1,12 @@
 import "reflect-metadata";
+import { promisify } from "util";
 import { ObjectType } from "typeorm/common/ObjectType";
 import { DeepPartial } from "typeorm/common/DeepPartial";
 import { BaseEntity, Column, createConnection, PrimaryColumn, Connection, ConnectionOptions } from "typeorm";
 
 import { getConfig } from "../config";
 import { normalizeError, path, IdPrefix, generateId } from "../utils";
+import { RedisClient } from "redis";
 
 const entities: ModelConstructor[] = [];
 let connection: Connection;
@@ -13,6 +15,7 @@ let initPromise: Promise<string>;
 
 export type ModelConstructor = { new(): Model };
 export type ModelMemberInitializer = () => any;
+
 export abstract class Model extends BaseEntity {
 	public static new<T extends Model>(this: ObjectType<T>, data?: DeepPartial<T>): T {
 		const instance = (this as typeof BaseEntity).create(data!) as T;
@@ -27,6 +30,7 @@ export abstract class Model extends BaseEntity {
 	}
 
 	protected static initializers = new Map<string, ModelMemberInitializer>([["id", () => generateId(IdPrefix.None)]]);
+
 	protected static copyInitializers(add?: { [name: string]: ModelMemberInitializer }): Map<string, ModelMemberInitializer> {
 		const map = new Map<string, ModelMemberInitializer>(this.initializers);
 		if (add) {
@@ -105,4 +109,31 @@ function createOnConnectedString(options: ConnectionOptions): string {
 	}
 
 	return msg;
+}
+
+export type RedisAsyncFunctions = {
+	get(key: string): Promise<string>;
+	set(key: string, value: string): Promise<"OK">;
+	del(key: string): Promise<number>;
+};
+export type RedisAsyncClient = RedisClient & {
+	async: RedisAsyncFunctions;
+}
+
+export function getRedis(): RedisAsyncClient {
+	let client: RedisAsyncClient;
+
+	if (getConfig().redis === "mock") {
+		client = require("redis-mock").createClient();
+	} else {
+		client = require("redis").createClient(getConfig().redis);
+	}
+
+	client.async = {} as RedisAsyncFunctions;
+
+	["get", "set", "del"].forEach(name => {
+		(client.async as any)[name] =  promisify((client as any)[name]).bind(client);
+	});
+
+	return client;
 }

@@ -1,10 +1,8 @@
-import moment = require("moment");
 import { LoggerInstance } from "winston";
 
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { AssetValue } from "../../models/offers";
-import { generateId, IdPrefix } from "../../utils";
 
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
@@ -44,8 +42,6 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 	return orderDbToApi(order, logger);
 }
 
-const openOrdersDB = new Map<string, db.OpenOrder>();
-const expirationMin = 10; // 10 minutes
 const graceMin = 10; // 10 minutes
 
 function orderDbToApi(order: db.Order, logger: LoggerInstance): Order {
@@ -70,14 +66,9 @@ export async function createOrder(
 	offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
 	// offer cap logic
 
-	const openOrder: db.OpenOrder = {
-		expiration: moment().add(expirationMin, "minutes").toDate(),
-		id: generateId(IdPrefix.Transaction),
-		offerId,
-		userId
-	};
+	const openOrder = new db.OpenOrder(offerId, userId);
 
-	openOrdersDB.set(openOrder.id, openOrder);
+	await openOrder.save();
 
 	return {
 		id: openOrder.id,
@@ -88,8 +79,7 @@ export async function createOrder(
 export async function submitOrder(
 	orderId: string, form: string | undefined, walletAddress: string, appId: string, logger: LoggerInstance): Promise<Order> {
 
-	// validate order
-	const openOrder = openOrdersDB.get(orderId);
+	const openOrder = await db.OpenOrder.findOneById(orderId);
 	if (!openOrder) {
 		throw Error(`no such order ${orderId}`);
 	}
@@ -122,7 +112,7 @@ export async function submitOrder(
 	offer.cap.used += 1;
 	await offer.save();
 	await order.save();
-	openOrdersDB.delete(orderId);
+	await openOrder.delete();
 
 	// pay or start timer for payment
 	if (offer.type === "earn") {
@@ -162,11 +152,12 @@ export async function submitSpend(
 export async function cancelOrder(orderId: string, logger: LoggerInstance): Promise<void> {
 	// you can only delete an open order - not a pending order
 	// validate order
-	const openOrder = openOrdersDB.get(orderId);
+
+	const openOrder = await db.OpenOrder.findOneById(orderId);
 	if (!openOrder) {
 		throw Error(`no such order ${orderId}`);
 	}
-	openOrdersDB.delete(orderId);
+	await openOrder.delete();
 }
 
 export async function getOrderHistory(

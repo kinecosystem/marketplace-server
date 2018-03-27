@@ -94,6 +94,8 @@ export function close(): Promise<void> {
 	return connection.close();
 }
 
+export type ModelFilters<T extends Model> = Partial<{ [K in keyof T]: T[K] }>;
+
 function createOnConnectedString(options: ConnectionOptions): string {
 	let msg = `connected to ${ options.type } server`;
 

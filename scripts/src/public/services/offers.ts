@@ -1,8 +1,9 @@
 import { LoggerInstance } from "winston";
 
+import { ModelFilters } from "../../models/index";
 import * as db from "../../models/offers";
 
-import { Paging, ServiceResult } from "./index";
+import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 
 export interface PollAnswer {
@@ -27,18 +28,9 @@ export interface OfferList {
 	paging: Paging;
 }
 
-export async function getOffers(
-	userId: string, appId: string, logger: LoggerInstance): Promise<OfferList> {
-	// const appOffers = await getManager().query(
-	// `SELECT offers.*
-	//  FROM offers
-	//  JOIN app_offers
-	//  ON offers.id = app_offers.offer_id
-	//  AND app_offers.app_id = ${appId}`
-	// );
-	const dbOffers = await db.Offer.find();
-	const offers = await Promise.all(
-		dbOffers
+async function filterOffers(offers: db.Offer[], logger: LoggerInstance): Promise<Offer[]> {
+	return await Promise.all(
+		offers
 			.map(async offer => {
 				const content = await offerContents.getOffer(offer.id, logger);
 
@@ -59,6 +51,18 @@ export async function getOffers(
 				};
 			})
 			.filter(offer => offer !== null)) as Offer[];
+}
+
+export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance): Promise<OfferList> {
+	let offers = [] as Offer[];
+
+	if (filters.type !== "earn") {
+		offers = offers.concat(await filterOffers(await db.Offer.find({ where: { type: "earn" }, order: { amount: "ASC" } }), logger));
+	}
+
+	if (filters.type !== "spend") {
+		offers = offers.concat(await filterOffers(await db.Offer.find({ where: { type: "spend" }, order: { amount: "DESC" } }), logger));
+	}
 
 	return { offers, paging: { cursors: {} } };
 }

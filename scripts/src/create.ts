@@ -93,13 +93,13 @@ async function createOffers(): Promise<Offer[]> {
 	}
 
 	offers.push(await createEarn("Kin", "Learn More", TUTORIAL_DESCRIPTION,
-		assetsBase + "earn_offer3.png", 6000, "Getting started tutorial", "Completed Tutorial",
+		assetsBase + "earn_offer3.png", 20, "Getting started tutorial", "Completed Tutorial",
 		tutorial));
 	offers.push(await createEarn("Kik", "Tell us more", "Answer a poll",
-		assetsBase + "earn_offer2.png", 4000, "Kik", "Completed Poll",
+		assetsBase + "earn_offer2.png", 20, "Kik", "Completed Poll",
 		kikPoll));
 	offers.push(await createEarn("Kin", "Tell us more", "Answer a poll",
-		assetsBase + "kin_poll.png", 4000, "Kin", "Completed Poll",
+		assetsBase + "kin_poll.png", 20, "Kin", "Completed Poll",
 		kinPoll));
 
 	offers.push(await createSpend("Spotify", "Get Coupon", "month subscription",

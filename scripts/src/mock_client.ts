@@ -10,8 +10,8 @@ import * as StellarSdk from "stellar-sdk";
 import { AuthToken } from "./public/services/users";
 import { Operation, xdr, Memo, TransactionRecord } from "stellar-sdk";
 
-// const BASE = "http://localhost:3000";
-const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
+const BASE = "http://localhost:3000";
+// const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
 
 class Stellar {
 	public static MEMO_VERSION = 1;

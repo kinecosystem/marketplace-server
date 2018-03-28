@@ -235,24 +235,5 @@ export async function getOffer(offerId: string, logger: LoggerInstance): Promise
 }
 
 export async function isValid(offerId: string, form: string | undefined, logger: LoggerInstance): Promise<boolean> {
-	// let parsed: Answers;
-	// try {
-	// 	parsed = JSON.parse(form);
-	// } catch (error) {
-	// 	logger.error(`failed parsing content <${form}> for offer ${offerId}`);
-	// 	throw Error(`failed parsing content <${form}> for offer ${offerId}`);
-	// }
-	//
-	// const offer = await getOffer(offerId, logger);
-	// const poll: Poll = JSON.parse(offer.content);
-	// // go over poll data, look for questions and check that answer is within question options
-	// for (const page of poll.pages) {
-	// 	const qId = page.question.id;
-	// 	const ans = page.question.answers;
-	//
-	// 	if (!ans.includes(parsed[qId])) {
-	// 		return false;
-	// 	}
-	// }
-	return form !== undefined;
+	return Promise.resolve(!!form);
 }

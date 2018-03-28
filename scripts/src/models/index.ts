@@ -116,9 +116,10 @@ export type RedisAsyncFunctions = {
 	set(key: string, value: string): Promise<"OK">;
 	del(key: string): Promise<number>;
 };
+
 export type RedisAsyncClient = RedisClient & {
 	async: RedisAsyncFunctions;
-}
+};
 
 export function getRedis(): RedisAsyncClient {
 	let client: RedisAsyncClient;

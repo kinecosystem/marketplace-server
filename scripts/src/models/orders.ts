@@ -54,7 +54,6 @@ export class Order extends CreationDateModel {
 
 const redisClient = getRedis();
 
-
 export class OpenOrder {
 	public static expirationMin = 10; // 10 minutes
 

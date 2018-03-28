@@ -4,7 +4,7 @@ import { LoggerInstance } from "winston";
 import { getDefaultLogger } from "./logging";
 import { generateId } from "./utils";
 import { Request, Response } from "express-serve-static-core";
-import { metrics } from "./analytics";
+import * as metrics from "./metrics";
 import { performance } from "perf_hooks";
 
 let logger: LoggerInstance;

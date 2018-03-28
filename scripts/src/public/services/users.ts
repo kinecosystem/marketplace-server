@@ -5,7 +5,7 @@ import * as db from "../../models/users";
 
 import * as payment from "./payment";
 import { pick } from "../../utils";
-import { metrics } from "../../analytics";
+import * as metrics from "../../metrics";
 
 export type AuthToken = {
 	token: string;

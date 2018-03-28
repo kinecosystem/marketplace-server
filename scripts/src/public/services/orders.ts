@@ -7,7 +7,7 @@ import { AssetValue } from "../../models/offers";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import * as payment from "./payment";
-import { metrics } from "../../analytics";
+import * as metrics from "../../metrics";
 
 export interface OrderList {
 	orders: Order[];

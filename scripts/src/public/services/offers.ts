@@ -3,7 +3,7 @@ import { ModelFilters } from "../../models/index";
 import * as db from "../../models/offers";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
-import { metrics } from "../../analytics";
+import * as metrics from "../../metrics";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";

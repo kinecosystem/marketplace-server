@@ -6,7 +6,7 @@ import * as db from "../models/orders";
 import { Asset, Offer } from "../models/offers";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
 import { removeDuplicates } from "../utils";
-import { metrics } from "../analytics";
+import * as metrics from "../metrics";
 
 export interface CompletedPayment {
 	id: string;

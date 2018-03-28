@@ -44,6 +44,7 @@ async function createOffers(): Promise<Offer[]> {
 			blockchainData: { sender_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" },
 			meta: { title, image, description, order_meta: { title: orderTitle, description: orderDescription } }
 		});
+		offer.name = offer.id;
 		await offer.save();
 
 		const content = OfferContent.new({
@@ -80,6 +81,7 @@ async function createOffers(): Promise<Offer[]> {
 			},
 			blockchainData: { recipient_address: "GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J" }
 		});
+		offer.name = offer.id;
 		await offer.save();
 
 		const content = OfferContent.new({

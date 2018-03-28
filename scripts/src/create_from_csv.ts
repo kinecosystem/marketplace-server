@@ -185,7 +185,7 @@ async function parseEarn(data: string[][]) {
 	const list = toMap(data);
 
 	const poll: Poll | Tutorial = { pages: [] };
-	let offer: Map<string, string>| undefined = undefined;
+	let offer: Map<string, string>| undefined;
 
 	function createEarnInner(offer: Map<string, string>, poll: Poll | Tutorial): Promise<Offer> {
 		return createEarn(
@@ -252,17 +252,20 @@ async function parseEarn(data: string[][]) {
 
 initModels().then(async () => {
 	const parseCsv = require("csv-parse/lib/sync");
-	const spend = fs.readFileSync("./data/tutorial.csv");
-	const parsed = parseCsv(spend);
-	const title = readTitle(parsed[0][0]);
-	if (title === "Spend") {
-		await parseSpend(parsed);
-	} else if (title === "Earn") {
-		await parseEarn(parsed);
-	} else if (title === "Tutorial") {
-		await parseEarn(parsed);
-	} else {
-		throw new Error("Failed to parse " + parsed[0][0]);
+
+	for (let i = 1; i <= 3; i++) {
+		const spend = fs.readFileSync(`./data/${i}.csv`);
+		const parsed = parseCsv(spend);
+		const title = readTitle(parsed[0][0]);
+		if (title === "Spend") {
+			await parseSpend(parsed);
+		} else if (title === "Earn") {
+			await parseEarn(parsed);
+		} else if (title === "Tutorial") {
+			await parseEarn(parsed);
+		} else {
+			throw new Error("Failed to parse " + parsed[0][0]);
+		}
 	}
 }).catch((error: Error) => {
 	console.log("error: " + error.message + "\n" + error.stack);

@@ -56,11 +56,11 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 	let offers = [] as Offer[];
 
 	if (filters.type !== "earn") {
-		offers = offers.concat(await filterOffers(await db.Offer.find({ where: { type: "earn" }, order: { amount: "ASC" } }), logger));
+		offers = offers.concat(await filterOffers(await db.Offer.find({ where: { type: "earn" }, order: { amount: "DESC" } }), logger));
 	}
 
 	if (filters.type !== "spend") {
-		offers = offers.concat(await filterOffers(await db.Offer.find({ where: { type: "spend" }, order: { amount: "DESC" } }), logger));
+		offers = offers.concat(await filterOffers(await db.Offer.find({ where: { type: "spend" }, order: { amount: "ASC" } }), logger));
 	}
 	metrics.offersReturned(offers.length);
 	return { offers, paging: { cursors: {} } };

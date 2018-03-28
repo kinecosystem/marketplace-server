@@ -45,7 +45,7 @@ async function filterOffers(offers: db.Offer[], logger: LoggerInstance): Promise
 					amount: offer.amount,
 					blockchain_data: offer.blockchainData,
 					offer_type: offer.type,
-					content: content.content,
+					content: content.content.replace(/\${amount}/g, offer.amount.toString()),  // XXX currently replace here
 					content_type: content.contentType,
 				};
 			})

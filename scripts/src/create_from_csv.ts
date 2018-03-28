@@ -9,7 +9,7 @@ import * as fs from "fs";
 import { Asset, Offer, OfferContent, OfferOwner } from "./models/offers";
 
 import { init as initModels } from "./models";
-import { CouponInfo, CouponOrderContent, Poll, Tutorial } from "./public/services/offer_contents";
+import { CouponInfo, CouponOrderContent, PageType, Poll, Tutorial } from "./public/services/offer_contents";
 
 async function getOrCreateOwner(brandName: string): Promise<OfferOwner> {
 	let owner = await OfferOwner.findOne({ name: brandName });
@@ -38,12 +38,12 @@ async function createSpend(
 		description: orderContentSubtitle,
 		link: orderContentHyperLink,
 		image: orderContentImage
-	}
+	};
 
 	const couponInfo: CouponInfo = {
 		title: couponTitle,
 		description: couponDescription,
-		amount: amount,
+		amount,
 		image: couponImage,
 		confirmation: {
 			title: couponConfirmTitle,
@@ -160,9 +160,9 @@ async function parseSpend(data: string[][]) {
 			v.get("Title")!,
 			v.get("Description")!,
 			v.get("Image")!,
-			parseInt(v.get("Amount")!),
-			parseInt(v.get("CapTotal")!),
-			parseInt(v.get("CapPerUser")!),
+			parseInt(v.get("Amount")!, 10),
+			parseInt(v.get("CapTotal")!, 10),
+			parseInt(v.get("CapPerUser")!, 10),
 			v.get("OrderTitle")!,
 			v.get("OrderDescription")!,
 			v.get("OrderCallToAction")!,
@@ -182,34 +182,77 @@ async function parseSpend(data: string[][]) {
 }
 
 async function parseEarn(data: string[][]) {
-	console.log(data);
+	const list = toMap(data);
 
-	[ 'WalletAddress',
-		'Brand',
-		'OfferName',
-		'Amount',
-		'Title',
-		'Description',
-		'Image',
-		'OrderTitle',
-		'OrderDescription',
-		'CapTotal ',
-		'CapPerUser',
-		'PollQuestionId',
-		'PollPageType',
-		'PollTitle',
-		'PollDescription',
-		'PollAnswer', //  multiple
-	]
-}
+	const poll: Poll | Tutorial = { pages: [] };
+	let offer: Map<string, string>| undefined = undefined;
 
-async function parseTutorial(data: string[][]) {
+	function createEarnInner(offer: Map<string, string>, poll: Poll | Tutorial): Promise<Offer> {
+		return createEarn(
+			offer.get("OfferName")!,
+			offer.get("WalletAddress")!,
+			offer.get("Brand")!,
+			offer.get("Title")!,
+			offer.get("Description")!,
+			offer.get("Image")!,
+			parseInt(offer.get("Amount")!, 10),
+			parseInt(offer.get("CapTotal")!, 10),
+			parseInt(offer.get("CapPerUser")!, 10),
+			offer.get("OrderTitle")!,
+			offer.get("OrderDescription")!,
+			poll);
+	}
 
+	for (const v of list) {
+		if (v.get("OfferName") !== "") {
+			if (offer) {
+				await createEarnInner(offer, poll);
+			}
+			offer = v;
+			poll.pages = [];
+		}
+
+		// continue from last row
+		if (v.get("PollPageType")! === "FullPageMultiChoice") {
+			(poll as Poll).pages.push({
+				type: PageType.FullPageMultiChoice,
+				title: v.get("PollTitle")!,
+				description: v.get("PollDescription")!,
+				question: {
+					id: v.get("PollQuestionId")!,
+					answers: [
+						v.get("PollAnswer1")!,
+						v.get("PollAnswer2")!,
+						v.get("PollAnswer3")!,
+						v.get("PollAnswer4")!,
+					],
+				},
+			});
+		} else if (v.get("PollPageType")! === "EarnThankYou") {
+			(poll as Poll).pages.push({ type: PageType.EarnThankYou });
+		} else if (v.get("PollPageType")! === "ImageAndText") {
+			(poll as Tutorial).pages.push({
+				type: PageType.ImageAndText,
+				image: v.get("PollImage")!,
+				title: v.get("PollTitle")!,
+				bodyHtml: v.get("PollBodyHtml")!,
+				footerHtml: v.get("PollFooterHtml")!,
+				buttonText: v.get("PollButtonText")!
+			});
+		} else {
+			console.log(`poll type unknown: ${v.get("PollPageType")}`);
+		}
+
+	}
+
+	if (offer) {
+		await createEarnInner(offer, poll);
+	}
 }
 
 initModels().then(async () => {
 	const parseCsv = require("csv-parse/lib/sync");
-	const spend = fs.readFileSync("./data/spend.csv");
+	const spend = fs.readFileSync("./data/tutorial.csv");
 	const parsed = parseCsv(spend);
 	const title = readTitle(parsed[0][0]);
 	if (title === "Spend") {
@@ -217,7 +260,7 @@ initModels().then(async () => {
 	} else if (title === "Earn") {
 		await parseEarn(parsed);
 	} else if (title === "Tutorial") {
-		await parseTutorial(parsed);
+		await parseEarn(parsed);
 	} else {
 		throw new Error("Failed to parse " + parsed[0][0]);
 	}

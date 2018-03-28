@@ -33,8 +33,11 @@ export interface Poll {
 
 export type TutorialPage = {
 	type: PageType.ImageAndText,
-	title: string, image: string,
-	bodyHtml: string, footerHtml: string, buttonText: string
+	title: string,
+	image: string,
+	bodyHtml: string,
+	footerHtml: string,
+	buttonText: string
 };
 
 export interface Tutorial {

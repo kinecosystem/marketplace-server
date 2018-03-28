@@ -97,7 +97,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 		router()
 			.authenticated(AuthScopes.TOS)
 			.delete("/:order_id", cancelOrder));
-
+	// XXX missing changeOrder to add error
 	app.use(createPath("users", pathPrefix),
 		router()
 			.get("/", getUser));

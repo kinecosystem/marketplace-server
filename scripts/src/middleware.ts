@@ -1,9 +1,11 @@
 import * as express from "express";
-import { LeveledLogMethod, LoggerInstance } from "winston";
+import { LoggerInstance } from "winston";
 
 import { getDefaultLogger } from "./logging";
 import { generateId } from "./utils";
 import { Request, Response } from "express-serve-static-core";
+import * as metrics from "./metrics";
+import { performance } from "perf_hooks";
 
 let logger: LoggerInstance;
 export function init() {
@@ -60,6 +62,16 @@ export const logRequest = function(req: express.Request, res: express.Response, 
 
 	res.on("finish", () => {
 		req.logger.info(`finished handling request ${ req.id }`, { start: start.getTime(), end: new Date().getTime() });
+	});
+
+	next();
+} as express.RequestHandler;
+
+export const reportMetrics = function(req: express.Request, res: express.Response, next: express.NextFunction) {
+	const t = performance.now();
+
+	res.on("finish", () => {
+		metrics.timeRequest(performance.now() - t, req.method, req.path);
 	});
 
 	next();

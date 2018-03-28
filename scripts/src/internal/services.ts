@@ -6,6 +6,7 @@ import * as db from "../models/orders";
 import { Asset, Offer } from "../models/offers";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
 import { removeDuplicates } from "../utils";
+import * as metrics from "../metrics";
 
 export interface CompletedPayment {
 	id: string;
@@ -58,6 +59,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	order.status = "completed";
 	await order.save();
 
+	metrics.completeOrder(order.type, order.offerId);
 	logger.info(`completed order with payment <${payment.id}, ${payment.transaction_id}>`);
 }
 

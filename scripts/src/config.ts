@@ -10,6 +10,10 @@ export interface Config {
 	loggers?: LogTarget[];
 	db: ConnectionOptions;
 	redis: "mock" | string;
+	statsd: {
+		host: string;
+		port: number;
+	};
 }
 
 let config: Config;

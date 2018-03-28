@@ -1,10 +1,9 @@
 import { LoggerInstance } from "winston";
-
 import { ModelFilters } from "../../models/index";
 import * as db from "../../models/offers";
-
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
+import * as metrics from "../../metrics";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -63,6 +62,6 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 	if (filters.type !== "spend") {
 		offers = offers.concat(await filterOffers(await db.Offer.find({ where: { type: "spend" }, order: { amount: "DESC" } }), logger));
 	}
-
+	metrics.offersReturned(offers.length);
 	return { offers, paging: { cursors: {} } };
 }

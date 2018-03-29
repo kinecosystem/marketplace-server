@@ -78,17 +78,31 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 	let offers = [] as Offer[];
 
 	if (!filters.type || filters.type === "earn") {
-		offers = offers.concat(await filterOffers(await db.Offer.find({
-			where: { type: "earn" },
-			order: { amount: "DESC" }
-		}), logger));
+		offers = offers.concat(
+			await filterOffers(
+				userId,
+				await db.Offer.createQueryBuilder()
+					.where("type = 'earn'")
+					.orderBy("amount", "DESC")
+					.addOrderBy("id", "ASC")
+					.getMany(),
+				logger
+			)
+		);
 	}
 
 	if (!filters.type || filters.type === "spend") {
-		offers = offers.concat(await filterOffers(await db.Offer.find({
-			where: { type: "spend" },
-			order: { amount: "ASC" }
-		}), logger));
+		offers = offers.concat(
+			await filterOffers(
+				userId,
+				await db.Offer.createQueryBuilder()
+					.where("type = 'spend'")
+					.orderBy("amount", "ASC")
+					.addOrderBy("id", "ASC")
+					.getMany(),
+				logger
+			)
+		);
 	}
 
 	metrics.offersReturned(offers.length);

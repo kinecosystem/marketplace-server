@@ -83,7 +83,7 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 	});
 
 	if (!order) {
-		const fn = async () => {
+		const create = async () => {
 			const total = await db.Order.count({
 				where: {
 					offerId
@@ -117,8 +117,8 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 			return order;
 		};
 
-		// order = await lock(createOrderResourceId, fn());
-		order = await fn();
+		// order = await lock(createOrderResourceId, create());
+		order = await create();
 	}
 
 	if (!order) {
@@ -134,7 +134,7 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 export async function submitOrder(
 	orderId: string, form: string | undefined, walletAddress: string, appId: string, logger: LoggerInstance): Promise<Order> {
 
-	const order = await db.Order.findOneById(orderId);
+	const order = await db.Order.findOne({ id: orderId, status: "opened" });
 	if (!order) {
 		throw Error(`no such open order ${ orderId }`);
 	}
@@ -167,13 +167,9 @@ export async function submitOrder(
 
 export async function cancelOrder(orderId: string, logger: LoggerInstance): Promise<void> {
 	// you can only delete an open order - not a pending order
-	const order = await db.Order.findOneById(orderId);
+	const order = await db.Order.createQueryBuilder().where(`id = ${ orderId }`).andWhere("status != 'opened").getOne();
 	if (!order) {
-		throw Error(`no such order ${ orderId }`);
-	}
-
-	if (order.status !== "opened") {
-		throw Error("only opened orders can be canceled");
+		throw Error(`no such open order ${ orderId }`);
 	}
 
 	await order.remove();

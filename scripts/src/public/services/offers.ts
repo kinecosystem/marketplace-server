@@ -54,12 +54,12 @@ async function filterOffers(userId: string, offers: db.Offer[], logger: LoggerIn
 		offers
 			.map(async offer => {
 				const total = await dbOrder.Order.count({ where: { offerId: offer.id } });
-				if (total === offer.cap.total) {
+				if (total >= offer.cap.total) {
 					return null;
 				}
 
 				const forUser = await dbOrder.Order.count({ where: { offerId: offer.id, userId } });
-				if (forUser === offer.cap.per_user) {
+				if (forUser >= offer.cap.per_user) {
 					return null;
 				}
 

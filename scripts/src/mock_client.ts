@@ -50,7 +50,7 @@ class Client {
 			user_id: userId,
 			device_id: "my_device",
 			app_id: appId,
-			api_key: Application.KIK_API_KEY,
+			api_key: apiKey,
 			public_address: this.keyPair.publicKey(),
 		});
 
@@ -273,7 +273,7 @@ async function spendFlow() {
 
 async function earnFlow() {
 	const client = new Client();
-	await client.register("kik", Application.KIK_API_KEY, "doody98ds",
+	await client.register("smpl", "A28hNcn2wp77QyaM8kB2C", "doody98ds",
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 	await client.activate();
 
@@ -323,7 +323,7 @@ async function earnFlow() {
 
 async function earnTutorial() {
 	const client = new Client();
-	await client.register("kik", Application.KIK_API_KEY, "doody98ds",
+	await client.register("smpl", Application.SAMPLE_API_KEY, "doody98ds",
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 
 	await client.activate();
@@ -373,7 +373,7 @@ async function earnTutorial() {
 
 async function testRegisterNewUser() {
 	const client = new Client();
-	await client.register("kik", Application.KIK_API_KEY, generateId());
+	await client.register("smpl", Application.SAMPLE_API_KEY, generateId());
 }
 
 async function main() {

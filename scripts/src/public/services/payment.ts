@@ -46,7 +46,7 @@ const SERVICE_ID = "marketplace";
 
 export async function payTo(
 	walletAddress: string, appId: string, amount: number, orderId: string, logger: LoggerInstance) {
-	logger.info(`paying ${amount} to ${walletAddress} with meta ${orderId}`);
+	logger.info(`paying ${amount} to ${walletAddress} with orderId ${orderId}`);
 	const payload: PaymentRequest = {
 		amount,
 		app_id: appId,

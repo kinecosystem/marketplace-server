@@ -51,7 +51,7 @@ export const requestLogger = function(req: express.Request, res: express.Respons
 } as express.RequestHandler;
 
 export const logRequest = function(req: express.Request, res: express.Response, next: express.NextFunction) {
-	const start = new Date();
+	const t = performance.now();
 	const data = Object.assign({}, req.headers);
 
 	if (req.query && Object.keys(req.query).length > 0) {
@@ -61,7 +61,7 @@ export const logRequest = function(req: express.Request, res: express.Response, 
 	req.logger.info(`start handling request ${ req.id }: ${ req.method } ${ req.path }`, data);
 
 	res.on("finish", () => {
-		req.logger.info(`finished handling request ${ req.id }`, { start: start.getTime(), end: new Date().getTime() });
+		req.logger.info(`finished handling request ${ req.id }`, { time: performance.now() - t });
 	});
 
 	next();
@@ -71,7 +71,7 @@ export const reportMetrics = function(req: express.Request, res: express.Respons
 	const t = performance.now();
 
 	res.on("finish", () => {
-		metrics.timeRequest(performance.now() - t, req.method, req.path);
+		metrics.timeRequest(performance.now() - t, req.method, req.route);
 	});
 
 	next();

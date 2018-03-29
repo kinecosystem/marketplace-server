@@ -36,6 +36,7 @@ export const signInUser = async function(req: Request, res: Response) {
 	let context: SignInContext;
 	const data: SignInData = req.body;
 
+	req.logger.debug("signing in user", { data });
 	if (data.sign_in_type === "jwt") {
 		context = await validateJWT(data.jwt!, req.logger);
 	} else if (data.sign_in_type === "whitelist") {
@@ -51,6 +52,7 @@ export const signInUser = async function(req: Request, res: Response) {
 		context.appId,
 		req.body.public_address,
 		req.body.device_id, req.logger);
+
 	res.status(200).send({ token, activated, expiration_date });
 } as any as RequestHandler;
 

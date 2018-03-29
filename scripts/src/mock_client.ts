@@ -10,8 +10,8 @@ import * as StellarSdk from "stellar-sdk";
 import { AuthToken } from "./public/services/users";
 import { Operation, xdr, Memo, TransactionRecord } from "stellar-sdk";
 
-// const BASE = "http://localhost:3000";
-const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
+const BASE = "http://localhost:3000";
+// const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
 
 class Stellar {
 	public static MEMO_VERSION = 1;
@@ -236,12 +236,15 @@ async function spendFlow() {
 	await client.activate();
 	const offers = await client.getOffers();
 
-	let selectedOffer: Offer;
+	let selectedOffer: Offer | undefined;
 
 	for (const offer of offers.offers) {
 		if (offer.offer_type === "spend") {
 			selectedOffer = offer;
 		}
+	}
+	if (!selectedOffer) {
+		throw new Error("did not find a spend offer");
 	}
 
 	console.log(`requesting order for offer: ${selectedOffer!.id}: ${selectedOffer.content}`);
@@ -279,7 +282,7 @@ async function earnFlow() {
 
 	const offers = await client.getOffers();
 
-	let selectedOffer: Offer;
+	let selectedOffer: Offer | undefined;
 
 	for (const offer of offers.offers) {
 		if (offer.offer_type === "earn") {
@@ -287,7 +290,11 @@ async function earnFlow() {
 		}
 	}
 
-	console.log(`requesting order for offer: ${selectedOffer!.id}: ${selectedOffer.content}`);
+	if (!selectedOffer) {
+		throw new Error("no earn offer");
+	}
+
+	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 
@@ -330,7 +337,7 @@ async function earnTutorial() {
 
 	const offers = await client.getOffers();
 
-	let selectedOffer: Offer;
+	let selectedOffer: Offer | undefined;
 
 	for (const offer of offers.offers) {
 		if (offer.description === TUTORIAL_DESCRIPTION) {
@@ -339,7 +346,11 @@ async function earnTutorial() {
 		}
 	}
 
-	console.log(`requesting order for offer: ${selectedOffer!.id}: ${selectedOffer.content.slice(0, 100)}`);
+	if (!selectedOffer) {
+		throw new Error("no tutorial found");
+	}
+
+	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content.slice(0, 100)}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 
@@ -378,8 +389,8 @@ async function testRegisterNewUser() {
 
 async function main() {
 	await earnFlow();
-	await didNotApproveTOS();
-	await testRegisterNewUser();
+	// await didNotApproveTOS();
+	// await testRegisterNewUser();
 	// await earnTutorial();
 	await spendFlow();
 }

@@ -21,7 +21,8 @@ export class User extends CreationDateModel {
 	public activatedDate?: Date;
 
 	public get activated(): boolean {
-		return !!this.activatedDate;
+		return true; // XXX for now all are activated
+		// return !!this.activatedDate;
 	}
 }
 

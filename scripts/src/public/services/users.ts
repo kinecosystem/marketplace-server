@@ -25,6 +25,7 @@ export async function getOrCreateUserCredentials(
 
 	let user = await db.User.findOne({ appId, appUserId });
 	if (!user) {
+		logger.debug("creating a new user", { appId, appUserId });
 		// new user
 		user = db.User.new({ appUserId, appId, walletAddress });
 		await user.save();
@@ -34,6 +35,7 @@ export async function getOrCreateUserCredentials(
 		await payment.createWallet(user.walletAddress, user.appId, logger);
 		metrics.userRegister(true, true);
 	} else {
+		logger.debug("found existing user", { appId, appUserId, userId: user.id });
 		if (user.walletAddress !== walletAddress) {
 			logger.warn(`existing user registered with new wallet ${user.walletAddress} !== ${walletAddress}`);
 		}
@@ -50,6 +52,8 @@ export async function getOrCreateUserCredentials(
 
 export async function activateUser(
 		authToken: db.AuthToken, user: db.User, logger: LoggerInstance): Promise<AuthToken> {
+
+	logger.debug("activating user", { userId: user.id });
 	if (!user.activated) {
 		await getManager().transaction(async mgr => {
 			user.activatedDate = new Date();
@@ -62,10 +66,10 @@ export async function activateUser(
 
 		// XXX should implement some sort of authtoken scoping that will be encoded into the token:
 		// authToken.scope = {tos: true}
-		logger.info(`new user activated ${user.id}`);
+		logger.info(`new  activated user ${user.id}`);
 		metrics.userActivate(true);
 	} else {
-		logger.info(`existing user activated ${user.id}`);
+		logger.info(`existing user already activated ${user.id}`);
 		metrics.userActivate(false);
 	}
 

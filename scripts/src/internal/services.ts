@@ -54,7 +54,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		order.error = undefined;
 	}
 
-	order.currentStatusDate = moment(payment.timestamp).toDate();
+	order.currentStatusDate = new Date(); // XXX should I take payment.timestamp?
 	order.status = "completed";
 	await order.save();
 

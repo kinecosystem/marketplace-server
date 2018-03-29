@@ -8,9 +8,9 @@ describe("api tests for /users", async () => {
 		await initModels();
 	});
 
-	afterAll(async () => {
+	/*afterAll(async () => {
 		await closeModels();
-	});
+	});*/
 
 	test("return a user with 200", async () => {
 		await mock(app)

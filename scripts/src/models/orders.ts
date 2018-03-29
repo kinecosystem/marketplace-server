@@ -1,7 +1,9 @@
-import { Column, Entity } from "typeorm";
 import * as moment from "moment";
+import { Column, Entity } from "typeorm";
+
 import { generateId, IdPrefix } from "../utils";
-import { CreationDateModel, register as Register, initializer as Initializer, getRedis } from "./index";
+
+import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
 
 export type OrderMeta = {
@@ -11,6 +13,7 @@ export type OrderMeta = {
 	content?: string;
 };
 export type OrderStatus = "completed" | "failed" | "pending";
+export type OpenOrderStatus = OrderStatus | "opened";
 export type OrderError = {
 	code: number;
 	error: string;
@@ -46,53 +49,21 @@ export class Order extends CreationDateModel {
 	public amount!: number;
 
 	@Column()
-	public status!: OrderStatus;
+	public status!: OpenOrderStatus;
 
 	@Column({ name: "completion_date", nullable: true })
-	public completionDate?: Date;
-}
+	public currentStatusDate?: Date;
 
-const redisClient = getRedis();
+	public get expirationDate(): Date | null {
+		switch (this.status) {
+			case "opened":
+				return moment(this.createdDate).add(10, "minutes").toDate();
 
-export class OpenOrder {
-	public static expirationMin = 10; // 10 minutes
+			case "pending":
+				return moment(this.currentStatusDate).add(2, "minutes").toDate();
 
-	public static async findOneById(orderId: string): Promise<OpenOrder | undefined> {
-		const data: string = await redisClient.async.get(OpenOrder.redisKey(orderId));
-		if (!data) {
-			return undefined;
+			default:
+				return null;
 		}
-		const parsed = JSON.parse(data) as OpenOrder;
-		parsed.expiration = moment(parsed.expiration).toDate(); // JSON.parse doesn't parse dates
-		return Object.assign(new OpenOrder(parsed.offerId, parsed.userId), parsed);
 	}
-
-	private static redisKey(orderId: string) {
-		return `OpenOrder:${orderId}`;
-	}
-
-	public userId!: string;
-	public offerId!: string;
-	public expiration!: Date;
-	public id!: string;
-
-	// XXX maybe add offerType too
-
-	public constructor(offerId: string, userId: string) {
-		Object.assign(this, {
-			expiration: moment().add(OpenOrder.expirationMin, "minutes").toDate(),
-			id: generateId(IdPrefix.Transaction),
-			offerId,
-			userId
-		});
-	}
-
-	public async save() {
-		await redisClient.async.set(OpenOrder.redisKey(this.id), JSON.stringify(this));
-	}
-
-	public async delete() {
-		await redisClient.async.del(OpenOrder.redisKey(this.id));
-	}
-
 }

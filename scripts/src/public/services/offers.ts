@@ -1,9 +1,12 @@
 import { LoggerInstance } from "winston";
-import { ModelFilters } from "../../models/index";
+
+import * as metrics from "../../metrics";
 import * as db from "../../models/offers";
+import * as dbOrder from "../../models/orders";
+import { ModelFilters } from "../../models/index";
+
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
-import * as metrics from "../../metrics";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -46,10 +49,20 @@ function offerDbToApi(offer: db.Offer, content: db.OfferContent) {
 	};
 }
 
-async function filterOffers(offers: db.Offer[], logger: LoggerInstance): Promise<Offer[]> {
+async function filterOffers(userId: string, offers: db.Offer[], logger: LoggerInstance): Promise<Offer[]> {
 	return await Promise.all(
 		offers
 			.map(async offer => {
+				const total = await dbOrder.Order.count({ where: { offerId: offer.id } });
+				if (total >= offer.cap.total) {
+					return null;
+				}
+
+				const forUser = await dbOrder.Order.count({ where: { offerId: offer.id, userId } });
+				if (forUser >= offer.cap.per_user) {
+					return null;
+				}
+
 				const content = await offerContents.getOffer(offer.id, logger);
 
 				if (!content) {
@@ -65,17 +78,31 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 	let offers = [] as Offer[];
 
 	if (!filters.type || filters.type === "earn") {
-		offers = offers.concat(await filterOffers(await db.Offer.find({
-			where: { type: "earn" },
-			order: { amount: "DESC" }
-		}), logger));
+		offers = offers.concat(
+			await filterOffers(
+				userId,
+				await db.Offer.createQueryBuilder()
+					.where("type = 'earn'")
+					.orderBy("amount", "DESC")
+					.addOrderBy("id", "ASC")
+					.getMany(),
+				logger
+			)
+		);
 	}
 
 	if (!filters.type || filters.type === "spend") {
-		offers = offers.concat(await filterOffers(await db.Offer.find({
-			where: { type: "spend" },
-			order: { amount: "ASC" }
-		}), logger));
+		offers = offers.concat(
+			await filterOffers(
+				userId,
+				await db.Offer.createQueryBuilder()
+					.where("type = 'spend'")
+					.orderBy("amount", "ASC")
+					.addOrderBy("id", "ASC")
+					.getMany(),
+				logger
+			)
+		);
 	}
 
 	metrics.offersReturned(offers.length);

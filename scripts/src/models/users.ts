@@ -1,8 +1,8 @@
+import * as moment from "moment";
 import { Column, Entity } from "typeorm";
 
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
 import { generateId, IdPrefix } from "../utils";
-import * as moment from "moment";
 
 @Entity({ name: "users" })
 @Register

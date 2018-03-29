@@ -19,7 +19,6 @@ export type OfferMeta = {
 
 export type Cap = {
 	total: number;
-	used: number;
 	per_user: number;
 };
 

@@ -50,7 +50,7 @@ function offerDbToApi(offer: db.Offer, content: db.OfferContent) {
 }
 
 async function filterOffers(userId: string, offers: db.Offer[], logger: LoggerInstance): Promise<Offer[]> {
-	return await Promise.all(
+	return (await Promise.all(
 		offers
 			.map(async offer => {
 				const total = await dbOrder.Order.count({ where: { offerId: offer.id } });
@@ -71,7 +71,7 @@ async function filterOffers(userId: string, offers: db.Offer[], logger: LoggerIn
 
 				return offerDbToApi(offer, content);
 			})
-			.filter(offer => offer !== null)) as Offer[];
+	)).filter(offer => offer !== null) as Offer[];
 }
 
 export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance): Promise<OfferList> {

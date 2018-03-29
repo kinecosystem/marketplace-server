@@ -79,6 +79,9 @@ async function createSpend(
 	await content.save();
 
 	for (const couponCode of couponCodes) {
+		if (!couponCode || couponCode === "") {
+			continue;
+		}
 		const asset = Asset.new({
 			offerId: offer.id,
 			type: "coupon",
@@ -185,7 +188,7 @@ async function parseEarn(data: string[][]) {
 	const list = toMap(data);
 
 	const poll: Poll | Tutorial = { pages: [] };
-	let offer: Map<string, string>| undefined;
+	let offer: Map<string, string> | undefined;
 
 	function createEarnInner(offer: Map<string, string>, poll: Poll | Tutorial): Promise<Offer> {
 		return createEarn(
@@ -229,7 +232,10 @@ async function parseEarn(data: string[][]) {
 				},
 			});
 		} else if (v.get("PollPageType")! === "EarnThankYou") {
-			(poll as Poll).pages.push({ type: PageType.EarnThankYou });
+			(poll as Poll).pages.push({
+				type: PageType.EarnThankYou,
+				description: v.get("PollDescription")!
+			});
 		} else if (v.get("PollPageType")! === "ImageAndText") {
 			(poll as Tutorial).pages.push({
 				type: PageType.ImageAndText,

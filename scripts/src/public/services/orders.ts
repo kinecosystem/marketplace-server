@@ -83,7 +83,7 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 	});
 
 	if (!order) {
-		order = await lock(createOrderResourceId, async () => {
+		const fn = async () => {
 			const total = await db.Order.count({
 				where: {
 					offerId
@@ -115,7 +115,10 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 			});
 			await order.save();
 			return order;
-		});
+		};
+
+		// order = await lock(createOrderResourceId, fn());
+		order = await fn();
 	}
 
 	if (!order) {

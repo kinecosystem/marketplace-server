@@ -218,7 +218,7 @@ class Client {
 
 async function didNotApproveTOS() {
 	const client = new Client();
-	await client.register("kik", Application.KIK_API_KEY, "new_user_123",
+	await client.register("smpl", Application.SAMPLE_API_KEY, "new_user_123",
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 	const offers = await client.getOffers();
 	try {
@@ -232,7 +232,7 @@ async function didNotApproveTOS() {
 async function spendFlow() {
 	const client = new Client();
 	// this address is prefunded with test kin
-	await client.register("kik", Application.KIK_API_KEY, "rich_user1", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.register("smpl", Application.SAMPLE_API_KEY, "rich_user1", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 	const offers = await client.getOffers();
 
@@ -273,7 +273,7 @@ async function spendFlow() {
 
 async function earnFlow() {
 	const client = new Client();
-	await client.register("smpl", "A28hNcn2wp77QyaM8kB2C", "doody98ds",
+	await client.register("smpl", Application.SAMPLE_API_KEY, "doody98ds",
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 	await client.activate();
 
@@ -380,7 +380,7 @@ async function main() {
 	await earnFlow();
 	await didNotApproveTOS();
 	await testRegisterNewUser();
-	await earnTutorial();
+	// await earnTutorial();
 	await spendFlow();
 }
 

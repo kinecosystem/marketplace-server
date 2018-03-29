@@ -41,6 +41,9 @@ export class OfferOwner extends Model {
 @Register
 @Initializer("id", () => generateId(IdPrefix.Offer))
 export class Offer extends CreationDateModel {
+	@Column({ name: "name", unique: true })
+	public name!: string;
+
 	@Column()
 	public amount!: number;
 

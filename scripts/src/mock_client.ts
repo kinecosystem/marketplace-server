@@ -10,8 +10,8 @@ import * as StellarSdk from "stellar-sdk";
 import { AuthToken } from "./public/services/users";
 import { Operation, xdr, Memo, TransactionRecord } from "stellar-sdk";
 
-const BASE = "http://localhost:3000";
-// const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
+// const BASE = "http://localhost:3000";
+const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
 
 class Stellar {
 	public static MEMO_VERSION = 1;
@@ -44,6 +44,7 @@ class Client {
 		} else { // generate a keypair
 			this.createWallet();
 		}
+		console.log("registering with wallet: " + this.keyPair.publicKey());
 
 		const res = await this._post("/v1/users", {
 			sign_in_type: "whitelist",
@@ -232,7 +233,7 @@ async function didNotApproveTOS() {
 async function spendFlow() {
 	const client = new Client();
 	// this address is prefunded with test kin
-	await client.register("smpl", Application.SAMPLE_API_KEY, "rich_user1", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.register("smpl", Application.SAMPLE_API_KEY, "rich_user2", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 	const offers = await client.getOffers();
 
@@ -247,7 +248,7 @@ async function spendFlow() {
 		throw new Error("did not find a spend offer");
 	}
 
-	console.log(`requesting order for offer: ${selectedOffer!.id}: ${selectedOffer.content}`);
+	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 	// pay for the offer
@@ -276,8 +277,8 @@ async function spendFlow() {
 
 async function earnFlow() {
 	const client = new Client();
-	await client.register("smpl", Application.SAMPLE_API_KEY, "doody98ds",
-		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
+	await client.register("smpl", Application.SAMPLE_API_KEY, "doody98ds2",
+		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
 	const offers = await client.getOffers();
@@ -388,7 +389,7 @@ async function testRegisterNewUser() {
 }
 
 async function main() {
-	await earnFlow();
+	// await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
 	// await earnTutorial();

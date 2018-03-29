@@ -36,7 +36,7 @@ export const signInUser = async function(req: Request, res: Response) {
 	let context: SignInContext;
 	const data: SignInData = req.body;
 
-	req.logger.debug("signing in user", { data });
+	req.logger.info("signing in user", { data });
 	if (data.sign_in_type === "jwt") {
 		context = await validateJWT(data.jwt!, req.logger);
 	} else if (data.sign_in_type === "whitelist") {

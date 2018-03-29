@@ -37,8 +37,8 @@ app.use(generalErrorHandler);
 
 // initializing db and models
 initModels().then(msg => {
-	logger.debug("init db", { msg });
+	logger.info("init db", { msg });
 	initPaymentCallbacks(logger).then(res => {
-		logger.debug("init payment result", { res });
+		logger.info("init payment result", { res });
 	});
 });

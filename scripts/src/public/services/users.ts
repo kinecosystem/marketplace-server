@@ -25,7 +25,7 @@ export async function getOrCreateUserCredentials(
 
 	let user = await db.User.findOne({ appId, appUserId });
 	if (!user) {
-		logger.debug("creating a new user", { appId, appUserId });
+		logger.info("creating a new user", { appId, appUserId });
 		// new user
 		user = db.User.new({ appUserId, appId, walletAddress });
 		await user.save();
@@ -35,7 +35,7 @@ export async function getOrCreateUserCredentials(
 		await payment.createWallet(user.walletAddress, user.appId, logger);
 		metrics.userRegister(true, true);
 	} else {
-		logger.debug("found existing user", { appId, appUserId, userId: user.id });
+		logger.info("found existing user", { appId, appUserId, userId: user.id });
 		if (user.walletAddress !== walletAddress) {
 			logger.warn(`existing user registered with new wallet ${user.walletAddress} !== ${walletAddress}`);
 		}
@@ -53,7 +53,7 @@ export async function getOrCreateUserCredentials(
 export async function activateUser(
 		authToken: db.AuthToken, user: db.User, logger: LoggerInstance): Promise<AuthToken> {
 
-	logger.debug("activating user", { userId: user.id });
+	logger.info("activating user", { userId: user.id });
 	if (!user.activated) {
 		await getManager().transaction(async mgr => {
 			user.activatedDate = new Date();

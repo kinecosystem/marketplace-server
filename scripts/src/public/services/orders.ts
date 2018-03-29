@@ -44,7 +44,7 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 	if (!order) {
 		throw new Error(`no such order ${ orderId } or order is open`); // XXX throw and exception that is convert-able to json
 	}
-	logger.debug("getOrder returning", { orderId, status: order.status, offerId: order.offerId, userId: order.userId });
+	logger.info("getOrder returning", { orderId, status: order.status, offerId: order.offerId, userId: order.userId });
 	return orderDbToApi(order);
 }
 
@@ -71,7 +71,7 @@ function orderDbToApi(order: db.Order): Order {
 }
 
 export async function createOrder(offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
-	logger.debug("creating order for", { offerId, userId });
+	logger.info("creating order for", { offerId, userId });
 	const offer = await offerDb.Offer.findOneById(offerId);
 	if (!offer) {
 		throw new Error(`cannot create order, offer ${ offerId } not found`);
@@ -93,7 +93,7 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 			});
 
 			if (total === offer.cap.total) {
-				logger.debug("total cap reached", { offerId, userId });
+				logger.info("total cap reached", { offerId, userId });
 				return undefined;
 			}
 
@@ -105,7 +105,7 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 			});
 
 			if (forUser === offer.cap.per_user) {
-				logger.debug("per_user cap reached", { offerId, userId });
+				logger.info("per_user cap reached", { offerId, userId });
 				return undefined;
 			}
 
@@ -129,7 +129,7 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 		throw new Error(`offer ${ offerId } cap reached`);
 	}
 
-	logger.debug("created new open order", { offerId, userId, orderId: order.id });
+	logger.info("created new open order", { offerId, userId, orderId: order.id });
 
 	return {
 		id: order.id,
@@ -162,7 +162,7 @@ export async function submitOrder(
 	order.status = "pending";
 	order.currentStatusDate = new Date();
 	await order.save();
-	logger.debug("order changed to pending", { orderId });
+	logger.info("order changed to pending", { orderId });
 
 	if (offer.type === "earn") {
 		await payment.payTo(walletAddress, appId, offer.amount, order.id, logger);

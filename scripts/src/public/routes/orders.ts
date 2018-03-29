@@ -34,7 +34,7 @@ export const getOrder = async function(req: Request, res: Response) {
  * return ok
  */
 export const submitOrder = async function(req: Request, res: Response) {
-	req.logger.debug("submit order", { userId: req.context.user!.id, orderId: req.params.order_id });
+	req.logger.info("submit order", { userId: req.context.user!.id, orderId: req.params.order_id });
 
 	const order = await submitOrderService(
 		req.params.order_id,

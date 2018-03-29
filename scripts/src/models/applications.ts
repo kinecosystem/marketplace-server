@@ -8,8 +8,9 @@ export type StringMap = { [key: string]: string; };  // key => value pairs
 @Register
 @Initializer("apiKey", () => generateId(IdPrefix.App))
 export class Application extends CreationDateModel {
-	public static KIK_API_KEY = "A1234567890";  // XXX testing purposes
-	public static SAMPLE_API_KEY = "A1111111111";  // XXX testing purposes
+	// XXX testing purposes
+	public static KIK_API_KEY = "AWMve1Amwv8TNSUBKS6fu";
+	public static SAMPLE_API_KEY = "A28hNcn2wp77QyaM8kB2C";
 
 	@Column({ name: "name" })
 	public name!: string;

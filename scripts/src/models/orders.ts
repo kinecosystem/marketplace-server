@@ -24,6 +24,11 @@ export type OrderError = {
 @Register
 @Initializer("id", () => generateId(IdPrefix.Transaction))
 export class Order extends CreationDateModel {
+
+	public static getNonOpen(orderId: string): Promise<Order | undefined> {
+		return Order.createQueryBuilder().where(`id = '${ orderId }'`).andWhere("status != 'opened'").getOne();
+	}
+
 	@Column()
 	public type!: OfferType;
 

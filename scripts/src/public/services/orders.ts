@@ -39,7 +39,8 @@ export interface Order {
 }
 
 export async function getOrder(orderId: string, logger: LoggerInstance): Promise<Order> {
-	const order = await db.Order.findOneById(orderId);
+	const order = await db.Order.getNonOpen(orderId);
+
 	if (!order) {
 		throw Error(`no such order ${ orderId }`); // XXX throw and exception that is convert-able to json
 	}
@@ -167,7 +168,7 @@ export async function submitOrder(
 
 export async function cancelOrder(orderId: string, logger: LoggerInstance): Promise<void> {
 	// you can only delete an open order - not a pending order
-	const order = await db.Order.createQueryBuilder().where(`id = ${ orderId }`).andWhere("status != 'opened").getOne();
+	const order = await db.Order.getNonOpen(orderId);
 	if (!order) {
 		throw Error(`no such open order ${ orderId }`);
 	}

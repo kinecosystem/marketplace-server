@@ -27,6 +27,25 @@ export interface OfferList {
 	paging: Paging;
 }
 
+function offerDbToApi(offer: db.Offer, content: db.OfferContent) {
+	function replaceTemplateVars(template: string) {
+		// XXX currently replace here instead of client
+		return template.replace(/\${amount}/g, offer.amount.toString());
+	}
+
+	return {
+		id: offer.id,
+		title: offer.meta.title,
+		description: offer.meta.description,
+		image: offer.meta.image,
+		amount: offer.amount,
+		blockchain_data: offer.blockchainData,
+		offer_type: offer.type,
+		content: replaceTemplateVars(content.content),
+		content_type: content.contentType,
+	};
+}
+
 async function filterOffers(offers: db.Offer[], logger: LoggerInstance): Promise<Offer[]> {
 	return await Promise.all(
 		offers
@@ -37,17 +56,7 @@ async function filterOffers(offers: db.Offer[], logger: LoggerInstance): Promise
 					return null;
 				}
 
-				return {
-					id: offer.id,
-					title: offer.meta.title,
-					description: offer.meta.description,
-					image: offer.meta.image,
-					amount: offer.amount,
-					blockchain_data: offer.blockchainData,
-					offer_type: offer.type,
-					content: content.content.replace(/\${amount}/g, offer.amount.toString()),  // XXX currently replace here
-					content_type: content.contentType,
-				};
+				return offerDbToApi(offer, content);
 			})
 			.filter(offer => offer !== null)) as Offer[];
 }
@@ -55,13 +64,20 @@ async function filterOffers(offers: db.Offer[], logger: LoggerInstance): Promise
 export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance): Promise<OfferList> {
 	let offers = [] as Offer[];
 
-	if (filters.type !== "earn") {
-		offers = offers.concat(await filterOffers(await db.Offer.find({ where: { type: "earn" }, order: { amount: "DESC" } }), logger));
+	if (!filters.type || filters.type === "earn") {
+		offers = offers.concat(await filterOffers(await db.Offer.find({
+			where: { type: "earn" },
+			order: { amount: "DESC" }
+		}), logger));
 	}
 
-	if (filters.type !== "spend") {
-		offers = offers.concat(await filterOffers(await db.Offer.find({ where: { type: "spend" }, order: { amount: "ASC" } }), logger));
+	if (!filters.type || filters.type === "spend") {
+		offers = offers.concat(await filterOffers(await db.Offer.find({
+			where: { type: "spend" },
+			order: { amount: "ASC" }
+		}), logger));
 	}
+
 	metrics.offersReturned(offers.length);
 	return { offers, paging: { cursors: {} } };
 }

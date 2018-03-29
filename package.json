@@ -68,7 +68,7 @@
     "create-db": "node scripts/bin/create",
     "restart": "npm-run-all build start",
     "test-system": "node scripts/bin/mock_client",
-    "test": "jest"
+    "test": "jest --forceExit"
   },
   "author": "",
   "license": "ISC",

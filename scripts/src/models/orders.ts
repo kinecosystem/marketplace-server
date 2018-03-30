@@ -26,7 +26,20 @@ export type OrderError = {
 export class Order extends CreationDateModel {
 
 	public static getNonOpen(orderId: string): Promise<Order | undefined> {
-		return Order.createQueryBuilder().where(`id = '${ orderId }'`).andWhere("status != 'opened'").getOne();
+		return Order.createQueryBuilder()
+			.where("id = :orderId", { orderId })
+			.andWhere("status != :status", { status: "opened" })
+			.getOne();
+	}
+
+	public static getAllNonOpen(userId: string, limit: number): Promise<Order[]> {
+		return Order.createQueryBuilder()
+			.where("user_id = :userId", { userId })
+			.andWhere("status != :status", { status: "opened" })
+			.orderBy("completion_date", "DESC")
+			.addOrderBy("id", "DESC")
+			.limit(limit)
+			.getMany();
 	}
 
 	@Column()

@@ -186,10 +186,11 @@ export async function getOrderHistory(
 	userId: string,
 	logger: LoggerInstance,
 	limit: number = 25,
-	before?: string, after?: string): Promise<OrderList> {
+	before?: string,
+	after?: string): Promise<OrderList> {
 
 	// XXX use the cursor input values
-	const orders: db.Order[] = await db.Order.find({ where: { userId }, order: { currentStatusDate: "DESC" }, take: limit });
+	const orders: db.Order[] = await db.Order.getAllNonOpen(userId, limit);
 
 	return {
 		orders: orders.map(order => {

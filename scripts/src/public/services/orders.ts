@@ -77,7 +77,8 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 		throw new Error(`cannot create order, offer ${ offerId } not found`);
 	}
 
-	let order = await db.Order.findOne({ where: {
+	let order = await db.Order.findOne({
+		where: {
 			userId,
 			offerId,
 			status: "opened"
@@ -140,9 +141,12 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 export async function submitOrder(
 	orderId: string, form: string | undefined, walletAddress: string, appId: string, logger: LoggerInstance): Promise<Order> {
 
-	const order = await db.Order.findOne({ id: orderId, status: "opened" });
+	const order = await db.Order.findOne({ id: orderId });
 	if (!order) {
-		throw Error(`no such open order ${ orderId }`);
+		throw Error(`no such order ${ orderId }`);
+	}
+	if (order.status !== "opened") {
+		return orderDbToApi(order);
 	}
 	if (new Date() > order.expirationDate!) {
 		throw Error(`open order ${ orderId } has expired`);

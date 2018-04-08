@@ -24,12 +24,15 @@ export type OrderError = {
 @Register
 @Initializer("id", () => generateId(IdPrefix.Transaction))
 export class Order extends CreationDateModel {
+	public static getOrder(orderId: string, status?: OpenOrderStatus | "!opened" | "!completed" | "!failed" | "!pending") {
+		const query = Order.createQueryBuilder()
+			.where("id = :orderId", { orderId });
 
-	public static getNonOpen(orderId: string): Promise<Order | undefined> {
-		return Order.createQueryBuilder()
-			.where("id = :orderId", { orderId })
-			.andWhere("status != :status", { status: "opened" })
-			.getOne();
+		if (status) {
+			query.andWhere("status :eq :status", { eq: status.startsWith("!"), status: "opened" });
+		}
+
+		return query.getOne();
 	}
 
 	public static getAllNonOpen(userId: string, limit: number): Promise<Order[]> {

@@ -24,6 +24,14 @@ export type OrderError = {
 @Register
 @Initializer("id", () => generateId(IdPrefix.Transaction))
 export class Order extends CreationDateModel {
+	/**
+	 * Returns one order with the id which was passed.
+	 * If `status` is passed as well, the order will be returned only if the status matches.
+	 *
+	 * The status can be any one of the defined statuses or one of their negation, for example:
+	 * get open order with id "id1": getOrder("id1", "opened")
+	 * get NOT open order: getOrder("id1", "!opened")
+	 */
 	public static getOrder(orderId: string, status?: OpenOrderStatus | "!opened" | "!completed" | "!failed" | "!pending") {
 		const query = Order.createQueryBuilder()
 			.where("id = :orderId", { orderId });

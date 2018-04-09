@@ -37,7 +37,7 @@ export class Order extends CreationDateModel {
 			.where("id = :orderId", { orderId });
 
 		if (status) {
-			query.andWhere("status :eq :status", { eq: status.startsWith("!"), status: "opened" });
+			query.andWhere(status.startsWith("!") ? "status != :status" : "status = :status", { status });
 		}
 
 		return query.getOne();

@@ -14,6 +14,7 @@ export type OrderMeta = {
 };
 export type OrderStatus = "completed" | "failed" | "pending";
 export type OpenOrderStatus = OrderStatus | "opened";
+export type OrderStatusAndNegation = OpenOrderStatus | "!opened" | "!completed" | "!failed" | "!pending";
 export type OrderError = {
 	code: number;
 	error: string;
@@ -29,10 +30,10 @@ export class Order extends CreationDateModel {
 	 * If `status` is passed as well, the order will be returned only if the status matches.
 	 *
 	 * The status can be any one of the defined statuses or one of their negation, for example:
-	 * get open order with id "id1": getOrder("id1", "opened")
-	 * get NOT open order: getOrder("id1", "!opened")
+	 * get open order with id "id1": getOne("id1", "opened")
+	 * get NOT open order: getOne("id1", "!opened")
 	 */
-	public static getOrder(orderId: string, status?: OpenOrderStatus | "!opened" | "!completed" | "!failed" | "!pending") {
+	public static getOne(orderId: string, status?: OrderStatusAndNegation) {
 		const query = Order.createQueryBuilder()
 			.where("id = :orderId", { orderId });
 
@@ -43,14 +44,27 @@ export class Order extends CreationDateModel {
 		return query.getOne();
 	}
 
-	public static getAllNonOpen(userId: string, limit: number): Promise<Order[]> {
-		return Order.createQueryBuilder()
+	public static getAll(userId: string): Promise<Order[]>;
+	public static getAll(userId: string, limit: number): Promise<Order[]>;
+	public static getAll(userId: string, status: OrderStatusAndNegation): Promise<Order[]>;
+	public static getAll(userId: string, status: OrderStatusAndNegation, limit: number): Promise<Order[]>;
+	public static getAll(userId: string, a?: number | OrderStatusAndNegation, b?: number): Promise<Order[]> {
+		const status: OrderStatusAndNegation | null = typeof a === "string" ? a : null;
+		const limit: number | null = typeof a === "number" ? a : (typeof b === "number" ? b : null);
+		const query = Order.createQueryBuilder()
 			.where("user_id = :userId", { userId })
-			.andWhere("status != :status", { status: "opened" })
 			.orderBy("completion_date", "DESC")
-			.addOrderBy("id", "DESC")
-			.limit(limit)
-			.getMany();
+			.addOrderBy("id", "DESC");
+
+		if (status) {
+			query.andWhere(status.startsWith("!") ? "status != :status" : "status = :status", { status });
+		}
+
+		if (limit) {
+			query.limit(limit);
+		}
+
+		return query.getMany();
 	}
 
 	@Column()
@@ -89,7 +103,7 @@ export class Order extends CreationDateModel {
 				return moment(this.createdDate).add(10, "minutes").toDate();
 
 			case "pending":
-				return moment(this.currentStatusDate).add(2, "minutes").toDate();
+				return moment(this.currentStatusDate).add(45, "seconds").toDate();
 
 			default:
 				return null;

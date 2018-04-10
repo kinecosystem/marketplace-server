@@ -1,5 +1,5 @@
 import * as moment from "moment";
-import { Column, Entity } from "typeorm";
+import { Column, Entity, SelectQueryBuilder } from "typeorm";
 
 import { generateId, IdPrefix } from "../utils";
 
@@ -21,6 +21,18 @@ export type OrderError = {
 	message?: string;
 };
 
+function updateQueryWithStatus(query: SelectQueryBuilder<any>, status?: OrderStatusAndNegation | null) {
+	if (!status) {
+		return;
+	}
+
+	if (status.startsWith("!")) {
+		query.andWhere("status != :status" , { status: status.substring(1) });
+	} else {
+		query.andWhere("status = :status", { status });
+	}
+}
+
 @Entity({ name: "orders" })
 @Register
 @Initializer("id", () => generateId(IdPrefix.Transaction))
@@ -37,9 +49,7 @@ export class Order extends CreationDateModel {
 		const query = Order.createQueryBuilder()
 			.where("id = :orderId", { orderId });
 
-		if (status) {
-			query.andWhere(status.startsWith("!") ? "status != :status" : "status = :status", { status });
-		}
+		updateQueryWithStatus(query, status);
 
 		return query.getOne();
 	}
@@ -48,17 +58,15 @@ export class Order extends CreationDateModel {
 	public static getAll(userId: string, limit: number): Promise<Order[]>;
 	public static getAll(userId: string, status: OrderStatusAndNegation): Promise<Order[]>;
 	public static getAll(userId: string, status: OrderStatusAndNegation, limit: number): Promise<Order[]>;
-	public static getAll(userId: string, a?: number | OrderStatusAndNegation, b?: number): Promise<Order[]> {
-		const status: OrderStatusAndNegation | null = typeof a === "string" ? a : null;
-		const limit: number | null = typeof a === "number" ? a : (typeof b === "number" ? b : null);
+	public static getAll(userId: string, second?: number | OrderStatusAndNegation, third?: number): Promise<Order[]> {
+		const status: OrderStatusAndNegation | null = typeof second === "string" ? second : null;
+		const limit: number | null = typeof second === "number" ? second : (typeof third === "number" ? third : null);
 		const query = Order.createQueryBuilder()
 			.where("user_id = :userId", { userId })
 			.orderBy("completion_date", "DESC")
 			.addOrderBy("id", "DESC");
 
-		if (status) {
-			query.andWhere(status.startsWith("!") ? "status != :status" : "status = :status", { status });
-		}
+		updateQueryWithStatus(query, status);
 
 		if (limit) {
 			query.limit(limit);

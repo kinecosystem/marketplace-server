@@ -45,7 +45,7 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 		throw new Error(`no such order ${ orderId } or order is open`); // XXX throw and exception that is convert-able to json
 	}
 
-	checkIfFailed(order); // no need to wait for the promise
+	checkIfTimedOut(order); // no need to wait for the promise
 
 	logger.info("getOne returning", { orderId, status: order.status, offerId: order.offerId, userId: order.userId });
 	return orderDbToApi(order);
@@ -144,8 +144,7 @@ export async function submitOrder(
 		}
 	}
 
-	order.status = "pending";
-	order.currentStatusDate = new Date();
+	order.setStatus("pending");
 	await order.save();
 	logger.info("order changed to pending", { orderId });
 
@@ -179,7 +178,7 @@ export async function getOrderHistory(
 
 	return {
 		orders: orders.map(order => {
-			checkIfFailed(order); // no need to wait for the promise
+			checkIfTimedOut(order); // no need to wait for the promise
 			return orderDbToApi(order);
 		}),
 		paging: {
@@ -215,11 +214,13 @@ function orderDbToApi(order: db.Order): Order {
 	};
 }
 
-function checkIfFailed(order: db.Order): Promise<void> {
-	if (order.status !== "pending" || order.expirationDate! < new Date()) {
-		return Promise.resolve();
+function checkIfTimedOut(order: db.Order): Promise<void> {
+	if (order.status === "pending" && order.expirationDate! > new Date()) {
+		order.setStatus("failed");
+		// TODO: add order.error
+
+		return order.save() as any;
 	}
 
-	order.status = "failed";
-	return order.save() as any;
+	return Promise.resolve();
 }

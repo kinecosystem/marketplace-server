@@ -105,6 +105,11 @@ export class Order extends CreationDateModel {
 	@Column({ name: "completion_date", nullable: true })
 	public currentStatusDate?: Date;
 
+	public setStatus(status: OpenOrderStatus) {
+		this.status = status;
+		this.currentStatusDate = new Date();
+	}
+
 	public get expirationDate(): Date | null {
 		switch (this.status) {
 			case "opened":

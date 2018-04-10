@@ -215,7 +215,7 @@ function orderDbToApi(order: db.Order): Order {
 }
 
 function checkIfTimedOut(order: db.Order): Promise<void> {
-	if (order.status === "pending" && order.expirationDate! > new Date()) {
+	if (order.status === "pending" && order.expirationDate! < new Date()) {
 		order.setStatus("failed");
 		// TODO: add order.error
 

@@ -10,7 +10,7 @@ import { Paging } from "./index";
 import * as payment from "./payment";
 import * as offerContents from "./offer_contents";
 
-const createOrderResourceId = "locks:orders:create";
+const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
 export interface OrderList {
 	orders: Order[];
@@ -39,35 +39,16 @@ export interface Order {
 }
 
 export async function getOrder(orderId: string, logger: LoggerInstance): Promise<Order> {
-	const order = await db.Order.getOrder(orderId, "!opened");
+	const order = await db.Order.getOne(orderId, "!opened");
 
 	if (!order) {
 		throw new Error(`no such order ${ orderId } or order is open`); // XXX throw and exception that is convert-able to json
 	}
-	logger.info("getOrder returning", { orderId, status: order.status, offerId: order.offerId, userId: order.userId });
+
+	checkIfTimedOut(order); // no need to wait for the promise
+
+	logger.info("getOne returning", { orderId, status: order.status, offerId: order.offerId, userId: order.userId });
 	return orderDbToApi(order);
-}
-
-function orderDbToApi(order: db.Order): Order {
-	if (order.status === "opened") {
-		throw new Error("opened orders should not be returned");
-	}
-
-	return {
-		id: order.id,
-		offer_id: order.offerId,
-		status: order.status,
-		result: order.value,
-		error: order.error,
-		completion_date: (order.currentStatusDate || order.createdDate).toISOString(), // XXX should we separate the dates?
-		blockchain_data: order.blockchainData!,
-		offer_type: order.type,
-		title: order.meta.title,
-		description: order.meta.description,
-		call_to_action: order.meta.call_to_action,
-		content: order.meta.content,
-		amount: order.amount,
-	};
 }
 
 export async function createOrder(offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
@@ -163,8 +144,7 @@ export async function submitOrder(
 		}
 	}
 
-	order.status = "pending";
-	order.currentStatusDate = new Date();
+	order.setStatus("pending");
 	await order.save();
 	logger.info("order changed to pending", { orderId });
 
@@ -178,7 +158,7 @@ export async function submitOrder(
 
 export async function cancelOrder(orderId: string, logger: LoggerInstance): Promise<void> {
 	// you can only delete an open order - not a pending order
-	const order = await db.Order.getOrder(orderId, "opened");
+	const order = await db.Order.getOne(orderId, "opened");
 	if (!order) {
 		throw Error(`no such open order ${ orderId }`);
 	}
@@ -194,10 +174,11 @@ export async function getOrderHistory(
 	after?: string): Promise<OrderList> {
 
 	// XXX use the cursor input values
-	const orders: db.Order[] = await db.Order.getAllNonOpen(userId, limit);
+	const orders: db.Order[] = await db.Order.getAll(userId, "!opened", limit);
 
 	return {
 		orders: orders.map(order => {
+			checkIfTimedOut(order); // no need to wait for the promise
 			return orderDbToApi(order);
 		}),
 		paging: {
@@ -209,4 +190,37 @@ export async function getOrderHistory(
 			next: "https://api.kinmarketplace.com/v1/orders?limit=25&after=MTAxNTExOTQ1MjAwNzI5NDE=",
 		},
 	};
+}
+
+function orderDbToApi(order: db.Order): Order {
+	if (order.status === "opened") {
+		throw new Error("opened orders should not be returned");
+	}
+
+	return {
+		id: order.id,
+		offer_id: order.offerId,
+		status: order.status,
+		result: order.value,
+		error: order.error,
+		completion_date: (order.currentStatusDate || order.createdDate).toISOString(), // XXX should we separate the dates?
+		blockchain_data: order.blockchainData!,
+		offer_type: order.type,
+		title: order.meta.title,
+		description: order.meta.description,
+		call_to_action: order.meta.call_to_action,
+		content: order.meta.content,
+		amount: order.amount,
+	};
+}
+
+function checkIfTimedOut(order: db.Order): Promise<void> {
+	if (order.status === "pending" && order.expirationDate! > new Date()) {
+		order.setStatus("failed");
+		// TODO: add order.error
+
+		return order.save() as any;
+	}
+
+	return Promise.resolve();
 }

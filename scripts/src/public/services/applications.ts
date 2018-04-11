@@ -10,18 +10,19 @@ type JWTClaims = {
 	sub: string; // subject
 };
 
-type JWTContent = {
+type JWTContent<T> = {
 	header: {
 		typ: string;
 		alg: string;
 		key: string;
 	};
-	payload: JWTClaims & {
-		// custom claims
-		user_id: string;
-		api_key: string;
-	};
+	payload: JWTClaims & T;
 	signature: string;
+};
+
+export type RegisterPayload = {
+	user_id: string;
+	api_key: string;
 };
 
 export type SignInContext = {
@@ -30,22 +31,30 @@ export type SignInContext = {
 	apiKey: string;
 };
 
-export async function validateJWT(jwt: string, logger: LoggerInstance): Promise<SignInContext> {
-	const decoded = jsonwebtoken.decode(jwt, { complete: true }) as JWTContent;
+export async function validateRegisterJWT(jwt: string, logger: LoggerInstance): Promise<SignInContext> {
+	const decoded = await verifyJWT<RegisterPayload>(jwt);
 	const appId = decoded.payload.iss;
-	const appUserId = decoded.payload.user_id;
 	const apiKey = decoded.payload.api_key;
-	const jwtKeyId = decoded.header.key;
-
-	const app = await Application.findOneById(appId);
-	if (!app) {
-		throw new Error(`app ${ appId } not found`);
-	}
-
-	const publicKey = app.jwtPublicKeys[jwtKeyId];
-	jsonwebtoken.verify(jwt, publicKey);  // throws
+	const appUserId = decoded.payload.user_id;
 
 	return { appUserId, appId, apiKey };
+}
+
+export type SpendPayloadOffer = {
+	id: string;
+	title: string;
+	description: string;
+	amount: number;
+	wallet_address: string;
+};
+
+export type SpendPayload = {
+	offer: SpendPayloadOffer;
+};
+
+export async function validateSpendJWT(jwt: string, logger: LoggerInstance): Promise<SpendPayloadOffer> {
+	const decoded = await verifyJWT<SpendPayload>(jwt);
+	return decoded.payload.offer;
 }
 
 export async function validateWhitelist(
@@ -66,4 +75,17 @@ export async function validateApiKey(apiKey: string, appId: string, logger: Logg
 	if (!app || app.id !== appId) {
 		throw Error("invalid api_key, app_id pair");
 	}
+}
+
+async function verifyJWT<T>(token: string): Promise<JWTContent<T>> {
+	const decoded = jsonwebtoken.decode(token, { complete: true }) as JWTContent<T>;
+	const app = await Application.findOneById(decoded.payload.iss);
+	if (!app) {
+		throw new Error(`app ${ decoded.payload.iss } not found`);
+	}
+
+	const publicKey = app.jwtPublicKeys[decoded.header.key];
+	jsonwebtoken.verify(token, publicKey); // throws
+
+	return decoded;
 }

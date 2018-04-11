@@ -1,4 +1,3 @@
-import moment = require("moment");
 import { LoggerInstance } from "winston";
 
 import * as metrics from "../metrics";
@@ -55,8 +54,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		order.error = undefined;
 	}
 
-	order.currentStatusDate = new Date(); // XXX should I take payment.timestamp?
-	order.status = "completed";
+	order.setStatus("completed"); // XXX should I take payment.timestamp?
 	await order.save();
 
 	metrics.completeOrder(order.type, order.offerId);

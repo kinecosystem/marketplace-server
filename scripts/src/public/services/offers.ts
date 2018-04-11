@@ -2,7 +2,7 @@ import { LoggerInstance } from "winston";
 
 import * as metrics from "../../metrics";
 import * as db from "../../models/offers";
-import * as dbOrder from "../../models/orders";
+import { MarketplaceOrder } from "../../models/orders";
 import { ModelFilters } from "../../models/index";
 
 import { Paging } from "./index";
@@ -53,12 +53,12 @@ async function filterOffers(userId: string, offers: db.Offer[], logger: LoggerIn
 	return (await Promise.all(
 		offers
 			.map(async offer => {
-				const total = await dbOrder.Order.count({ where: { offerId: offer.id } });
+				const total = await MarketplaceOrder.count({ where: { offerId: offer.id } });
 				if (total >= offer.cap.total) {
 					return null;
 				}
 
-				const forUser = await dbOrder.Order.count({ where: { offerId: offer.id, userId } });
+				const forUser = await MarketplaceOrder.count({ where: { offerId: offer.id, userId } });
 				if (forUser >= offer.cap.per_user) {
 					return null;
 				}

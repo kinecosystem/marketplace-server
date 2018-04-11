@@ -1,10 +1,10 @@
 import { LoggerInstance } from "winston";
 
-import { lock } from "../../redis";
 import * as metrics from "../../metrics";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { AssetValue } from "../../models/offers";
+import { validateSpendJWT } from "../services/applications";
 
 import { Paging } from "./index";
 import * as payment from "./payment";
@@ -39,7 +39,7 @@ export interface Order {
 }
 
 export async function getOrder(orderId: string, logger: LoggerInstance): Promise<Order> {
-	const order = await db.Order.getOne(orderId, "!opened");
+	const order = await db.Order.getOne(orderId, "!opened")!;
 
 	if (!order) {
 		throw new Error(`no such order ${ orderId } or order is open`); // XXX throw and exception that is convert-able to json
@@ -51,14 +51,14 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 	return orderDbToApi(order);
 }
 
-export async function createOrder(offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
+export async function createMarketplaceOrder(offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
 	logger.info("creating order for", { offerId, userId });
 	const offer = await offerDb.Offer.findOneById(offerId);
 	if (!offer) {
 		throw new Error(`cannot create order, offer ${ offerId } not found`);
 	}
 
-	let order = await db.Order.findOne({
+	let order = await db.MarketplaceOrder.findOne({
 		where: {
 			userId,
 			offerId,
@@ -91,7 +91,7 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 				return undefined;
 			}
 
-			const order = db.Order.new({
+			const order = db.MarketplaceOrder.new({
 				userId,
 				offerId,
 				amount: offer.amount,
@@ -111,7 +111,37 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 		throw new Error(`offer ${ offerId } cap reached`);
 	}
 
-	logger.info("created new open order", { offerId, userId, orderId: order.id });
+	logger.info("created new open marketplace order", { offerId, userId, orderId: order.id });
+
+	return {
+		id: order.id,
+		expiration_date: order.expirationDate!.toISOString(),
+	};
+}
+
+export async function createApplicationOrder(jwt: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
+	const offer = await validateSpendJWT(jwt, logger);
+	let order = await db.ApplicationOrder.findOne({
+		where: {
+			userId,
+			status: "opened",
+			offerId: offer.id
+		}
+	});
+
+	if (!order) {
+		order = db.ApplicationOrder.new({
+			userId,
+			offerId: offer.id,
+			amount: offer.amount,
+			type: "spend", // TODO: we currently only support native spend
+			status: "opened",
+			walletAddress: offer.wallet_address
+		});
+		await order.save();
+	}
+
+	logger.info("created new open application order", { offerId: offer.id, userId, orderId: order.id });
 
 	return {
 		id: order.id,

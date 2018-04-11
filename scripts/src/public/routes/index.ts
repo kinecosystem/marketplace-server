@@ -2,9 +2,9 @@ import * as express from "express";
 
 import * as db from "../../models/users";
 import { authenticate } from "../auth";
-import { getOffers, createOrder } from "./offers";
+import { getOffers } from "./offers";
 import { getUser, signInUser, activateUser } from "./users";
-import { getOrder, cancelOrder, getOrderHistory, submitOrder } from "./orders";
+import { getOrder, cancelOrder, getOrderHistory, submitOrder, createMarketplaceOrder, createApplicationOrder } from "./orders";
 
 export type Context = {
 	token: db.AuthToken | undefined;
@@ -79,7 +79,8 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.use(createPath("offers", pathPrefix),
 		router()
 			.authenticated(AuthScopes.TOS)
-			.post("/:offer_id/orders", createOrder));
+			.post("/app/orders", createApplicationOrder)
+			.post("/:offer_id/orders", createMarketplaceOrder));
 
 	app.use(createPath("orders", pathPrefix),
 		router()

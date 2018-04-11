@@ -31,6 +31,7 @@
 		"trailing-comma": false,
 		"no-empty-interface": false,
 		"no-empty": false,
-		"unified-signatures": false
+		"unified-signatures": false,
+		"ban-types": [false]
 	}
 }

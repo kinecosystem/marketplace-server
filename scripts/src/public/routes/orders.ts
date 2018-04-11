@@ -1,10 +1,12 @@
 import { Request, RequestHandler, Response } from "express";
 
 import {
-	cancelOrder as cancelOrderService,
 	getOrder as getOrderService,
-	getOrderHistory as getOrderHistoryService,
 	submitOrder as submitOrderService,
+	cancelOrder as cancelOrderService,
+	getOrderHistory as getOrderHistoryService,
+	createMarketplaceOrder as createMarketplaceOrderService,
+	createApplicationOrder as createApplicationOrderOrderService,
 	OrderList,
 } from "../services/orders";
 
@@ -87,3 +89,44 @@ export const getOrderHistory = async function(req: Request, res: Response) {
  *     // on any failure, write the order_id to a failure queue
  *  db.saveLastBlock(newLastBlock)
  */
+
+export type CreateMarketplaceOrderRequest = Request & {
+	params: {
+		offer_id: string;
+	}
+};
+/**
+ * create an order for an offer
+ *
+ * with GlobalLock(req.context.userId + req.context.offerId):
+ *   // did the transaction
+ *   existing_transactions = Transaction.find({offerId, userId})
+ *   offer = Offer.findOneById(offerId)
+ *   if len(existing_transactions) >= offer.user_cap:
+ *     throw NoCapLeft("for user")
+ *   existing_order = OpenOrder.find({userId: userId, offerId: offerId})
+ *   if existing_order && !existing_order.is_expired():
+ *     return existing_order
+ *   // no existing order:
+ *   locked_cap = len(OpenOrders.find({offerId}))
+ *   left_cap = offer.cap - offer.used - locked_cap
+ *   if not left_cap:
+ *     throw NoCapLeft("depleted resource")
+ *   // create a new order
+ *   order = OpenOrders.create(offerId, userId) // this adds to the locked_cap
+ *   return order
+ */
+export const createMarketplaceOrder = async function(req: CreateMarketplaceOrderRequest, res: Response) {
+	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!.id, req.logger);
+	res.status(201).send(order);
+} as any as RequestHandler;
+
+export type CreateApplicationOrderRequest = Request & {
+	body: {
+		jwt_token: string;
+	}
+};
+export const createApplicationOrder = async function(req: CreateApplicationOrderRequest, res: Response) {
+	const order = await createApplicationOrderOrderService(req.body.jwt_token, req.context.user!.id, req.logger);
+	res.status(201).send(order);
+} as any as RequestHandler;

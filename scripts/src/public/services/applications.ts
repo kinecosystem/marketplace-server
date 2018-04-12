@@ -37,7 +37,7 @@ export async function validateJWT(jwt: string, logger: LoggerInstance): Promise<
 	const apiKey = decoded.payload.api_key;
 	const jwtKeyId = decoded.header.key;
 
-	const app = await Application.findOneById(appId);
+	const app = await Application.findOne(appId);
 	if (!app) {
 		throw new Error(`app ${ appId } not found`);
 	}

@@ -49,7 +49,7 @@ function router(): ExtendedRouter {
 					return proxyOverRouter(router, proxy, (path: string, handler: express.RequestHandler) => {
 						return (target as any)[name](path, async (req: express.Request, res: express.Response, next: express.NextFunction) => {
 							const token = await authenticate(req);
-							const user = await db.User.findOneById(token.userId);
+							const user = await db.User.findOne(token.userId);
 							// XXX scopes should be per token and should not consider user data
 							if (scopes.includes(AuthScopes.TOS) && (!user || !user.activated || token.createdDate < user.activatedDate!)) {
 								throw Error("user did not approve TOS or using a pre activated token");

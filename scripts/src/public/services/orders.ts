@@ -53,7 +53,7 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 
 export async function createOrder(offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
 	logger.info("creating order for", { offerId, userId });
-	const offer = await offerDb.Offer.findOneById(offerId);
+	const offer = await offerDb.Offer.findOne(offerId);
 	if (!offer) {
 		throw new Error(`cannot create order, offer ${ offerId } not found`);
 	}
@@ -133,7 +133,7 @@ export async function submitOrder(
 		throw Error(`open order ${ orderId } has expired`);
 	}
 
-	const offer = await offerDb.Offer.findOneById(order.offerId);
+	const offer = await offerDb.Offer.findOne(order.offerId);
 	if (!offer) {
 		throw Error(`no such offer ${ order.offerId }`);
 	}

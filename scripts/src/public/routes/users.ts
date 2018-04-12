@@ -18,14 +18,20 @@ export const getUser = async function(req: Request, res: Response) {
 	res.status(200).send({ user });
 } as any as RequestHandler;
 
-type SignInData = {
-	sign_in_type: "whitelist" | "jwt";
+type JwtSignInData = {
+	sign_in_type: "jwt";
+	device_id: string;
+	public_address: string;
+	jwt: string;
+};
+
+type WhitelistSignInData = {
+	sign_in_type: "whitelist";
 	user_id: string;
 	device_id: string;
 	app_id: string;
 	api_key: string;
 	public_address: string;
-	jwt?: string;
 };
 
 /**
@@ -34,7 +40,7 @@ type SignInData = {
  */
 export const signInUser = async function(req: Request, res: Response) {
 	let context: SignInContext;
-	const data: SignInData = req.body;
+	const data: JwtSignInData | WhitelistSignInData = req.body;
 
 	req.logger.info("signing in user", { data });
 	if (data.sign_in_type === "jwt") {
@@ -42,7 +48,7 @@ export const signInUser = async function(req: Request, res: Response) {
 	} else if (data.sign_in_type === "whitelist") {
 		context = await validateWhitelist(data.user_id, data.app_id, data.api_key, req.logger);
 	} else {
-		throw new Error("unknown sign_in_type: " + data.sign_in_type);
+		throw new Error("unknown sign_in_type: " + (data as any).sign_in_type);
 	}
 
 	await validateApiKey(context.apiKey, context.appId, req.logger); // throws
@@ -50,8 +56,8 @@ export const signInUser = async function(req: Request, res: Response) {
 	const { token, activated, expiration_date } = await getOrCreateUserCredentials(
 		context.appUserId,
 		context.appId,
-		req.body.public_address,
-		req.body.device_id, req.logger);
+		data.public_address,
+		data.device_id, req.logger);
 
 	res.status(200).send({ token, activated, expiration_date });
 } as any as RequestHandler;

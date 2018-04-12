@@ -1,51 +1,39 @@
-import * as jsonwebtoken from "jsonwebtoken";
 import { LoggerInstance } from "winston";
 
+import { verifyJWT } from "../../jwt";
 import { Application, AppWhitelists } from "../../models/applications";
 
-type JWTClaims = {
-	iss: string; // issuer
-	exp: number; // expiration
-	iat: number; // issued at
-	sub: string; // subject
+export type RegisterPayload = {
+	user_id: string;
+	api_key: string;
 };
-
-type JWTContent = {
-	header: {
-		typ: string;
-		alg: string;
-		key: string;
-	};
-	payload: JWTClaims & {
-		// custom claims
-		user_id: string;
-		api_key: string;
-	};
-	signature: string;
-};
-
 export type SignInContext = {
 	appId: string;
 	appUserId: string;
 	apiKey: string;
 };
-
-export async function validateJWT(jwt: string, logger: LoggerInstance): Promise<SignInContext> {
-	const decoded = jsonwebtoken.decode(jwt, { complete: true }) as JWTContent;
+export async function validateRegisterJWT(jwt: string, logger: LoggerInstance): Promise<SignInContext> {
+	const decoded = await verifyJWT<RegisterPayload>(jwt);
 	const appId = decoded.payload.iss;
-	const appUserId = decoded.payload.user_id;
 	const apiKey = decoded.payload.api_key;
-	const jwtKeyId = decoded.header.key;
-
-	const app = await Application.findOne(appId);
-	if (!app) {
-		throw new Error(`app ${ appId } not found`);
-	}
-
-	const publicKey = app.jwtPublicKeys[jwtKeyId];
-	jsonwebtoken.verify(jwt, publicKey);  // throws
+	const appUserId = decoded.payload.user_id;
 
 	return { appUserId, appId, apiKey };
+}
+
+export type SpendPayloadOffer = {
+	id: string;
+	title: string;
+	description: string;
+	amount: number;
+	wallet_address: string;
+};
+export type SpendPayload = {
+	offer: SpendPayloadOffer;
+};
+export async function validateSpendJWT(jwt: string, logger: LoggerInstance): Promise<SpendPayloadOffer> {
+	const decoded = await verifyJWT<SpendPayload>(jwt);
+	return decoded.payload.offer;
 }
 
 export async function validateWhitelist(

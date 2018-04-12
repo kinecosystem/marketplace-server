@@ -3,7 +3,7 @@ import { Request, Response, NextFunction, RequestHandler } from "express";
 import { OfferType } from "../../models/offers";
 
 import { getOffers as getOffersService } from "../services/offers";
-import { createOrder as createOrderService } from "../services/orders";
+import { createMarketplaceOrder as createMarketplaceOrderService } from "../services/orders";
 
 /**
  * Return a list of offers
@@ -43,7 +43,7 @@ export const getOffers = async function(req: GetOffersRequest, res: Response, ne
  *   order = OpenOrders.create(offerId, userId) // this adds to the locked_cap
  *   return order
  */
-export const createOrder = async function(req: Request, res: Response) {
-	const order = await createOrderService(req.params.offer_id, req.context.user!.id, req.logger);
+export const createMarketplaceOrder = async function(req: Request, res: Response) {
+	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!.id, req.logger);
 	res.status(201).send(order);
 } as any as RequestHandler;

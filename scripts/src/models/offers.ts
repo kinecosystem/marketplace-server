@@ -2,7 +2,7 @@ import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, Model, register as Register, initializer as Initializer } from "./index";
 import { generateId, IdPrefix } from "../utils";
-import { OrderMeta } from "./orders";
+import { MarketPlaceOrderMeta } from "./orders";
 
 export type BlockchainData = {
 	transaction_id?: string;
@@ -14,7 +14,7 @@ export type OfferMeta = {
 	title: string;
 	image: string;
 	description: string;
-	order_meta: OrderMeta;
+	order_meta: MarketPlaceOrderMeta;
 };
 
 export type Cap = {

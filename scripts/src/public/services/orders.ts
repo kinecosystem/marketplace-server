@@ -51,14 +51,14 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 	return orderDbToApi(order);
 }
 
-export async function createOrder(offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
+export async function createMarketplaceOrder(offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
 	logger.info("creating order for", { offerId, userId });
 	const offer = await offerDb.Offer.findOne(offerId);
 	if (!offer) {
 		throw new Error(`cannot create order, offer ${ offerId } not found`);
 	}
 
-	let order = await db.Order.findOne({
+	let order = await db.MarketplaceOrder.findOne({
 		where: {
 			userId,
 			offerId,
@@ -68,7 +68,7 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 
 	if (!order) {
 		const create = async () => {
-			const total = await db.Order.count({
+			const total = await db.MarketplaceOrder.count({
 				where: {
 					offerId
 				}
@@ -79,7 +79,7 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 				return undefined;
 			}
 
-			const forUser = await db.Order.count({
+			const forUser = await db.MarketplaceOrder.count({
 				where: {
 					userId,
 					offerId
@@ -91,7 +91,7 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 				return undefined;
 			}
 
-			const order = db.Order.new({
+			const order = db.MarketplaceOrder.new({
 				userId,
 				offerId,
 				amount: offer.amount,
@@ -192,7 +192,7 @@ export async function getOrderHistory(
 	};
 }
 
-function orderDbToApi(order: db.Order): Order {
+function orderDbToApi(order: db.MarketplaceOrder): Order {
 	if (order.status === "opened") {
 		throw new Error("opened orders should not be returned");
 	}

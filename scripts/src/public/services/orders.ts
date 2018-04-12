@@ -6,6 +6,8 @@ import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { AssetValue } from "../../models/offers";
 
+import { validateSpendJWT } from "../services/applications";
+
 import { Paging } from "./index";
 import * as payment from "./payment";
 import * as offerContents from "./offer_contents";
@@ -25,18 +27,23 @@ export interface OpenOrder {
 export interface Order {
 	id: string;
 	offer_id: string;
-	result?: AssetValue;
 	error?: db.OrderError;
 	content?: string; // json serialized payload of the coupon page
 	status: db.OrderStatus;
 	completion_date: string; // UTC ISO
-	blockchain_data: offerDb.BlockchainData;
-	offer_type: offerDb.OfferType;
 	title: string;
 	description: string;
-	call_to_action?: string;
 	amount: number;
+	blockchain_data?: offerDb.BlockchainData;
 }
+
+export interface MarketplaceOrder extends Order {
+	result?: AssetValue;
+	call_to_action?: string;
+	offer_type: offerDb.OfferType;
+}
+
+export interface ExternalOrder extends Order {}
 
 export async function getOrder(orderId: string, logger: LoggerInstance): Promise<Order> {
 	const order = await db.Order.getOne(orderId, "!opened");
@@ -52,7 +59,7 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 }
 
 export async function createMarketplaceOrder(offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
-	logger.info("creating order for", { offerId, userId });
+	logger.info("creating marketplace order for", { offerId, userId });
 	const offer = await offerDb.Offer.findOne(offerId);
 	if (!offer) {
 		throw new Error(`cannot create order, offer ${ offerId } not found`);
@@ -111,7 +118,37 @@ export async function createMarketplaceOrder(offerId: string, userId: string, lo
 		throw new Error(`offer ${ offerId } cap reached`);
 	}
 
-	logger.info("created new open order", { offerId, userId, orderId: order.id });
+	logger.info("created new open marketplace order", { offerId, userId, orderId: order.id });
+
+	return {
+		id: order.id,
+		expiration_date: order.expirationDate!.toISOString(),
+	};
+}
+
+export async function createExternalOrder(jwt: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
+	const offer = await validateSpendJWT(jwt, logger);
+	let order = await db.ExternalOrder.findOne({
+		where: {
+			userId,
+			status: "opened",
+			offerId: offer.id
+		}
+	});
+
+	if (!order) {
+		order = db.ExternalOrder.new({
+			userId,
+			offerId: offer.id,
+			amount: offer.amount,
+			type: "spend", // TODO: we currently only support native spend
+			status: "opened",
+			walletAddress: offer.wallet_address
+		});
+		await order.save();
+	}
+
+	logger.info("created new open application order", { offerId: offer.id, userId, orderId: order.id });
 
 	return {
 		id: order.id,
@@ -192,26 +229,36 @@ export async function getOrderHistory(
 	};
 }
 
-function orderDbToApi(order: db.MarketplaceOrder): Order {
+function orderDbToApi(order: db.ExternalOrder): ExternalOrder;
+function orderDbToApi(order: db.MarketplaceOrder): MarketplaceOrder;
+function orderDbToApi(order: db.ExternalOrder | db.MarketplaceOrder): ExternalOrder | MarketplaceOrder {
 	if (order.status === "opened") {
 		throw new Error("opened orders should not be returned");
 	}
 
-	return {
+	const base = {
 		id: order.id,
 		offer_id: order.offerId,
 		status: order.status,
-		result: order.value,
 		error: order.error,
 		completion_date: (order.currentStatusDate || order.createdDate).toISOString(), // XXX should we separate the dates?
-		blockchain_data: order.blockchainData!,
-		offer_type: order.type,
 		title: order.meta.title,
 		description: order.meta.description,
-		call_to_action: order.meta.call_to_action,
-		content: order.meta.content,
-		amount: order.amount,
+		amount: order.amount
 	};
+
+	return order.isMarketplaceOrder() ?
+		Object.assign(base, {
+			offer_type: order.type,
+			content: order.meta.content,
+			blockchain_data: order.blockchainData,
+			call_to_action: order.meta.call_to_action,
+		}) :
+		Object.assign(base, {
+			blockchain_data: {
+				recipient_address: order.meta.wallet_address
+			}
+		});
 }
 
 function checkIfTimedOut(order: db.Order): Promise<void> {

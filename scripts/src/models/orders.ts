@@ -141,6 +141,14 @@ export abstract class Order<T extends OrderMeta = OrderMeta> extends CreationDat
 				return null;
 		}
 	}
+
+	public isExternalOrder(): this is ExternalOrder {
+		return this.constructor === ExternalOrder;
+	}
+
+	public isMarketplaceOrder(): this is MarketplaceOrder {
+		return this.constructor === MarketplaceOrder;
+	}
 }
 
 export interface MarketPlaceOrderMeta extends OrderMeta {
@@ -152,4 +160,18 @@ export interface MarketPlaceOrderMeta extends OrderMeta {
 @ChildEntity("marketplace")
 export class MarketplaceOrder extends Order<MarketPlaceOrderMeta> {
 	public static readonly CLASS_ORIGIN = "marketplace";
+}
+
+export interface ExternalOrderOrderMeta extends OrderMeta {
+	wallet_address: string;
+}
+
+@Register
+@ChildEntity("external")
+export class ExternalOrder extends Order<ExternalOrderOrderMeta> {
+	public static readonly CLASS_ORIGIN = "external";
+
+	public get walletAddress() {
+		return this.meta.wallet_address;
+	}
 }

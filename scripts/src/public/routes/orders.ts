@@ -1,11 +1,13 @@
 import { Request, RequestHandler, Response } from "express";
 
 import {
-	cancelOrder as cancelOrderService,
+	OrderList,
 	getOrder as getOrderService,
-	getOrderHistory as getOrderHistoryService,
+	cancelOrder as cancelOrderService,
 	submitOrder as submitOrderService,
-	OrderList, createMarketplaceOrder as createMarketplaceOrderService,
+	getOrderHistory as getOrderHistoryService,
+	createExternalOrder as createExternalOrderService,
+	createMarketplaceOrder as createMarketplaceOrderService,
 } from "../services/orders";
 
 /**
@@ -31,6 +33,11 @@ import {
  */
 export const createMarketplaceOrder = async function(req: Request, res: Response) {
 	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!.id, req.logger);
+	res.status(201).send(order);
+} as any as RequestHandler;
+
+export const createExternalOrder = async function(req: Request, res: Response) {
+	const order = await createExternalOrderService(req.params.offer_id, req.context.user!.id, req.logger);
 	res.status(201).send(order);
 } as any as RequestHandler;
 

@@ -6,7 +6,7 @@ import {
 } from "../services/users";
 import {
 	SignInContext,
-	validateJWT,
+	validateRegisterJWT,
 	validateWhitelist,
 	validateApiKey
 } from "../services/applications";
@@ -44,7 +44,7 @@ export const signInUser = async function(req: Request, res: Response) {
 
 	req.logger.info("signing in user", { data });
 	if (data.sign_in_type === "jwt") {
-		context = await validateJWT(data.jwt!, req.logger);
+		context = await validateRegisterJWT(data.jwt!, req.logger);
 	} else if (data.sign_in_type === "whitelist") {
 		context = await validateWhitelist(data.user_id, data.app_id, data.api_key, req.logger);
 	} else {

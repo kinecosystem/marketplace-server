@@ -1,0 +1,47 @@
+import * as moment from "moment";
+import { readFileSync } from "fs";
+import * as jsonwebtoken from "jsonwebtoken";
+
+import { getConfig } from "./config";
+
+const CONFIG = getConfig();
+
+type KeyMap = Map<string, { algorithm: string; key: Buffer; }> & {
+	random(): { id: string; key: Buffer; algorithm: string; };
+};
+const KEYS = (() => {
+	const map = new Map<string, { algorithm: string; key: Buffer; }>() as KeyMap;
+	map.random = function(this: Map<string, { algorithm: string; key: Buffer; }>) {
+		const entries = Array.from(this.entries()).map(([id, key]) => ({
+			id,
+			key: key.key,
+			algorithm: key.algorithm
+		}));
+
+		return entries[Math.floor(Math.random() * entries.length)];
+	};
+
+	return map;
+})();
+
+export function sign(subject: string, payload: any) {
+	const signWith = KEYS.random();
+
+	payload = Object.assign({
+		typ: "JWT"
+	}, payload);
+
+	return jsonwebtoken.sign(payload, signWith.key, {
+		subject,
+		keyid: signWith.id,
+		algorithm: signWith.algorithm,
+		expiresIn: moment().add(6, "hours").valueOf()
+	});
+}
+
+// init
+(() => {
+	Object.entries(CONFIG.jwt.private_keys).forEach(([ name, key ]) => {
+		KEYS.set(name, { algorithm: key.algorithm, key: readFileSync(key.file) });
+	});
+})();

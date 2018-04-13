@@ -109,9 +109,6 @@ export abstract class Order<T extends OrderMeta = OrderMeta> extends CreationDat
 	@Column("simple-json")
 	public meta!: T;
 
-	@Column("simple-json", { nullable: true }) // the asset or JWT payment confirmation
-	public value?: OrderValue;
-
 	@Column("simple-json", { nullable: true })
 	public error?: OrderError;
 
@@ -160,6 +157,9 @@ export interface MarketPlaceOrderMeta extends OrderMeta {
 @ChildEntity("marketplace")
 export class MarketplaceOrder extends Order<MarketPlaceOrderMeta> {
 	public static readonly CLASS_ORIGIN = "marketplace";
+
+	@Column("simple-json", { nullable: true }) // the asset
+	public value?: OrderValue;
 }
 
 export interface ExternalOrderOrderMeta extends OrderMeta {
@@ -170,6 +170,9 @@ export interface ExternalOrderOrderMeta extends OrderMeta {
 @ChildEntity("external")
 export class ExternalOrder extends Order<ExternalOrderOrderMeta> {
 	public static readonly CLASS_ORIGIN = "external";
+
+	@Column({ nullable: true }) // the payment confirmation
+	public value?: string;
 
 	public get walletAddress() {
 		return this.meta.wallet_address;

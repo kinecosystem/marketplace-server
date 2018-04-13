@@ -16,5 +16,13 @@
 		"logging": false
 	},
 	"payment_service": "http://localhost:5000",
-	"payment_complete_callback": "http://localhost:3001/v1/internal/payments"
+	"payment_complete_callback": "http://localhost:3001/v1/internal/payments",
+	"jwt": {
+		"private_keys": {
+			"default": {
+				"algorithm": "RS512",
+				"file": "examples/jwt_private_key.pem"
+			}
+		}
+	}
 }

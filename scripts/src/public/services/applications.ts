@@ -1,6 +1,6 @@
 import { LoggerInstance } from "winston";
 
-import { verifyJWT } from "../../jwt";
+import { verify as verifyJWT } from "../jwt";
 import { Application, AppWhitelists } from "../../models/applications";
 
 export type RegisterPayload = {

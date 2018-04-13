@@ -1,6 +1,6 @@
 import * as jsonwebtoken from "jsonwebtoken";
 
-import { Application } from "./models/applications";
+import { Application } from "../models/applications";
 
 export type JWTClaims = {
 	iss: string; // issuer
@@ -19,7 +19,7 @@ export type JWTContent<T> = {
 	signature: string;
 };
 
-export async function verifyJWT<T>(token: string): Promise<JWTContent<T>> {
+export async function verify<T>(token: string): Promise<JWTContent<T>> {
 	const decoded = jsonwebtoken.decode(token, { complete: true }) as JWTContent<T>;
 	const app = await Application.findOne(decoded.payload.iss);
 	if (!app) {

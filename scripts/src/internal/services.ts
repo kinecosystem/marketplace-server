@@ -6,6 +6,8 @@ import { Asset, Offer } from "../models/offers";
 import { pick, removeDuplicates } from "../utils";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
 
+import { sign as signJWT } from "./jwt";
+
 export interface CompletedPayment {
 	id: string;
 	app_id: string;
@@ -39,11 +41,21 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	order.blockchainData = pick(payment, "transaction_id", "sender_address", "recipient_address");
 
 	if (order.type === "spend") {
-		// XXX can we call findOne?
-		const asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
-		order.value = asset.asOrderValue();
-		asset.ownerId = order.userId;
-		await asset.save();  // XXX should be in a transaction with order.save
+		if (order.isMarketplaceOrder()) {
+			// XXX can we call findOne?
+			const asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
+			order.value = asset.asOrderValue();
+			asset.ownerId = order.userId;
+			await asset.save();  // XXX should be in a transaction with order.save
+		} else if (order.isExternalOrder()) {
+			order.value = signJWT("confirm_payment", {
+				payment: {
+					date: Date.now(),
+					user_id: order.userId,
+					offer_id: order.offerId
+				}
+			});
+		}
 	} else {
 		// earn offer - no extra steps
 	}

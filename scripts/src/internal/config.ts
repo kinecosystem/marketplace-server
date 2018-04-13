@@ -1,6 +1,13 @@
 import { Config as BaseConfig, getConfig as baseGetConfig, init as baseInit } from "../config";
 
-export interface Config extends BaseConfig {}
+export interface Config extends BaseConfig {
+	jwt: {
+		private_keys: { [name: string]: {
+				algorithm: string;
+				file: string;
+			} };
+	};
+}
 
 export function getConfig(): Config {
 	return baseGetConfig();

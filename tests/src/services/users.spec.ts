@@ -1,16 +1,12 @@
 import mock = require("supertest");
 
-import { init as initModels, close as closeModels } from "../../../scripts/bin/models/index";
+import { init as initModels } from "../../../scripts/bin/models/index";
 import { app } from "../../../scripts/bin/public/app";
 
 describe("api tests for /users", async () => {
 	beforeAll(async () => {
 		await initModels();
 	});
-
-	/*afterAll(async () => {
-		await closeModels();
-	});*/
 
 	test("return a user with 200", async () => {
 		await mock(app)

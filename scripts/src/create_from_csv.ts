@@ -21,7 +21,7 @@ async function getOrCreateOwner(brandName: string): Promise<OfferOwner> {
 	return owner;
 }
 
-async function createSpend(
+export async function createSpend(
 	offerName: string, walletAddress: string,
 	brand: string, title: string, description: string, image: string, amount: number,
 	capTotal: number, capPerUser: number,
@@ -93,7 +93,7 @@ async function createSpend(
 	return offer;
 }
 
-async function createEarn(
+export async function createEarn(
 	offerName: string, walletAddress: string,
 	brand: string, title: string, description: string, image: string, amount: number,
 	capTotal: number, capPerUser: number,

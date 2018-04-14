@@ -10,6 +10,11 @@ import {
 	createMarketplaceOrder as createMarketplaceOrderService,
 } from "../services/orders";
 
+export type CreateMarketplaceOrderRequest = Request & {
+	params: {
+		offer_id: string;
+	}
+};
 /**
  * create an order for an offer
  *
@@ -31,13 +36,18 @@ import {
  *   order = OpenOrders.create(offerId, userId) // this adds to the locked_cap
  *   return order
  */
-export const createMarketplaceOrder = async function(req: Request, res: Response) {
+export const createMarketplaceOrder = async function(req: CreateMarketplaceOrderRequest, res: Response) {
 	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!, req.logger);
 	res.status(201).send(order);
 } as any as RequestHandler;
 
-export const createExternalOrder = async function(req: Request, res: Response) {
-	const order = await createExternalOrderService(req.params.offer_id, req.context.user!, req.logger);
+export type CreateExternalOrderRequest = Request & {
+	body: {
+		jwt: string;
+	}
+};
+export const createExternalOrder = async function(req: CreateExternalOrderRequest, res: Response) {
+	const order = await createExternalOrderService(req.body.jwt, req.context.user!, req.logger);
 	res.status(201).send(order);
 } as any as RequestHandler;
 

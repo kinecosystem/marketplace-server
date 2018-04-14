@@ -29,6 +29,7 @@ export interface Order {
 	id: string;
 	offer_id: string;
 	error?: db.OrderError;
+	offer_type: offerDb.OfferType;
 	content?: string; // json serialized payload of the coupon page
 	status: db.OrderStatus;
 	completion_date: string; // UTC ISO
@@ -41,13 +42,14 @@ export interface Order {
 export interface MarketplaceOrder extends Order {
 	result?: AssetValue;
 	call_to_action?: string;
-	offer_type: offerDb.OfferType;
 }
 
-export interface ExternalOrder extends Order {}
+export interface ExternalOrder extends Order {
+	result?: string;
+}
 
 export async function getOrder(orderId: string, logger: LoggerInstance): Promise<Order> {
-	const order = await db.Order.getOne(orderId, "!opened");
+	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
 		throw new Error(`no such order ${ orderId } or order is open`); // XXX throw and exception that is convert-able to json
@@ -171,7 +173,7 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 export async function submitOrder(
 	orderId: string, form: string | undefined, walletAddress: string, appId: string, logger: LoggerInstance): Promise<Order> {
 
-	const order = await db.Order.findOne({ id: orderId });
+	const order = await db.Order.findOne({ id: orderId }) as db.MarketplaceOrder | db.ExternalOrder;
 	if (!order) {
 		throw Error(`no such order ${ orderId }`);
 	}
@@ -223,7 +225,7 @@ export async function getOrderHistory(
 	after?: string): Promise<OrderList> {
 
 	// XXX use the cursor input values
-	const orders: db.Order[] = await db.Order.getAll(userId, "!opened", limit);
+	const orders = await db.Order.getAll(userId, "!opened", limit) as Array<db.MarketplaceOrder | db.ExternalOrder>;
 
 	return {
 		orders: orders.map(order => {
@@ -241,9 +243,7 @@ export async function getOrderHistory(
 	};
 }
 
-function orderDbToApi(order: db.ExternalOrder): ExternalOrder;
-function orderDbToApi(order: db.MarketplaceOrder): MarketplaceOrder;
-function orderDbToApi(order: db.ExternalOrder | db.MarketplaceOrder): ExternalOrder | MarketplaceOrder {
+function orderDbToApi(order: db.MarketplaceOrder | db.ExternalOrder): Order {
 	if (order.status === "opened") {
 		throw new Error("opened orders should not be returned");
 	}
@@ -251,25 +251,26 @@ function orderDbToApi(order: db.ExternalOrder | db.MarketplaceOrder): ExternalOr
 	const base = {
 		id: order.id,
 		offer_id: order.offerId,
+		offer_type: order.type,
 		status: order.status,
-		error: order.error,
-		completion_date: (order.currentStatusDate || order.createdDate).toISOString(), // XXX should we separate the dates?
+		amount: order.amount,
 		title: order.meta.title,
 		description: order.meta.description,
-		amount: order.amount
+		completion_date: (order.currentStatusDate || order.createdDate).toISOString(), // XXX should we separate the dates?
+		blockchain_data: order.blockchainData,
+		error: order.error,
 	};
 
 	return order.isMarketplaceOrder() ?
 		Object.assign(base, {
-			offer_type: order.type,
+			result: order.getValue(),
 			content: order.meta.content,
-			blockchain_data: order.blockchainData,
 			call_to_action: order.meta.call_to_action,
 		}) :
 		Object.assign(base, {
-			blockchain_data: {
-				recipient_address: order.blockchainData!.recipient_address
-			}
+			result: order.getValue(),
+			content_type: "confirm_payment",
+			call_to_action: "click to view in app",
 		});
 }
 

@@ -1,10 +1,11 @@
 import * as moment from "moment";
-import { Column, Entity, BaseEntity, SelectQueryBuilder, ChildEntity, TableInheritance } from "typeorm";
+import { Column, Entity, BaseEntity, SelectQueryBuilder, DeepPartial } from "typeorm";
 
 import { generateId, IdPrefix } from "../utils";
 
-import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
+import { CreationDateModel, register as Register, initializer as Initializer, Model } from "./index";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
+import { ObjectType } from "typeorm/common/ObjectType";
 
 export interface OrderMeta {
 	title: string;
@@ -33,7 +34,7 @@ function updateQueryWithStatus(query: SelectQueryBuilder<any>, status?: OrderSta
 	}
 }
 
-export type OrderStatic<T extends Order> = {
+export type OrderStatic<T extends Order = Order> = {
 	CLASS_ORIGIN: OrderOrigin | null;
 
 	new(): T;
@@ -41,10 +42,20 @@ export type OrderStatic<T extends Order> = {
 };
 
 @Entity({ name: "orders" })
-@TableInheritance({ column: { name: "origin", type: "varchar" } })
 @Initializer("id", () => generateId(IdPrefix.Transaction))
+@Register
 export abstract class Order<T extends OrderMeta = OrderMeta> extends CreationDateModel {
 	public static readonly CLASS_ORIGIN: OrderOrigin | null = null;
+
+	public static new<T extends Model>(this: ObjectType<T>, data?: DeepPartial<T>): T {
+		if (!(this as OrderStatic).CLASS_ORIGIN) {
+			throw new Error("cannot instantiate Order");
+		}
+
+		const instance = CreationDateModel.new.call(this, data);
+		instance.origin = (this as OrderStatic).CLASS_ORIGIN;
+		return instance;
+	}
 
 	/**
 	 * Returns one order with the id which was passed.
@@ -92,6 +103,7 @@ export abstract class Order<T extends OrderMeta = OrderMeta> extends CreationDat
 		return query.getMany() as Promise<T[]>;
 	}
 
+	@Column()
 	public readonly origin!: OrderOrigin;
 
 	@Column()
@@ -120,6 +132,9 @@ export abstract class Order<T extends OrderMeta = OrderMeta> extends CreationDat
 
 	@Column({ name: "completion_date", nullable: true })
 	public currentStatusDate?: Date;
+
+	@Column({ nullable: true })
+	protected value?: string;
 
 	public setStatus(status: OpenOrderStatus) {
 		this.status = status;
@@ -153,28 +168,28 @@ export interface MarketPlaceOrderMeta extends OrderMeta {
 	content?: string;
 }
 
-@Register
-@ChildEntity("marketplace")
 export class MarketplaceOrder extends Order<MarketPlaceOrderMeta> {
 	public static readonly CLASS_ORIGIN = "marketplace";
 
-	@Column("simple-json", { nullable: true }) // the asset
-	public value?: OrderValue;
+	public getValue(): OrderValue | undefined {
+		return this.value ? JSON.parse(this.value) : undefined;
+	}
+
+	public setValue(value: OrderValue) {
+		this.value = JSON.stringify(value);
+	}
 }
 
-export interface ExternalOrderOrderMeta extends OrderMeta {
-	wallet_address: string;
-}
+export interface ExternalOrderOrderMeta extends OrderMeta {}
 
-@Register
-@ChildEntity("external")
 export class ExternalOrder extends Order<ExternalOrderOrderMeta> {
 	public static readonly CLASS_ORIGIN = "external";
 
-	@Column({ nullable: true }) // the payment confirmation
-	public value?: string;
+	public getValue() {
+		return this.value;
+	}
 
-	public get walletAddress() {
-		return this.meta.wallet_address;
+	public setValue(value: string) {
+		this.value = value;
 	}
 }

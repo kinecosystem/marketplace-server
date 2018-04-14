@@ -58,17 +58,17 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		if (order.isMarketplaceOrder()) {
 			// XXX can we call findOne?
 			const asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
-			order.value = asset.asOrderValue();
+			order.setValue(asset.asOrderValue());
 			asset.ownerId = order.userId;
 			await asset.save();  // XXX should be in a transaction with order.save
 		} else if (order.isExternalOrder()) {
-			order.value = signJWT("confirm_payment", {
+			order.setValue(signJWT("confirm_payment", {
 				payment: {
 					date: Date.now(),
 					user_id: order.userId,
 					offer_id: order.offerId
 				}
-			});
+			}));
 		}
 	} else {
 		// earn offer - no extra steps

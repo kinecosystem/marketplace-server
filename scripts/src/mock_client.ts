@@ -21,6 +21,7 @@ import { CompletedPayment } from "./internal/services";
 
 // const BASE = "http://localhost:3000";
 const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
+const APP_ID = "smpl";
 
 class Stellar {
 	public static MEMO_VERSION = 1;
@@ -107,7 +108,7 @@ class Client {
 					return {
 						id,
 						app_id: appId,
-						transaction_id: transaction.hash,
+						transaction_id: payment.id,
 						recipient_address: payment.to,
 						sender_address: payment.from,
 						amount: parseInt(payment.amount, 10),
@@ -269,7 +270,7 @@ class Client {
 async function didNotApproveTOS() {
 	console.log("=====================================didNotApproveTOS=====================================");
 	const client = new Client();
-	await client.register("smpl", Application.SAMPLE_API_KEY, "new_user_123",
+	await client.register(APP_ID, Application.SAMPLE_API_KEY, "new_user_123",
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 	const offers = await client.getOffers();
 	try {
@@ -284,7 +285,7 @@ async function spendFlow() {
 	console.log("=====================================spend=====================================");
 	const client = new Client();
 	// this address is prefunded with test kin
-	await client.register("smpl", Application.SAMPLE_API_KEY, "rich_user2", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.register(APP_ID, Application.SAMPLE_API_KEY, "rich_user2", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 	const offers = await client.getOffers();
 
@@ -339,7 +340,7 @@ async function spendFlow() {
 async function earnFlow() {
 	console.log("=====================================earn=====================================");
 	const client = new Client();
-	await client.register("smpl", Application.SAMPLE_API_KEY, "doody8",
+	await client.register(APP_ID, Application.SAMPLE_API_KEY, "doody8",
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
@@ -401,12 +402,27 @@ async function earnFlow() {
 	}
 
 	console.log(`payment on blockchain: ${JSON.stringify(payment, null, 2)}`);
+
+	function isValidPayment(order: Order, appId: string, payment: CompletedPayment): boolean {
+		return (
+			order.amount === payment.amount &&
+			order.id === payment.id &&
+			order.blockchain_data!.transaction_id === payment.transaction_id &&
+			order.blockchain_data!.recipient_address === payment.recipient_address &&
+			order.blockchain_data!.sender_address === payment.sender_address &&
+			appId === payment.app_id);
+	}
+
+	if (!isValidPayment(order, APP_ID, payment)) {
+		throw new Error("payment is not valid - different than order");
+	}
+
 }
 
 async function earnTutorial() {
 	console.log("=====================================earnTutorial=====================================");
 	const client = new Client();
-	await client.register("smpl", Application.SAMPLE_API_KEY, "doody98ds",
+	await client.register(APP_ID, Application.SAMPLE_API_KEY, "doody98ds",
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 
 	await client.activate();
@@ -461,13 +477,13 @@ async function earnTutorial() {
 async function testRegisterNewUser() {
 	console.log("=====================================testRegisterNewUser=====================================");
 	const client = new Client();
-	await client.register("smpl", Application.SAMPLE_API_KEY, generateId());
+	await client.register(APP_ID, Application.SAMPLE_API_KEY, generateId());
 }
 
 async function justPay() {
 	console.log("=====================================justPay=====================================");
 	const client = new Client();
-	await client.register("smpl", Application.SAMPLE_API_KEY, "rich_user", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.register(APP_ID, Application.SAMPLE_API_KEY, "rich_user", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	// await client.pay("GAMWFZJATHDIJWDQADVYIOW2RPLTLY7KRNF6H262MS5GACVWQAJFQH5R", 1, "SOME_ORDER");
 	await client.pay("GCZ72HXIUSDXEEL2RVZR6PXHGYU7S3RMQQ4O6UVIXWOU4OUVNIQKQR2X", 1, "SOME_ORDER");
 }

@@ -143,7 +143,11 @@ export async function createExternalOrder(jwt: string, userId: string, logger: L
 			amount: offer.amount,
 			type: "spend", // TODO: we currently only support native spend
 			status: "opened",
-			walletAddress: offer.wallet_address
+			meta: {
+				title: offer.title,
+				description: offer.description,
+				wallet_address: offer.wallet_address
+			}
 		});
 		await order.save();
 	}

@@ -6,12 +6,8 @@ import { getConfig } from "./config";
 
 const CONFIG = getConfig();
 
-type KeyMap = Map<string, { algorithm: string; key: Buffer; }> & {
-	random(): { id: string; key: Buffer; algorithm: string; };
-};
-const KEYS = (() => {
-	const map = new Map<string, { algorithm: string; key: Buffer; }>() as KeyMap;
-	map.random = function(this: Map<string, { algorithm: string; key: Buffer; }>) {
+class KeyMap extends Map<string, { algorithm: string; key: Buffer; }> {
+	public random() {
 		const entries = Array.from(this.entries()).map(([id, key]) => ({
 			id,
 			key: key.key,
@@ -19,10 +15,10 @@ const KEYS = (() => {
 		}));
 
 		return entries[Math.floor(Math.random() * entries.length)];
-	};
+	}
+}
 
-	return map;
-})();
+const KEYS = new KeyMap();
 
 export function sign(subject: string, payload: any) {
 	const signWith = KEYS.random();

@@ -8,7 +8,16 @@ import { Application } from "./models/applications";
 import { ApiError } from "./public/middleware";
 import * as StellarSdk from "stellar-sdk";
 import { AuthToken } from "./public/services/users";
-import { Operation, xdr, Memo, TransactionRecord } from "stellar-sdk";
+import {
+	Operation,
+	xdr,
+	Memo,
+	TransactionRecord,
+	TransactionError,
+	PaymentOperationRecord,
+	CollectionPage
+} from "stellar-sdk";
+import { CompletedPayment } from "./internal/services";
 
 // const BASE = "http://localhost:3000";
 const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
@@ -27,6 +36,7 @@ class Stellar {
 }
 
 const STELLAR = new Stellar("testnet");
+
 
 class Client {
 	public authToken!: AuthToken;
@@ -78,14 +88,42 @@ class Client {
 		return await this.stellarOperation(op, memoText);
 	}
 
-	public streamPayments() {
-		const es = STELLAR.server.payments()
-			.cursor("now")
-						.stream({
-								onmessage: () => { // XXX BUG should receive message
-									console.log();
-								}
-						});
+	public async getPayments(): Promise<CollectionPage<PaymentOperationRecord>> {
+		return await STELLAR.server
+			.payments()
+			.forAccount(this.keyPair.publicKey())
+			.order("desc")
+			.limit(10)
+			.call();
+	}
+
+	public async getKinPayments(): Promise<CompletedPayment[]> {
+		const payments = await this.getPayments();
+		return (await Promise.all(
+			payments.records
+				.map(async payment => {
+					const transaction = await payment.transaction();
+					const [, appId, id] = transaction.memo.split("-", 3);
+					return {
+						id,
+						app_id: appId,
+						transaction_id: transaction.hash,
+						recipient_address: payment.to,
+						sender_address: payment.from,
+						amount: parseInt(payment.amount, 10),
+						timestamp: transaction.created_at,
+					};
+				})
+		)).filter(payment => payment !== undefined);
+	}
+
+	public async findKinPayment(orderId: string): Promise<CompletedPayment | undefined> {
+		const payments = await this.getKinPayments();
+		for (const payment of payments) {
+			if (payment.id === orderId) {
+				return payment;
+			}
+		}
 	}
 
 	public async activate() {
@@ -100,6 +138,11 @@ class Client {
 
 	public async createOrder(offerId: string): Promise<OpenOrder> {
 		const res = await this._post(`/v1/offers/${offerId}/orders`);
+		return res.data as OpenOrder;
+	}
+
+	public async createExternalOrder(jwt: string): Promise<OpenOrder> {
+		const res = await this._post(`/v1/offers/external/orders`);
 		return res.data as OpenOrder;
 	}
 
@@ -183,16 +226,22 @@ class Client {
 	}
 
 	private async stellarOperation(operation: xdr.Operation<Operation.Operation>, memoText?: string): Promise<TransactionRecord> {
-		const accountResponse = await STELLAR.server.loadAccount(this.keyPair.publicKey());
-		const transactionBuilder = new StellarSdk.TransactionBuilder(accountResponse);
-		transactionBuilder.addOperation(operation);
-		if (memoText) {
-			transactionBuilder.addMemo(Memo.text(memoText));
-		}
-		const transaction = transactionBuilder.build();
+		try {
+			const accountResponse = await STELLAR.server.loadAccount(this.keyPair.publicKey());
+			const transactionBuilder = new StellarSdk.TransactionBuilder(accountResponse);
+			transactionBuilder.addOperation(operation);
+			if (memoText) {
+				transactionBuilder.addMemo(Memo.text(memoText));
+			}
+			const transaction = transactionBuilder.build();
 
-		transaction.sign(this.keyPair);
-		return await STELLAR.server.submitTransaction(transaction);
+			transaction.sign(this.keyPair);
+			return await STELLAR.server.submitTransaction(transaction);
+		} catch (e) {
+			const err: TransactionError = e;
+			throw new Error(`\nStellar Error:\ntransaction: ${err.data.extras.result_codes.transaction}` +
+				`\n\toperations: ${err.data.extras.result_codes.operations.join(",")}`);
+		}
 	}
 
 	private async establishTrustLine(): Promise<TransactionRecord> {
@@ -218,6 +267,7 @@ class Client {
 }
 
 async function didNotApproveTOS() {
+	console.log("=====================================didNotApproveTOS=====================================");
 	const client = new Client();
 	await client.register("smpl", Application.SAMPLE_API_KEY, "new_user_123",
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
@@ -231,6 +281,7 @@ async function didNotApproveTOS() {
 }
 
 async function spendFlow() {
+	console.log("=====================================spend=====================================");
 	const client = new Client();
 	// this address is prefunded with test kin
 	await client.register("smpl", Application.SAMPLE_API_KEY, "rich_user2", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
@@ -239,7 +290,7 @@ async function spendFlow() {
 
 	let selectedOffer: Offer | undefined;
 
-	for (const offer of offers.offers) {
+	for (const offer of offers.offers.reverse()) {
 		if (offer.offer_type === "spend") {
 			selectedOffer = offer;
 		}
@@ -252,16 +303,26 @@ async function spendFlow() {
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 	// pay for the offer
+	// await client.submitOrder(openOrder.id);
 	const res = await client.pay(selectedOffer.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
 	console.log("pay result hash: " + res.hash);
-	await client.submitOrder(openOrder.id);
 
 	// poll on order payment
-	let order = await client.getOrder(openOrder.id);
-	console.log(`completion date: ${order.completion_date}`);
-	for (let i = 0; i < 30 && order.status === "pending"; i++) {
+	let order: Order | undefined;
+	try {
 		order = await client.getOrder(openOrder.id);
+		console.log(`completion date: ${order.completion_date}`);
+	} catch (e) {
+	}
+	for (let i = 0; i < 30 && (!order || order.status === "pending"); i++) {
+		try {
+			order = await client.getOrder(openOrder.id);
+		} catch (e) {
+		}
 		await delay(1000);
+	}
+	if (!order) {
+		throw new Error("cant get order");
 	}
 	console.log(`completion date: ${order.completion_date}`);
 
@@ -276,8 +337,9 @@ async function spendFlow() {
 }
 
 async function earnFlow() {
+	console.log("=====================================earn=====================================");
 	const client = new Client();
-	await client.register("smpl", Application.SAMPLE_API_KEY, "doody98ds2",
+	await client.register("smpl", Application.SAMPLE_API_KEY, "doody8",
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
@@ -285,7 +347,7 @@ async function earnFlow() {
 
 	let selectedOffer: Offer | undefined;
 
-	for (const offer of offers.offers) {
+	for (const offer of offers.offers.reverse()) {
 		if (offer.offer_type === "earn") {
 			selectedOffer = offer;
 		}
@@ -324,12 +386,25 @@ async function earnFlow() {
 	} else {
 		throw new Error("order still pending :(");
 	}
+	// check order on blockchain
+	let payment = await client.findKinPayment(order.id);
+	for (let i = 0; i < 30 && !payment; i++) {
+		payment = await client.findKinPayment(order.id);
+		await delay(1000);
+	}
 
 	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
 	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
+
+	if (!payment) {
+		throw new Error("failed to find payment on blockchain");
+	}
+
+	console.log(`payment on blockchain: ${JSON.stringify(payment, null, 2)}`);
 }
 
 async function earnTutorial() {
+	console.log("=====================================earnTutorial=====================================");
 	const client = new Client();
 	await client.register("smpl", Application.SAMPLE_API_KEY, "doody98ds",
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
@@ -359,7 +434,7 @@ async function earnTutorial() {
 	console.log("poll " + selectedOffer.content.slice(0, 100));
 	const poll: Tutorial = JSON.parse(selectedOffer.content);
 
-	const content = JSON.stringify({ });
+	const content = JSON.stringify({});
 	console.log("answers " + content);
 
 	await client.submitOrder(openOrder.id, content);
@@ -384,18 +459,30 @@ async function earnTutorial() {
 }
 
 async function testRegisterNewUser() {
+	console.log("=====================================testRegisterNewUser=====================================");
 	const client = new Client();
 	await client.register("smpl", Application.SAMPLE_API_KEY, generateId());
 }
 
+async function justPay() {
+	console.log("=====================================justPay=====================================");
+	const client = new Client();
+	await client.register("smpl", Application.SAMPLE_API_KEY, "rich_user", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	// await client.pay("GAMWFZJATHDIJWDQADVYIOW2RPLTLY7KRNF6H262MS5GACVWQAJFQH5R", 1, "SOME_ORDER");
+	await client.pay("GCZ72HXIUSDXEEL2RVZR6PXHGYU7S3RMQQ4O6UVIXWOU4OUVNIQKQR2X", 1, "SOME_ORDER");
+}
+
 async function main() {
-	// await earnFlow();
+	await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
 	// await earnTutorial();
-	await spendFlow();
+	// await spendFlow();
+	// await justPay();
 }
 
 main()
 	.then(() => console.log("done"))
-	.catch(err => console.log(err.message + "\n" + err.stack));
+	.catch(err => {
+		console.log(err.message + "\n" + err.stack);
+	});

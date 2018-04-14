@@ -32,12 +32,12 @@ import {
  *   return order
  */
 export const createMarketplaceOrder = async function(req: Request, res: Response) {
-	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!.id, req.logger);
+	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!, req.logger);
 	res.status(201).send(order);
 } as any as RequestHandler;
 
 export const createExternalOrder = async function(req: Request, res: Response) {
-	const order = await createExternalOrderService(req.params.offer_id, req.context.user!.id, req.logger);
+	const order = await createExternalOrderService(req.params.offer_id, req.context.user!, req.logger);
 	res.status(201).send(order);
 } as any as RequestHandler;
 

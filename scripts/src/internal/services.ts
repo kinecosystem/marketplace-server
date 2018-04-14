@@ -38,9 +38,16 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		// 2. don't complete the transaction? complete only if the server got more than expected?
 	}
 
-	if (order.isExternalOrder() && order.walletAddress !== payment.recipient_address) {
+	if (order.blockchainData!.recipient_address !== payment.recipient_address) {
 		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
-			`addresses mismatch ${ order.walletAddress } !== ${ payment.recipient_address }`);
+			`addresses recipient mismatch ${ order.blockchainData!.recipient_address } !== ${ payment.recipient_address }`);
+
+		// TODO: now what?
+	}
+
+	if (order.blockchainData!.sender_address !== payment.sender_address) {
+		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+			`addresses sender mismatch ${ order.blockchainData!.sender_address } !== ${ payment.sender_address }`);
 
 		// TODO: now what?
 	}

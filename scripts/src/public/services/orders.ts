@@ -2,6 +2,7 @@ import { LoggerInstance } from "winston";
 
 import { lock } from "../../redis";
 import * as metrics from "../../metrics";
+import { User } from "../../models/users";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { AssetValue } from "../../models/offers";
@@ -58,8 +59,8 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 	return orderDbToApi(order);
 }
 
-export async function createMarketplaceOrder(offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
-	logger.info("creating marketplace order for", { offerId, userId });
+export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
+	logger.info("creating marketplace order for", { offerId, userId: user.id });
 	const offer = await offerDb.Offer.findOne(offerId);
 	if (!offer) {
 		throw new Error(`cannot create order, offer ${ offerId } not found`);
@@ -67,8 +68,8 @@ export async function createMarketplaceOrder(offerId: string, userId: string, lo
 
 	let order = await db.MarketplaceOrder.findOne({
 		where: {
-			userId,
 			offerId,
+			userId: user.id,
 			status: "opened"
 		}
 	});
@@ -82,29 +83,33 @@ export async function createMarketplaceOrder(offerId: string, userId: string, lo
 			});
 
 			if (total === offer.cap.total) {
-				logger.info("total cap reached", { offerId, userId });
+				logger.info("total cap reached", { offerId, userId: user.id });
 				return undefined;
 			}
 
 			const forUser = await db.MarketplaceOrder.count({
 				where: {
-					userId,
-					offerId
+					offerId,
+					userId: user.id
 				}
 			});
 
 			if (forUser === offer.cap.per_user) {
-				logger.info("per_user cap reached", { offerId, userId });
+				logger.info("per_user cap reached", { offerId, userId: user.id });
 				return undefined;
 			}
 
 			const order = db.MarketplaceOrder.new({
-				userId,
 				offerId,
+				userId: user.id,
 				amount: offer.amount,
 				type: offer.type,
 				status: "opened",
-				meta: offer.meta.order_meta
+				meta: offer.meta.order_meta,
+				blockchainData: {
+					sender_address: offer.type === "spend" ? user.walletAddress : offer.blockchainData.sender_address,
+					recipient_address: offer.type === "spend" ? offer.blockchainData.recipient_address : user.walletAddress
+				}
 			});
 			await order.save();
 			return order;
@@ -118,7 +123,7 @@ export async function createMarketplaceOrder(offerId: string, userId: string, lo
 		throw new Error(`offer ${ offerId } cap reached`);
 	}
 
-	logger.info("created new open marketplace order", { offerId, userId, orderId: order.id });
+	logger.info("created new open marketplace order", { offerId, userId: user.id, orderId: order.id });
 
 	return {
 		id: order.id,
@@ -126,11 +131,11 @@ export async function createMarketplaceOrder(offerId: string, userId: string, lo
 	};
 }
 
-export async function createExternalOrder(jwt: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
+export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	const offer = await validateSpendJWT(jwt, logger);
 	let order = await db.ExternalOrder.findOne({
 		where: {
-			userId,
+			userId: user.id,
 			status: "opened",
 			offerId: offer.id
 		}
@@ -138,21 +143,24 @@ export async function createExternalOrder(jwt: string, userId: string, logger: L
 
 	if (!order) {
 		order = db.ExternalOrder.new({
-			userId,
+			userId: user.id,
 			offerId: offer.id,
 			amount: offer.amount,
 			type: "spend", // TODO: we currently only support native spend
 			status: "opened",
 			meta: {
 				title: offer.title,
-				description: offer.description,
-				wallet_address: offer.wallet_address
+				description: offer.description
+			},
+			blockchainData: {
+				sender_address: user.walletAddress,
+				recipient_address: offer.wallet_address
 			}
 		});
 		await order.save();
 	}
 
-	logger.info("created new open application order", { offerId: offer.id, userId, orderId: order.id });
+	logger.info("created new open application order", { offerId: offer.id, userId: user.id, orderId: order.id });
 
 	return {
 		id: order.id,
@@ -260,7 +268,7 @@ function orderDbToApi(order: db.ExternalOrder | db.MarketplaceOrder): ExternalOr
 		}) :
 		Object.assign(base, {
 			blockchain_data: {
-				recipient_address: order.meta.wallet_address
+				recipient_address: order.blockchainData!.recipient_address
 			}
 		});
 }

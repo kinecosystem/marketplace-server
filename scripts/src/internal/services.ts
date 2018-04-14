@@ -19,7 +19,7 @@ export interface CompletedPayment {
 }
 
 export async function paymentComplete(payment: CompletedPayment, logger: LoggerInstance) {
-	const order = await db.Order.findOne(payment.id);
+	const order = await db.Order.findOneById(payment.id);
 	if (!order) {
 		logger.error(`received payment for unknown order id ${ payment.id }`);
 		return;

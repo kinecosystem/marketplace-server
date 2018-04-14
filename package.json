@@ -39,7 +39,7 @@
     "supertest": "^3.0.0",
     "to": "^0.2.9",
     "ts-jest": "^22.0.4",
-    "typeorm": "^0.2.0-alpha.45",
+    "typeorm": "^0.1.12",
     "update": "^0.7.4",
     "uuid4": "^1.0.0",
     "winston": "^2.4.0"

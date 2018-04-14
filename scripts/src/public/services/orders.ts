@@ -63,7 +63,7 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 
 export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	logger.info("creating marketplace order for", { offerId, userId: user.id });
-	const offer = await offerDb.Offer.findOne(offerId);
+	const offer = await offerDb.Offer.findOneById(offerId);
 	if (!offer) {
 		throw new Error(`cannot create order, offer ${ offerId } not found`);
 	}
@@ -184,7 +184,7 @@ export async function submitOrder(
 		throw Error(`open order ${ orderId } has expired`);
 	}
 
-	const offer = await offerDb.Offer.findOne(order.offerId);
+	const offer = await offerDb.Offer.findOneById(order.offerId);
 	if (!offer) {
 		throw Error(`no such offer ${ order.offerId }`);
 	}

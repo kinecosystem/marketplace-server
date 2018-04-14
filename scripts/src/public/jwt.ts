@@ -21,7 +21,7 @@ export type JWTContent<T> = {
 
 export async function verify<T>(token: string): Promise<JWTContent<T>> {
 	const decoded = jsonwebtoken.decode(token, { complete: true }) as JWTContent<T>;
-	const app = await Application.findOne(decoded.payload.iss);
+	const app = await Application.findOneById(decoded.payload.iss);
 	if (!app) {
 		throw new Error(`app ${ decoded.payload.iss } not found`);
 	}

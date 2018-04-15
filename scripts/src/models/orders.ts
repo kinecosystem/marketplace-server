@@ -159,7 +159,7 @@ export type MarketplaceOrder = Order & {
 
 export const MarketplaceOrder = {
 	ORIGIN: "marketplace",
-	new(data?: DeepPartial<Order>): MarketplaceOrder {
+	"new"(data?: DeepPartial<Order>): MarketplaceOrder {
 		const instance = Order.new(data) as MarketplaceOrder;
 		(instance as any).origin = MarketplaceOrder.ORIGIN;
 		return instance;
@@ -177,7 +177,7 @@ export type ExternalOrder = Order & {
 
 export const ExternalOrder = {
 	ORIGIN: "external",
-	new(data?: DeepPartial<Order>): ExternalOrder {
+	"new"(data?: DeepPartial<Order>): ExternalOrder {
 		const instance = Order.new(data) as ExternalOrder;
 		(instance as any).origin = ExternalOrder.ORIGIN;
 

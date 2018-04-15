@@ -83,13 +83,10 @@ export async function createOrders(userId: string) {
 	order.status = "pending";
 	await order.save();
 }
-}
 
 export async function createOffers() {
-
 	const offers: Offer[] = [];
 	const uniqueId = generateId();
-
 
 	for (let i = 0; i < 5; i += 1) {
 		await createEarn(

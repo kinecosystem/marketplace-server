@@ -45,19 +45,7 @@ export type OrderStatic<T extends Order = Order> = {
 @Entity({ name: "orders" })
 @Initializer("id", () => generateId(IdPrefix.Transaction))
 @Register
-export abstract class Order<T extends OrderMeta = OrderMeta> extends CreationDateModel {
-	public static readonly CLASS_ORIGIN: OrderOrigin | null = null;
-
-	public static new<T extends Model>(this: ObjectType<T>, data?: DeepPartial<T>): T {
-		if (!(this as OrderStatic).CLASS_ORIGIN) {
-			throw new Error("cannot instantiate Order");
-		}
-
-		const instance = CreationDateModel.new.call(this, data);
-		instance.origin = (this as OrderStatic).CLASS_ORIGIN;
-		return instance;
-	}
-
+export class Order<T extends OrderMeta = OrderMeta> extends CreationDateModel {
 	/**
 	 * Returns one order with the id which was passed.
 	 * If `status` is passed as well, the order will be returned only if the status matches.
@@ -156,11 +144,11 @@ export abstract class Order<T extends OrderMeta = OrderMeta> extends CreationDat
 	}
 
 	public isExternalOrder(): this is ExternalOrder {
-		return this.constructor === ExternalOrder;
+		return this.origin === "external";
 	}
 
 	public isMarketplaceOrder(): this is MarketplaceOrder {
-		return this.constructor === MarketplaceOrder;
+		return this.origin === "marketplace";
 	}
 }
 
@@ -169,28 +157,42 @@ export interface MarketPlaceOrderMeta extends OrderMeta {
 	content?: string;
 }
 
-export class MarketplaceOrder extends Order<MarketPlaceOrderMeta> {
-	public static readonly CLASS_ORIGIN = "marketplace";
+export type MarketplaceOrder = Order & {
+	getValue(): OrderValue | undefined;
+	setValue(value: OrderValue): void;
+};
+export const MarketplaceOrder = {
+	new(data?: DeepPartial<Order>): MarketplaceOrder {
+		const instance = Order.new(data) as MarketplaceOrder;
+		(instance as any).origin = "marketplace";
+		(instance as MarketplaceOrder).getValue = function() {
+			return (this as any).value ? JSON.parse((this as any).value) : undefined;
+		};
+		(instance as MarketplaceOrder).setValue = function(value: OrderValue) {
+			(this as any).value = JSON.stringify(value);
+		};
 
-	public getValue(): OrderValue | undefined {
-		return this.value ? JSON.parse(this.value) : undefined;
+		return instance;
 	}
-
-	public setValue(value: OrderValue) {
-		this.value = JSON.stringify(value);
-	}
-}
+};
 
 export interface ExternalOrderOrderMeta extends OrderMeta {}
 
-export class ExternalOrder extends Order<ExternalOrderOrderMeta> {
-	public static readonly CLASS_ORIGIN = "external";
+export type ExternalOrder = Order & {
+	getValue(): string | undefined;
+	setValue(value: string): void;
+};
+export const ExternalOrder = {
+	new(data?: DeepPartial<Order>): ExternalOrder {
+		const instance = Order.new(data) as ExternalOrder;
+		(instance as any).origin = "external";
+		(instance as ExternalOrder).getValue = function() {
+			return (this as any).value;
+		};
+		(instance as ExternalOrder).setValue = function(value: string) {
+			(this as any).value = value;
+		};
 
-	public getValue() {
-		return this.value;
+		return instance;
 	}
-
-	public setValue(value: string) {
-		this.value = value;
-	}
-}
+};

@@ -1,8 +1,8 @@
 import { User, AuthToken } from "../../scripts/bin/models/users";
 import { Asset, Offer } from "../../scripts/bin/models/offers";
 import { Poll, PageType } from "../../scripts/bin/public/services/offer_contents";
-import { Order, MarketplaceOrder } from "../../scripts/bin/models/orders";
-import { createEarn, createSpend } from "../../scripts/bin/create_from_csv";
+import { MarketplaceOrder } from "../../scripts/bin/models/orders";
+import { createEarn, createSpend } from "../../scripts/bin/create_data/offers";
 import { generateId } from "../../scripts/bin/utils";
 
 const animalPoll: Poll = {
@@ -57,7 +57,7 @@ export async function createOrders(userId: string) {
 	let order = orderFromOffer(offers[0], userId);
 	order.status = "completed";
 	const asset: Asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
-	order.setValue(asset.asOrderValue()); // {coupon_code: 'xxxxxx', type: 'coupon'}
+	order.value = asset.asOrderValue(); // {coupon_code: 'xxxxxx', type: 'coupon'}
 	await order.save();
 
 	order = orderFromOffer(offers[1], userId);

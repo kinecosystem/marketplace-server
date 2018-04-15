@@ -2,7 +2,7 @@ import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, Model, register as Register, initializer as Initializer } from "./index";
 import { generateId, IdPrefix } from "../utils";
-import { MarketPlaceOrderMeta } from "./orders";
+import { OrderMeta } from "./orders";
 
 export type BlockchainData = {
 	transaction_id?: string;
@@ -14,7 +14,7 @@ export type OfferMeta = {
 	title: string;
 	image: string;
 	description: string;
-	order_meta: MarketPlaceOrderMeta;
+	order_meta: OrderMeta;
 };
 
 export type Cap = {
@@ -91,11 +91,9 @@ export class AppOffer extends Model {
 	public appId!: string;
 }
 
-export type AssetValue = {
-	coupon_code: string;
-};
-
-export type OrderValue = AssetValue & { type: string };
+export type AssetValue = { coupon_code: string };
+export type JWTValue = { jwt: string };
+export type OrderValue = (JWTValue | AssetValue) & { type: string };
 
 @Entity({ name: "assets" })
 @Register

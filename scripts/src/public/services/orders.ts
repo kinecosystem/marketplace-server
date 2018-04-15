@@ -12,6 +12,7 @@ import { validateSpendJWT } from "../services/applications";
 import { Paging } from "./index";
 import * as payment from "./payment";
 import * as offerContents from "./offer_contents";
+import { OrderValue } from "../../models/offers";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -37,15 +38,8 @@ export interface Order {
 	description: string;
 	amount: number;
 	blockchain_data?: offerDb.BlockchainData;
-}
-
-export interface MarketplaceOrder extends Order {
-	result?: AssetValue;
+	result?: OrderValue;
 	call_to_action?: string;
-}
-
-export interface ExternalOrder extends Order {
-	result?: string;
 }
 
 export async function getOrder(orderId: string, logger: LoggerInstance): Promise<Order> {
@@ -68,33 +62,18 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 		throw new Error(`cannot create order, offer ${ offerId } not found`);
 	}
 
-	let order = await db.MarketplaceOrder.findOne({
-		where: {
-			offerId,
-			userId: user.id,
-			status: "opened"
-		}
-	});
+	let order = await db.MarketplaceOrder.getOpenOrder(offerId, user.id);
 
 	if (!order) {
 		const create = async () => {
-			const total = await db.MarketplaceOrder.count({
-				where: {
-					offerId
-				}
-			});
+			const total = await db.MarketplaceOrder.count(offerId);
 
 			if (total === offer.cap.total) {
 				logger.info("total cap reached", { offerId, userId: user.id });
 				return undefined;
 			}
 
-			const forUser = await db.MarketplaceOrder.count({
-				where: {
-					offerId,
-					userId: user.id
-				}
-			});
+			const forUser = await db.MarketplaceOrder.count(offerId, user.id);
 
 			if (forUser === offer.cap.per_user) {
 				logger.info("per_user cap reached", { offerId, userId: user.id });
@@ -135,13 +114,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	const offer = await validateSpendJWT(jwt, logger);
-	let order = await db.ExternalOrder.findOne({
-		where: {
-			userId: user.id,
-			status: "opened",
-			offerId: offer.id
-		}
-	});
+	let order = await db.ExternalOrder.getOpenOrder(offer.id, user.id);
 
 	if (!order) {
 		order = db.ExternalOrder.new({
@@ -243,12 +216,12 @@ export async function getOrderHistory(
 	};
 }
 
-function orderDbToApi(order: db.MarketplaceOrder | db.ExternalOrder): Order {
+function orderDbToApi(order: db.Order): Order {
 	if (order.status === "opened") {
 		throw new Error("opened orders should not be returned");
 	}
 
-	const base = {
+	return {
 		id: order.id,
 		offer_id: order.offerId,
 		offer_type: order.type,
@@ -256,22 +229,13 @@ function orderDbToApi(order: db.MarketplaceOrder | db.ExternalOrder): Order {
 		amount: order.amount,
 		title: order.meta.title,
 		description: order.meta.description,
+		call_to_action: order.meta.call_to_action,
 		completion_date: (order.currentStatusDate || order.createdDate).toISOString(), // XXX should we separate the dates?
+		content: order.meta.content,  // will be empty for external order
 		blockchain_data: order.blockchainData,
-		error: order.error,
+		error: order.error,  // will be null for anything other than "failed"
+		result: order.value,  // will be a coupon code or a confirm_payment JWT
 	};
-
-	return order.isMarketplaceOrder() ?
-		Object.assign(base, {
-			result: order.getValue(),
-			content: order.meta.content,
-			call_to_action: order.meta.call_to_action,
-		}) :
-		Object.assign(base, {
-			result: order.getValue(),
-			content_type: "confirm_payment",
-			call_to_action: "click to view in app",
-		});
 }
 
 function checkIfTimedOut(order: db.Order): Promise<void> {

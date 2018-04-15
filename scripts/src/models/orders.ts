@@ -11,6 +11,8 @@ import { BlockchainData, OfferType, OrderValue } from "./offers";
 export interface OrderMeta {
 	title: string;
 	description: string;
+	call_to_action?: string;
+	content?: string;
 }
 
 export type OrderOrigin = "marketplace" | "external";
@@ -29,7 +31,7 @@ function updateQueryWithStatus(query: SelectQueryBuilder<any>, status?: OrderSta
 	}
 
 	if (status.startsWith("!")) {
-		query.andWhere("status != :status" , { status: status.substring(1) });
+		query.andWhere("status != :status", { status: status.substring(1) });
 	} else {
 		query.andWhere("status = :status", { status });
 	}
@@ -45,19 +47,7 @@ export type OrderStatic<T extends Order = Order> = {
 @Entity({ name: "orders" })
 @Initializer("id", () => generateId(IdPrefix.Transaction))
 @Register
-export class Order<T extends OrderMeta = OrderMeta> extends CreationDateModel {
-	// public static readonly CLASS_ORIGIN: OrderOrigin | null = null;
-
-	/*public static new<T extends Model>(this: ObjectType<T>, data?: DeepPartial<T>): T {
-		if (!(this as OrderStatic).CLASS_ORIGIN) {
-			throw new Error("cannot instantiate Order");
-		}
-
-		const instance = CreationDateModel.new.call(Order, data);
-		instance.origin = (this as OrderStatic).CLASS_ORIGIN;
-		return instance;
-	}*/
-
+export class Order extends CreationDateModel {
 	/**
 	 * Returns one order with the id which was passed.
 	 * If `status` is passed as well, the order will be returned only if the status matches.
@@ -120,7 +110,7 @@ export class Order<T extends OrderMeta = OrderMeta> extends CreationDateModel {
 	public offerId!: string;
 
 	@Column("simple-json")
-	public meta!: T;
+	public meta!: OrderMeta;
 
 	@Column("simple-json", { nullable: true })
 	public error?: OrderError;
@@ -134,8 +124,8 @@ export class Order<T extends OrderMeta = OrderMeta> extends CreationDateModel {
 	@Column({ name: "completion_date", nullable: true })
 	public currentStatusDate?: Date;
 
-	@Column({ nullable: true })
-	protected value?: string;
+	@Column("simple-json", { nullable: true })
+	public value?: OrderValue;
 
 	public setStatus(status: OpenOrderStatus) {
 		this.status = status;
@@ -155,80 +145,48 @@ export class Order<T extends OrderMeta = OrderMeta> extends CreationDateModel {
 		}
 	}
 
-	public isExternalOrder(): this is ExternalOrder {
+	public isExternalOrder() {
 		return this.origin === "external";
 	}
 
-	public isMarketplaceOrder(): this is MarketplaceOrder {
+	public isMarketplaceOrder() {
 		return this.origin === "marketplace";
 	}
 }
 
-export interface MarketPlaceOrderMeta extends OrderMeta {
-	call_to_action?: string;
-	content?: string;
-}
-
-/*export class MarketplaceOrder extends Order<MarketPlaceOrderMeta> {
-	public static readonly CLASS_ORIGIN = "marketplace";
-
-	public getValue(): OrderValue | undefined {
-		return this.value ? JSON.parse(this.value) : undefined;
-	}
-
-	public setValue(value: OrderValue) {
-		this.value = JSON.stringify(value);
-	}
-}*/
-
 export type MarketplaceOrder = Order & {
-	getValue(): OrderValue | undefined;
-	setValue(value: OrderValue): void;
 };
+
 export const MarketplaceOrder = {
+	ORIGIN: "marketplace",
 	new(data?: DeepPartial<Order>): MarketplaceOrder {
 		const instance = Order.new(data) as MarketplaceOrder;
-		(instance as any).origin = "marketplace";
-		(instance as MarketplaceOrder).getValue = function() {
-			return (this as any).value ? JSON.parse((this as any).value) : undefined;
-		};
-		(instance as MarketplaceOrder).setValue = function(value: OrderValue) {
-			(this as any).value = JSON.stringify(value);
-		};
-
+		(instance as any).origin = MarketplaceOrder.ORIGIN;
 		return instance;
+	},
+	count(offerId: string, userId?: string): Promise<number> {
+		return Order.count({ where: { offerId, userId, origin: MarketplaceOrder.ORIGIN } });
+	},
+	getOpenOrder(offerId: string, userId: string) {
+		return Order.findOne({ where: { offerId, userId, status: "opened", origin: MarketplaceOrder.ORIGIN } });
 	}
 };
-
-export interface ExternalOrderOrderMeta extends OrderMeta {}
-
-/*export class ExternalOrder extends Order<ExternalOrderOrderMeta> {
-	public static readonly CLASS_ORIGIN = "external";
-
-	public getValue() {
-		return this.value;
-	}
-
-	public setValue(value: string) {
-		this.value = value;
-	}
-}*/
 
 export type ExternalOrder = Order & {
-	getValue(): string | undefined;
-	setValue(value: string): void;
 };
+
 export const ExternalOrder = {
+	ORIGIN: "external",
 	new(data?: DeepPartial<Order>): ExternalOrder {
 		const instance = Order.new(data) as ExternalOrder;
-		(instance as any).origin = "external";
-		(instance as ExternalOrder).getValue = function() {
-			return (this as any).value;
-		};
-		(instance as ExternalOrder).setValue = function(value: string) {
-			(this as any).value = value;
-		};
+		(instance as any).origin = ExternalOrder.ORIGIN;
 
 		return instance;
+	},
+	count(offerId: string, userId?: string): Promise<number> {
+		return Order.count({ where: { offerId, userId, origin: ExternalOrder.ORIGIN } });
+	},
+	getOpenOrder(offerId: string, userId: string) {
+		return Order.findOne({ where: { offerId, userId, status: "opened", origin: ExternalOrder.ORIGIN } });
 	}
 };

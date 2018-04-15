@@ -53,12 +53,12 @@ async function filterOffers(userId: string, offers: db.Offer[], logger: LoggerIn
 	return (await Promise.all(
 		offers
 			.map(async offer => {
-				const total = await dbOrder.MarketplaceOrder.count({ where: { offerId: offer.id } });
+				const total = await dbOrder.MarketplaceOrder.count(offer.id);
 				if (total >= offer.cap.total) {
 					return null;
 				}
 
-				const forUser = await dbOrder.MarketplaceOrder.count({ where: { offerId: offer.id, userId } });
+				const forUser = await dbOrder.MarketplaceOrder.count(offer.id, userId);
 				if (forUser >= offer.cap.per_user) {
 					return null;
 				}

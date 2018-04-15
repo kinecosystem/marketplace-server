@@ -2,11 +2,12 @@ import { LoggerInstance } from "winston";
 
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
-import { Asset, Offer } from "../models/offers";
+import { Asset, Offer, OrderValue } from "../models/offers";
 import { pick, removeDuplicates } from "../utils";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
 
 import { sign as signJWT } from "./jwt";
+import { Order } from "../models/orders";
 
 export interface CompletedPayment {
 	id: string;
@@ -16,6 +17,19 @@ export interface CompletedPayment {
 	sender_address: string;
 	amount: number;
 	timestamp: string;
+}
+
+function getPaymentJWT(order: Order): OrderValue {
+	return {
+		type: "confirm_payment",
+		jwt: signJWT("confirm_payment", {
+			payment: {
+				date: Date.now(),
+				user_id: order.userId,
+				offer_id: order.offerId
+			}
+		})
+	};
 }
 
 export async function paymentComplete(payment: CompletedPayment, logger: LoggerInstance) {
@@ -57,18 +71,17 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	if (order.type === "spend") {
 		if (order.isMarketplaceOrder()) {
 			// XXX can we call findOne?
-			const asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
-			order.setValue(asset.asOrderValue());
-			asset.ownerId = order.userId;
-			await asset.save();  // XXX should be in a transaction with order.save
+			const asset = await Asset.findOne({ where: { offerId: order.offerId, ownerId: null } });
+			if (!asset) {
+				// TODO: now what?
+				logger.error("failed to find an available asset");
+			} else {
+				order.value = asset.asOrderValue();
+				asset.ownerId = order.userId;
+				await asset.save();  // XXX should be in a transaction with order.save
+			}
 		} else if (order.isExternalOrder()) {
-			order.setValue(signJWT("confirm_payment", {
-				payment: {
-					date: Date.now(),
-					user_id: order.userId,
-					offer_id: order.offerId
-				}
-			}));
+			order.value = getPaymentJWT(order);
 		}
 	} else {
 		// earn offer - no extra steps

@@ -1,17 +1,21 @@
 import * as moment from "moment";
-import { Column, Entity, SelectQueryBuilder } from "typeorm";
+import { ObjectType } from "typeorm/common/ObjectType";
+import { DeepPartial } from "typeorm/common/DeepPartial";
+import { Column, Entity, BaseEntity, SelectQueryBuilder } from "typeorm";
 
 import { generateId, IdPrefix } from "../utils";
 
-import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
+import { CreationDateModel, register as Register, initializer as Initializer, Model } from "./index";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
 
-export type OrderMeta = {
+export interface OrderMeta {
 	title: string;
 	description: string;
 	call_to_action?: string;
 	content?: string;
-};
+}
+
+export type OrderOrigin = "marketplace" | "external";
 export type OrderStatus = "completed" | "failed" | "pending";
 export type OpenOrderStatus = OrderStatus | "opened";
 export type OrderStatusAndNegation = OpenOrderStatus | "!opened" | "!completed" | "!failed" | "!pending";
@@ -27,15 +31,22 @@ function updateQueryWithStatus(query: SelectQueryBuilder<any>, status?: OrderSta
 	}
 
 	if (status.startsWith("!")) {
-		query.andWhere("status != :status" , { status: status.substring(1) });
+		query.andWhere("status != :status", { status: status.substring(1) });
 	} else {
 		query.andWhere("status = :status", { status });
 	}
 }
 
+export type OrderStatic<T extends Order = Order> = {
+	CLASS_ORIGIN: OrderOrigin | null;
+
+	new(): T;
+	createQueryBuilder(): SelectQueryBuilder<BaseEntity>;
+};
+
 @Entity({ name: "orders" })
-@Register
 @Initializer("id", () => generateId(IdPrefix.Transaction))
+@Register
 export class Order extends CreationDateModel {
 	/**
 	 * Returns one order with the id which was passed.
@@ -45,35 +56,46 @@ export class Order extends CreationDateModel {
 	 * get open order with id "id1": getOne("id1", "opened")
 	 * get NOT open order: getOne("id1", "!opened")
 	 */
-	public static getOne(orderId: string, status?: OrderStatusAndNegation) {
-		const query = Order.createQueryBuilder()
+	public static getOne<T extends Order>(this: OrderStatic<T> | Function, orderId: string, status?: OrderStatusAndNegation): Promise<T | undefined> {
+		const query = (this as OrderStatic<T>).createQueryBuilder()
 			.where("id = :orderId", { orderId });
 
 		updateQueryWithStatus(query, status);
 
-		return query.getOne();
+		if ((this as OrderStatic<T>).CLASS_ORIGIN) {
+			query.andWhere("origin = :origin", { origin: (this as OrderStatic<T>).CLASS_ORIGIN });
+		}
+
+		return query.getOne() as Promise<T | undefined>;
 	}
 
-	public static getAll(userId: string): Promise<Order[]>;
-	public static getAll(userId: string, limit: number): Promise<Order[]>;
-	public static getAll(userId: string, status: OrderStatusAndNegation): Promise<Order[]>;
-	public static getAll(userId: string, status: OrderStatusAndNegation, limit: number): Promise<Order[]>;
-	public static getAll(userId: string, second?: number | OrderStatusAndNegation, third?: number): Promise<Order[]> {
+	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string): Promise<T[]>;
+	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string, limit: number): Promise<T[]>;
+	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string, status: OrderStatusAndNegation): Promise<T[]>;
+	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string, status: OrderStatusAndNegation, limit: number): Promise<T[]>;
+	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string, second?: number | OrderStatusAndNegation, third?: number): Promise<T[]> {
 		const status: OrderStatusAndNegation | null = typeof second === "string" ? second : null;
 		const limit: number | null = typeof second === "number" ? second : (typeof third === "number" ? third : null);
-		const query = Order.createQueryBuilder()
+		const query = (this as OrderStatic<T>).createQueryBuilder()
 			.where("user_id = :userId", { userId })
 			.orderBy("completion_date", "DESC")
 			.addOrderBy("id", "DESC");
 
 		updateQueryWithStatus(query, status);
 
+		if ((this as OrderStatic<T>).CLASS_ORIGIN) {
+			query.andWhere("origin = :origin", { origin: (this as OrderStatic<T>).CLASS_ORIGIN });
+		}
+
 		if (limit) {
 			query.limit(limit);
 		}
 
-		return query.getMany();
+		return query.getMany() as Promise<T[]>;
 	}
+
+	@Column()
+	public readonly origin!: OrderOrigin;
 
 	@Column()
 	public type!: OfferType;
@@ -90,9 +112,6 @@ export class Order extends CreationDateModel {
 	@Column("simple-json")
 	public meta!: OrderMeta;
 
-	@Column("simple-json", { nullable: true }) // the asset or JWT payment confirmation
-	public value?: OrderValue;
-
 	@Column("simple-json", { nullable: true })
 	public error?: OrderError;
 
@@ -104,6 +123,9 @@ export class Order extends CreationDateModel {
 
 	@Column({ name: "completion_date", nullable: true })
 	public currentStatusDate?: Date;
+
+	@Column("simple-json", { nullable: true })
+	public value?: OrderValue;
 
 	public setStatus(status: OpenOrderStatus) {
 		this.status = status;
@@ -122,4 +144,49 @@ export class Order extends CreationDateModel {
 				return null;
 		}
 	}
+
+	public isExternalOrder() {
+		return this.origin === "external";
+	}
+
+	public isMarketplaceOrder() {
+		return this.origin === "marketplace";
+	}
 }
+
+export type MarketplaceOrder = Order & {
+};
+
+export const MarketplaceOrder = {
+	ORIGIN: "marketplace",
+	"new"(data?: DeepPartial<Order>): MarketplaceOrder {
+		const instance = Order.new(data) as MarketplaceOrder;
+		(instance as any).origin = MarketplaceOrder.ORIGIN;
+		return instance;
+	},
+	count(offerId: string, userId?: string): Promise<number> {
+		return Order.count({ where: { offerId, userId, origin: MarketplaceOrder.ORIGIN } });
+	},
+	getOpenOrder(offerId: string, userId: string) {
+		return Order.findOne({ where: { offerId, userId, status: "opened", origin: MarketplaceOrder.ORIGIN } });
+	}
+};
+
+export type ExternalOrder = Order & {
+};
+
+export const ExternalOrder = {
+	ORIGIN: "external",
+	"new"(data?: DeepPartial<Order>): ExternalOrder {
+		const instance = Order.new(data) as ExternalOrder;
+		(instance as any).origin = ExternalOrder.ORIGIN;
+
+		return instance;
+	},
+	count(offerId: string, userId?: string): Promise<number> {
+		return Order.count({ where: { offerId, userId, origin: ExternalOrder.ORIGIN } });
+	},
+	getOpenOrder(offerId: string, userId: string) {
+		return Order.findOne({ where: { offerId, userId, status: "opened", origin: ExternalOrder.ORIGIN } });
+	}
+};

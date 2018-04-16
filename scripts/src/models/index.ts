@@ -11,7 +11,7 @@ let connection: Connection;
 let dbConfig: ConnectionOptions;
 let initPromise: Promise<string>;
 
-export type ModelConstructor = { new(): Model };
+export type ModelConstructor = ({ new(): Model }) | Function;
 export type ModelMemberInitializer = () => any;
 
 export abstract class Model extends BaseEntity {

@@ -2,13 +2,17 @@ import { LoggerInstance } from "winston";
 
 import { lock } from "../../redis";
 import * as metrics from "../../metrics";
+import { User } from "../../models/users";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { AssetValue } from "../../models/offers";
 
+import { validateSpendJWT } from "../services/applications";
+
 import { Paging } from "./index";
 import * as payment from "./payment";
 import * as offerContents from "./offer_contents";
+import { OrderValue } from "../../models/offers";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -25,21 +29,21 @@ export interface OpenOrder {
 export interface Order {
 	id: string;
 	offer_id: string;
-	result?: AssetValue;
 	error?: db.OrderError;
+	offer_type: offerDb.OfferType;
 	content?: string; // json serialized payload of the coupon page
 	status: db.OrderStatus;
 	completion_date: string; // UTC ISO
-	blockchain_data: offerDb.BlockchainData;
-	offer_type: offerDb.OfferType;
 	title: string;
 	description: string;
-	call_to_action?: string;
 	amount: number;
+	blockchain_data?: offerDb.BlockchainData;
+	result?: OrderValue;
+	call_to_action?: string;
 }
 
 export async function getOrder(orderId: string, logger: LoggerInstance): Promise<Order> {
-	const order = await db.Order.getOne(orderId, "!opened");
+	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
 		throw new Error(`no such order ${ orderId } or order is open`); // XXX throw and exception that is convert-able to json
@@ -51,53 +55,42 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 	return orderDbToApi(order);
 }
 
-export async function createOrder(offerId: string, userId: string, logger: LoggerInstance): Promise<OpenOrder> {
-	logger.info("creating order for", { offerId, userId });
+export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
+	logger.info("creating marketplace order for", { offerId, userId: user.id });
 	const offer = await offerDb.Offer.findOneById(offerId);
 	if (!offer) {
 		throw new Error(`cannot create order, offer ${ offerId } not found`);
 	}
 
-	let order = await db.Order.findOne({
-		where: {
-			userId,
-			offerId,
-			status: "opened"
-		}
-	});
+	let order = await db.MarketplaceOrder.getOpenOrder(offerId, user.id);
 
 	if (!order) {
 		const create = async () => {
-			const total = await db.Order.count({
-				where: {
-					offerId
-				}
-			});
+			const total = await db.MarketplaceOrder.count(offerId);
 
 			if (total === offer.cap.total) {
-				logger.info("total cap reached", { offerId, userId });
+				logger.info("total cap reached", { offerId, userId: user.id });
 				return undefined;
 			}
 
-			const forUser = await db.Order.count({
-				where: {
-					userId,
-					offerId
-				}
-			});
+			const forUser = await db.MarketplaceOrder.count(offerId, user.id);
 
 			if (forUser === offer.cap.per_user) {
-				logger.info("per_user cap reached", { offerId, userId });
+				logger.info("per_user cap reached", { offerId, userId: user.id });
 				return undefined;
 			}
 
-			const order = db.Order.new({
-				userId,
+			const order = db.MarketplaceOrder.new({
 				offerId,
+				userId: user.id,
 				amount: offer.amount,
 				type: offer.type,
 				status: "opened",
-				meta: offer.meta.order_meta
+				meta: offer.meta.order_meta,
+				blockchainData: {
+					sender_address: offer.type === "spend" ? user.walletAddress : offer.blockchainData.sender_address,
+					recipient_address: offer.type === "spend" ? offer.blockchainData.recipient_address : user.walletAddress
+				}
 			});
 			await order.save();
 			return order;
@@ -111,7 +104,38 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 		throw new Error(`offer ${ offerId } cap reached`);
 	}
 
-	logger.info("created new open order", { offerId, userId, orderId: order.id });
+	logger.info("created new open marketplace order", { offerId, userId: user.id, orderId: order.id });
+
+	return {
+		id: order.id,
+		expiration_date: order.expirationDate!.toISOString(),
+	};
+}
+
+export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
+	const offer = await validateSpendJWT(jwt, logger);
+	let order = await db.ExternalOrder.getOpenOrder(offer.id, user.id);
+
+	if (!order) {
+		order = db.ExternalOrder.new({
+			userId: user.id,
+			offerId: offer.id,
+			amount: offer.amount,
+			type: "spend", // TODO: we currently only support native spend
+			status: "opened",
+			meta: {
+				title: offer.title,
+				description: offer.description
+			},
+			blockchainData: {
+				sender_address: user.walletAddress,
+				recipient_address: offer.wallet_address
+			}
+		});
+		await order.save();
+	}
+
+	logger.info("created new open application order", { offerId: offer.id, userId: user.id, orderId: order.id });
 
 	return {
 		id: order.id,
@@ -122,7 +146,7 @@ export async function createOrder(offerId: string, userId: string, logger: Logge
 export async function submitOrder(
 	orderId: string, form: string | undefined, walletAddress: string, appId: string, logger: LoggerInstance): Promise<Order> {
 
-	const order = await db.Order.findOne({ id: orderId });
+	const order = await db.Order.findOne({ id: orderId }) as db.MarketplaceOrder | db.ExternalOrder;
 	if (!order) {
 		throw Error(`no such order ${ orderId }`);
 	}
@@ -174,7 +198,7 @@ export async function getOrderHistory(
 	after?: string): Promise<OrderList> {
 
 	// XXX use the cursor input values
-	const orders: db.Order[] = await db.Order.getAll(userId, "!opened", limit);
+	const orders = await db.Order.getAll(userId, "!opened", limit) as Array<db.MarketplaceOrder | db.ExternalOrder>;
 
 	return {
 		orders: orders.map(order => {
@@ -200,17 +224,17 @@ function orderDbToApi(order: db.Order): Order {
 	return {
 		id: order.id,
 		offer_id: order.offerId,
-		status: order.status,
-		result: order.value,
-		error: order.error,
-		completion_date: (order.currentStatusDate || order.createdDate).toISOString(), // XXX should we separate the dates?
-		blockchain_data: order.blockchainData!,
 		offer_type: order.type,
+		status: order.status,
+		amount: order.amount,
 		title: order.meta.title,
 		description: order.meta.description,
 		call_to_action: order.meta.call_to_action,
-		content: order.meta.content,
-		amount: order.amount,
+		completion_date: (order.currentStatusDate || order.createdDate).toISOString(), // XXX should we separate the dates?
+		content: order.meta.content,  // will be empty for external order
+		blockchain_data: order.blockchainData,
+		error: order.error,  // will be null for anything other than "failed"
+		result: order.value,  // will be a coupon code or a confirm_payment JWT
 	};
 }
 

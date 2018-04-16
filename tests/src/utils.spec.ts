@@ -1,3 +1,6 @@
+import { init as initConfig } from "../../scripts/bin/config"; // must be the first import
+initConfig("config/test.json");
+
 import * as path from "path";
 
 import * as utils from "../../scripts/bin/utils";

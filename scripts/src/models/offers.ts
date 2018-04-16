@@ -91,11 +91,9 @@ export class AppOffer extends Model {
 	public appId!: string;
 }
 
-export type AssetValue = {
-	coupon_code: string;
-};
-
-export type OrderValue = AssetValue & { type: string };
+export type AssetValue = { coupon_code: string };
+export type JWTValue = { jwt: string };
+export type OrderValue = (JWTValue | AssetValue) & { type: string };
 
 @Entity({ name: "assets" })
 @Register

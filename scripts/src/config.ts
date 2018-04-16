@@ -19,6 +19,9 @@ export interface Config {
 let config: Config;
 
 export function init(filePath: string) {
+	if (config) {
+		return;
+	}
 	config = require(path(filePath!));
 }
 

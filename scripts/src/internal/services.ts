@@ -1,11 +1,13 @@
-import moment = require("moment");
 import { LoggerInstance } from "winston";
 
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
-import { Asset, Offer } from "../models/offers";
+import { Asset, Offer, OrderValue } from "../models/offers";
 import { pick, removeDuplicates } from "../utils";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
+
+import { sign as signJWT } from "./jwt";
+import { Order } from "../models/orders";
 
 export interface CompletedPayment {
 	id: string;
@@ -17,34 +19,70 @@ export interface CompletedPayment {
 	timestamp: string;
 }
 
+function getPaymentJWT(order: Order): OrderValue {
+	return {
+		type: "confirm_payment",
+		jwt: signJWT("confirm_payment", {
+			payment: {
+				date: Date.now(),
+				user_id: order.userId,
+				offer_id: order.offerId
+			}
+		})
+	};
+}
+
 export async function paymentComplete(payment: CompletedPayment, logger: LoggerInstance) {
 	const order = await db.Order.findOneById(payment.id);
 	if (!order) {
-		logger.error(`received payment for unknown order id ${payment.id}`);
+		logger.error(`received payment for unknown order id ${ payment.id }`);
 		return;
 	}
 
 	if (order.status === "completed") {
-		logger.warn(`received payment callback for already completed order ${payment.id}`);
+		logger.warn(`received payment callback for already completed order ${ payment.id }`);
 		return;
 	}
 
 	// validate payment
 	if (order.amount !== payment.amount) {
-		logger.error(`payment <${payment.id}, ${payment.transaction_id}>` +
-			`amount mismatch ${order.amount} !== ${payment.amount}`);
+		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+			`amount mismatch ${ order.amount } !== ${ payment.amount }`);
 		// XXX 1. monitor
 		// 2. don't complete the transaction? complete only if the server got more than expected?
+	}
+
+	if (order.blockchainData!.recipient_address !== payment.recipient_address) {
+		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+			`addresses recipient mismatch ${ order.blockchainData!.recipient_address } !== ${ payment.recipient_address }`);
+
+		// TODO: now what?
+	}
+
+	if (order.blockchainData!.sender_address !== payment.sender_address) {
+		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+			`addresses sender mismatch ${ order.blockchainData!.sender_address } !== ${ payment.sender_address }`);
+
+		// TODO: now what?
 	}
 
 	order.blockchainData = pick(payment, "transaction_id", "sender_address", "recipient_address");
 
 	if (order.type === "spend") {
-		// XXX can we call findOne?
-		const asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
-		order.value = asset.asOrderValue();
-		asset.ownerId = order.userId;
-		await asset.save();  // XXX should be in a transaction with order.save
+		if (order.isMarketplaceOrder()) {
+			// XXX can we call findOne?
+			const asset = await Asset.findOne({ where: { offerId: order.offerId, ownerId: null } });
+			if (!asset) {
+				// TODO: now what?
+				logger.error("failed to find an available asset");
+			} else {
+				order.value = asset.asOrderValue();
+				asset.ownerId = order.userId;
+				await asset.save();  // XXX should be in a transaction with order.save
+			}
+		} else if (order.isExternalOrder()) {
+			order.value = getPaymentJWT(order);
+		}
 	} else {
 		// earn offer - no extra steps
 	}
@@ -55,8 +93,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		order.error = undefined;
 	}
 
-	order.currentStatusDate = new Date(); // XXX should I take payment.timestamp?
-	order.status = "completed";
+	order.setStatus("completed");
 	await order.save();
 
 	metrics.completeOrder(order.type, order.offerId);

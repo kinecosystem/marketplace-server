@@ -1,6 +1,3 @@
-import { init as initConfig } from "../../../scripts/bin/config"; // must be the first import
-initConfig("config/test.json");
-
 import * as helpers from "../helpers";
 import { init as initModels } from "../../../scripts/bin/models/index";
 import { Order } from "../../../scripts/bin/models/orders";

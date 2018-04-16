@@ -11,10 +11,16 @@ export type AuthToken = {
 	token: string;
 	activated: boolean;
 	expiration_date: string;
+	app_id: string;
 };
 
 function AuthTokenDbToApi(authToken: db.AuthToken, user: db.User, logger: LoggerInstance): AuthToken {
-	return { token: authToken.id, activated: user.activated, expiration_date: authToken.expireDate.toISOString() };
+	return {
+		token: authToken.id,
+		activated: user.activated,
+		app_id: user.appId,
+		expiration_date: authToken.expireDate.toISOString()
+	};
 }
 
 export async function getOrCreateUserCredentials(

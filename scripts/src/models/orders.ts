@@ -101,7 +101,7 @@ export class Order extends CreationDateModel {
 	public type!: OfferType;
 
 	@Column("simple-json", { name: "blockchain_data", nullable: true })
-	public blockchainData?: BlockchainData;
+	public blockchainData!: BlockchainData;
 
 	@Column({ name: "user_id" })
 	public userId!: string;

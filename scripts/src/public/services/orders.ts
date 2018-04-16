@@ -21,23 +21,25 @@ export interface OrderList {
 	paging: Paging;
 }
 
-export interface OpenOrder {
-	id: string;
-	expiration_date: string;
-}
-
-export interface Order {
+export interface BaseOrder {
 	id: string;
 	offer_id: string;
-	error?: db.OrderError;
 	offer_type: offerDb.OfferType;
-	content?: string; // json serialized payload of the coupon page
-	status: db.OrderStatus;
-	completion_date: string; // UTC ISO
 	title: string;
 	description: string;
 	amount: number;
-	blockchain_data?: offerDb.BlockchainData;
+	blockchain_data: offerDb.BlockchainData;
+}
+
+export interface OpenOrder extends BaseOrder {
+	expiration_date: string;
+}
+
+export interface Order extends BaseOrder {
+	error?: db.OrderError;
+	content?: string; // json serialized payload of the coupon page
+	status: db.OrderStatus;
+	completion_date: string; // UTC ISO
 	result?: OrderValue;
 	call_to_action?: string;
 }
@@ -106,10 +108,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 
 	logger.info("created new open marketplace order", { offerId, userId: user.id, orderId: order.id });
 
-	return {
-		id: order.id,
-		expiration_date: order.expirationDate!.toISOString(),
-	};
+	return openOrderDbToApi(order);
 }
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
@@ -137,10 +136,7 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 
 	logger.info("created new open application order", { offerId: offer.id, userId: user.id, orderId: order.id });
 
-	return {
-		id: order.id,
-		expiration_date: order.expirationDate!.toISOString(),
-	};
+	return openOrderDbToApi(order);
 }
 
 export async function submitOrder(
@@ -213,6 +209,23 @@ export async function getOrderHistory(
 			previous: "https://api.kinmarketplace.com/v1/orders?limit=25&before=NDMyNzQyODI3OTQw",
 			next: "https://api.kinmarketplace.com/v1/orders?limit=25&after=MTAxNTExOTQ1MjAwNzI5NDE=",
 		},
+	};
+}
+
+function openOrderDbToApi(order: db.Order): OpenOrder {
+	if (order.status !== "opened") {
+		throw new Error("only opened orders should be returned");
+	}
+
+	return {
+		id: order.id,
+		offer_id: order.offerId,
+		offer_type: order.type,
+		amount: order.amount,
+		title: order.meta.title,
+		description: order.meta.description,
+		blockchain_data: order.blockchainData,
+		expiration_date: order.expirationDate!.toISOString()
 	};
 }
 

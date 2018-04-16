@@ -1,7 +1,7 @@
 import * as moment from "moment";
 import { readFileSync } from "fs";
 import * as jsonwebtoken from "jsonwebtoken";
-
+import { path } from "../utils";
 import { getConfig } from "./config";
 
 const CONFIG = getConfig();
@@ -38,6 +38,6 @@ export function sign(subject: string, payload: any) {
 // init
 (() => {
 	Object.entries(CONFIG.jwt.private_keys).forEach(([ name, key ]) => {
-		KEYS.set(name, { algorithm: key.algorithm, key: readFileSync(key.file) });
+		KEYS.set(name, { algorithm: key.algorithm, key: readFileSync(path(key.file)) });
 	});
 })();

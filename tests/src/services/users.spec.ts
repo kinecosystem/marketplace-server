@@ -1,3 +1,6 @@
+import { init as initConfig } from "../../../scripts/bin/config"; // must be the first import
+initConfig("config/test.json");
+
 import mock = require("supertest");
 
 import { init as initModels } from "../../../scripts/bin/models/index";

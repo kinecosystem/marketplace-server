@@ -1,17 +1,16 @@
-import { getConfig } from "../../../scripts/bin/public/config"; // must be the first import
-import { getConfig as getConfigInternal } from "../../../scripts/bin/internal/config"; // must be the first import
-getConfig();
-getConfigInternal();
+import { init as initConfig } from "../../../scripts/bin/config"; // must be the first import
+initConfig("config/test.json");
 
 import * as helpers from "../helpers";
 import { init as initModels } from "../../../scripts/bin/models/index";
 import { Order } from "../../../scripts/bin/models/orders";
 import { User } from "../../../scripts/bin/models/users";
-import { createMarketplaceOrder, getOrder } from "../../../scripts/bin/public/services/orders";
+import { createMarketplaceOrder, submitOrder } from "../../../scripts/bin/public/services/orders";
 import { getOffers } from "../../../scripts/bin/public/services/offers";
-import { getDefaultLogger, initLogger } from "../../../scripts/src/logging";
-import { CompletedPayment, paymentComplete } from "../../../scripts/src/internal/services";
-import { submitOrder } from "../../../scripts/src/public/services/orders";
+import { getDefaultLogger, initLogger } from "../../../scripts/bin/logging";
+import * as payment from "../../../scripts/bin/public/services/payment";
+import { Offer } from "../../../scripts/bin/models/offers";
+import * as moment from "moment";
 
 describe("test orders", async () => {
 	beforeAll(async () => {
@@ -33,36 +32,36 @@ describe("test orders", async () => {
 	test("return same order when one is open", async () => {
 		const user: User = await User.findOne();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
-		const order = await createMarketplaceOrder(offers.offers[0].id, user,  getDefaultLogger());
+		const order = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
 		const order2 = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
 
 		expect(order.id).toBe(order2.id);
 	});
 
 	test("return getOrder reduces cap", async () => {
+		(payment.payTo as any) = function () {
+			return 1;
+		}; // XXX use a patching library
+
 		const user: User = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
+		const offer = await Offer.findOneById(offers.offers[0].id);
+		for (let i = 0; i < offer.cap.per_user; i++) {
+			const openOrder = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
+			const order = await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
+			await helpers.completePayment(order.id);
+		}
 
-		const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
-		const order = await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
-		await completePayment(order.id);
 		const offers2 = await getOffers(user.id, user.appId, {}, getDefaultLogger());
-
 		expect(offers2.offers.length).toBeLessThan(offers.offers.length);
 	});
-});
 
-async function completePayment(orderId: string) {
-	const order = await Order.getOne(orderId);
-	const user = await User.findOneById(order);
-	const payment: CompletedPayment = {
-		id: order.id,
-		app_id: user.appId,
-		transaction_id: "fake:" + order.id,
-		recipient_address: order.blockchainData.recipient_address,
-		sender_address: order.blockchainData.sender_address,
-		amount: order.amount,
-		timestamp: (new Date()).toISOString()
-	};
-	await paymentComplete(payment, getDefaultLogger());
-}
+	test("expiration on openOrder is 10 minutes", async () => {
+		const user: User = await helpers.createUser();
+		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
+		const offer = await Offer.findOneById(offers.offers[0].id);
+		const now = moment();
+		const openOrder = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
+		expect(moment(openOrder.expiration_date).diff(now, "minutes")).toBe(10);
+	});
+});

@@ -1,9 +1,11 @@
 import { User, AuthToken } from "../../scripts/bin/models/users";
 import { Asset, Offer } from "../../scripts/bin/models/offers";
 import { Poll, PageType } from "../../scripts/bin/public/services/offer_contents";
-import { MarketplaceOrder } from "../../scripts/bin/models/orders";
+import { MarketplaceOrder, Order } from "../../scripts/bin/models/orders";
 import { createEarn, createSpend } from "../../scripts/bin/create_data/offers";
 import { generateId } from "../../scripts/bin/utils";
+import { CompletedPayment, paymentComplete } from "../../scripts/bin/internal/services";
+import { getDefaultLogger } from "../../scripts/bin/logging";
 
 const animalPoll: Poll = {
 	pages: [{
@@ -104,4 +106,19 @@ export async function createOffers() {
 			[`spend${i}_1`, `spend${i}_2`, `spend${i}_3`, `spend${i}_4`, `spend${i}_5`]
 		);
 	}
+}
+
+export async function completePayment(orderId: string) {
+	const order = await Order.getOne(orderId);
+	const user = await User.findOneById(order.userId);
+	const payment: CompletedPayment = {
+		id: order.id,
+		app_id: user.appId,
+		transaction_id: "fake:" + order.id,
+		recipient_address: order.blockchainData.recipient_address,
+		sender_address: order.blockchainData.sender_address,
+		amount: order.amount,
+		timestamp: (new Date()).toISOString()
+	};
+	await paymentComplete(payment, getDefaultLogger());
 }

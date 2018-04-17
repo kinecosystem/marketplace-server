@@ -28,7 +28,11 @@ export async function verify<T>(token: string): Promise<JWTContent<T>> {
 		throw new Error(`app ${ appId } not found`);
 	}
 
-	const publicKey = app.jwtPublicKeys[decoded.header.keyid || decoded.header.key_id!];  // XXX deprecate ECO-272
+	const keyid = decoded.header.keyid || decoded.header.key_id!;  // XXX deprecate ECO-272
+	const publicKey = app.jwtPublicKeys[keyid];
+	if (!publicKey) {
+		throw new Error(`keyid "${keyid}" not found for iss "${appId}"`);
+	}
 	jsonwebtoken.verify(token, publicKey); // throws
 
 	return decoded;

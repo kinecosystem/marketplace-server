@@ -33,7 +33,6 @@ type JwtSignInData = CommonSignInData & {
 type WhitelistSignInData = CommonSignInData & {
 	sign_in_type: "whitelist";
 	user_id: string;
-	app_id: string;
 	api_key: string;
 };
 
@@ -52,7 +51,7 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	if (data.sign_in_type === "jwt") {
 		context = await validateRegisterJWT(data.jwt!, req.logger);
 	} else if (data.sign_in_type === "whitelist") {
-		context = await validateWhitelist(data.user_id, data.app_id, data.api_key, req.logger);
+		context = await validateWhitelist(data.user_id, data.api_key, req.logger);
 	} else {
 		throw new Error("unknown sign_in_type: " + (data as any).sign_in_type);
 	}

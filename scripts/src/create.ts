@@ -18,7 +18,7 @@ async function createApp(appId: string, apiKey: string, name: string) {
 	const app = Application.new({
 		id: appId,
 		name,
-		jwtPublicKeys: { 1: jwtPublic }
+		jwtPublicKeys: { default: jwtPublic }
 	});
 	app.apiKey = apiKey;  // XXX temporary run-over apiKey for testing
 	await app.save();

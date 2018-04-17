@@ -18,10 +18,12 @@ import {
 	CollectionPage
 } from "stellar-sdk";
 import { CompletedPayment } from "./internal/services";
+import { SpendPayloadOffer } from "./public/services/applications";
 
-// const BASE = "http://localhost:3000";
-const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
-const APP_ID = "smpl";
+const BASE = "http://localhost:3000";
+const JWT_SERVICE_BASE = "http://localhost:3002";
+
+// const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
 
 class Stellar {
 	public static MEMO_VERSION = 1;
@@ -38,13 +40,36 @@ class Stellar {
 
 const STELLAR = new Stellar("testnet");
 
+type SignInPayload = { apiKey: string, userId: string } | { jwt: string };
+
+function isJWT(obj: any): obj is { jwt: string } {
+	return !!obj.jwt;
+}
+
+class SampleAppClient {
+	public async getRegisterJWT(userId: string): Promise<string> {
+		const res = await axios.default.get(JWT_SERVICE_BASE + "/register/token?user_id=" + userId);
+		return res.data.jwt;
+	}
+
+	public async getSpendJWT(offerId: string): Promise<string> {
+		const res = await axios.default.get(JWT_SERVICE_BASE + "/spend/token?offer_id=" + offerId);
+		return res.data.jwt;
+	}
+
+	public async getOffers(): Promise<SpendPayloadOffer[]> {
+		const res = await axios.default.get(JWT_SERVICE_BASE + "/offers");
+		return res.data.offers;
+	}
+}
 
 class Client {
+
+	public readonly appId!: string;
 	public authToken!: AuthToken;
 	private keyPair!: StellarSdk.Keypair;
-	private appId!: string;
 
-	public async register(appId: string, apiKey: string, userId: string, walletAddress?: string) {
+	public async register(payload: SignInPayload, walletAddress?: string) {
 		const generatedWallet = !walletAddress;
 		if (walletAddress) {
 			if (walletAddress.startsWith("S")) {
@@ -57,17 +82,21 @@ class Client {
 		}
 		console.log("registering with wallet: " + this.keyPair.publicKey());
 
-		const res = await this._post("/v1/users", {
-			sign_in_type: "whitelist",
-			user_id: userId,
+		const data = {
 			device_id: "my_device",
-			app_id: appId,
-			api_key: apiKey,
-			public_address: this.keyPair.publicKey(),
-		});
+			wallet_address: this.keyPair.publicKey(),
+		};
+		if (isJWT(payload)) {
+			Object.assign(data, { sign_in_type: "jwt", jwt: payload.jwt });
 
-		this.appId = appId;
+		} else {
+			Object.assign(data, { sign_in_type: "whitelist", user_id: payload.userId, api_key: payload.userId });
+		}
+
+		const res = await this._post("/v1/users", data);
+
 		this.authToken = res.data;
+		(this.appId as any) = this.authToken.app_id;
 
 		if (generatedWallet) {
 			const res = await this.establishTrustLine();
@@ -143,7 +172,7 @@ class Client {
 	}
 
 	public async createExternalOrder(jwt: string): Promise<OpenOrder> {
-		const res = await this._post(`/v1/offers/external/orders`);
+		const res = await this._post(`/v1/offers/external/orders`, { jwt });
 		return res.data as OpenOrder;
 	}
 
@@ -270,7 +299,8 @@ class Client {
 async function didNotApproveTOS() {
 	console.log("=====================================didNotApproveTOS=====================================");
 	const client = new Client();
-	await client.register(APP_ID, Application.SAMPLE_API_KEY, "new_user_123",
+
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "new_user_123" },
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 	const offers = await client.getOffers();
 	try {
@@ -285,7 +315,9 @@ async function spendFlow() {
 	console.log("=====================================spend=====================================");
 	const client = new Client();
 	// this address is prefunded with test kin
-	await client.register(APP_ID, Application.SAMPLE_API_KEY, "rich_user2", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "rich_user2" },
+		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 	const offers = await client.getOffers();
 
@@ -302,7 +334,7 @@ async function spendFlow() {
 
 	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
-	console.log(`got order ${openOrder.id}`);
+	console.log(`got open order ${openOrder}`);
 	// pay for the offer
 	// await client.submitOrder(openOrder.id);
 	const res = await client.pay(selectedOffer.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
@@ -340,7 +372,7 @@ async function spendFlow() {
 async function earnFlow() {
 	console.log("=====================================earn=====================================");
 	const client = new Client();
-	await client.register(APP_ID, Application.SAMPLE_API_KEY, "doody8",
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "doody98ds2" },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
@@ -360,7 +392,7 @@ async function earnFlow() {
 
 	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
-	console.log(`got order ${openOrder.id}`);
+	console.log(`got open order ${openOrder}`);
 
 	// fill in the poll
 	console.log("poll " + selectedOffer.content);
@@ -413,7 +445,7 @@ async function earnFlow() {
 			appId === payment.app_id);
 	}
 
-	if (!isValidPayment(order, APP_ID, payment)) {
+	if (!isValidPayment(order, client.appId, payment)) {
 		throw new Error("payment is not valid - different than order");
 	}
 
@@ -422,9 +454,8 @@ async function earnFlow() {
 async function earnTutorial() {
 	console.log("=====================================earnTutorial=====================================");
 	const client = new Client();
-	await client.register(APP_ID, Application.SAMPLE_API_KEY, "doody98ds",
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "doody98ds" },
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
-
 	await client.activate();
 
 	const offers = await client.getOffers();
@@ -477,24 +508,74 @@ async function earnTutorial() {
 async function testRegisterNewUser() {
 	console.log("=====================================testRegisterNewUser=====================================");
 	const client = new Client();
-	await client.register(APP_ID, Application.SAMPLE_API_KEY, generateId());
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: generateId() });
 }
 
 async function justPay() {
 	console.log("=====================================justPay=====================================");
 	const client = new Client();
-	await client.register(APP_ID, Application.SAMPLE_API_KEY, "rich_user", "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
-	// await client.pay("GAMWFZJATHDIJWDQADVYIOW2RPLTLY7KRNF6H262MS5GACVWQAJFQH5R", 1, "SOME_ORDER");
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: generateId() });
 	await client.pay("GCZ72HXIUSDXEEL2RVZR6PXHGYU7S3RMQQ4O6UVIXWOU4OUVNIQKQR2X", 1, "SOME_ORDER");
+
+}
+
+async function registerJWT() {
+	const client = new Client();
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+	await client.register({ jwt });
+}
+
+async function nativeSpendFlow() {
+	const client = new Client();
+	// this address is prefunded with test kin
+	const userId = "rich_user2";
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+
+	await client.register({ jwt },
+		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.activate();
+
+	const selectedOffer = (await appClient.getOffers())[0];
+	console.log(`requesting order for offer: ${selectedOffer.id}`);
+	const offerJwt = await appClient.getSpendJWT(selectedOffer.id);
+	const openOrder = await client.createExternalOrder(offerJwt);
+	console.log(`got open order ${JSON.stringify(openOrder)}`);
+	// pay for the offer
+	const res = await client.pay(selectedOffer.wallet_address, selectedOffer.amount, openOrder.id);
+	console.log("pay result hash: " + res.hash);
+	await client.submitOrder(openOrder.id);
+
+	// poll on order payment
+	let order = await client.getOrder(openOrder.id);
+	console.log(`completion date: ${order.completion_date}`);
+	for (let i = 0; i < 30 && order.status === "pending"; i++) {
+		order = await client.getOrder(openOrder.id);
+		await delay(1000);
+	}
+	console.log(`completion date: ${order.completion_date}`);
+
+	if (order.status === "completed") {
+		console.log("order completed!");
+	} else {
+		throw new Error("order still pending :(");
+	}
+
+	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
+	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
 }
 
 async function main() {
-	await earnFlow();
+	// await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
 	// await earnTutorial();
 	// await spendFlow();
 	// await justPay();
+	// await registerJWT();
+	await nativeSpendFlow();
 }
 
 main()

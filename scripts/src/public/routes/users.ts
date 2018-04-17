@@ -7,9 +7,9 @@ import {
 import {
 	SignInContext,
 	validateRegisterJWT,
-	validateWhitelist,
-	validateApiKey
+	validateWhitelist
 } from "../services/applications";
+
 import * as db from "../../models/users";
 
 // get a user
@@ -18,31 +18,37 @@ export const getUser = async function(req: Request, res: Response) {
 	res.status(200).send({ user });
 } as any as RequestHandler;
 
-type JwtSignInData = {
-	sign_in_type: "jwt";
+type CommonSignInData = {
+	sign_in_type: "jwt" | "whitelist";
 	device_id: string;
-	public_address: string;
+	wallet_address: string;
+	public_address?: string;  // XXX ECO-249 deprecate and set wallet_address to definite input
+};
+
+type JwtSignInData = CommonSignInData & {
+	sign_in_type: "jwt";
 	jwt: string;
 };
 
-type WhitelistSignInData = {
+type WhitelistSignInData = CommonSignInData & {
 	sign_in_type: "whitelist";
 	user_id: string;
-	device_id: string;
 	app_id: string;
 	api_key: string;
-	public_address: string;
 };
+
+type RegisterRequest = Request & { body: WhitelistSignInData | JwtSignInData };
 
 /**
  * sign in a user,
  * allow either registration with JWT or plain userId to be checked against a whitelist from the given app
  */
-export const signInUser = async function(req: Request, res: Response) {
+export const signInUser = async function(req: RegisterRequest, res: Response) {
 	let context: SignInContext;
-	const data: JwtSignInData | WhitelistSignInData = req.body;
+	const data: WhitelistSignInData | JwtSignInData = req.body;
 
 	req.logger.info("signing in user", { data });
+	// XXX should also check which sign in types does the application allow
 	if (data.sign_in_type === "jwt") {
 		context = await validateRegisterJWT(data.jwt!, req.logger);
 	} else if (data.sign_in_type === "whitelist") {
@@ -51,21 +57,20 @@ export const signInUser = async function(req: Request, res: Response) {
 		throw new Error("unknown sign_in_type: " + (data as any).sign_in_type);
 	}
 
-	await validateApiKey(context.apiKey, context.appId, req.logger); // throws
-
-	const { token, activated, expiration_date } = await getOrCreateUserCredentials(
+	const authToken = await getOrCreateUserCredentials(
 		context.appUserId,
 		context.appId,
-		data.public_address,
-		data.device_id, req.logger);
+		data.wallet_address || data.public_address!,  // XXX ECO-249 deprecate
+		data.device_id,
+		req.logger);
 
-	res.status(200).send({ token, activated, expiration_date });
+	res.status(200).send(authToken);
 } as any as RequestHandler;
 
 /**
  * user activates by approving TOS
  */
 export const activateUser = async function(req: Request, res: Response) {
-	const { token, activated, expiration_date } = await activateUserService(req.context.token!, req.context.user!, req.logger);
-	res.status(200).send({ token, activated, expiration_date });
+	const authToken = await activateUserService(req.context.token!, req.context.user!, req.logger);
+	res.status(200).send(authToken);
 } as any as RequestHandler;

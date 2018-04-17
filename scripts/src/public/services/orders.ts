@@ -1,18 +1,16 @@
 import { LoggerInstance } from "winston";
-
-import { lock } from "../../redis";
 import * as metrics from "../../metrics";
 import { User } from "../../models/users";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
-import { AssetValue } from "../../models/offers";
+import { OrderValue } from "../../models/offers";
 
 import { validateSpendJWT } from "../services/applications";
 
 import { Paging } from "./index";
 import * as payment from "./payment";
+import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
-import { OrderValue } from "../../models/offers";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -21,23 +19,25 @@ export interface OrderList {
 	paging: Paging;
 }
 
-export interface OpenOrder {
-	id: string;
-	expiration_date: string;
-}
-
-export interface Order {
+export interface BaseOrder {
 	id: string;
 	offer_id: string;
-	error?: db.OrderError;
 	offer_type: offerDb.OfferType;
-	content?: string; // json serialized payload of the coupon page
-	status: db.OrderStatus;
-	completion_date: string; // UTC ISO
 	title: string;
 	description: string;
 	amount: number;
-	blockchain_data?: offerDb.BlockchainData;
+	blockchain_data: offerDb.BlockchainData;
+}
+
+export interface OpenOrder extends BaseOrder {
+	expiration_date: string;
+}
+
+export interface Order extends BaseOrder {
+	error?: db.OrderError;
+	content?: string; // json serialized payload of the coupon page
+	status: db.OrderStatus;
+	completion_date: string; // UTC ISO
 	result?: OrderValue;
 	call_to_action?: string;
 }
@@ -106,14 +106,13 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 
 	logger.info("created new open marketplace order", { offerId, userId: user.id, orderId: order.id });
 
-	return {
-		id: order.id,
-		expiration_date: order.expirationDate!.toISOString(),
-	};
+	return openOrderDbToApi(order);
 }
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	const offer = await validateSpendJWT(jwt, logger);
+	await addWatcherEndpoint([offer.wallet_address]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
+
 	let order = await db.ExternalOrder.getOpenOrder(offer.id, user.id);
 
 	if (!order) {
@@ -137,10 +136,7 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 
 	logger.info("created new open application order", { offerId: offer.id, userId: user.id, orderId: order.id });
 
-	return {
-		id: order.id,
-		expiration_date: order.expirationDate!.toISOString(),
-	};
+	return openOrderDbToApi(order);
 }
 
 export async function submitOrder(
@@ -157,13 +153,16 @@ export async function submitOrder(
 		throw Error(`open order ${ orderId } has expired`);
 	}
 
-	const offer = await offerDb.Offer.findOneById(order.offerId);
-	if (!offer) {
-		throw Error(`no such offer ${ order.offerId }`);
+	if (order.isMarketplaceOrder()) {
+		const offer = await offerDb.Offer.findOneById(order.offerId);
+		if (!offer) {
+			throw Error(`no such offer ${ order.offerId }`);
+		}
 	}
-	if (offer.type === "earn") {
+
+	if (order.type === "earn") {
 		// validate form
-		if (!await offerContents.isValid(offer.id, form, logger)) {
+		if (!await offerContents.isValid(order.offerId, form, logger)) {
 			throw Error(`submitted form is invalid for ${ order.id }`);
 		}
 	}
@@ -172,11 +171,11 @@ export async function submitOrder(
 	await order.save();
 	logger.info("order changed to pending", { orderId });
 
-	if (offer.type === "earn") {
-		await payment.payTo(walletAddress, appId, offer.amount, order.id, logger);
+	if (order.type === "earn") {
+		await payment.payTo(walletAddress, appId, order.amount, order.id, logger);
 	}
 
-	metrics.submitOrder(offer.type, offer.id);
+	metrics.submitOrder(order.type, order.offerId);
 	return orderDbToApi(order);
 }
 
@@ -213,6 +212,23 @@ export async function getOrderHistory(
 			previous: "https://api.kinmarketplace.com/v1/orders?limit=25&before=NDMyNzQyODI3OTQw",
 			next: "https://api.kinmarketplace.com/v1/orders?limit=25&after=MTAxNTExOTQ1MjAwNzI5NDE=",
 		},
+	};
+}
+
+function openOrderDbToApi(order: db.Order): OpenOrder {
+	if (order.status !== "opened") {
+		throw new Error("only opened orders should be returned");
+	}
+
+	return {
+		id: order.id,
+		offer_id: order.offerId,
+		offer_type: order.type,
+		amount: order.amount,
+		title: order.meta.title,
+		description: order.meta.description,
+		blockchain_data: order.blockchainData,
+		expiration_date: order.expirationDate!.toISOString()
 	};
 }
 

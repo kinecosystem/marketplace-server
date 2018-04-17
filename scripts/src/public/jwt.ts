@@ -3,7 +3,7 @@ import * as jsonwebtoken from "jsonwebtoken";
 import { Application } from "../models/applications";
 
 export type JWTClaims = {
-	iss: string; // issuer
+	iss: string; // issuer - the app_id
 	exp: number; // expiration
 	iat: number; // issued at
 	sub: string; // subject
@@ -13,7 +13,8 @@ export type JWTContent<T> = {
 	header: {
 		typ: string;
 		alg: string;
-		key: string;
+		keyid: string;
+		key_id?: string;  // XXX deprecate ECO-272
 	};
 	payload: JWTClaims & T;
 	signature: string;
@@ -21,12 +22,17 @@ export type JWTContent<T> = {
 
 export async function verify<T>(token: string): Promise<JWTContent<T>> {
 	const decoded = jsonwebtoken.decode(token, { complete: true }) as JWTContent<T>;
-	const app = await Application.findOneById(decoded.payload.iss);
+	const appId = decoded.payload.iss;
+	const app = await Application.findOneById(appId);
 	if (!app) {
-		throw new Error(`app ${ decoded.payload.iss } not found`);
+		throw new Error(`app ${ appId } not found`);
 	}
 
-	const publicKey = app.jwtPublicKeys[decoded.header.key];
+	const keyid = decoded.header.keyid || decoded.header.key_id!;  // XXX deprecate ECO-272
+	const publicKey = app.jwtPublicKeys[keyid];
+	if (!publicKey) {
+		throw new Error(`keyid "${keyid}" not found for iss "${appId}"`);
+	}
 	jsonwebtoken.verify(token, publicKey); // throws
 
 	return decoded;

@@ -80,8 +80,15 @@ export async function getPaymentData(orderId: string, logger: LoggerInstance): P
 }
 
 export async function setWatcherEndpoint(addresses: string[]): Promise<Watcher> {
+	// What about native spend addresses?
 	// XXX should be called from the internal server api upon creation
 	const payload: Watcher = { wallet_addresses: addresses, callback: config.payment_complete_callback };
 	const res = await axios.default.put(`${config.payment_service}/watchers/${SERVICE_ID}`, payload);
+	return res.data;
+}
+
+export async function addWatcherEndpoint(addresses: string[]): Promise<Watcher> {
+	const payload: Watcher = { wallet_addresses: addresses, callback: config.payment_complete_callback };
+	const res = await axios.default.post(`${config.payment_service}/watchers/${SERVICE_ID}`, payload);
 	return res.data;
 }

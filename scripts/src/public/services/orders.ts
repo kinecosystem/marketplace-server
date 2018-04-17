@@ -1,18 +1,16 @@
 import { LoggerInstance } from "winston";
-
-import { lock } from "../../redis";
 import * as metrics from "../../metrics";
 import { User } from "../../models/users";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
-import { AssetValue } from "../../models/offers";
+import { OrderValue } from "../../models/offers";
 
 import { validateSpendJWT } from "../services/applications";
 
 import { Paging } from "./index";
 import * as payment from "./payment";
+import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
-import { OrderValue } from "../../models/offers";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -113,6 +111,8 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	const offer = await validateSpendJWT(jwt, logger);
+	await addWatcherEndpoint([offer.wallet_address]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
+
 	let order = await db.ExternalOrder.getOpenOrder(offer.id, user.id);
 
 	if (!order) {
@@ -153,13 +153,16 @@ export async function submitOrder(
 		throw Error(`open order ${ orderId } has expired`);
 	}
 
-	const offer = await offerDb.Offer.findOneById(order.offerId);
-	if (!offer) {
-		throw Error(`no such offer ${ order.offerId }`);
+	if (order.isMarketplaceOrder()) {
+		const offer = await offerDb.Offer.findOneById(order.offerId);
+		if (!offer) {
+			throw Error(`no such offer ${ order.offerId }`);
+		}
 	}
-	if (offer.type === "earn") {
+
+	if (order.type === "earn") {
 		// validate form
-		if (!await offerContents.isValid(offer.id, form, logger)) {
+		if (!await offerContents.isValid(order.offerId, form, logger)) {
 			throw Error(`submitted form is invalid for ${ order.id }`);
 		}
 	}
@@ -168,11 +171,11 @@ export async function submitOrder(
 	await order.save();
 	logger.info("order changed to pending", { orderId });
 
-	if (offer.type === "earn") {
-		await payment.payTo(walletAddress, appId, offer.amount, order.id, logger);
+	if (order.type === "earn") {
+		await payment.payTo(walletAddress, appId, order.amount, order.id, logger);
 	}
 
-	metrics.submitOrder(offer.type, offer.id);
+	metrics.submitOrder(order.type, order.offerId);
 	return orderDbToApi(order);
 }
 

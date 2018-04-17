@@ -18,6 +18,7 @@ import {
 	CollectionPage
 } from "stellar-sdk";
 import { CompletedPayment } from "./internal/services";
+import { SpendPayloadOffer } from "./public/services/applications";
 
 const BASE = "http://localhost:3000";
 const SAMPLE_BASE = "http://localhost:3002";
@@ -56,9 +57,9 @@ class SampleAppClient {
 		return res.data.jwt;
 	}
 
-	public async getOffers(): Promise<{ id: string, title: string, description: string, wallet_address: string, amount: number }> {
+	public async getOffers(): Promise<SpendPayloadOffer[]> {
 		const res = await axios.default.get(SAMPLE_BASE + "/offers");
-		return res.data;
+		return res.data.offers;
 	}
 }
 
@@ -95,7 +96,7 @@ class Client {
 		const res = await this._post("/v1/users", data);
 
 		this.authToken = res.data;
-		this.appId = this.authToken.app_id;
+		(this.appId as any) = this.authToken.app_id;
 
 		if (generatedWallet) {
 			const res = await this.establishTrustLine();
@@ -171,7 +172,7 @@ class Client {
 	}
 
 	public async createExternalOrder(jwt: string): Promise<OpenOrder> {
-		const res = await this._post(`/v1/offers/external/orders`);
+		const res = await this._post(`/v1/offers/external/orders`, { jwt });
 		return res.data as OpenOrder;
 	}
 
@@ -507,7 +508,7 @@ async function earnTutorial() {
 async function testRegisterNewUser() {
 	console.log("=====================================testRegisterNewUser=====================================");
 	const client = new Client();
-	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: generateId() });}
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: generateId() });
 }
 
 async function justPay() {
@@ -526,14 +527,55 @@ async function registerJWT() {
 	await client.register({ jwt });
 }
 
+async function nativeSpendFlow() {
+	const client = new Client();
+	// this address is prefunded with test kin
+	const userId = "rich_user2";
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+
+	await client.register({ jwt },
+		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.activate();
+
+	const selectedOffer = (await appClient.getOffers())[0];
+	console.log(`requesting order for offer: ${selectedOffer.id}`);
+	const offerJwt = await appClient.getSpendJWT(selectedOffer.id);
+	const openOrder = await client.createExternalOrder(offerJwt);
+	console.log(`got open order ${JSON.stringify(openOrder)}`);
+	// pay for the offer
+	const res = await client.pay(selectedOffer.wallet_address, selectedOffer.amount, openOrder.id);
+	console.log("pay result hash: " + res.hash);
+	await client.submitOrder(openOrder.id);
+
+	// poll on order payment
+	let order = await client.getOrder(openOrder.id);
+	console.log(`completion date: ${order.completion_date}`);
+	for (let i = 0; i < 30 && order.status === "pending"; i++) {
+		order = await client.getOrder(openOrder.id);
+		await delay(1000);
+	}
+	console.log(`completion date: ${order.completion_date}`);
+
+	if (order.status === "completed") {
+		console.log("order completed!");
+	} else {
+		throw new Error("order still pending :(");
+	}
+
+	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
+	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
+}
+
 async function main() {
-	await earnFlow();
+	// await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
 	// await earnTutorial();
 	// await spendFlow();
 	// await justPay();
-	await registerJWT();
+	// await registerJWT();
+	await nativeSpendFlow();
 }
 
 main()

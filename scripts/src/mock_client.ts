@@ -90,7 +90,7 @@ class Client {
 			Object.assign(data, { sign_in_type: "jwt", jwt: payload.jwt });
 
 		} else {
-			Object.assign(data, { sign_in_type: "whitelist", user_id: payload.userId, api_key: payload.userId });
+			Object.assign(data, { sign_in_type: "whitelist", user_id: payload.userId, api_key: payload.apiKey });
 		}
 
 		const res = await this._post("/v1/users", data);
@@ -372,7 +372,7 @@ async function spendFlow() {
 async function earnFlow() {
 	console.log("=====================================earn=====================================");
 	const client = new Client();
-	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "doody98ds2" },
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "doody98ds3" },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
@@ -568,14 +568,14 @@ async function nativeSpendFlow() {
 }
 
 async function main() {
-	// await earnFlow();
+	await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
 	// await earnTutorial();
-	// await spendFlow();
+	await spendFlow();
 	// await justPay();
 	// await registerJWT();
-	await nativeSpendFlow();
+	// await nativeSpendFlow();
 }
 
 main()

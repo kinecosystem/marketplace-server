@@ -37,21 +37,21 @@ export async function validateRegisterJWT(jwt: string, logger: LoggerInstance): 
 }
 
 export async function validateWhitelist(
-	appUserId: string, appId: string, apiKey: string, logger: LoggerInstance): Promise<SignInContext> {
+	appUserId: string, apiKey: string, logger: LoggerInstance): Promise<SignInContext> {
 	// check if apiKey matches appId
 	const app = await Application.findOne({ apiKey });
-	if (!app || app.id !== appId) {
-		throw Error("invalid api_key, app_id pair");
+	if (!app) {
+		throw Error(`invalid api_key ${ apiKey }`);
 	}
 
 	// check if userId is whitelisted in app
-	logger.info(`checking if ${appUserId} is whitelisted for ${appId}`);
-	const result = await AppWhitelists.findOne({ appUserId, appId });
+	logger.info(`checking if ${ appUserId } is whitelisted for ${ app.id }`);
+	const result = await AppWhitelists.findOne({ appUserId, appId: app.id });
 	if (result) {
-		return { appUserId, appId };
+		return { appUserId, appId: app.id };
 	}
 	// XXX raise an exception
-	logger.warn(`user ${appUserId} not found in whitelist for app ${appId}`);
+	logger.warn(`user ${appUserId} not found in whitelist for app ${ app.id }`);
 
-	return { appUserId, appId };
+	return { appUserId, appId: app.id };
 }

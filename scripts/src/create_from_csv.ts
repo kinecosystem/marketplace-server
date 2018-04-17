@@ -139,7 +139,7 @@ async function parseEarn(data: string[][]) {
 	}
 }
 
-/*initModels().then(async () => {
+initModels().then(async () => {
 	const parseCsv = require("csv-parse/lib/sync");
 
 	for (let i = 1; i <= 3; i++) {
@@ -158,4 +158,4 @@ async function parseEarn(data: string[][]) {
 	}
 }).catch((error: Error) => {
 	console.log("error: " + error.message + "\n" + error.stack);
-});*/
+});

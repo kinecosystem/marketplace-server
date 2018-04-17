@@ -7,7 +7,7 @@ export type JWTClaims = {
 	exp: number; // expiration
 	iat: number; // issued at
 	sub: string; // subject
-	};
+};
 
 export type JWTContent<T> = {
 	header: {

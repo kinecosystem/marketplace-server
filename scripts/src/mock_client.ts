@@ -21,7 +21,7 @@ import { CompletedPayment } from "./internal/services";
 import { SpendPayloadOffer } from "./public/services/applications";
 
 const BASE = "http://localhost:3000";
-const SAMPLE_BASE = "http://localhost:3002";
+const JWT_SERVICE_BASE = "http://localhost:3002";
 
 // const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
 
@@ -48,17 +48,17 @@ function isJWT(obj: any): obj is { jwt: string } {
 
 class SampleAppClient {
 	public async getRegisterJWT(userId: string): Promise<string> {
-		const res = await axios.default.get(SAMPLE_BASE + "/register/token?user_id=" + userId);
+		const res = await axios.default.get(JWT_SERVICE_BASE + "/register/token?user_id=" + userId);
 		return res.data.jwt;
 	}
 
 	public async getSpendJWT(offerId: string): Promise<string> {
-		const res = await axios.default.get(SAMPLE_BASE + "/spend/token?offer_id=" + offerId);
+		const res = await axios.default.get(JWT_SERVICE_BASE + "/spend/token?offer_id=" + offerId);
 		return res.data.jwt;
 	}
 
 	public async getOffers(): Promise<SpendPayloadOffer[]> {
-		const res = await axios.default.get(SAMPLE_BASE + "/offers");
+		const res = await axios.default.get(JWT_SERVICE_BASE + "/offers");
 		return res.data.offers;
 	}
 }

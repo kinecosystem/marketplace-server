@@ -26,13 +26,12 @@ async function createApp(appId: string, apiKey: string, name: string) {
 }
 
 initModels().then(async () => {
-	const app1 = await createApp("kik", Application.KIK_API_KEY, "Kik Messenger");
 	const app2 = await createApp("smpl", Application.SAMPLE_API_KEY, "Sample Application");
 
 	const offers: Offer[] = await Offer.find(); // add all offers to both apps
 
 	for (const offer of offers) {
-		for (const app of [app1, app2]) {
+		for (const app of [app2]) {
 			const appOffer = AppOffer.new({
 				appId: app.id,
 				offerId: offer.id
@@ -41,7 +40,6 @@ initModels().then(async () => {
 		}
 	}
 
-	console.log(`created application kik ${app1}`);
 	console.log(`created application sample ${app2}`);
 }).catch((error: Error) => {
 	console.log("error: " + error.message + "\n" + error.stack);

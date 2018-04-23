@@ -85,6 +85,8 @@
     "testMatch": [
       "**/tests/src/**.(spec.ts)"
     ],
-    "setupFiles": ["./tests/src/init_tests.js"]
+    "setupFiles": [
+      "./tests/src/init_tests.js"
+    ]
   }
 }

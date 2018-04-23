@@ -26,11 +26,34 @@ In any jetbrains based IDE (webstorm, pycharm, intellij, etc):
    2. Check the **Enable** box
    3. Make sure that the **Search for tslint.json** options is selected under **Configuration file**.
 
+
 ### Testing
-For testing, first make sure that the files are compiled:
+
+In order to setup local testing, first we need to create the DB:
+```
+make db
+```
+
+now we will edit the DB (sqlite3 is a prerequisite) and set an initial value manually, so run:
+```
+sqlite3 database.sqlite
+```
+
+now, run the following command in the sqlite REPL:
+```
+update orders set amount=1;
+```
+
+insert mock data into the DB:
+```
+node scripts/bin/create_from_csv.js
+```
+
+make sure that the files are compiled:
 ```
 marketplace-server> npm run build
 ```
+
 Or, if you want to avoid the *clean* and *lint* part:
 ```
 marketplace-server> npm run transpile

@@ -1,0 +1,38 @@
+Earn Polls,,,,,,,,,,,,Spend (offer info)Amazon GiftCard,,,,,,
+WalletAddress,Brand,OfferName = internal identifier for noa,Amount,Title = MarketPlace title 14 characters,Description = MarketPlace subtitle 18 characters,Image,OrderTitle = (transactions page),OrderDescription = (transactions page),CapTotal = Offer cap total ,CapPerUser = Offer cap per user,PollQuestionId,PollPageType,PollTitle 38 characters,PollDescription 24 characters (including the Kin number amount),PollAnswer1 = #1 : 22 each answer. ,PollAnswer2 =  #2 : 22 each answer. ,PollAnswer3 =  #3 : 22 each answer. ,PollAnswer4 =  #4:  22 each answer. 
+GATAQ2E2TE5H4I3TWLHP3YTCRCLF7YEF64VF2ZMIHPNT6YAJE3QHMWLQ,Kin,Online Poll #1,3000,Take a survey,Share a thought,https://s3.amazonaws.com/kinmarketplace-assets/version1/internet_poll.png,Kin Poll,Completed Poll,1000,1,1,FullPageMultiChoice,Who do you think uses FB the most?,Complete the poll to earn ${amount} Kin,My parents,Younger brother or sister,Everyone uses it,Definitely not me
+,,,,,,,,,,,2,FullPageMultiChoice,How do you spend your free time?,Complete the poll to earn ${amount} Kin,Hanging out with friends,With my family,On my own,Online
+,,,,,,,,,,,3,FullPageMultiChoice,How much time do you spend online?,Complete the poll to earn ${amount} Kin,Over 2 hours a day ,About an hour,As little as possible,Basically all day
+,,,,,,,,,,,,EarnThankYou,,${amount},,,,
+GATAQ2E2TE5H4I3TWLHP3YTCRCLF7YEF64VF2ZMIHPNT6YAJE3QHMWLQ,Kin,Finance Poll #1,3000,Tell us more!,Share your opinion,https://s3.amazonaws.com/kinmarketplace-assets/version1/finance_poll.png,Kin Poll,Completed Poll,1000,1,1,FullPageMultiChoice,Which of these brands is your favorite?,Complete the poll to earn ${amount} Kin,Pixar,Converse,Adidas,Apple
+,,,,,,,,,,,2,FullPageMultiChoice,Which cause would you donate to?,Complete the poll to earn ${amount} Kin,Wild life protection,Environmental causes,Global poverty,Education
+,,,,,,,,,,,3,FullPageMultiChoice,What gadgets do you own and love?,Complete the poll to earn ${amount} Kin,Smart watch,Just my phone,Game console,VR
+,,,,,,,,,,,,EarnThankYou,,${amount},,,,
+GATAQ2E2TE5H4I3TWLHP3YTCRCLF7YEF64VF2ZMIHPNT6YAJE3QHMWLQ,Kin,Favourites Poll #1,4000,Do you like..,More about you!,https://s3.amazonaws.com/kinmarketplace-assets/version1/favourites_poll.png,Kin Poll,Completed Poll,1000,1,1,FullPageMultiChoice,How do you like to stay fit?,Complete the poll to earn ${amount} Kin,Running,Swimming,Biking,Going to the gym
+,,,,,,,,,,,2,FullPageMultiChoice,How would you spend your spring break?,Complete the poll to earn ${amount} Kin,Sleeping,Travelling abroad,Working,With friends
+,,,,,,,,,,,3,FullPageMultiChoice,Where would you go for a vacation?,Complete the poll to earn ${amount} Kin,Tropical island,Camping in the woods,City break,Skiing
+,,,,,,,,,,,4,FullPageMultiChoice,How would you describe yourself?,Complete the poll to earn ${amount} Kin,A city person,A country person,A little of both,A pirate
+,,,,,,,,,,,5,FullPageMultiChoice,Favorite way to spend a Saturday,Complete the poll to earn ${amount} Kin,Netflix and chill,Spending time with friends,Going out,Instagram and Facebook
+,,,,,,,,,,,,EarnThankYou,,${amount},,,,
+GATAQ2E2TE5H4I3TWLHP3YTCRCLF7YEF64VF2ZMIHPNT6YAJE3QHMWLQ,Kin,Future Poll#1,3500,Answer a poll,What's your take?,https://s3.amazonaws.com/kinmarketplace-assets/version1/future_poll.png,Kin Poll,Completed Poll,1000,1,1,FullPageMultiChoice,What are your career aspirations?,Complete the poll to earn ${amount} Kin,Find a great company to work for,Have my own startup,Work freelance,Retire ASAP
+,,,,,,,,,,,2,FullPageMultiChoice,As President I would fight for,Complete the poll to earn ${amount} Kin,Gun control regulation,Free health care,Data privacy laws,The right to party!
+,,,,,,,,,,,3,FullPageMultiChoice,What would you do with an extra year?,Complete the poll to earn ${amount} Kin,"Sleep, a lot",Volunteer,Study something new,Travel 
+,,,,,,,,,,,4,FullPageMultiChoice,Which of these will happpen first?,Complete the poll to earn ${amount} Kin,Flying cars,Space tourism,Underwater cities,Life like robots
+,,,,,,,,,,,,EarnThankYou,,${amount},,,,
+GATAQ2E2TE5H4I3TWLHP3YTCRCLF7YEF64VF2ZMIHPNT6YAJE3QHMWLQ,Kin,Finance Poll #2,3500,Big spender?,Tell us more!,https://s3.amazonaws.com/kinmarketplace-assets/version1/survey_offer.png,Kin Poll,Completed Poll,1000,1,1,FullPageMultiChoice,How much would you save to go to Mars?,Complete the poll to earn ${amount} Kin,Every penny I can,$5 a day,$1 a week,"Not for me, I get motion sick"
+,,,,,,,,,,,2,FullPageMultiChoice,What do you spend your money on?,Complete the poll to earn ${amount} Kin,Food + drinks,Music,Clothes,Video games
+,,,,,,,,,,,3,FullPageMultiChoice,For $5 I would,Complete the poll to earn ${amount} Kin,Complete a few polls,Share a post on Facebook,Invite 5 friends to join Kik,Watch a bunch of commercials
+,,,,,,,,,,,4,FullPageMultiChoice,Amazon gift card vs pizza with friends,Complete the poll to earn ${amount} Kin,Gift card,Yummy pizza,"Neither, I'll take the cash",Can I have both?
+,,,,,,,,,,,,EarnThankYou,,${amount},,,,
+GATAQ2E2TE5H4I3TWLHP3YTCRCLF7YEF64VF2ZMIHPNT6YAJE3QHMWLQ,Kin,Marketplace Poll #1,3800,Take a survey,What’s your view?,https://s3.amazonaws.com/kinmarketplace-assets/version1/marketplace_poll.png,Kin Poll,Completed Poll,1000,1,1,FullPageMultiChoice,How would you rate the Kin Marketplace?,Complete the poll to earn ${amount} Kin,Love it!,Pretty good,I'm not sure,I probably won't come back 
+,,,,,,,,,,,2,FullPageMultiChoice,How are the spend offers?,Complete the poll to earn ${amount} Kin,Excellent,Good,Okay,Not for me
+,,,,,,,,,,,3,FullPageMultiChoice,What type of gift card would you like? ,Complete the poll to earn ${amount} Kin,Amazon,Movie ticket,Fast food,Beauty
+,,,,,,,,,,,4,FullPageMultiChoice,Would you recommend it to a friend?,Complete the poll to earn ${amount} Kin,For sure!,I probably will,I'm not sure,I don't think so...
+,,,,,,,,,,,5,FullPageMultiChoice,What do you like best about it?,Complete the poll to earn ${amount} Kin,Completing polls,Getting Kin,The gift cards,Trying something new
+,,,,,,,,,,,,EarnThankYou,,${amount},,,,
+GATAQ2E2TE5H4I3TWLHP3YTCRCLF7YEF64VF2ZMIHPNT6YAJE3QHMWLQ,Kik,Kik Poll #1,4000,Answer a poll,Share your view,https://s3.amazonaws.com/kinmarketplace-assets/version1/kik_poll.png,Kik Poll,Completed Poll,1000,1,1,FullPageMultiChoice,Who do you chat with on Kik the most?,Complete the poll to earn ${amount} Kin,New friends I met on Kik,Friends I met other places online,Friends I know in real life,An equal mix of all three!
+,,,,,,,,,,,2,FullPageMultiChoice,Which of these do you use most on Kik?,Complete the poll to earn ${amount} Kin,Video chat,Stickers and Gifs,Emojis,Kik custom emojis
+,,,,,,,,,,,3,FullPageMultiChoice,What would you imporve about Kik?,Complete the poll to earn ${amount} Kin,Video chat,Public groups,Privacy settings,Speed/reliability
+,,,,,,,,,,,4,FullPageMultiChoice,What's your favorite thing to do on Kik?,Complete the poll to earn ${amount} Kin,Chatting 1:1 with friends,Using chat bots,Chatting 1:1 with new people,Group chats
+,,,,,,,,,,,5,FullPageMultiChoice,How did you first hear about Kik?,Complete the poll to earn ${amount} Kin,Friends/family,Social media,Website/search engine,Ads
+,,,,,,,,,,,,EarnThankYou,,${amount},,,,

@@ -13,8 +13,7 @@ export type JWTContent<T> = {
 	header: {
 		typ: string;
 		alg: string;
-		keyid: string;
-		key_id?: string;  // XXX deprecate ECO-272
+		kid: string;
 	};
 	payload: JWTClaims & T;
 	signature: string;
@@ -28,7 +27,7 @@ export async function verify<T>(token: string): Promise<JWTContent<T>> {
 		throw new Error(`app ${ appId } not found`);
 	}
 
-	const keyid = decoded.header.keyid || decoded.header.key_id!;  // XXX deprecate ECO-272
+	const keyid = decoded.header.kid;
 	const publicKey = app.jwtPublicKeys[keyid];
 	if (!publicKey) {
 		throw new Error(`keyid "${keyid}" not found for iss "${appId}"`);

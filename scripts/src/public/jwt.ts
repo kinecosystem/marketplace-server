@@ -30,7 +30,7 @@ export async function verify<T>(token: string): Promise<JWTContent<T>> {
 	const keyid = decoded.header.kid;
 	const publicKey = app.jwtPublicKeys[keyid];
 	if (!publicKey) {
-		throw new Error(`keyid "${keyid}" not found for iss "${appId}"`);
+		throw new Error(`keyid "${ keyid }" not found for iss "${ appId }"`);
 	}
 	jsonwebtoken.verify(token, publicKey); // throws
 

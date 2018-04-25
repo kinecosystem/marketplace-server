@@ -1,5 +1,6 @@
 import * as axios from "axios";
 import * as uuid4 from "uuid4";
+import * as jsonwebtoken from "jsonwebtoken";
 import { Offer, OfferList } from "./public/services/offers";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { Poll, Tutorial, TUTORIAL_DESCRIPTION } from "./public/services/offer_contents";
@@ -19,6 +20,8 @@ import {
 } from "stellar-sdk";
 import { CompletedPayment } from "./internal/services";
 import { SpendPayloadOffer } from "./public/services/applications";
+import { JWTValue } from "../bin/models/offers";
+import { JWTContent } from "./public/jwt";
 
 const BASE = "http://localhost:3000";
 const JWT_SERVICE_BASE = "http://localhost:3002";
@@ -565,6 +568,11 @@ async function nativeSpendFlow() {
 
 	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
 	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
+
+	expect(order.result!.type).toBe("confirm_payment");
+	const paymentJWT = order.result! as JWTValue;
+
+	jsonwebtoken.decode(paymentJWT.jwt, { complete: true }) as JWTContent<T>;
 }
 
 async function main() {
@@ -572,10 +580,10 @@ async function main() {
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
 	// await earnTutorial();
-	await spendFlow();
+	// await spendFlow();
 	// await justPay();
 	// await registerJWT();
-	// await nativeSpendFlow();
+	await nativeSpendFlow();
 }
 
 main()

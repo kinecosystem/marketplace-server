@@ -21,11 +21,23 @@ const animalPoll: Poll = {
 
 export async function createUser(): Promise<User> {
 	const uniqueId = generateId();
-	const user = await (User.new({
+	/*const user = await (User.new({
 		appUserId: `test_${uniqueId}`,
 		appId: "kik",
 		walletAddress: `test_${uniqueId}`
-	})).save();
+	})).save();*/
+
+	let user;
+	try {
+		user = await (User.new({
+			appUserId: `test_${uniqueId}`,
+			appId: "kik",
+			walletAddress: `test_${uniqueId}`
+		})).save();
+	} catch (e) {
+		user = null;
+		console.log("ERROR: ", e);
+	}
 
 	const authToken = await (AuthToken.new({
 		userId: user.id,

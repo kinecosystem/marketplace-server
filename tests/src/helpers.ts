@@ -93,7 +93,7 @@ export async function createOffers() {
 		await createEarn(
 			`${uniqueId}_earn${i}`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
-			`earn${i}`, `earn${i}`, `earn${i}`, `earn${i}`, 100, 100, 100, `earn${i}`, `earn${i}`, animalPoll
+			`earn${i}`, `earn${i}`, `earn${i}`, `earn${i}`, 100, 30, 2, `earn${i}`, `earn${i}`, animalPoll
 		);
 	}
 
@@ -101,7 +101,7 @@ export async function createOffers() {
 		await createSpend(
 			`${uniqueId}_spend${i}`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
-			`spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, 100, 100, 100, `spend${i}`, `spend${i}`,
+			`spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, 100, 30, 3, `spend${i}`, `spend${i}`,
 			`spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`,
 			`spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`,
 			[`spend${i}_1`, `spend${i}_2`, `spend${i}_3`, `spend${i}_4`, `spend${i}_5`]

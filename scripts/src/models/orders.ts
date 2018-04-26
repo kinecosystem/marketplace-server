@@ -1,7 +1,7 @@
 import * as moment from "moment";
 import { ObjectType } from "typeorm/common/ObjectType";
 import { DeepPartial } from "typeorm/common/DeepPartial";
-import { Column, Entity, BaseEntity, SelectQueryBuilder } from "typeorm";
+import { Column, Entity, BaseEntity, SelectQueryBuilder, Brackets } from "typeorm";
 
 import { generateId, IdPrefix } from "../utils";
 
@@ -49,11 +49,15 @@ export class Order extends CreationDateModel {
 	 * count all offers that are completed, pending but expired, opened but not expired - i.e. not failed and not expired
 	 */
 	public static countByOffer(offerId: string, userId?: string): Promise<number> {
+		// has at least 2 minutes to complete before expiration
+		const latestExpiration = moment().add(2, "minutes").toDate();
 		const query = Order.createQueryBuilder()
 			.andWhere("status != :status", { status: "failed" })
 			.andWhere("offer_id = :offerId", { offerId })
-			.andWhere("expiration_date > :date", { date: moment().add(2, "minutes").toDate() }); // has at least 2 minutes to complete before expiration
-
+			.andWhere(new Brackets(qb => {
+				qb.where("expiration_date IS NULL")
+					.orWhere("expiration_date > :date", { date: latestExpiration });
+			}));
 		if (userId) {
 			query.andWhere("user_id = :userId", { userId });
 		}
@@ -61,12 +65,16 @@ export class Order extends CreationDateModel {
 	}
 
 	public static getOpenOrder<T extends Order>(offerId: string, userId: string): Promise<T | undefined> {
-		// return nonExpired
+		// has at least 2 minutes to complete before expiration
+		const latestExpiration = moment().add(2, "minutes").toDate();
 		const query = Order.createQueryBuilder()
 			.andWhere("status = :status", { status: "opened" })
 			.andWhere("offer_id = :offerId", { offerId })
 			.andWhere("user_id = :userId", { userId })
-			.andWhere("expiration_date > :date", { date: moment().add(2, "minutes").toDate() }) // has at least 2 minutes to complete before expiration
+			.andWhere(new Brackets(qb => {
+				qb.where("expiration_date IS NULL")
+					.orWhere("expiration_date > :date", { date: latestExpiration });
+			}))
 			.orderBy("expiration_date", "DESC"); // if there are a few, get the one with the most time left
 
 		return query.getOne() as Promise<T | undefined>;

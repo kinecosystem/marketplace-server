@@ -16,12 +16,13 @@ import {
 	TransactionRecord,
 	TransactionError,
 	PaymentOperationRecord,
-	CollectionPage
+	CollectionPage, OperationRecord
 } from "stellar-sdk";
-import { CompletedPayment } from "./internal/services";
+import { CompletedPayment, PaymentPayload } from "./internal/services";
 import { SpendPayloadOffer } from "./public/services/applications";
-import { JWTValue } from "../bin/models/offers";
+import { JWTValue } from "./models/offers";
 import { JWTContent } from "./public/jwt";
+import * as expect from "expect";
 
 const BASE = "http://localhost:3000";
 const JWT_SERVICE_BASE = "http://localhost:3002";
@@ -136,16 +137,7 @@ class Client {
 			payments.records
 				.map(async payment => {
 					const transaction = await payment.transaction();
-					const [, appId, id] = transaction.memo.split("-", 3);
-					return {
-						id,
-						app_id: appId,
-						transaction_id: payment.id,
-						recipient_address: payment.to,
-						sender_address: payment.from,
-						amount: parseInt(payment.amount, 10),
-						timestamp: transaction.created_at,
-					};
+					return this.KinPaymentFromStellar(payment, transaction);
 				})
 		)).filter(payment => payment !== undefined);
 	}
@@ -210,7 +202,7 @@ class Client {
 
 	private handleAxiosError(ex: axios.AxiosError): never {
 		const apiError: ApiError = ex.response!.data;
-		throw Error(`server error ${ex.response!.status}(${apiError.status}): ${apiError.error}`);
+		throw Error(`server error ${ex.response!.status}(${apiError.code}): ${apiError.error}`);
 	}
 
 	private async _delete(url: string): Promise<any> {
@@ -297,6 +289,33 @@ class Client {
 
 		throw error;
 	}
+
+	private KinPaymentFromStellar(operation: PaymentOperationRecord, transaction: TransactionRecord): CompletedPayment {
+		const [, appId, id] = transaction.memo.split("-", 3);
+		return {
+			id,
+			app_id: appId,
+			transaction_id: operation.id,
+			recipient_address: operation.to,
+			sender_address: operation.from,
+			amount: parseInt(operation.amount, 10),
+			timestamp: transaction.created_at,
+		};
+	}
+}
+
+async function retry(fn: () => any, predicate: (o: any) => boolean, errorMessage?: string): Promise<any> {
+	let obj = await fn();
+
+	for (let i = 0; i < 30; i++) {
+		obj = await fn();
+		if (predicate(obj)) {
+			return obj;
+		}
+		await delay(1000);
+		console.log("retrying...");
+	}
+	throw new Error(errorMessage || "failed");
 }
 
 async function didNotApproveTOS() {
@@ -337,45 +356,36 @@ async function spendFlow() {
 
 	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
-	console.log(`got open order ${openOrder}`);
+	console.log(`got open order`, openOrder);
 	// pay for the offer
-	// await client.submitOrder(openOrder.id);
+	await client.submitOrder(openOrder.id); // XXX allow the flow where this line is missing
 	const res = await client.pay(selectedOffer.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
+
 	console.log("pay result hash: " + res.hash);
 
 	// poll on order payment
-	let order: Order | undefined;
-	try {
-		order = await client.getOrder(openOrder.id);
-		console.log(`completion date: ${order.completion_date}`);
-	} catch (e) {
-	}
-	for (let i = 0; i < 30 && (!order || order.status === "pending"); i++) {
-		try {
-			order = await client.getOrder(openOrder.id);
-		} catch (e) {
-		}
-		await delay(1000);
-	}
-	if (!order) {
-		throw new Error("cant get order");
-	}
+	const order: Order = await retry(() =>  client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
 	console.log(`completion date: ${order.completion_date}`);
 
-	if (order.status === "completed") {
-		console.log("order completed!");
-	} else {
-		throw new Error("order still pending :(");
-	}
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+}
 
-	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
-	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
+function isValidPayment(order: Order, appId: string, payment: CompletedPayment): boolean {
+	return (
+		order.amount === payment.amount &&
+		order.id === payment.id &&
+		order.blockchain_data!.transaction_id === payment.transaction_id &&
+		order.blockchain_data!.recipient_address === payment.recipient_address &&
+		order.blockchain_data!.sender_address === payment.sender_address &&
+		appId === payment.app_id);
 }
 
 async function earnFlow() {
 	console.log("=====================================earn=====================================");
 	const client = new Client();
-	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "doody98ds3" },
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "doody98ds4" },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
@@ -395,7 +405,7 @@ async function earnFlow() {
 
 	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
-	console.log(`got open order ${openOrder}`);
+	console.log(`got open order`, openOrder);
 
 	// fill in the poll
 	console.log("poll " + selectedOffer.content);
@@ -409,44 +419,16 @@ async function earnFlow() {
 	await client.submitOrder(openOrder.id, "{}");
 
 	// poll on order payment
-	let order = await client.getOrder(openOrder.id);
-	console.log(`completion date: ${order.completion_date}`);
-	for (let i = 0; i < 30 && order.status === "pending"; i++) {
-		order = await client.getOrder(openOrder.id);
-		await delay(1000);
-	}
+	const order: Order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
 	console.log(`completion date: ${order.completion_date}`);
 
-	if (order.status === "completed") {
-		console.log("order completed!");
-	} else {
-		throw new Error("order still pending :(");
-	}
 	// check order on blockchain
-	let payment = await client.findKinPayment(order.id);
-	for (let i = 0; i < 30 && !payment; i++) {
-		payment = await client.findKinPayment(order.id);
-		await delay(1000);
-	}
+	const payment: CompletedPayment = await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain");
 
-	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
-	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
-
-	if (!payment) {
-		throw new Error("failed to find payment on blockchain");
-	}
-
-	console.log(`payment on blockchain: ${JSON.stringify(payment, null, 2)}`);
-
-	function isValidPayment(order: Order, appId: string, payment: CompletedPayment): boolean {
-		return (
-			order.amount === payment.amount &&
-			order.id === payment.id &&
-			order.blockchain_data!.transaction_id === payment.transaction_id &&
-			order.blockchain_data!.recipient_address === payment.recipient_address &&
-			order.blockchain_data!.sender_address === payment.sender_address &&
-			appId === payment.app_id);
-	}
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+	console.log(`payment on blockchain:`, payment);
 
 	if (!isValidPayment(order, client.appId, payment)) {
 		throw new Error("payment is not valid - different than order");
@@ -490,22 +472,11 @@ async function earnTutorial() {
 	await client.submitOrder(openOrder.id, content);
 
 	// poll on order payment
-	let order = await client.getOrder(openOrder.id);
-	console.log(`completion date: ${order.completion_date}`);
-	for (let i = 0; i < 30 && order.status === "pending"; i++) {
-		order = await client.getOrder(openOrder.id);
-		await delay(1000);
-	}
-	console.log(`completion date: ${order.completion_date}`);
+	const order: Order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
-	if (order.status === "completed") {
-		console.log("order completed!");
-	} else {
-		throw new Error("order still pending :(");
-	}
-
-	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
-	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
+	console.log(`completion date: ${order.completion_date}`);
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 }
 
 async function testRegisterNewUser() {
@@ -523,6 +494,8 @@ async function justPay() {
 }
 
 async function registerJWT() {
+	console.log("=====================================registerJWT=====================================");
+
 	const client = new Client();
 	const userId = generateId();
 	const appClient = new SampleAppClient();
@@ -531,6 +504,8 @@ async function registerJWT() {
 }
 
 async function nativeSpendFlow() {
+	console.log("=====================================nativeSpendFlow=====================================");
+
 	const client = new Client();
 	// this address is prefunded with test kin
 	const userId = "rich_user2";
@@ -542,48 +517,47 @@ async function nativeSpendFlow() {
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0];
-	console.log(`requesting order for offer: ${selectedOffer.id}`);
 	const offerJwt = await appClient.getSpendJWT(selectedOffer.id);
+	console.log(`requesting order for offer: ${selectedOffer.id}: ${offerJwt}`);
+
 	const openOrder = await client.createExternalOrder(offerJwt);
-	console.log(`got open order ${JSON.stringify(openOrder)}`);
+	console.log(`got open order`, openOrder);
 	// pay for the offer
 	const res = await client.pay(selectedOffer.wallet_address, selectedOffer.amount, openOrder.id);
 	console.log("pay result hash: " + res.hash);
 	await client.submitOrder(openOrder.id);
 
 	// poll on order payment
-	let order = await client.getOrder(openOrder.id);
-	console.log(`completion date: ${order.completion_date}`);
-	for (let i = 0; i < 30 && order.status === "pending"; i++) {
-		order = await client.getOrder(openOrder.id);
-		await delay(1000);
-	}
+	const order: Order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
 	console.log(`completion date: ${order.completion_date}`);
 
-	if (order.status === "completed") {
-		console.log("order completed!");
-	} else {
-		throw new Error("order still pending :(");
-	}
+	// find payment on blockchain
+	const payment: CompletedPayment = await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain");
 
-	console.log(`got order after submit ${JSON.stringify(order, null, 2)}`);
-	console.log(`order history ${JSON.stringify((await client.getOrders()).orders.slice(0, 2), null, 2)}`);
+	expect(payment).toBeDefined();
+
+	console.log(`payment on blockchain:`, payment);
+	expect(isValidPayment(order, client.appId, payment)).toBeTruthy();
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 
 	expect(order.result!.type).toBe("confirm_payment");
-	const paymentJWT = order.result! as JWTValue;
-
-	jsonwebtoken.decode(paymentJWT.jwt, { complete: true }) as JWTContent<T>;
+	const jwtPayload = jsonwebtoken.decode((order.result! as JWTValue).jwt, { complete: true }) as JWTContent<PaymentPayload>;
+	expect(jwtPayload.payload.payment.offer_id).toBe(order.offer_id);
+	expect(jwtPayload.payload.payment.user_id).toBe(userId);
+	expect(jwtPayload.header.kid).toBeDefined();
 }
 
 async function main() {
-	await earnFlow();
+	// await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
 	// await earnTutorial();
-	// await spendFlow();
+	await spendFlow();
 	// await justPay();
 	// await registerJWT();
-	await nativeSpendFlow();
+	// await nativeSpendFlow();
 }
 
 main()

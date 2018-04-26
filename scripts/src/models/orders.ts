@@ -7,6 +7,7 @@ import { generateId, IdPrefix } from "../utils";
 
 import { CreationDateModel, register as Register, initializer as Initializer, Model } from "./index";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
+import { ApiError } from "../middleware";
 
 export interface OrderMeta {
 	title: string;
@@ -19,11 +20,7 @@ export type OrderOrigin = "marketplace" | "external";
 export type OrderStatus = "completed" | "failed" | "pending";
 export type OpenOrderStatus = OrderStatus | "opened";
 export type OrderStatusAndNegation = OpenOrderStatus | "!opened" | "!completed" | "!failed" | "!pending";
-export type OrderError = {
-	code: number;
-	error: string;
-	message?: string;
-};
+export type OrderError = ApiError;
 
 function updateQueryWithStatus(query: SelectQueryBuilder<any>, status?: OrderStatusAndNegation | null) {
 	if (!status) {
@@ -46,8 +43,35 @@ export type OrderStatic<T extends Order = Order> = {
 
 @Entity({ name: "orders" })
 @Initializer("id", () => generateId(IdPrefix.Transaction))
+@Initializer("expirationDate", () => moment().add(10, "minutes").toDate()) // opened expiration
 @Register
 export class Order extends CreationDateModel {
+
+	public static countByOffer(offerId: string, userId?: string): Promise<number> {
+		// count all offers that are completed, pending but expired, opened but not expired - i.e. not failed and not expired
+		const query = Order.createQueryBuilder()
+			.andWhere("status != :status", { status: "failed" })
+			.andWhere("offer_id = :offerId", { offerId })
+			.andWhere("expiration_date > :date", { date: new Date() });
+
+		if (userId) {
+			query.andWhere("user_id = :userId", { userId });
+		}
+		return query.getCount();
+	}
+
+	public static getOpenOrder<T extends Order>(offerId: string, userId: string): Promise<T | undefined> {
+		// return nonExpired
+		const query = Order.createQueryBuilder()
+			.andWhere("status = :status", { status: "opened" })
+			.andWhere("offer_id = :offerId", { offerId })
+			.andWhere("user_id = :userId", { userId })
+			.andWhere("expiration_date > :date", { date: moment().add(2, "minutes") }) // has at least 2 minutes to complete before expiration
+			.orderBy("expiration_date", "DESC"); // if there are a few, get the one with the most time left
+
+		return query.getOne() as Promise<T | undefined>;
+	}
+
 	/**
 	 * Returns one order with the id which was passed.
 	 * If `status` is passed as well, the order will be returned only if the status matches.
@@ -78,7 +102,7 @@ export class Order extends CreationDateModel {
 		const limit: number | null = typeof second === "number" ? second : (typeof third === "number" ? third : null);
 		const query = (this as OrderStatic<T>).createQueryBuilder()
 			.where("user_id = :userId", { userId })
-			.orderBy("completion_date", "DESC")
+			.orderBy("current_status_date", "DESC")
 			.addOrderBy("id", "DESC");
 
 		updateQueryWithStatus(query, status);
@@ -121,28 +145,35 @@ export class Order extends CreationDateModel {
 	@Column()
 	public status!: OpenOrderStatus;
 
-	@Column({ name: "completion_date", nullable: true })
+	@Column({ name: "current_status_date", nullable: true })
 	public currentStatusDate?: Date;
 
 	@Column("simple-json", { nullable: true })
 	public value?: OrderValue;
 
+	@Column({ name: "expiration_date", nullable: true })
+	public expirationDate?: Date;
+
 	public setStatus(status: OpenOrderStatus) {
 		this.status = status;
 		this.currentStatusDate = new Date();
+		switch (this.status) {
+			case "pending":
+				this.expirationDate = moment(this.currentStatusDate).add(45, "seconds").toDate();
+				break;
+			case "opened":
+				this.expirationDate = moment(this.currentStatusDate).add(10, "minutes").toDate();
+				break;
+			default:
+				this.expirationDate = undefined;
+		}
 	}
 
-	public get expirationDate(): Date | null {
-		switch (this.status) {
-			case "opened":
-				return moment(this.createdDate).add(10, "minutes").toDate();
-
-			case "pending":
-				return moment(this.currentStatusDate).add(45, "seconds").toDate();
-
-			default:
-				return null;
+	public isExpired(): boolean {
+		if (this.expirationDate) {
+			return this.expirationDate < new Date();
 		}
+		return false;
 	}
 
 	public isExternalOrder() {
@@ -154,8 +185,7 @@ export class Order extends CreationDateModel {
 	}
 }
 
-export type MarketplaceOrder = Order & {
-};
+export type MarketplaceOrder = Order;
 
 export const MarketplaceOrder = {
 	ORIGIN: "marketplace",
@@ -163,17 +193,10 @@ export const MarketplaceOrder = {
 		const instance = Order.new(data) as MarketplaceOrder;
 		(instance as any).origin = MarketplaceOrder.ORIGIN;
 		return instance;
-	},
-	count(offerId: string, userId?: string): Promise<number> {
-		return Order.count({ where: { offerId, userId, origin: MarketplaceOrder.ORIGIN } });
-	},
-	getOpenOrder(offerId: string, userId: string) {
-		return Order.findOne({ where: { offerId, userId, status: "opened", origin: MarketplaceOrder.ORIGIN } });
 	}
 };
 
-export type ExternalOrder = Order & {
-};
+export type ExternalOrder = Order;
 
 export const ExternalOrder = {
 	ORIGIN: "external",
@@ -182,11 +205,5 @@ export const ExternalOrder = {
 		(instance as any).origin = ExternalOrder.ORIGIN;
 
 		return instance;
-	},
-	count(offerId: string, userId?: string): Promise<number> {
-		return Order.count({ where: { offerId, userId, origin: ExternalOrder.ORIGIN } });
-	},
-	getOpenOrder(offerId: string, userId: string) {
-		return Order.findOne({ where: { offerId, userId, status: "opened", origin: ExternalOrder.ORIGIN } });
 	}
 };

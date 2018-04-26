@@ -49,17 +49,26 @@ function offerDbToApi(offer: db.Offer, content: db.OfferContent) {
 	};
 }
 
+export async function isOfferExeedsCap(offer: db.Offer, userId: string): Promise<boolean> {
+	const total = await dbOrder.Order.countByOffer(offer.id);
+
+	if (total >= offer.cap.total) {
+		return true;
+	}
+
+	const forUser = await dbOrder.Order.countByOffer(offer.id, userId);
+	if (forUser >= offer.cap.per_user) {
+		return true;
+	}
+
+	return false;
+}
+
 async function filterOffers(userId: string, offers: db.Offer[], logger: LoggerInstance): Promise<Offer[]> {
 	return (await Promise.all(
 		offers
 			.map(async offer => {
-				const total = await dbOrder.MarketplaceOrder.count(offer.id);
-				if (total >= offer.cap.total) {
-					return null;
-				}
-
-				const forUser = await dbOrder.MarketplaceOrder.count(offer.id, userId);
-				if (forUser >= offer.cap.per_user) {
+				if (await isOfferExeedsCap(offer, userId)) {
 					return null;
 				}
 

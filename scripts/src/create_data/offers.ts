@@ -104,7 +104,7 @@ export async function createEarn(
 				description: orderDescription,
 			}
 		},
-		blockchainData: { recipient_address: walletAddress }
+		blockchainData: { sender_address: walletAddress }
 	});
 
 	await offer.save();

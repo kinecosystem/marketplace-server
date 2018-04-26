@@ -72,30 +72,28 @@ function Router(): ExtendedRouter {
 }
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
-	const router = Router();
-
 	app.use(createPath("offers", pathPrefix),
-		router
+		Router()
 			.authenticated()
-			.get("/", getOffers)
-			.post("/external/orders", createExternalOrder)
-			.post("/:offer_id/orders", createMarketplaceOrder));
+				.get("/", getOffers)
+				.post("/external/orders", createExternalOrder)
+				.post("/:offer_id/orders", createMarketplaceOrder));
 
 	app.use(createPath("orders", pathPrefix),
-		router
+		Router()
 			.authenticated()
-			.get("/", getOrderHistory)
-			.get("/:order_id", getOrder));
+				.get("/", getOrderHistory)
+				.get("/:order_id", getOrder));
 
 	app.use(createPath("orders", pathPrefix),
-		router
+		Router()
 			.authenticated(AuthScopes.TOS)
-			.post("/:order_id", submitOrder)
-			.delete("/:order_id", cancelOrder));
+				.post("/:order_id", submitOrder)
+				.delete("/:order_id", cancelOrder));
 
 	// XXX missing changeOrder to add error
 	app.use(createPath("users", pathPrefix),
-		router
+		Router()
 			.get("/", getUser)
 			.post("/", signInUser)
 			.authenticated()

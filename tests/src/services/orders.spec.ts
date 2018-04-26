@@ -12,6 +12,8 @@ import { createMarketplaceOrder, submitOrder } from "../../../scripts/bin/public
 import * as helpers from "../helpers";
 
 describe("test orders", async () => {
+	jest.setTimeout(20000);
+
 	beforeAll(async done => {
 		initLogger();
 		await initModels();

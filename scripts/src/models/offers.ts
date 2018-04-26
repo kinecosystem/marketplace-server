@@ -2,7 +2,7 @@ import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, Model, register as Register, initializer as Initializer } from "./index";
 import { generateId, IdPrefix } from "../utils";
-import { OrderMeta } from "./orders";
+import { OrderMeta, Order } from "./orders";
 
 export type BlockchainData = {
 	transaction_id?: string;
@@ -64,6 +64,21 @@ export class Offer extends CreationDateModel {
 	// @ManyToOne(type => OfferOwner, owner => owner.offers) // XXX requires a generated value
 	public get owner(): Promise<OfferOwner | undefined> {
 		return OfferOwner.findOneById(this.ownerId);
+	}
+
+	public async didExceedCap(userId: string): Promise<boolean> {
+		const total = await Order.countByOffer(this.id);
+
+		if (total >= this.cap.total) {
+			return true;
+		}
+
+		const forUser = await Order.countByOffer(this.id, userId);
+		if (forUser >= this.cap.per_user) {
+			return true;
+		}
+
+		return false;
 	}
 }
 

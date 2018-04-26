@@ -4,7 +4,7 @@ import * as jsonwebtoken from "jsonwebtoken";
 import { Offer, OfferList } from "./public/services/offers";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { Poll, Tutorial, TUTORIAL_DESCRIPTION } from "./public/services/offer_contents";
-import { delay, generateId } from "./utils";
+import { delay, generateId, retry } from "./utils";
 import { Application } from "./models/applications";
 import { ApiError } from "./public/middleware";
 import * as StellarSdk from "stellar-sdk";
@@ -68,6 +68,19 @@ class SampleAppClient {
 }
 
 class Client {
+
+	private static KinPaymentFromStellar(operation: PaymentOperationRecord, transaction: TransactionRecord): CompletedPayment {
+		const [, appId, id] = transaction.memo.split("-", 3);
+		return {
+			id,
+			app_id: appId,
+			transaction_id: operation.id,
+			recipient_address: operation.to,
+			sender_address: operation.from,
+			amount: parseInt(operation.amount, 10),
+			timestamp: transaction.created_at,
+		};
+	}
 
 	public readonly appId!: string;
 	public authToken!: AuthToken;
@@ -137,7 +150,7 @@ class Client {
 			payments.records
 				.map(async payment => {
 					const transaction = await payment.transaction();
-					return this.KinPaymentFromStellar(payment, transaction);
+					return Client.KinPaymentFromStellar(payment, transaction);
 				})
 		)).filter(payment => payment !== undefined);
 	}
@@ -289,33 +302,6 @@ class Client {
 
 		throw error;
 	}
-
-	private KinPaymentFromStellar(operation: PaymentOperationRecord, transaction: TransactionRecord): CompletedPayment {
-		const [, appId, id] = transaction.memo.split("-", 3);
-		return {
-			id,
-			app_id: appId,
-			transaction_id: operation.id,
-			recipient_address: operation.to,
-			sender_address: operation.from,
-			amount: parseInt(operation.amount, 10),
-			timestamp: transaction.created_at,
-		};
-	}
-}
-
-async function retry(fn: () => any, predicate: (o: any) => boolean, errorMessage?: string): Promise<any> {
-	let obj = await fn();
-
-	for (let i = 0; i < 30; i++) {
-		obj = await fn();
-		if (predicate(obj)) {
-			return obj;
-		}
-		await delay(1000);
-		console.log("retrying...");
-	}
-	throw new Error(errorMessage || "failed");
 }
 
 async function didNotApproveTOS() {
@@ -364,7 +350,7 @@ async function spendFlow() {
 	console.log("pay result hash: " + res.hash);
 
 	// poll on order payment
-	const order: Order = await retry(() =>  client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
 	console.log(`completion date: ${order.completion_date}`);
 
@@ -419,12 +405,12 @@ async function earnFlow() {
 	await client.submitOrder(openOrder.id, "{}");
 
 	// poll on order payment
-	const order: Order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
 	console.log(`completion date: ${order.completion_date}`);
 
 	// check order on blockchain
-	const payment: CompletedPayment = await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain");
+	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
 
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
@@ -472,7 +458,7 @@ async function earnTutorial() {
 	await client.submitOrder(openOrder.id, content);
 
 	// poll on order payment
-	const order: Order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
 	console.log(`completion date: ${order.completion_date}`);
 	console.log(`got order after submit`, order);
@@ -528,12 +514,12 @@ async function nativeSpendFlow() {
 	await client.submitOrder(openOrder.id);
 
 	// poll on order payment
-	const order: Order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
 	console.log(`completion date: ${order.completion_date}`);
 
 	// find payment on blockchain
-	const payment: CompletedPayment = await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain");
+	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
 
 	expect(payment).toBeDefined();
 

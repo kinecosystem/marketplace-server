@@ -11,7 +11,7 @@ import { Paging } from "./index";
 import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
-import { isOfferExeedsCap } from "./offers";
+import { ApiError } from "../../middleware";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -35,7 +35,7 @@ export interface OpenOrder extends BaseOrder {
 }
 
 export interface Order extends BaseOrder {
-	error?: db.OrderError;
+	error?: ApiError;
 	content?: string; // json serialized payload of the coupon page
 	status: db.OrderStatus;
 	completion_date: string; // UTC ISO
@@ -67,7 +67,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 
 	if (!order) {
 		const create = async () => {
-			if (await isOfferExeedsCap(offer, user.id)) {
+			if (await offer.didExceedCap(user.id)) {
 				return undefined;
 			}
 			const order = db.MarketplaceOrder.new({

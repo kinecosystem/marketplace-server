@@ -20,7 +20,6 @@ export type OrderOrigin = "marketplace" | "external";
 export type OrderStatus = "completed" | "failed" | "pending";
 export type OpenOrderStatus = OrderStatus | "opened";
 export type OrderStatusAndNegation = OpenOrderStatus | "!opened" | "!completed" | "!failed" | "!pending";
-export type OrderError = ApiError;
 
 function updateQueryWithStatus(query: SelectQueryBuilder<any>, status?: OrderStatusAndNegation | null) {
 	if (!status) {
@@ -46,9 +45,10 @@ export type OrderStatic<T extends Order = Order> = {
 @Initializer("expirationDate", () => moment().add(10, "minutes").toDate()) // opened expiration
 @Register
 export class Order extends CreationDateModel {
-
+	/**
+	 * count all offers that are completed, pending but expired, opened but not expired - i.e. not failed and not expired
+	 */
 	public static countByOffer(offerId: string, userId?: string): Promise<number> {
-		// count all offers that are completed, pending but expired, opened but not expired - i.e. not failed and not expired
 		const query = Order.createQueryBuilder()
 			.andWhere("status != :status", { status: "failed" })
 			.andWhere("offer_id = :offerId", { offerId })
@@ -137,7 +137,7 @@ export class Order extends CreationDateModel {
 	public meta!: OrderMeta;
 
 	@Column("simple-json", { nullable: true })
-	public error?: OrderError;
+	public error?: ApiError;
 
 	@Column()
 	public amount!: number;

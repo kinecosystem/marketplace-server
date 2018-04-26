@@ -11,6 +11,7 @@ import { Paging } from "./index";
 import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
+import { ApiError } from "../../middleware";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -34,7 +35,7 @@ export interface OpenOrder extends BaseOrder {
 }
 
 export interface Order extends BaseOrder {
-	error?: db.OrderError;
+	error?: ApiError;
 	content?: string; // json serialized payload of the coupon page
 	status: db.OrderStatus;
 	completion_date: string; // UTC ISO
@@ -62,24 +63,13 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 		throw new Error(`cannot create order, offer ${ offerId } not found`);
 	}
 
-	let order = await db.MarketplaceOrder.getOpenOrder(offerId, user.id);
+	let order = await db.Order.getOpenOrder(offerId, user.id);
 
 	if (!order) {
 		const create = async () => {
-			const total = await db.MarketplaceOrder.count(offerId);
-
-			if (total === offer.cap.total) {
-				logger.info("total cap reached", { offerId, userId: user.id });
+			if (await offer.didExceedCap(user.id)) {
 				return undefined;
 			}
-
-			const forUser = await db.MarketplaceOrder.count(offerId, user.id);
-
-			if (forUser === offer.cap.per_user) {
-				logger.info("per_user cap reached", { offerId, userId: user.id });
-				return undefined;
-			}
-
 			const order = db.MarketplaceOrder.new({
 				offerId,
 				userId: user.id,
@@ -104,7 +94,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 		throw new Error(`offer ${ offerId } cap reached`);
 	}
 
-	logger.info("created new open marketplace order", { offerId, userId: user.id, orderId: order.id });
+	logger.info("created new open marketplace order", order);
 
 	return openOrderDbToApi(order);
 }
@@ -113,7 +103,7 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 	const offer = await validateSpendJWT(jwt, logger);
 	await addWatcherEndpoint([offer.wallet_address]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
 
-	let order = await db.ExternalOrder.getOpenOrder(offer.id, user.id);
+	let order = await db.Order.getOpenOrder(offer.id, user.id);
 
 	if (!order) {
 		order = db.ExternalOrder.new({
@@ -134,7 +124,7 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 		await order.save();
 	}
 
-	logger.info("created new open application order", { offerId: offer.id, userId: user.id, orderId: order.id });
+	logger.info("created new open external order", { offerId: offer.id, userId: user.id, orderId: order.id });
 
 	return openOrderDbToApi(order);
 }
@@ -149,7 +139,7 @@ export async function submitOrder(
 	if (order.status !== "opened") {
 		return orderDbToApi(order);
 	}
-	if (new Date() > order.expirationDate!) {
+	if (order.isExpired()) {
 		throw Error(`open order ${ orderId } has expired`);
 	}
 
@@ -219,7 +209,6 @@ function openOrderDbToApi(order: db.Order): OpenOrder {
 	if (order.status !== "opened") {
 		throw new Error("only opened orders should be returned");
 	}
-
 	return {
 		id: order.id,
 		offer_id: order.offerId,
@@ -255,7 +244,7 @@ function orderDbToApi(order: db.Order): Order {
 }
 
 function checkIfTimedOut(order: db.Order): Promise<void> {
-	if (order.status === "pending" && order.expirationDate! < new Date()) {
+	if (order.status === "pending" && order.isExpired()) {
 		order.setStatus("failed");
 		// TODO: add order.error
 

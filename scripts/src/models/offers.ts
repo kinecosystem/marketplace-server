@@ -2,7 +2,7 @@ import { Column, Entity, Index, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, Model, register as Register, initializer as Initializer } from "./index";
 import { generateId, IdPrefix } from "../utils";
-import { OrderMeta } from "./orders";
+import { OrderMeta, Order } from "./orders";
 
 export type BlockchainData = {
 	transaction_id?: string;
@@ -65,6 +65,21 @@ export class Offer extends CreationDateModel {
 	public get owner(): Promise<OfferOwner | undefined> {
 		return OfferOwner.findOneById(this.ownerId);
 	}
+
+	public async didExceedCap(userId: string): Promise<boolean> {
+		const total = await Order.countByOffer(this.id);
+
+		if (total >= this.cap.total) {
+			return true;
+		}
+
+		const forUser = await Order.countByOffer(this.id, userId);
+		if (forUser >= this.cap.per_user) {
+			return true;
+		}
+
+		return false;
+	}
 }
 
 @Entity({ name: "offer_contents" })
@@ -93,7 +108,7 @@ export class AppOffer extends Model {
 
 export type AssetValue = { coupon_code: string };
 export type JWTValue = { jwt: string };
-export type OrderValue = (JWTValue | AssetValue) & { type: string };
+export type OrderValue = (JWTValue & { type: "confirm_payment" }) | (AssetValue & { type: "coupon" });
 
 @Entity({ name: "assets" })
 @Register

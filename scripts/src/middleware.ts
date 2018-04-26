@@ -79,12 +79,13 @@ export const reportMetrics = function(req: express.Request, res: express.Respons
 
 export const notFoundHandler = function(req: Request, res: Response) {
 	// log.error(`Error 404 on ${req.url}.`);
-	res.status(404).send({ status: 404, error: "Not found" });
+	res.status(404).send({ code: 404, error: "Not found", message: "Not found" });
 } as express.RequestHandler;
 
 export type ApiError = {
-	status: number;
+	code: number;
 	error: string;
+	message: string;
 };
 
 /**
@@ -105,5 +106,5 @@ export function generalErrorHandler(err: any, req: Request, res: Response, next:
 	}
 
 	logger.error(message);
-	res.status(500).send({ status: 500, error: err.message || "Server error" });
+	res.status(500).send({ code: 500, error: err.message || "Server error", message:  err.message });
 }

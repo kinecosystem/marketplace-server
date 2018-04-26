@@ -10,13 +10,15 @@ import { init as initModels, close as closeModels } from "../../../scripts/bin/m
 import { createMarketplaceOrder, submitOrder } from "../../../scripts/bin/public/services/orders";
 
 import * as helpers from "../helpers";
+import { clearDatabase } from "../helpers";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
 
-	beforeAll(async done => {
+	beforeEach(async done => {
 		initLogger();
 		await initModels();
+		await clearDatabase();
 
 		const user = await helpers.createUser();
 		await helpers.createOffers();
@@ -24,7 +26,7 @@ describe("test orders", async () => {
 		done();
 	});
 
-	afterAll(async done => {
+	afterEach(async done => {
 		await closeModels();
 		done();
 	});

@@ -70,3 +70,17 @@ export function pick<T, K extends keyof T>(obj: T, ...props: K[]): Pick<T, K> {
 export function removeDuplicates<T>(arr: T[]): T[] {
 	return Array.from(new Set(arr));
 }
+
+export async function retry<T>(fn: () => T, predicate: (o: any) => boolean, errorMessage?: string): Promise<T> {
+	let obj = await fn();
+
+	for (let i = 0; i < 30; i++) {
+		obj = await fn();
+		if (predicate(obj)) {
+			return obj;
+		}
+		await delay(1000);
+		console.log("retrying...");
+	}
+	throw new Error(errorMessage || "failed");
+}

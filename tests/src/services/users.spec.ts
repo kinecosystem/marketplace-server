@@ -9,16 +9,14 @@ describe("api tests for /users", async () => {
 		done();
 	});
 
-	afterAll(async done => {
+	afterAll(async () => {
 		await closeModels();
-		done();
 	});
 
-	test("return a user with 200", async done => {
+	test("return a user with 200", async () => {
 		await mock(app)
 			.get("/v1/users?id=1234")
 			.set("x-request-id", "123")
 			.expect(200);
-		done();
 	});
 });

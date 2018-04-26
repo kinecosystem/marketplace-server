@@ -27,26 +27,23 @@ describe("test orders", async () => {
 		done();
 	});
 
-	test("getAllNonOpen", async done => {
+	test("getAllNonOpen", async () => {
 		const user = await User.findOne();
 		const orders = await Order.getAll(user.id, "!opened", 25);
 		expect(orders.length).toBeGreaterThan(0);
 		expect(orders.length).toBe(orders.filter(o => o.status !== "opened").length);
-
-		done();
 	});
 
-	test("return same order when one is open", async done => {
+	test("return same order when one is open", async () => {
 		const user: User = await User.findOne();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		const order = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
 		const order2 = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
 
 		expect(order.id).toBe(order2.id);
-		done();
 	});
 
-	test("return getOrder reduces cap", async done => {
+	test("return getOrder reduces cap", async () => {
 		(payment.payTo as any) = function() {
 			return 1;
 		}; // XXX use a patching library
@@ -62,16 +59,14 @@ describe("test orders", async () => {
 
 		const offers2 = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		expect(offers2.offers.length).toBeLessThan(offers.offers.length);
-		done();
 	});
 
-	test("expiration on openOrder is 10 minutes", async done => {
+	test("expiration on openOrder is 10 minutes", async () => {
 		const user: User = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		const offer = await Offer.findOneById(offers.offers[0].id);
 		const now = moment();
 		const openOrder = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
 		expect(moment(openOrder.expiration_date).diff(now, "minutes")).toBe(10);
-		done();
 	});
 });

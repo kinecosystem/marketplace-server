@@ -97,7 +97,6 @@ export async function close(): Promise<void> {
 	await connection!.close();
 	initPromise = null;
 	connection = null;
-	// return connection ? connection.close().then(() => connection = null) as any : Promise.resolve();
 }
 
 export type ModelFilters<T extends Model> = Partial<{ [K in keyof T]: T[K] }>;

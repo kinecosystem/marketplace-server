@@ -21,23 +21,11 @@ const animalPoll: Poll = {
 
 export async function createUser(): Promise<User> {
 	const uniqueId = generateId();
-	/*const user = await (User.new({
+	const user = await (User.new({
 		appUserId: `test_${uniqueId}`,
 		appId: "kik",
 		walletAddress: `test_${uniqueId}`
-	})).save();*/
-
-	let user;
-	try {
-		user = await (User.new({
-			appUserId: `test_${uniqueId}`,
-			appId: "kik",
-			walletAddress: `test_${uniqueId}`
-		})).save();
-	} catch (e) {
-		user = null;
-		console.log("ERROR: ", e);
-	}
+	})).save();
 
 	const authToken = await (AuthToken.new({
 		userId: user.id,
@@ -66,7 +54,6 @@ function orderFromOffer(offer: Offer, userId: string): MarketplaceOrder {
 }
 
 export async function createOrders(userId: string) {
-
 	let offers = await Offer.find({ where: { type: "spend" }, take: 3 });
 	let order = orderFromOffer(offers[0], userId);
 	order.status = "completed";
@@ -99,7 +86,6 @@ export async function createOrders(userId: string) {
 }
 
 export async function createOffers() {
-	const offers: Offer[] = [];
 	const uniqueId = generateId();
 
 	for (let i = 0; i < 5; i += 1) {
@@ -114,7 +100,9 @@ export async function createOffers() {
 		await createSpend(
 			`${uniqueId}_spend${i}`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
-			`spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, 100, 100, 100, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`,
+			`spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, 100, 100, 100, `spend${i}`, `spend${i}`,
+			`spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`,
+			`spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`, `spend${i}`,
 			[`spend${i}_1`, `spend${i}_2`, `spend${i}_3`, `spend${i}_4`, `spend${i}_5`]
 		);
 	}

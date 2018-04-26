@@ -39,7 +39,7 @@ const AUTHENTICATED_METHODS = ["get", "delete", "post", "put", "patch"];
 
 enum AuthScopes { TOS }
 
-function router(): ExtendedRouter {
+function Router(): ExtendedRouter {
 	const router = express.Router() as ExtendedRouter;
 
 	router.authenticated = function(...scopes: AuthScopes[]) {
@@ -73,42 +73,31 @@ function router(): ExtendedRouter {
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.use(createPath("offers", pathPrefix),
-		router()
+		Router()
 			.authenticated()
-			.get("/", getOffers));
-	app.use(createPath("offers", pathPrefix),
-		router()
-			.authenticated(AuthScopes.TOS)
-			.post("/external/orders", createExternalOrder)
-			.post("/:offer_id/orders", createMarketplaceOrder));
+				.get("/", getOffers)
+				.post("/external/orders", createExternalOrder)
+				.post("/:offer_id/orders", createMarketplaceOrder));
 
 	app.use(createPath("orders", pathPrefix),
-		router()
+		Router()
 			.authenticated()
-			.get("/", getOrderHistory));
+				.get("/", getOrderHistory)
+				.get("/:order_id", getOrder));
+
 	app.use(createPath("orders", pathPrefix),
-		router()
-			.authenticated()
-			.get("/:order_id", getOrder));
-	app.use(createPath("orders", pathPrefix),
-		router()
+		Router()
 			.authenticated(AuthScopes.TOS)
-			.post("/:order_id", submitOrder));
-	app.use(createPath("orders", pathPrefix),
-		router()
-			.authenticated(AuthScopes.TOS)
-			.delete("/:order_id", cancelOrder));
+				.post("/:order_id", submitOrder)
+				.delete("/:order_id", cancelOrder));
+
 	// XXX missing changeOrder to add error
 	app.use(createPath("users", pathPrefix),
-		router()
-			.get("/", getUser));
-	app.use(createPath("users", pathPrefix),
-		router()
-			.post("/", signInUser));
-	app.use(createPath("users", pathPrefix),
-		router()
+		Router()
+			.get("/", getUser)
+			.post("/", signInUser)
 			.authenticated()
-			.post("/me/activate", activateUser));
+				.post("/me/activate", activateUser));
 }
 
 function createPath(path: string, prefix?: string): string {

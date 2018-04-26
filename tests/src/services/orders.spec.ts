@@ -1,22 +1,30 @@
-import * as helpers from "../helpers";
-import { init as initModels } from "../../../scripts/bin/models/index";
-import { Order } from "../../../scripts/bin/models/orders";
-import { User } from "../../../scripts/bin/models/users";
-import { createMarketplaceOrder, submitOrder } from "../../../scripts/bin/public/services/orders";
-import { getOffers } from "../../../scripts/bin/public/services/offers";
-import { getDefaultLogger, initLogger } from "../../../scripts/bin/logging";
-import * as payment from "../../../scripts/bin/public/services/payment";
-import { Offer } from "../../../scripts/bin/models/offers";
 import * as moment from "moment";
 
+import { User } from "../../../scripts/bin/models/users";
+import { Order } from "../../../scripts/bin/models/orders";
+import { Offer } from "../../../scripts/bin/models/offers";
+import * as payment from "../../../scripts/bin/public/services/payment";
+import { getOffers } from "../../../scripts/bin/public/services/offers";
+import { getDefaultLogger, initLogger } from "../../../scripts/bin/logging";
+import { init as initModels, close as closeModels } from "../../../scripts/bin/models/index";
+import { createMarketplaceOrder, submitOrder } from "../../../scripts/bin/public/services/orders";
+
+import * as helpers from "../helpers";
+
 describe("test orders", async () => {
-	beforeAll(async () => {
+	beforeAll(async done => {
 		initLogger();
 		await initModels();
 
 		const user = await helpers.createUser();
 		await helpers.createOffers();
 		await helpers.createOrders(user.id);
+		done();
+	});
+
+	afterAll(async done => {
+		await closeModels();
+		done();
 	});
 
 	test("getAllNonOpen", async () => {
@@ -36,7 +44,7 @@ describe("test orders", async () => {
 	});
 
 	test("return getOrder reduces cap", async () => {
-		(payment.payTo as any) = function () {
+		(payment.payTo as any) = function() {
 			return 1;
 		}; // XXX use a patching library
 

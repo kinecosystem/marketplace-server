@@ -7,9 +7,10 @@ import { getConfig } from "../config";
 import { normalizeError, path, IdPrefix, generateId } from "../utils";
 
 const entities: ModelConstructor[] = [];
-let connection: Connection;
+
 let dbConfig: ConnectionOptions;
-let initPromise: Promise<string>;
+let connection: Connection | null;
+let initPromise: Promise<string> | null;
 
 export type ModelConstructor = ({ new(): Model }) | Function;
 export type ModelMemberInitializer = () => any;
@@ -92,8 +93,10 @@ export function init(): Promise<string> {
 	return initPromise;
 }
 
-export function close(): Promise<void> {
-	return connection.close();
+export async function close(): Promise<void> {
+	await connection!.close();
+	initPromise = null;
+	connection = null;
 }
 
 export type ModelFilters<T extends Model> = Partial<{ [K in keyof T]: T[K] }>;

@@ -69,7 +69,7 @@
     "restart": "npm-run-all build start",
     "transpile-tests": "tsc -p tests",
     "test-system": "node scripts/bin/mock_client",
-    "test": "jest --forceExit"
+    "test": "jest --forceExit --runInBand"
   },
   "author": "",
   "license": "ISC",

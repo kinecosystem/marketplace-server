@@ -52,7 +52,7 @@ export class Order extends CreationDateModel {
 		const query = Order.createQueryBuilder()
 			.andWhere("status != :status", { status: "failed" })
 			.andWhere("offer_id = :offerId", { offerId })
-			.andWhere("expiration_date > :date", { date: new Date() });
+			.andWhere("expiration_date > :date", { date: moment().add(2, "minutes").toDate() }); // has at least 2 minutes to complete before expiration
 
 		if (userId) {
 			query.andWhere("user_id = :userId", { userId });
@@ -66,7 +66,7 @@ export class Order extends CreationDateModel {
 			.andWhere("status = :status", { status: "opened" })
 			.andWhere("offer_id = :offerId", { offerId })
 			.andWhere("user_id = :userId", { userId })
-			.andWhere("expiration_date > :date", { date: moment().add(2, "minutes") }) // has at least 2 minutes to complete before expiration
+			.andWhere("expiration_date > :date", { date: moment().add(2, "minutes").toDate() }) // has at least 2 minutes to complete before expiration
 			.orderBy("expiration_date", "DESC"); // if there are a few, get the one with the most time left
 
 		return query.getOne() as Promise<T | undefined>;

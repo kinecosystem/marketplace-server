@@ -6,6 +6,7 @@ import { createEarn, createSpend } from "../../scripts/bin/create_data/offers";
 import { generateId } from "../../scripts/bin/utils";
 import { CompletedPayment, paymentComplete } from "../../scripts/bin/internal/services";
 import { getDefaultLogger } from "../../scripts/bin/logging";
+import { getManager } from "typeorm";
 
 const animalPoll: Poll = {
 	pages: [{
@@ -121,4 +122,14 @@ export async function completePayment(orderId: string) {
 		timestamp: (new Date()).toISOString()
 	};
 	await paymentComplete(payment, getDefaultLogger());
+}
+
+export async function clearDatabase() {
+    try { // TODO: get this list dynamically
+      for (const tableName of ["orders", "offers", "users", "assets", "auth_tokens"]) {
+        await getManager().query(`DELETE FROM ${tableName};`);
+      }
+    } catch (error) {
+      throw new Error(`ERROR: Cleaning test db: ${error}`);
+    }
 }

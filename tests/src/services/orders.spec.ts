@@ -20,9 +20,7 @@ describe("test orders", async () => {
 		await initModels();
 		await clearDatabase();
 
-		const user = await helpers.createUser();
 		await helpers.createOffers();
-		await helpers.createOrders(user.id);
 		done();
 	});
 
@@ -32,14 +30,15 @@ describe("test orders", async () => {
 	});
 
 	test("getAllNonOpen", async () => {
-		const user = await User.findOne();
+		const user = await helpers.createUser();
+		await helpers.createOrders(user.id);
 		const orders = await Order.getAll(user.id, "!opened", 25);
 		expect(orders.length).toBeGreaterThan(0);
 		expect(orders.length).toBe(orders.filter(o => o.status !== "opened").length);
 	});
 
 	test("return same order when one is open", async () => {
-		const user: User = await User.findOne();
+		const user = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		const order = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
 		const order2 = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
@@ -55,7 +54,7 @@ describe("test orders", async () => {
 		const user: User = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		const offer = await Offer.findOneById(offers.offers[0].id);
-		for (let i = 0; i < offer.cap.per_user; i++) {
+		for (let i = 0; i < offer.cap.per_user && i < offer.cap.total; i++) {
 			const openOrder = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
 			const order = await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
 			await helpers.completePayment(order.id);

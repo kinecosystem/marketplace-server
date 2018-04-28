@@ -535,15 +535,50 @@ async function nativeSpendFlow() {
 	expect(jwtPayload.header.kid).toBeDefined();
 }
 
+async function tryToNativeSpendTwice() {
+	console.log("=====================================tryToNativeSpendTwice=====================================");
+	const client = new Client();
+	const userId = "rich_user:" + generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+
+	await client.register({ jwt },
+		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.activate();
+
+	const selectedOffer = (await appClient.getOffers())[0];
+	const offerJwt = await appClient.getSpendJWT(selectedOffer.id);
+	const openOrder = await client.createExternalOrder(offerJwt);
+	console.log(`created order`, openOrder.id, `for offer`, selectedOffer.id);
+	// pay for the offer
+	const res = await client.pay(selectedOffer.wallet_address, selectedOffer.amount, openOrder.id);
+	await client.submitOrder(openOrder.id);
+
+	// poll on order payment
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
+	console.log(`completed order`, order.id);
+	const offerJwt2 = await appClient.getSpendJWT(selectedOffer.id);
+	// should not allow to create a new order
+	console.log(`expecting error for new order`, selectedOffer.id);
+	try {
+		await client.createExternalOrder(offerJwt2);
+		throw new Error("should not allow to create more than one order");
+	} catch (e) {
+		// ok
+	}
+}
+
 async function main() {
 	// await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
 	// await earnTutorial();
-	await spendFlow();
+	// await spendFlow();
 	// await justPay();
 	// await registerJWT();
 	// await nativeSpendFlow();
+	await tryToNativeSpendTwice();
 }
 
 main()

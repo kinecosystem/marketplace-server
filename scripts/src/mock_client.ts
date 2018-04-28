@@ -24,10 +24,9 @@ import { JWTValue } from "./models/offers";
 import { JWTContent } from "./public/jwt";
 import * as expect from "expect";
 
+// const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
 const BASE = "http://localhost:3000";
 const JWT_SERVICE_BASE = "http://localhost:3002";
-
-// const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
 
 class Stellar {
 	public static MEMO_VERSION = 1;
@@ -64,6 +63,11 @@ class SampleAppClient {
 	public async getOffers(): Promise<SpendPayloadOffer[]> {
 		const res = await axios.default.get(JWT_SERVICE_BASE + "/offers");
 		return res.data.offers;
+	}
+
+	public async isValidSignature(jwt: string): Promise<boolean> {
+		const res = await axios.default.get(JWT_SERVICE_BASE + `/validate?jwt=${jwt}`);
+		return res.data.is_valid;
 	}
 }
 
@@ -494,7 +498,7 @@ async function nativeSpendFlow() {
 
 	const client = new Client();
 	// this address is prefunded with test kin
-	const userId = "rich_user2";
+	const userId = "rich_user:" + generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 
@@ -508,6 +512,11 @@ async function nativeSpendFlow() {
 
 	const openOrder = await client.createExternalOrder(offerJwt);
 	console.log(`got open order`, openOrder);
+
+	expect(openOrder.amount).toBe(selectedOffer.amount);
+	expect(openOrder.blockchain_data.recipient_address).toBe(selectedOffer.wallet_address);
+	expect(openOrder.offer_id).toBe(selectedOffer.id);
+
 	// pay for the offer
 	const res = await client.pay(selectedOffer.wallet_address, selectedOffer.amount, openOrder.id);
 	console.log("pay result hash: " + res.hash);
@@ -529,10 +538,13 @@ async function nativeSpendFlow() {
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 
 	expect(order.result!.type).toBe("confirm_payment");
-	const jwtPayload = jsonwebtoken.decode((order.result! as JWTValue).jwt, { complete: true }) as JWTContent<PaymentPayload>;
+	const paymentJwt = (order.result! as JWTValue).jwt;
+	const jwtPayload = jsonwebtoken.decode(paymentJwt, { complete: true }) as JWTContent<PaymentPayload>;
 	expect(jwtPayload.payload.payment.offer_id).toBe(order.offer_id);
 	expect(jwtPayload.payload.payment.user_id).toBe(userId);
 	expect(jwtPayload.header.kid).toBeDefined();
+	// verify using kin public key
+	expect(await appClient.isValidSignature(paymentJwt)).toBeTruthy();
 }
 
 async function tryToNativeSpendTwice() {
@@ -570,15 +582,15 @@ async function tryToNativeSpendTwice() {
 }
 
 async function main() {
-	// await earnFlow();
+	await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
 	// await earnTutorial();
 	// await spendFlow();
 	// await justPay();
 	// await registerJWT();
-	// await nativeSpendFlow();
-	await tryToNativeSpendTwice();
+	await nativeSpendFlow();
+	// await tryToNativeSpendTwice();
 }
 
 main()

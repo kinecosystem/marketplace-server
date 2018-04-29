@@ -7,7 +7,7 @@ getConfig();
 
 import * as fs from "fs";
 import { Application, StringMap } from "./models/applications";
-import { AppOffer, Offer } from "./models/offers";
+import { Offer } from "./models/offers";
 
 import { init as initModels } from "./models";
 
@@ -37,14 +37,9 @@ initModels().then(async () => {
 	const offers: Offer[] = await Offer.find(); // add all offers to both apps
 
 	// adding all offers to all apps
-	for (const offer of offers) {
-		for (const app of apps) {
-			const appOffer = AppOffer.new({
-				appId: app.id,
-				offerId: offer.id
-			});
-			await appOffer.save();
-		}
+	for (const app of apps) {
+		app.offers = offers;
+		await app.save();
 	}
 
 	console.log(`created application sample`, apps);

@@ -95,17 +95,6 @@ export class OfferContent extends Model {
 	public contentType!: ContentType;
 }
 
-@Entity({ name: "app_offers" })
-@Register
-@Index(["offerId", "appId"], { unique: true })
-export class AppOffer extends Model {
-	@PrimaryColumn({ name: "offer_id" })
-	public offerId!: string;
-
-	@PrimaryColumn({ name: "app_id" })
-	public appId!: string;
-}
-
 export type AssetValue = { coupon_code: string };
 export type JWTValue = { jwt: string };
 export type OrderValue = (JWTValue & { type: "confirm_payment" }) | (AssetValue & { type: "coupon" });

@@ -2,7 +2,7 @@ import * as moment from "moment";
 
 import { User } from "../../../scripts/bin/models/users";
 import { Order } from "../../../scripts/bin/models/orders";
-import { AppOffer, Offer } from "../../../scripts/bin/models/offers";
+import { Offer } from "../../../scripts/bin/models/offers";
 import * as payment from "../../../scripts/bin/public/services/payment";
 import { getOffers } from "../../../scripts/bin/public/services/offers";
 import { getDefaultLogger, initLogger } from "../../../scripts/bin/logging";
@@ -82,12 +82,8 @@ describe("test orders", async () => {
 
 			if (i % 2 === 0) {
 				offersIds.push(offers[i].id);
-				const appOffer = AppOffer.new({
-					offerId: offers[i].id,
-					appId: app.id
-				});
-				await appOffer.save();
-
+				app.offers.push(offers[i]);
+				await app.save();
 			}
 		}
 
@@ -96,7 +92,7 @@ describe("test orders", async () => {
 			apiOffersIds.push(offer.id);
 		}
 
-		expect(offersIds.sort()).toBe(apiOffersIds.sort());
+		expect(offersIds.sort()).toEqual(apiOffersIds.sort());
 	});
 
 });

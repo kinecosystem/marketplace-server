@@ -7,6 +7,7 @@ import { ModelFilters } from "../../models/index";
 
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
+import { Application } from "../../models/applications";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -71,15 +72,19 @@ async function filterOffers(userId: string, offers: db.Offer[], logger: LoggerIn
 export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance): Promise<OfferList> {
 	let offers = [] as Offer[];
 
+	const query = Application.createQueryBuilder("app")
+		.where("app.id = :appId", { appId })
+		.leftJoinAndSelect("app.offers", "offer");
+
 	if (!filters.type || filters.type === "earn") {
 		offers = offers.concat(
 			await filterOffers(
 				userId,
-				await db.Offer.createQueryBuilder()
-					.where("type = :type", { type: "earn" })
-					.orderBy("amount", "DESC")
-					.addOrderBy("id", "ASC")
-					.getMany(),
+				(await query
+					.andWhere("offer.type = :type", { type: "earn" })
+					.orderBy("offer.amount", "DESC")
+					.addOrderBy("offer.id", "ASC")
+					.getOne())!.offers,
 				logger
 			)
 		);
@@ -89,11 +94,11 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 		offers = offers.concat(
 			await filterOffers(
 				userId,
-				await db.Offer.createQueryBuilder()
-					.where("type = :type", { type: "spend" })
-					.orderBy("amount", "ASC")
-					.addOrderBy("id", "ASC")
-					.getMany(),
+				(await query
+					.andWhere("offer.type = :type", { type: "spend" })
+					.orderBy("offer.amount", "ASC")
+					.addOrderBy("offer.id", "ASC")
+					.getOne())!.offers,
 				logger
 			)
 		);

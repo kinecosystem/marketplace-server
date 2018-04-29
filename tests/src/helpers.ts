@@ -128,7 +128,7 @@ export async function completePayment(orderId: string) {
 
 export async function clearDatabase() {
     try { // TODO: get this list dynamically
-      for (const tableName of ["orders", "offers", "users", "assets", "auth_tokens"]) {
+      for (const tableName of ["applications_offers_offers", "orders", "offers", "users", "assets", "auth_tokens"]) {
         await getManager().query(`DELETE FROM ${tableName};`);
       }
     } catch (error) {

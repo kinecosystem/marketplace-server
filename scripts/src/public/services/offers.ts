@@ -33,7 +33,7 @@ export interface OfferList {
 function offerDbToApi(offer: db.Offer, content: db.OfferContent) {
 	function replaceTemplateVars(template: string) {
 		// XXX currently replace here instead of client
-		return template.replace(/\${amount}/g, offer.amount.toString());
+		return template.replace(/\${amount}/g, offer.amount.toLocaleString("en-US"));
 	}
 
 	return {

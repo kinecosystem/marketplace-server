@@ -7,6 +7,8 @@ import { generateId } from "../../scripts/bin/utils";
 import { CompletedPayment, paymentComplete } from "../../scripts/bin/internal/services";
 import { getDefaultLogger } from "../../scripts/bin/logging";
 import { getManager } from "typeorm";
+import { Application, StringMap } from "../../scripts/bin/models/applications";
+import * as fs from "fs";
 
 const animalPoll: Poll = {
 	pages: [{
@@ -20,11 +22,11 @@ const animalPoll: Poll = {
 	}],
 };
 
-export async function createUser(): Promise<User> {
+export async function createUser(appId?: string): Promise<User> {
 	const uniqueId = generateId();
 	const user = await (User.new({
 		appUserId: `test_${uniqueId}`,
-		appId: "kik",
+		appId: appId || "kik",
 		walletAddress: `test_${uniqueId}`
 	})).save();
 
@@ -132,4 +134,15 @@ export async function clearDatabase() {
     } catch (error) {
       throw new Error(`ERROR: Cleaning test db: ${error}`);
     }
+}
+
+
+export async function createApp(appId: string): Promise<Application> {
+	const app = Application.new({
+		id: appId,
+		name: appId,
+		jwtPublicKeys: {}
+	});
+	await app.save();
+	return app;
 }

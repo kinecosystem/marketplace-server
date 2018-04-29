@@ -71,7 +71,7 @@ describe("test orders", async () => {
 		expect(moment(openOrder.expiration_date).diff(now, "minutes")).toBe(10);
 	});
 
-	test("different apps with different offers", async () => {
+	test("only app offers should return", async () => {
 		const app = await helpers.createApp("app1");
 		const user = await helpers.createUser(app.id);
 		const offers = await Offer.find();

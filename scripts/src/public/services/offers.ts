@@ -76,7 +76,7 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 			await filterOffers(
 				userId,
 				await db.Offer.createQueryBuilder()
-					.where("type = 'earn'")
+					.where("type = :type", { type: "earn" })
 					.orderBy("amount", "DESC")
 					.addOrderBy("id", "ASC")
 					.getMany(),
@@ -90,7 +90,7 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 			await filterOffers(
 				userId,
 				await db.Offer.createQueryBuilder()
-					.where("type = 'spend'")
+					.where("type = :type", { type: "spend" })
 					.orderBy("amount", "ASC")
 					.addOrderBy("id", "ASC")
 					.getMany(),

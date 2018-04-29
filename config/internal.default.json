@@ -19,9 +19,13 @@
 	"payment_complete_callback": "http://localhost:3001/v1/internal/payments",
 	"jwt": {
 		"private_keys": {
-			"default": {
+			"rs512_0": {
 				"algorithm": "RS512",
-				"file": "examples/jwt_private_key.pem"
+				"file": "examples/kin-rs512_0-priv.pem"
+			},
+			"es256_0": {
+				"algorithm": "ES256",
+				"file": "examples/kin-es256_0-priv.pem"
 			}
 		}
 	}

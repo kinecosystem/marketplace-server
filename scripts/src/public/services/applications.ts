@@ -24,12 +24,12 @@ export type SpendPayload = {
 };
 
 export async function validateSpendJWT(jwt: string, logger: LoggerInstance): Promise<SpendPayloadOffer> {
-	const decoded = await verifyJWT<SpendPayload>(jwt);
+	const decoded = await verifyJWT<SpendPayload>(jwt, logger);
 	return decoded.payload.offer;
 }
 
 export async function validateRegisterJWT(jwt: string, logger: LoggerInstance): Promise<SignInContext> {
-	const decoded = await verifyJWT<RegisterPayload>(jwt);
+	const decoded = await verifyJWT<RegisterPayload>(jwt, logger);
 	const appId = decoded.payload.iss;
 	const appUserId = decoded.payload.user_id;
 

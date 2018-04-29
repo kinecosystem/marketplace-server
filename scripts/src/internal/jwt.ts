@@ -21,15 +21,11 @@ class KeyMap extends Map<string, { algorithm: string; key: Buffer; }> {
 const KEYS = new KeyMap();
 
 export function sign(subject: string, payload: any) {
-	const signWith = KEYS.random();
-
-	payload = Object.assign({
-		typ: "JWT"
-	}, payload);
-
+	const keyid = "rs512_0";  // TODO change to es256_0
+	const signWith = KEYS.get(keyid)!;
 	return jsonwebtoken.sign(payload, signWith.key, {
 		subject,
-		keyid: signWith.id,
+		keyid,
 		algorithm: signWith.algorithm,
 		expiresIn: moment().add(6, "hours").valueOf()
 	});

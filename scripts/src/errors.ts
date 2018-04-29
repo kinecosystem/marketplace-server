@@ -15,15 +15,19 @@ export const CODES = {
 		Order: 3,
 		PublicKey: 4
 	},
+	Conflict: {
+		ExternalOrderExhausted: 1
+	},
 	Locked: {
 		OfferCapReached: 1
 	},
 	UnprocessableEntity: {
 		OpenedOrdersOnly: 1,
-		OpenedOrdersUnreturnable: 4222
+		OpenedOrdersUnreturnable: 2
 	},
 	BadRequest: {
-		UnknownSignInType: 1
+		UnknownSignInType: 1,
+		WrongJWTAlgorithm: 2
 	}
 };
 
@@ -84,6 +88,14 @@ export function NoSuchPublicKey(appId: string, keyid: string) {
 	return NotFoundError(CODES.NotFound.App, `Key "${ keyid }" not found for iss "${ appId }"`);
 }
 
+function ConflictError(index: number, message: string) {
+	return new MarketplaceError(409, index, "Conflict", message);
+}
+
+export function ExternalOrderExhausted() {
+	return ConflictError(CODES.Conflict.ExternalOrderExhausted, "User already completed offer, or has a pending order");
+}
+
 function LockedError(index: number, message: string) {
 	return new MarketplaceError(423, index, "Resource Locked", message);
 }
@@ -110,4 +122,8 @@ function BadRequestError(index: number, message: string) {
 
 export function UnknownSignInType(type: string) {
 	return BadRequestError(CODES.BadRequest.UnknownSignInType, `Unknown sign-in type: ${ type }`);
+}
+
+export function WrongJWTAlgorithm() {
+	return BadRequestError(CODES.BadRequest.UnknownSignInType, "only ES256 supported");
 }

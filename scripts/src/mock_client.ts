@@ -6,7 +6,7 @@ import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { Poll, Tutorial, TUTORIAL_DESCRIPTION } from "./public/services/offer_contents";
 import { delay, generateId, retry } from "./utils";
 import { Application } from "./models/applications";
-import { ApiError } from "./public/middleware";
+import { ApiError } from "./errors";
 import * as StellarSdk from "stellar-sdk";
 import { AuthToken } from "./public/services/users";
 import {

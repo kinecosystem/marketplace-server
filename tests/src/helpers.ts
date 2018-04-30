@@ -7,6 +7,7 @@ import { generateId } from "../../scripts/bin/utils";
 import { CompletedPayment, paymentComplete } from "../../scripts/bin/internal/services";
 import { getDefaultLogger } from "../../scripts/bin/logging";
 import { getManager } from "typeorm";
+import { Application } from "../../scripts/bin/models/applications";
 
 const animalPoll: Poll = {
 	pages: [{
@@ -20,11 +21,11 @@ const animalPoll: Poll = {
 	}],
 };
 
-export async function createUser(): Promise<User> {
+export async function createUser(appId?: string): Promise<User> {
 	const uniqueId = generateId();
 	const user = await (User.new({
 		appUserId: `test_${uniqueId}`,
-		appId: "kik",
+		appId: appId || (await Application.findOne())!.id,
 		walletAddress: `test_${uniqueId}`
 	})).save();
 
@@ -107,6 +108,13 @@ export async function createOffers() {
 			[`spend${i}_1`, `spend${i}_2`, `spend${i}_3`, `spend${i}_4`, `spend${i}_5`]
 		);
 	}
+
+	const offers = await Offer.find();
+	const apps = await Application.find();
+	for (const app of apps) {
+		app.offers = offers;
+		await app.save();
+	}
 }
 
 export async function completePayment(orderId: string) {
@@ -125,11 +133,22 @@ export async function completePayment(orderId: string) {
 }
 
 export async function clearDatabase() {
-    try { // TODO: get this list dynamically
-      for (const tableName of ["orders", "offers", "users", "assets", "auth_tokens"]) {
-        await getManager().query(`DELETE FROM ${tableName};`);
-      }
-    } catch (error) {
-      throw new Error(`ERROR: Cleaning test db: ${error}`);
-    }
+	try { // TODO: get this list dynamically
+		for (const tableName of ["applications_offers_offers", "orders", "offers", "users", "assets", "auth_tokens"]) {
+			await getManager().query(`DELETE FROM ${tableName};`);
+		}
+	} catch (error) {
+		throw new Error(`ERROR: Cleaning test db: ${error}`);
+	}
+}
+
+
+export async function createApp(appId: string): Promise<Application> {
+	const app = Application.new({
+		id: appId,
+		name: appId,
+		jwtPublicKeys: {}
+	});
+	await app.save();
+	return app;
 }

@@ -10,7 +10,6 @@ import { init as initModels, close as closeModels } from "../../../scripts/bin/m
 import { createMarketplaceOrder, submitOrder } from "../../../scripts/bin/public/services/orders";
 
 import * as helpers from "../helpers";
-import { clearDatabase } from "../helpers";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
@@ -18,8 +17,7 @@ describe("test orders", async () => {
 	beforeEach(async done => {
 		initLogger();
 		await initModels();
-		await clearDatabase();
-
+		await helpers.clearDatabase();
 		await helpers.createOffers();
 		done();
 	});
@@ -47,7 +45,7 @@ describe("test orders", async () => {
 	});
 
 	test("return getOrder reduces cap", async () => {
-		(payment.payTo as any) = function() {
+		(payment.payTo as any) = function () {
 			return 1;
 		}; // XXX use a patching library
 
@@ -72,4 +70,29 @@ describe("test orders", async () => {
 		const openOrder = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
 		expect(moment(openOrder.expiration_date).diff(now, "minutes")).toBe(10);
 	});
+
+	test("only app offers should return", async () => {
+		const app = await helpers.createApp("app1");
+		const user = await helpers.createUser(app.id);
+		const offers = await Offer.find();
+		const offersIds: string[] = [];
+
+		// add even offers to app
+		for (let i = 0; i < offers.length; i++) {
+
+			if (i % 2 === 0) {
+				offersIds.push(offers[i].id);
+				app.offers.push(offers[i]);
+				await app.save();
+			}
+		}
+
+		const apiOffersIds: string[] = [];
+		for (const offer of (await getOffers(user.id, user.appId, {}, getDefaultLogger())).offers) {
+			apiOffersIds.push(offer.id);
+		}
+
+		expect(offersIds.sort()).toEqual(apiOffersIds.sort());
+	});
+
 });

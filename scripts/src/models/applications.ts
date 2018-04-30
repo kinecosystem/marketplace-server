@@ -1,6 +1,7 @@
 import { generateId, IdPrefix } from "../utils";
-import { Column, Entity, Index } from "typeorm";
+import { Column, Entity, Index, JoinTable, ManyToMany } from "typeorm";
 import { CreationDateModel, Model, register as Register, initializer as Initializer } from "./index";
+import { Offer } from "./offers";
 
 export type StringMap = { [key: string]: string; };  // key => value pairs
 
@@ -19,6 +20,10 @@ export class Application extends CreationDateModel {
 
 	@Column("simple-json", { name: "jwt_public_keys" })
 	public jwtPublicKeys!: StringMap;
+
+	@ManyToMany(type => Offer)
+	@JoinTable()
+	public offers: Offer[] = [];
 }
 
 @Entity({ name: "app_whitelists" })

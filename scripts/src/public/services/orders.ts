@@ -17,6 +17,8 @@ import {
 	NoSuchOffer,
 	OfferCapReached,
 	OpenedOrdersOnly,
+	OpenOrderExpired,
+	InvalidPollAnswers,
 	ExternalOrderExhausted,
 	OpenedOrdersUnreturnable } from "../../errors";
 
@@ -147,26 +149,26 @@ export async function submitOrder(
 
 	const order = await db.Order.findOne({ id: orderId }) as db.MarketplaceOrder | db.ExternalOrder;
 	if (!order) {
-		throw Error(`no such order ${ orderId }`);
+		throw NoSuchOrder(orderId);
 	}
 	if (order.status !== "opened") {
 		return orderDbToApi(order);
 	}
 	if (order.isExpired()) {
-		throw Error(`open order ${ orderId } has expired`);
+		throw OpenOrderExpired(orderId);
 	}
 
 	if (order.isMarketplaceOrder()) {
 		const offer = await offerDb.Offer.findOneById(order.offerId);
 		if (!offer) {
-			throw Error(`no such offer ${ order.offerId }`);
+			throw NoSuchOffer(order.offerId);
 		}
 	}
 
 	if (order.type === "earn") {
 		// validate form
 		if (!offerContents.isValid(order.offerId, form)) {
-			throw Error(`submitted form is invalid for ${ order.id }`);
+			throw InvalidPollAnswers();
 		}
 
 		await offerContents.savePollAnswers(order.userId, order.offerId, orderId, form);
@@ -188,7 +190,7 @@ export async function cancelOrder(orderId: string, logger: LoggerInstance): Prom
 	// you can only delete an open order - not a pending order
 	const order = await db.Order.getOne(orderId, "opened");
 	if (!order) {
-		throw Error(`no such open order ${ orderId }`);
+		throw NoSuchOrder(orderId);
 	}
 
 	await order.remove();

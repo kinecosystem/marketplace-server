@@ -1,7 +1,10 @@
 import * as express from "express";
 
 import * as db from "../../models/users";
+import { TOSMissingOrOldToken } from "../../errors";
+
 import { authenticate } from "../auth";
+
 import { getOffers } from "./offers";
 import { getUser, signInUser, activateUser } from "./users";
 import { getOrder, cancelOrder, getOrderHistory, submitOrder, createMarketplaceOrder, createExternalOrder } from "./orders";
@@ -52,7 +55,7 @@ function Router(): ExtendedRouter {
 							const user = await db.User.findOneById(token.userId);
 							// XXX scopes should be per token and should not consider user data
 							if (scopes.includes(AuthScopes.TOS) && (!user || !user.activated || token.createdDate < user.activatedDate!)) {
-								throw Error("user did not approve TOS or using a pre activated token");
+								throw TOSMissingOrOldToken();
 							}
 							req.context = { user, token };
 

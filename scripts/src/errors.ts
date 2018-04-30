@@ -11,7 +11,9 @@ export type ApiError = {
 const CODES = {
 	Unauthorized: {
 		MissingToken: 1,
-		InvalidToken: 2
+		InvalidToken: 2,
+		InvalidApiKey: 3,
+		TOSMissingOrOldToken: 4
 	},
 	NotFound: {
 		App: 1,
@@ -19,6 +21,9 @@ const CODES = {
 		Order: 3,
 		PublicKey: 4,
 		OfferCapReached: 5
+	},
+	RequestTimeout: {
+		OpenOrderExpired: 1
 	},
 	Conflict: {
 		ExternalOrderExhausted: 1
@@ -29,7 +34,8 @@ const CODES = {
 	},
 	BadRequest: {
 		UnknownSignInType: 1,
-		WrongJWTAlgorithm: 2
+		WrongJWTAlgorithm: 2,
+		InvalidPollAnswers: 3
 	}
 };
 
@@ -70,6 +76,14 @@ export function InvalidToken(token: string) {
 	return UnauthorizedError(CODES.Unauthorized.InvalidToken, `Invalid token: ${ token }`);
 }
 
+export function InvalidApiKey(apiKey: string) {
+	return UnauthorizedError(CODES.Unauthorized.InvalidApiKey, `invalid api key: ${ apiKey }`);
+}
+
+export function TOSMissingOrOldToken() {
+	return UnauthorizedError(CODES.Unauthorized.TOSMissingOrOldToken, "user did not approve TOS or using a pre activated token");
+}
+
 function NotFoundError(index: number, message: string) {
 	return new MarketplaceError(404, index, "Not Found", message);
 }
@@ -88,6 +102,14 @@ export function NoSuchOrder(id: string) {
 
 export function NoSuchPublicKey(appId: string, keyid: string) {
 	return NotFoundError(CODES.NotFound.App, `Key "${ keyid }" not found for iss "${ appId }"`);
+}
+
+function RequestTimeoutError(index: number, message: string) {
+	return new MarketplaceError(408, index, "Request Timeout", message);
+}
+
+export function OpenOrderExpired(orderId: string) {
+	return RequestTimeoutError(CODES.RequestTimeout.OpenOrderExpired, `open order ${ orderId } has expired`);
 }
 
 function ConflictError(index: number, message: string) {
@@ -128,4 +150,8 @@ export function UnknownSignInType(type: string) {
 
 export function WrongJWTAlgorithm(type: string) {
 	return BadRequestError(CODES.BadRequest.UnknownSignInType, `algorithm type ("${ type }") not supported`);
+}
+
+export function InvalidPollAnswers() {
+	return BadRequestError(CODES.BadRequest.InvalidPollAnswers, "submitted form is invalid");
 }

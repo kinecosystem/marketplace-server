@@ -28,7 +28,7 @@ const CODES = {
 	Conflict: {
 		ExternalOrderExhausted: 1
 	},
-	UnprocessableEntity: {
+	InternalServerError: {
 		OpenedOrdersOnly: 1,
 		OpenedOrdersUnreturnable: 2
 	},
@@ -128,16 +128,16 @@ export function OfferCapReached(id: string) {
 	return LockedError(CODES.NotFound.OfferCapReached, `Cap reached for offer: ${ id }`);
 }
 
-function UnprocessableEntityError(index: number, message: string) {
-	return new MarketplaceError(422, index, "Unprocessable Entity", message);
+function InternalServerError(index: number, message: string) {
+	return new MarketplaceError(500, index, "Internal Server Error", message);
 }
 
 export function OpenedOrdersOnly() {
-	return UnprocessableEntityError(CODES.UnprocessableEntity.OpenedOrdersOnly, "Only opened orders should be returned");
+	return InternalServerError(CODES.InternalServerError.OpenedOrdersOnly, "Only opened orders should be returned");
 }
 
 export function OpenedOrdersUnreturnable() {
-	return UnprocessableEntityError(CODES.UnprocessableEntity.OpenedOrdersUnreturnable, "Opened orders should not be returned");
+	return InternalServerError(CODES.InternalServerError.OpenedOrdersUnreturnable, "Opened orders should not be returned");
 }
 
 function BadRequestError(index: number, message: string) {

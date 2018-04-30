@@ -11,7 +11,14 @@ import { Paging } from "./index";
 import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
-import { ApiError } from "../../middleware";
+import {
+	ApiError,
+	NoSuchOrder,
+	NoSuchOffer,
+	OfferCapReached,
+	OpenedOrdersOnly,
+	ExternalOrderExhausted,
+	OpenedOrdersUnreturnable } from "../../errors";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -47,7 +54,7 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
-		throw new Error(`no such order ${ orderId } or order is open`); // XXX throw and exception that is convert-able to json
+		throw NoSuchOrder(orderId);
 	}
 
 	checkIfTimedOut(order); // no need to wait for the promise
@@ -60,7 +67,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 	logger.info("creating marketplace order for", { offerId, userId: user.id });
 	const offer = await offerDb.Offer.findOneById(offerId);
 	if (!offer) {
-		throw new Error(`cannot create order, offer ${ offerId } not found`);
+		throw NoSuchOffer(offerId);
 	}
 
 	let order = await db.Order.getOpenOrder(offerId, user.id);
@@ -91,7 +98,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 	}
 
 	if (!order) {
-		throw new Error(`offer ${ offerId } cap reached`);
+		throw OfferCapReached(offerId);
 	}
 
 	logger.info("created new open marketplace order", order);
@@ -109,7 +116,7 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 
 		const count = await db.Order.countByOffer(offer.id, user.id);
 		if (count > 0) {
-			throw new Error("user already completed offer, or has a pending order"); // conflict
+			throw ExternalOrderExhausted();
 		}
 
 		order = db.ExternalOrder.new({
@@ -215,7 +222,7 @@ export async function getOrderHistory(
 
 function openOrderDbToApi(order: db.Order): OpenOrder {
 	if (order.status !== "opened") {
-		throw new Error("only opened orders should be returned");
+		throw OpenedOrdersOnly();
 	}
 	return {
 		id: order.id,
@@ -231,7 +238,7 @@ function openOrderDbToApi(order: db.Order): OpenOrder {
 
 function orderDbToApi(order: db.Order): Order {
 	if (order.status === "opened") {
-		throw new Error("opened orders should not be returned");
+		throw OpenedOrdersUnreturnable();
 	}
 
 	return {

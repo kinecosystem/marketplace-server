@@ -1,5 +1,4 @@
 import * as moment from "moment";
-import { ObjectType } from "typeorm/common/ObjectType";
 import { DeepPartial } from "typeorm/common/DeepPartial";
 import { Column, Entity, BaseEntity, SelectQueryBuilder, Brackets } from "typeorm";
 
@@ -7,7 +6,7 @@ import { generateId, IdPrefix } from "../utils";
 
 import { CreationDateModel, register as Register, initializer as Initializer, Model } from "./index";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
-import { ApiError } from "../middleware";
+import { ApiError } from "../errors";
 
 export interface OrderMeta {
 	title: string;

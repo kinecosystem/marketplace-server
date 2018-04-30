@@ -1,28 +1,29 @@
 import * as axios from "axios";
 import * as uuid4 from "uuid4";
+import * as expect from "expect";
+import * as StellarSdk from "stellar-sdk";
 import * as jsonwebtoken from "jsonwebtoken";
+import {
+	xdr,
+	Memo,
+	Operation,
+	CollectionPage,
+	TransactionError,
+	TransactionRecord,
+	PaymentOperationRecord,
+} from "stellar-sdk";
+
 import { Offer, OfferList } from "./public/services/offers";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { Poll, Tutorial, TUTORIAL_DESCRIPTION } from "./public/services/offer_contents";
 import { delay, generateId, retry } from "./utils";
 import { Application } from "./models/applications";
-import { ApiError } from "./public/middleware";
-import * as StellarSdk from "stellar-sdk";
+import { ApiError } from "./errors";
 import { AuthToken } from "./public/services/users";
-import {
-	Operation,
-	xdr,
-	Memo,
-	TransactionRecord,
-	TransactionError,
-	PaymentOperationRecord,
-	CollectionPage, OperationRecord
-} from "stellar-sdk";
 import { CompletedPayment, PaymentPayload } from "./internal/services";
 import { SpendPayloadOffer } from "./public/services/applications";
 import { JWTValue } from "./models/offers";
 import { JWTContent } from "./public/jwt";
-import * as expect from "expect";
 
 // const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
 const BASE = "http://localhost:3000";

@@ -1,5 +1,8 @@
 import { Request, Response, RequestHandler } from "express";
 
+import * as db from "../../models/users";
+import { UnknownSignInType } from "../../errors";
+
 import {
 	getOrCreateUserCredentials,
 	activateUser as activateUserService
@@ -9,8 +12,6 @@ import {
 	validateRegisterJWT,
 	validateWhitelist
 } from "../services/applications";
-
-import * as db from "../../models/users";
 
 // get a user
 export const getUser = async function(req: Request, res: Response) {
@@ -53,7 +54,7 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	} else if (data.sign_in_type === "whitelist") {
 		context = await validateWhitelist(data.user_id, data.api_key, req.logger);
 	} else {
-		throw new Error("unknown sign_in_type: " + (data as any).sign_in_type);
+		throw UnknownSignInType((data as any).sign_in_type);
 	}
 
 	const authToken = await getOrCreateUserCredentials(

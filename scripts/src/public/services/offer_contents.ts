@@ -89,7 +89,7 @@ export function isValid(offerId: string, form: string | undefined): form is stri
 }
 
 export async function savePollAnswers(userId: string, offerId: string, orderId: string, content: string): Promise<void> {
-	const answers = db.PollAnswers.new({
+	const answers = db.PollAnswer.new({
 		userId, offerId, orderId, content
 	});
 

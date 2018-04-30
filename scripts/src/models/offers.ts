@@ -132,7 +132,7 @@ export class Asset extends CreationDateModel {
 
 @Entity({ name: "poll_answers" })
 @Register
-export class PollAnswers extends CreationDateModel {
+export class PollAnswer extends CreationDateModel {
 	@Column({ name: "user_id" })
 	public userId!: string;
 

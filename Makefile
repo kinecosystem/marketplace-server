@@ -27,6 +27,7 @@ test-system:
 db:
 	rm -f database.sqlite
 	npm run create-db
+	npm run create-db-from-csv
 
 db-prod: db
 	chown -R ubuntu:www-data .

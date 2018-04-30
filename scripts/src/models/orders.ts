@@ -49,14 +49,16 @@ export class Order extends CreationDateModel {
 	 * count all offers that are completed, pending but expired, opened but not expired - i.e. not failed and not expired
 	 */
 	public static countByOffer(offerId: string, userId?: string): Promise<number> {
-		// has at least 2 minutes to complete before expiration
-		const latestExpiration = moment().add(2, "minutes").toDate();
 		const query = Order.createQueryBuilder()
-			.andWhere("status != :status", { status: "failed" })
-			.andWhere("offer_id = :offerId", { offerId })
+			.where("offer_id = :offerId", { offerId })
 			.andWhere(new Brackets(qb => {
-				qb.where("expiration_date IS NULL")
-					.orWhere("expiration_date > :date", { date: latestExpiration });
+				qb.where("status = :status", { status: "completed" })
+					.orWhere(
+						new Brackets(qb2 => {
+							qb2.where("status IN (:statuses)", { statuses: ["opened", "pending"] })
+								.andWhere("expiration_date > :date", { date: new Date() });
+						})
+					);
 			}));
 		if (userId) {
 			query.andWhere("user_id = :userId", { userId });
@@ -68,13 +70,10 @@ export class Order extends CreationDateModel {
 		// has at least 2 minutes to complete before expiration
 		const latestExpiration = moment().add(2, "minutes").toDate();
 		const query = Order.createQueryBuilder()
+			.where("offer_id = :offerId", { offerId })
 			.andWhere("status = :status", { status: "opened" })
-			.andWhere("offer_id = :offerId", { offerId })
 			.andWhere("user_id = :userId", { userId })
-			.andWhere(new Brackets(qb => {
-				qb.where("expiration_date IS NULL")
-					.orWhere("expiration_date > :date", { date: latestExpiration });
-			}))
+			.andWhere("expiration_date > :date", { date: latestExpiration })
 			.orderBy("expiration_date", "DESC"); // if there are a few, get the one with the most time left
 
 		return query.getOne() as Promise<T | undefined>;

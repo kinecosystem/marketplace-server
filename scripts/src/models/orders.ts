@@ -143,7 +143,7 @@ export class Order extends CreationDateModel {
 	public meta!: OrderMeta;
 
 	@Column("simple-json", { nullable: true })
-	public error?: ApiError;
+	public error?: ApiError | null;
 
 	@Column()
 	public amount!: number;
@@ -158,7 +158,7 @@ export class Order extends CreationDateModel {
 	public value?: OrderValue;
 
 	@Column({ name: "expiration_date", nullable: true })
-	public expirationDate?: Date;
+	public expirationDate?: Date | null;
 
 	public setStatus(status: OpenOrderStatus) {
 		this.status = status;
@@ -171,7 +171,7 @@ export class Order extends CreationDateModel {
 				this.expirationDate = moment(this.currentStatusDate).add(10, "minutes").toDate();
 				break;
 			default:
-				this.expirationDate = undefined;
+				this.expirationDate = null;
 		}
 	}
 

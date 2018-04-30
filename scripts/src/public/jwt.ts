@@ -25,7 +25,7 @@ export async function verify<T>(token: string, logger: LoggerInstance): Promise<
 	const decoded = jsonwebtoken.decode(token, { complete: true }) as JWTContent<T>;
 	if (decoded.header.alg.toUpperCase() !== "ES256") {
 		logger.warn(`got JWT with wrong algorithm ${decoded.header.alg}. ignoring`);
-		// throw WrongJWTAlgorithm();  // TODO uncomment when we deprecate other algo support
+		// throw WrongJWTAlgorithm(decoded.header.alg);  // TODO uncomment when we deprecate other algo support
 	}
 
 	const appId = decoded.payload.iss;

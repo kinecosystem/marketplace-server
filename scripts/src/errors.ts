@@ -17,13 +17,11 @@ const CODES = {
 		App: 1,
 		Offer: 2,
 		Order: 3,
-		PublicKey: 4
+		PublicKey: 4,
+		OfferCapReached: 5
 	},
 	Conflict: {
 		ExternalOrderExhausted: 1
-	},
-	Locked: {
-		OfferCapReached: 1
 	},
 	UnprocessableEntity: {
 		OpenedOrdersOnly: 1,
@@ -105,7 +103,7 @@ function LockedError(index: number, message: string) {
 }
 
 export function OfferCapReached(id: string) {
-	return LockedError(CODES.Locked.OfferCapReached, `Cap reached for offer: ${ id }`);
+	return LockedError(CODES.NotFound.OfferCapReached, `Cap reached for offer: ${ id }`);
 }
 
 function UnprocessableEntityError(index: number, message: string) {
@@ -128,6 +126,6 @@ export function UnknownSignInType(type: string) {
 	return BadRequestError(CODES.BadRequest.UnknownSignInType, `Unknown sign-in type: ${ type }`);
 }
 
-export function WrongJWTAlgorithm() {
-	return BadRequestError(CODES.BadRequest.UnknownSignInType, "only ES256 supported");
+export function WrongJWTAlgorithm(type: string) {
+	return BadRequestError(CODES.BadRequest.UnknownSignInType, `algorithm type ("${ type }") not supported`);
 }

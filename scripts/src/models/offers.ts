@@ -118,3 +118,19 @@ export class Asset extends CreationDateModel {
 		return Object.assign({ type: this.type }, this.value);
 	}
 }
+
+@Entity({ name: "poll_answers" })
+@Register
+export class PollAnswer extends CreationDateModel {
+	@Column({ name: "user_id" })
+	public userId!: string;
+
+	@Column({ name: "offer_id" })
+	public offerId!: string;
+
+	@Column({ name: "order_id" })
+	public orderId!: string;
+
+	@Column()
+	public content!: string;
+}

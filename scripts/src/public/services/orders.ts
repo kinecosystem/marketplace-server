@@ -113,10 +113,9 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 	let order = await db.Order.getOpenOrder(offer.id, user.id);
 
 	if (!order) {
-
 		const count = await db.Order.countByOffer(offer.id, user.id);
 		if (count > 0) {
-			throw ExternalOrderExhausted()
+			throw ExternalOrderExhausted();
 		}
 
 		order = db.ExternalOrder.new({

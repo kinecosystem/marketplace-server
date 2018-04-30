@@ -4,7 +4,11 @@ export type ApiError = {
 	message: string;
 };
 
-export const CODES = {
+/**
+ * Code additions (/postfix) to be added to the http status code per error.
+ * The concatenation is done in the MarketplaceError ctor.
+ */
+const CODES = {
 	Unauthorized: {
 		MissingToken: 1,
 		InvalidToken: 2

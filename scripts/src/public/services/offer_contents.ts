@@ -1,5 +1,6 @@
 import { LoggerInstance } from "winston";
 
+import { isNothing } from "../../utils";
 import * as db from "../../models/offers";
 
 export interface Question {
@@ -72,6 +73,25 @@ export async function getOffer(offerId: string, logger: LoggerInstance): Promise
 	return await db.OfferContent.findOne({ offerId });
 }
 
-export async function isValid(offerId: string, form: string | undefined, logger: LoggerInstance): Promise<boolean> {
-	return Promise.resolve(!!form);
+export function isValid(offerId: string, form: string | undefined): form is string {
+	if (isNothing(form)) {
+		return false;
+	}
+
+	let answers: Answers;
+	try {
+		answers = JSON.parse(form);
+	} catch (e) {
+		return false;
+	}
+
+	return typeof answers === "object" && !Array.isArray(answers);
+}
+
+export async function savePollAnswers(userId: string, offerId: string, orderId: string, content: string): Promise<void> {
+	const answers = db.PollAnswers.new({
+		userId, offerId, orderId, content
+	});
+
+	await answers.save();
 }

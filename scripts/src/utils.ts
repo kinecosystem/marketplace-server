@@ -4,6 +4,11 @@ const fromProjectRoot = _path.join.bind(path, __dirname, "../../");
 
 export type ServerError = Error & { syscall: string; code: string; };
 
+export type Nothing = null | undefined;
+export function isNothing(obj: any): obj is Nothing {
+	return obj === null || obj === undefined;
+}
+
 export function path(...paths: string[]): string {
 	return fromProjectRoot(...paths);
 }

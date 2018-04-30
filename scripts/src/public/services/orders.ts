@@ -158,9 +158,14 @@ export async function submitOrder(
 
 	if (order.type === "earn") {
 		// validate form
-		if (!await offerContents.isValid(order.offerId, form, logger)) {
+		if (!offerContents.isValid(order.offerId, form, logger)) {
 			throw Error(`submitted form is invalid for ${ order.id }`);
 		}
+
+		order.value = {
+			form,
+			type: "form"
+		};
 	}
 
 	order.setStatus("pending");

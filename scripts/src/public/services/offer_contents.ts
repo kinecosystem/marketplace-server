@@ -72,6 +72,6 @@ export async function getOffer(offerId: string, logger: LoggerInstance): Promise
 	return await db.OfferContent.findOne({ offerId });
 }
 
-export async function isValid(offerId: string, form: string | undefined, logger: LoggerInstance): Promise<boolean> {
-	return Promise.resolve(!!form);
+export function isValid(offerId: string, form: string | undefined, logger: LoggerInstance): form is string {
+	return !!form;
 }

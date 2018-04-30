@@ -246,7 +246,7 @@ function orderDbToApi(order: db.Order): Order {
 		completion_date: (order.currentStatusDate || order.createdDate).toISOString(), // XXX should we separate the dates?
 		content: order.meta.content,  // will be empty for external order
 		blockchain_data: order.blockchainData,
-		error: order.error,  // will be null for anything other than "failed"
+		error: order.error as ApiError,  // will be null for anything other than "failed"
 		result: order.value,  // will be a coupon code or a confirm_payment JWT
 	};
 }

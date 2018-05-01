@@ -1,14 +1,16 @@
 import { LoggerInstance } from "winston";
 import * as jsonwebtoken from "jsonwebtoken";
 
+import { isNothing } from "../utils";
 import { Application } from "../models/applications";
-import { NoSuchApp, NoSuchPublicKey, WrongJWTAlgorithm } from "../errors";
+import { NoSuchApp, NoSuchPublicKey, JwtKidMissing, WrongJWTAlgorithm } from "../errors";
 
 export type JWTClaims = {
 	iss: string; // issuer - the app_id
 	exp: number; // expiration
 	iat: number; // issued at
 	sub: string; // subject
+	kid?: string;
 };
 
 export type JWTContent<T> = {
@@ -34,7 +36,12 @@ export async function verify<T>(token: string, logger: LoggerInstance): Promise<
 		throw NoSuchApp(appId);
 	}
 
-	const kid = decoded.header.kid;
+	const kid = decoded.header.kid || decoded.payload.kid;
+
+	if (isNothing(kid)) {
+		throw JwtKidMissing();
+	}
+
 	const publicKey = app.jwtPublicKeys[kid];
 	if (!publicKey) {
 		throw NoSuchPublicKey(appId, kid);

@@ -1,6 +1,8 @@
-import * as jsonwebtoken from "jsonwebtoken";
-import { Application } from "../models/applications";
 import { LoggerInstance } from "winston";
+import * as jsonwebtoken from "jsonwebtoken";
+
+import { Application } from "../models/applications";
+import { NoSuchApp, NoSuchPublicKey, WrongJWTAlgorithm } from "../errors";
 
 export type JWTClaims = {
 	iss: string; // issuer - the app_id
@@ -23,19 +25,19 @@ export async function verify<T>(token: string, logger: LoggerInstance): Promise<
 	const decoded = jsonwebtoken.decode(token, { complete: true }) as JWTContent<T>;
 	if (decoded.header.alg.toUpperCase() !== "ES256") {
 		logger.warn(`got JWT with wrong algorithm ${decoded.header.alg}. ignoring`);
-		// throw new Error(`only ES256 supported`);  // TODO uncomment when we deprecate other algo support
+		// throw WrongJWTAlgorithm(decoded.header.alg);  // TODO uncomment when we deprecate other algo support
 	}
 
 	const appId = decoded.payload.iss;
 	const app = await Application.findOneById(appId);
 	if (!app) {
-		throw new Error(`app ${ appId } not found`);
+		throw NoSuchApp(appId);
 	}
 
 	const kid = decoded.header.kid;
 	const publicKey = app.jwtPublicKeys[kid];
 	if (!publicKey) {
-		throw new Error(`kid "${ kid }" not found for jwt "${ decoded }"`);
+		throw NoSuchPublicKey(appId, kid);
 	}
 	jsonwebtoken.verify(token, publicKey); // throws
 

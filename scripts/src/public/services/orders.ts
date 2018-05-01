@@ -11,7 +11,16 @@ import { Paging } from "./index";
 import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
-import { ApiError } from "../../middleware";
+import {
+	ApiError,
+	NoSuchOrder,
+	NoSuchOffer,
+	OfferCapReached,
+	OpenedOrdersOnly,
+	OpenOrderExpired,
+	InvalidPollAnswers,
+	ExternalOrderExhausted,
+	OpenedOrdersUnreturnable } from "../../errors";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -47,7 +56,7 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
-		throw new Error(`no such order ${ orderId } or order is open`); // XXX throw and exception that is convert-able to json
+		throw NoSuchOrder(orderId);
 	}
 
 	checkIfTimedOut(order); // no need to wait for the promise
@@ -60,7 +69,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 	logger.info("creating marketplace order for", { offerId, userId: user.id });
 	const offer = await offerDb.Offer.findOneById(offerId);
 	if (!offer) {
-		throw new Error(`cannot create order, offer ${ offerId } not found`);
+		throw NoSuchOffer(offerId);
 	}
 
 	let order = await db.Order.getOpenOrder(offerId, user.id);
@@ -91,7 +100,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 	}
 
 	if (!order) {
-		throw new Error(`offer ${ offerId } cap reached`);
+		throw OfferCapReached(offerId);
 	}
 
 	logger.info("created new open marketplace order", order);
@@ -109,7 +118,7 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 
 		const count = await db.Order.countByOffer(offer.id, user.id);
 		if (count > 0) {
-			throw new Error("user already completed offer, or has a pending order"); // conflict
+			throw ExternalOrderExhausted();
 		}
 
 		order = db.ExternalOrder.new({
@@ -140,26 +149,26 @@ export async function submitOrder(
 
 	const order = await db.Order.findOne({ id: orderId }) as db.MarketplaceOrder | db.ExternalOrder;
 	if (!order) {
-		throw Error(`no such order ${ orderId }`);
+		throw NoSuchOrder(orderId);
 	}
 	if (order.status !== "opened") {
 		return orderDbToApi(order);
 	}
 	if (order.isExpired()) {
-		throw Error(`open order ${ orderId } has expired`);
+		throw OpenOrderExpired(orderId);
 	}
 
 	if (order.isMarketplaceOrder()) {
 		const offer = await offerDb.Offer.findOneById(order.offerId);
 		if (!offer) {
-			throw Error(`no such offer ${ order.offerId }`);
+			throw NoSuchOffer(order.offerId);
 		}
 	}
 
 	if (order.type === "earn") {
 		// validate form
 		if (!offerContents.isValid(order.offerId, form)) {
-			throw Error(`submitted form is invalid for ${ order.id }`);
+			throw InvalidPollAnswers();
 		}
 
 		await offerContents.savePollAnswers(order.userId, order.offerId, orderId, form);
@@ -181,7 +190,7 @@ export async function cancelOrder(orderId: string, logger: LoggerInstance): Prom
 	// you can only delete an open order - not a pending order
 	const order = await db.Order.getOne(orderId, "opened");
 	if (!order) {
-		throw Error(`no such open order ${ orderId }`);
+		throw NoSuchOrder(orderId);
 	}
 
 	await order.remove();
@@ -215,7 +224,7 @@ export async function getOrderHistory(
 
 function openOrderDbToApi(order: db.Order): OpenOrder {
 	if (order.status !== "opened") {
-		throw new Error("only opened orders should be returned");
+		throw OpenedOrdersOnly();
 	}
 	return {
 		id: order.id,
@@ -231,7 +240,7 @@ function openOrderDbToApi(order: db.Order): OpenOrder {
 
 function orderDbToApi(order: db.Order): Order {
 	if (order.status === "opened") {
-		throw new Error("opened orders should not be returned");
+		throw OpenedOrdersUnreturnable();
 	}
 
 	return {

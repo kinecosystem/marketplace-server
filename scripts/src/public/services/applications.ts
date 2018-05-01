@@ -1,7 +1,9 @@
 import { LoggerInstance } from "winston";
 
-import { verify as verifyJWT } from "../jwt";
+import { InvalidApiKey } from "../../errors";
 import { Application, AppWhitelists } from "../../models/applications";
+
+import { verify as verifyJWT } from "../jwt";
 
 export type RegisterPayload = {
 	user_id: string;
@@ -41,7 +43,7 @@ export async function validateWhitelist(
 	// check if apiKey matches appId
 	const app = await Application.findOne({ apiKey });
 	if (!app) {
-		throw Error(`invalid api_key ${ apiKey }`);
+		throw InvalidApiKey(apiKey);
 	}
 
 	// check if userId is whitelisted in app

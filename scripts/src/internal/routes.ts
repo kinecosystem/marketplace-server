@@ -22,5 +22,5 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		.post("/payments", paymentComplete)
 		.post("/failed-payments", paymentFailed);
 
-	app.use("/", router);
+	app.use("/v1/internal/", router);
 }

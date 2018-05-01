@@ -125,7 +125,7 @@ function LockedError(index: number, message: string) {
 }
 
 export function OfferCapReached(id: string) {
-	return LockedError(CODES.NotFound.OfferCapReached, `Cap reached for offer: ${ id }`);
+	return NotFoundError(CODES.NotFound.OfferCapReached, `Cap reached for offer: ${ id }`);
 }
 
 function InternalServerError(index: number, message: string) {

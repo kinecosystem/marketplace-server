@@ -13,7 +13,8 @@ const CODES = {
 		MissingToken: 1,
 		InvalidToken: 2,
 		InvalidApiKey: 3,
-		TOSMissingOrOldToken: 4
+		JwtKidMissing: 4,
+		TosMissingOrOldToken: 5
 	},
 	NotFound: {
 		App: 1,
@@ -80,8 +81,12 @@ export function InvalidApiKey(apiKey: string) {
 	return UnauthorizedError(CODES.Unauthorized.InvalidApiKey, `invalid api key: ${ apiKey }`);
 }
 
-export function TOSMissingOrOldToken() {
-	return UnauthorizedError(CODES.Unauthorized.TOSMissingOrOldToken, "user did not approve TOS or using a pre activated token");
+export function JwtKidMissing() {
+	return UnauthorizedError(CODES.Unauthorized.JwtKidMissing, "kid is missing from the JWT");
+}
+
+export function TosMissingOrOldToken() {
+	return UnauthorizedError(CODES.Unauthorized.TosMissingOrOldToken, "user did not approve TOS or using a pre activated token");
 }
 
 function NotFoundError(index: number, message: string) {

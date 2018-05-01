@@ -73,17 +73,21 @@ class SampleAppClient {
 
 class Client {
 
-	private static KinPaymentFromStellar(operation: PaymentOperationRecord, transaction: TransactionRecord): CompletedPayment {
-		const [, appId, id] = transaction.memo.split("-", 3);
-		return {
-			id,
-			app_id: appId,
-			transaction_id: operation.id,
-			recipient_address: operation.to,
-			sender_address: operation.from,
-			amount: parseInt(operation.amount, 10),
-			timestamp: transaction.created_at,
-		};
+	private static KinPaymentFromStellar(operation: PaymentOperationRecord, transaction: TransactionRecord): CompletedPayment | undefined {
+		try {
+			const [, appId, id] = transaction.memo.split("-", 3);
+			return {
+				id,
+				app_id: appId,
+				transaction_id: operation.id,
+				recipient_address: operation.to,
+				sender_address: operation.from,
+				amount: parseInt(operation.amount, 10),
+				timestamp: transaction.created_at,
+			};
+		} catch (e) {
+			return;
+		}
 	}
 
 	public readonly appId!: string;
@@ -152,11 +156,11 @@ class Client {
 		const payments = await this.getPayments();
 		return (await Promise.all(
 			payments.records
-				.map(async payment => {
-					const transaction = await payment.transaction();
-					return Client.KinPaymentFromStellar(payment, transaction);
+				.map(async stellarPayment => {
+					const transaction = await stellarPayment.transaction();
+					return Client.KinPaymentFromStellar(stellarPayment, transaction);
 				})
-		)).filter(payment => payment !== undefined);
+		)).filter(kinPayment => !!kinPayment) as CompletedPayment[];
 	}
 
 	public async findKinPayment(orderId: string): Promise<CompletedPayment | undefined> {

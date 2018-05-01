@@ -1,11 +1,12 @@
 import * as express from "express";
-import { LoggerInstance } from "winston";
-
-import { getDefaultLogger } from "./logging";
-import { generateId } from "./utils";
-import { Request, Response } from "express-serve-static-core";
-import * as metrics from "./metrics";
 import { performance } from "perf_hooks";
+import { LoggerInstance } from "winston";
+import { Request, Response } from "express-serve-static-core";
+
+import * as metrics from "./metrics";
+import { generateId } from "./utils";
+import { MarketplaceError } from "./errors";
+import { getDefaultLogger } from "./logging";
 
 let logger: LoggerInstance;
 export function init() {
@@ -82,16 +83,23 @@ export const notFoundHandler = function(req: Request, res: Response) {
 	res.status(404).send({ code: 404, error: "Not found", message: "Not found" });
 } as express.RequestHandler;
 
-export type ApiError = {
-	code: number;
-	error: string;
-	message: string;
-};
-
 /**
  * The "next" arg is needed even though it's not used, otherwise express won't understand that it's an error handler
  */
 export function generalErrorHandler(err: any, req: Request, res: Response, next: express.NextFunction) {
+	if (err instanceof MarketplaceError) {
+		clientErrorHandler(err, req, res);
+	} else {
+		serverErrorHandler(err, req, res);
+	}
+}
+
+function clientErrorHandler(err: MarketplaceError, req: Request, res: Response) {
+	logger.error("client error (4xx): ", err);
+	res.status(err.status).send(err.toJson());
+}
+
+function serverErrorHandler(err: any, req: Request, res: Response) {
 	let message = `Error
 	method: ${ req.method }
 	path: ${ req.url }

@@ -11,6 +11,7 @@ import { Offer } from "./models/offers";
 import { init as initModels } from "./models";
 import { PageType, Poll, Tutorial } from "./public/services/offer_contents";
 import { createEarn, createSpend } from "./create_data/offers";
+import { Application } from "./models/applications";
 
 function readTitle(title: string): string {
 	// read until first space
@@ -35,11 +36,17 @@ function toMap(data: string[][]): Array<Map<string, string>> {
 	return list;
 }
 
+async function getAllApps(): Promise<Application[]> {
+	 return await Application.createQueryBuilder("app")
+		.leftJoinAndSelect("app.offers", "offer")
+		 .getMany();
+}
+
 async function parseSpend(data: string[][]) {
 	const list = toMap(data);
-
+	const offers: Offer[] = [];
 	for (const v of list) {
-		await createSpend(
+		const offer = await createSpend(
 			v.get("OfferName")!,
 			v.get("WalletAddress")!,
 			v.get("Brand")!,
@@ -64,6 +71,13 @@ async function parseSpend(data: string[][]) {
 			v.get("OrderContentHyperLink")!,
 			v.get("CouponCodes")!.split(/\s+/),
 		);
+		offers.push(offer);
+	}
+
+	for (const app of await getAllApps()) {
+		app.offers = app.offers.concat(offers);
+		console.log(app.offers.length);
+		await app.save();
 	}
 }
 
@@ -73,26 +87,28 @@ async function parseEarn(data: string[][]) {
 	const poll: Poll | Tutorial = { pages: [] };
 	let offer: Map<string, string> | undefined;
 
-	function createEarnInner(offer: Map<string, string>, poll: Poll | Tutorial): Promise<Offer> {
-		return createEarn(
-			offer.get("OfferName")!,
-			offer.get("WalletAddress")!,
-			offer.get("Brand")!,
-			offer.get("Title")!,
-			offer.get("Description")!,
-			offer.get("Image")!,
-			parseInt(offer.get("Amount")!, 10),
-			parseInt(offer.get("CapTotal")!, 10),
-			parseInt(offer.get("CapPerUser")!, 10),
-			offer.get("OrderTitle")!,
-			offer.get("OrderDescription")!,
+	async function createEarnInner(v: Map<string, string>, poll: Poll | Tutorial): Promise<Offer> {
+		const offer = await createEarn(
+			v.get("OfferName")!,
+			v.get("WalletAddress")!,
+			v.get("Brand")!,
+			v.get("Title")!,
+			v.get("Description")!,
+			v.get("Image")!,
+			parseInt(v.get("Amount")!, 10),
+			parseInt(v.get("CapTotal")!, 10),
+			parseInt(v.get("CapPerUser")!, 10),
+			v.get("OrderTitle")!,
+			v.get("OrderDescription")!,
 			poll);
+		return offer;
 	}
 
+	const offers: Offer[] = [];
 	for (const v of list) {
 		if (v.get("OfferName") !== "") {
 			if (offer) {
-				await createEarnInner(offer, poll);
+				offers.push(await createEarnInner(offer, poll));
 			}
 			offer = v;
 			poll.pages = [];
@@ -135,7 +151,13 @@ async function parseEarn(data: string[][]) {
 	}
 
 	if (offer) {
-		await createEarnInner(offer, poll);
+		offers.push(await createEarnInner(offer, poll));
+	}
+
+	for (const app of await getAllApps()) {
+		app.offers = app.offers.concat(offers);
+		console.log(app.offers.length);
+		await app.save();
 	}
 }
 

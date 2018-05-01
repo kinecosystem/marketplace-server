@@ -67,6 +67,7 @@
     "start": "node scripts/bin/public/index",
     "start-internal": "node scripts/bin/internal/index",
     "create-db": "node scripts/bin/create",
+    "create-db-from-csv": "node scripts/bin/create_from_csv",
     "restart": "npm-run-all build start",
     "transpile-tests": "tsc -p tests",
     "test-system": "node scripts/bin/mock_client",

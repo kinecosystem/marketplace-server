@@ -6,7 +6,7 @@ import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { Poll, Tutorial, TUTORIAL_DESCRIPTION } from "./public/services/offer_contents";
 import { delay, generateId, retry } from "./utils";
 import { Application } from "./models/applications";
-import { ApiError } from "./public/middleware";
+import { ApiError } from "./errors";
 import * as StellarSdk from "stellar-sdk";
 import { AuthToken } from "./public/services/users";
 import {
@@ -429,7 +429,7 @@ async function earnFlow() {
 async function earnTutorial() {
 	console.log("=====================================earnTutorial=====================================");
 	const client = new Client();
-	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "doody98ds" },
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "new_test_user" },
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 	await client.activate();
 
@@ -438,7 +438,7 @@ async function earnTutorial() {
 	let selectedOffer: Offer | undefined;
 
 	for (const offer of offers.offers) {
-		if (offer.description === TUTORIAL_DESCRIPTION) {
+		if (offer.title === "About Kin") {
 			console.log("offer", offer);
 			selectedOffer = offer;
 		}
@@ -452,16 +452,10 @@ async function earnTutorial() {
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 
-	// fill in the poll
-	console.log("poll " + selectedOffer.content.slice(0, 100));
 	const poll: Tutorial = JSON.parse(selectedOffer.content);
-
 	const content = JSON.stringify({});
-	console.log("answers " + content);
 
 	await client.submitOrder(openOrder.id, content);
-
-	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
 	console.log(`completion date: ${order.completion_date}`);
@@ -582,14 +576,14 @@ async function tryToNativeSpendTwice() {
 }
 
 async function main() {
-	await earnFlow();
+	// await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
-	// await earnTutorial();
+	await earnTutorial();
 	// await spendFlow();
 	// await justPay();
 	// await registerJWT();
-	await nativeSpendFlow();
+	// await nativeSpendFlow();
 	// await tryToNativeSpendTwice();
 }
 

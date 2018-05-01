@@ -3,7 +3,7 @@ import { ObjectType } from "typeorm/common/ObjectType";
 import { DeepPartial } from "typeorm/common/DeepPartial";
 import { Column, Entity, BaseEntity, SelectQueryBuilder, Brackets } from "typeorm";
 
-import { generateId, IdPrefix } from "../utils";
+import { generateId, IdPrefix, Nothing } from "../utils";
 
 import { CreationDateModel, register as Register, initializer as Initializer, Model } from "./index";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
@@ -145,7 +145,7 @@ export class Order extends CreationDateModel {
 	public meta!: OrderMeta;
 
 	@Column("simple-json", { nullable: true })
-	public error?: ApiError | null;
+	public error?: ApiError| null;
 
 	@Column()
 	public amount!: number;
@@ -160,7 +160,7 @@ export class Order extends CreationDateModel {
 	public value?: OrderValue;
 
 	@Column({ name: "expiration_date", nullable: true })
-	public expirationDate?: Date | null;
+	public expirationDate?: Date;
 
 	public setStatus(status: OpenOrderStatus) {
 		this.status = status;
@@ -173,7 +173,7 @@ export class Order extends CreationDateModel {
 				this.expirationDate = moment(this.currentStatusDate).add(10, "minutes").toDate();
 				break;
 			default:
-				this.expirationDate = null;
+				this.expirationDate = null as any;
 		}
 	}
 

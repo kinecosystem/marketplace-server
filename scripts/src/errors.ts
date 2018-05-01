@@ -120,10 +120,6 @@ export function ExternalOrderExhausted() {
 	return ConflictError(CODES.Conflict.ExternalOrderExhausted, "User already completed offer, or has a pending order");
 }
 
-function LockedError(index: number, message: string) {
-	return new MarketplaceError(423, index, "Resource Locked", message);
-}
-
 export function OfferCapReached(id: string) {
 	return NotFoundError(CODES.NotFound.OfferCapReached, `Cap reached for offer: ${ id }`);
 }

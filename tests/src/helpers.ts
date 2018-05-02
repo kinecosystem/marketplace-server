@@ -142,7 +142,6 @@ export async function clearDatabase() {
 	}
 }
 
-
 export async function createApp(appId: string): Promise<Application> {
 	const app = Application.new({
 		id: appId,

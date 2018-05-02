@@ -50,9 +50,15 @@ function offerDbToApi(offer: db.Offer, content: db.OfferContent) {
 	};
 }
 
-async function filterOffers(userId: string, offers: db.Offer[], logger: LoggerInstance): Promise<Offer[]> {
+async function filterOffers(userId: string, app: Application | undefined, logger: LoggerInstance): Promise<Offer[]> {
+	// TODO: this should be a temp fix!
+	// the app should not be undefined as we used left join, figure it out
+	if (!app) {
+		return [];
+	}
+
 	return (await Promise.all(
-		offers
+		app.offers
 			.map(async offer => {
 				if (await offer.didExceedCap(userId)) {
 					return null;
@@ -80,11 +86,11 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 		offers = offers.concat(
 			await filterOffers(
 				userId,
-				(await query
+				await query
 					.andWhere("offer.type = :type", { type: "earn" })
 					.orderBy("offer.amount", "DESC")
 					.addOrderBy("offer.id", "ASC")
-					.getOne())!.offers,
+					.getOne(),
 				logger
 			)
 		);
@@ -94,11 +100,11 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 		offers = offers.concat(
 			await filterOffers(
 				userId,
-				(await query
+				await query
 					.andWhere("offer.type = :type", { type: "spend" })
 					.orderBy("offer.amount", "ASC")
 					.addOrderBy("offer.id", "ASC")
-					.getOne())!.offers,
+					.getOne(),
 				logger
 			)
 		);

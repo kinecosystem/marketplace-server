@@ -45,7 +45,7 @@ describe("test orders", async () => {
 	});
 
 	test("return getOrder reduces cap", async () => {
-		(payment.payTo as any) = function () {
+		(payment.payTo as any) = function() {
 			return 1;
 		}; // XXX use a patching library
 

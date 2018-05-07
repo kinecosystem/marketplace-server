@@ -1,0 +1,42 @@
+version: "3"
+
+services:
+  payment-service:
+    image: kinecosystem/payment-service
+    ports:
+      - 3000
+    links:
+      - redis
+    environment:
+      &payment_env_vars
+      APP_DEBUG: 'False'
+      APP_PORT: 3000
+      APP_HOST: '0.0.0.0'
+      APP_NAME: 'payment-service'
+      APP_REDIS: redis://redis:6379/0
+      STELLAR_CHANNEL_SEEDS: ${STELLAR_CHANNEL_SEEDS}
+      STELLAR_BASE_SEED: ${STELLAR_BASE_SEED}
+      STELLAR_ADDRESS: ${STELLAR_ADDRESS}
+
+  payment-worker:
+    image: kinecosystem/payment-service
+    command: pipenv run rq worker --url redis://redis:6379/0
+    links:
+      - redis
+    environment:
+      <<: *payment_env_vars
+
+  redis:
+    image: redis
+    ports:
+      - 6379
+
+  jwt-service:
+    image: kinecosystem/jwt-service
+    ports:
+      - 3000
+    environment:
+      APP_DEBUG: 'False'
+      APP_PORT: 3000
+      APP_HOST: '0.0.0.0'
+      APP_NAME: 'smpl'

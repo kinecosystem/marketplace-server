@@ -8,6 +8,7 @@ import { generateId } from "./utils";
 import { MarketplaceError } from "./errors";
 import { getDefaultLogger } from "./logging";
 
+const START_TIME = (new Date()).toISOString();
 let logger: LoggerInstance;
 export function init() {
 	logger = getDefaultLogger();
@@ -116,3 +117,16 @@ function serverErrorHandler(err: any, req: Request, res: Response) {
 	logger.error(message);
 	res.status(500).send({ code: 500, error: err.message || "Server error", message:  err.message });
 }
+
+export const statusHandler = async function(req: express.Request, res: express.Response) {
+	res.status(200).send(
+		{
+			status: "ok",
+			app_name: process.env.APP_NAME,
+			start_time: START_TIME,
+			build: {
+				commit: process.env.BUILD_COMMIT,
+				timestamp: process.env.BUILD_TIMESTAMP,
+			}
+		});
+} as any as express.RequestHandler;

@@ -1,4 +1,5 @@
 // wrapper for the payment service
+// TODO: this is used by both public and internal so should move to shared dir
 import * as axios from "axios";
 import { LoggerInstance } from "winston";
 import { performance } from "perf_hooks";

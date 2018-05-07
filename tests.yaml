@@ -1,0 +1,39 @@
+version: "3"
+
+services:
+  psql:
+    links:
+      - postgres
+    entrypoint: psql -h postgres -U user -d ecosystem
+    environment:
+      PGPASSWORD: pass
+    image: postgres
+
+  create-db:
+    image: kinecosystem/marketplace-server
+    volumes:
+      - .:/opt/app
+    links:
+      - postgres
+    command: npm run create-db 
+    environment:
+      APP_DB_TYPE: postgres
+      APP_DB_USERNAME: user
+      APP_DB_PASSWORD: pass
+      APP_DB_PORT: 5432 
+      APP_DB_HOST: postgres
+      APP_DB_DATABASE: ecosystem
+      STELLAR_ADDRESS: ${STELLAR_ADDRESS}
+      REDUCE_AMOUNT: 'true'
+
+  test-system:
+    image: kinecosystem/marketplace-server
+    volumes:
+      - .:/opt/app
+    links:
+      - marketplace-server
+      - jwt-service
+    environment:
+      MARKETPLACE_BASE: http://marketplace-server:3000
+      JWT_SERVICE_BASE: http://jwt-service:3000
+    command: npm run test-system

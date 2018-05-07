@@ -27,7 +27,6 @@ test-system:
 db:
 	rm -f database.sqlite
 	npm run create-db
-	npm run create-db-from-csv
 
 db-prod: db
 	chown -R ubuntu:www-data .
@@ -49,4 +48,17 @@ push-image:
 	docker push ${image}:${revision}
 
 up:
-	docker-compose up
+	docker-compose -f docker-compose.yaml -f deps.yaml up
+
+down:
+	docker-compose -f docker-compose.yaml -f deps.yaml down
+
+psql:
+	docker-compose -f docker-compose.yaml -f deps.yaml -f tests.yaml run --rm psql
+
+db-docker:
+	docker-compose -f docker-compose.yaml -f deps.yaml -f tests.yaml run --rm psql -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO postgres; GRANT ALL ON SCHEMA public TO public;"
+	docker-compose -f docker-compose.yaml -f deps.yaml -f tests.yaml run --rm create-db
+
+test-system-docker: db-docker
+	docker-compose -f docker-compose.yaml -f deps.yaml -f tests.yaml run --rm test-system

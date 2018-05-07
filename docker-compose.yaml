@@ -1,24 +1,52 @@
 version: "3"
 
 services:
-  base:
-    build:
-      dockerfile: Dockerfile.base
-      context: .
-    image: kinecosystem/marketplace-service-base
 
-  public:
-    build:
-      dockerfile: Dockerfile.public
-      context: .
-    image: kinecosystem/marketplace-service-public
+  marketplace-service:
+    image: kinecosystem/marketplace-service
     ports:
-      - 3000:3000
+      - 3000
+    links:
+      - redis
+      - payment-service
+      - postgres
+    volumes:
+      - .:/opt/app
+    environment:
+      &app_env_vars
+      APP_DEBUG: 'True'
+      APP_PORT: 3000
+      APP_HOST: '0.0.0.0'
+      APP_NAME: 'marketplace-server'
+      APP_REDIS: redis://redis:6379/0
+      APP_PAYMENT_SERVICE: http://payment-service
+      APP_PAYMENT_COMPLETE_CALLBACK: http://marketplace-internal/v1/internal/payments
+      APP_DB_TYPE: postgres
+      APP_DB_USERNAME: user
+      APP_DB_PASSWORD: pass
+      APP_DB_PORT: 5432 
+      APP_DB_HOST: postgres
+      APP_DB_DATABASE: ecosystem
 
-  internal:
-    build:
-      dockerfile: Dockerfile.internal
-      context: .
-    image: kinecosystem/marketplace-service-internal
+  marketplace-internal:
+    image: kinecosystem/marketplace-service
+    cmd: npm run start-internal
     ports:
-      - 3000:3001
+      - 3000
+    links:
+      - redis
+      - postgres
+    environment:
+      <<: *app_env_vars
+      APP_NAME: 'marketplace-internal'
+    volumes:
+      - .:/opt/app
+
+  postgres:
+    image: postgres
+    ports:
+      - 5432
+    environment:
+      - POSTGRES_USER: user
+      - POSTGRES_PASSWORD: pass
+      - POSTGRES_DB: ecosystem

@@ -1,3 +1,0 @@
-FROM kinecosystem/marketplace-service-base
-
-CMD [ "make", "run" ]

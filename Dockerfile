@@ -7,7 +7,8 @@ RUN apk update && apk add --no-cache git make
 RUN npm i
 
 COPY . .
-RUN make build
-RUN make db
+RUN npm run transpile
 
 EXPOSE 3000
+
+CMD [ "npm", "run", "start" ]

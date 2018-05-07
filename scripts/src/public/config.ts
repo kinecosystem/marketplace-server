@@ -20,6 +20,14 @@ function init(): void {
 	path += "default";
 
 	baseInit(`${ path }.json`);
+
+	const config = getConfig();
+	if (process.env.APP_PAYMENT_SERVICE) {
+		config.payment_service = process.env.APP_PAYMENT_SERVICE!;
+	}
+	if (process.env.APP_PAYMENT_COMPLETE_CALLBACK) {
+		config.payment_complete_callback = process.env.APP_PAYMENT_COMPLETE_CALLBACK!;
+	}
 }
 
 init();

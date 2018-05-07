@@ -100,11 +100,18 @@ export const cancelOrder = async function(req: Request, res: Response) {
 	res.status(204).send();
 } as any as RequestHandler;
 
+export type GetOrderHistoryRequest = Request & {
+	query: {
+		origin?: string;
+		offerId?: string;
+	}
+};
+
 /**
  * get user history
  */
-export const getOrderHistory = async function(req: Request, res: Response) {
-	const orderList: OrderList = await getOrderHistoryService(req.context.user!.id, req.logger);
+export const getOrderHistory = async function(req: GetOrderHistoryRequest, res: Response) {
+	const orderList = await getOrderHistoryService(req.context.user!.id, req.query, req.logger);
 	res.status(200).send(orderList);
 } as any as RequestHandler;
 

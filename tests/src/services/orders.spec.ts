@@ -30,7 +30,7 @@ describe("test orders", async () => {
 	test("getAllNonOpen", async () => {
 		const user = await helpers.createUser();
 		await helpers.createOrders(user.id);
-		const orders = await Order.getAll(user.id, "!opened", 25);
+		const orders = await Order.getAll({ userId: user.id, status: "!opened" }, 25);
 		expect(orders.length).toBeGreaterThan(0);
 		expect(orders.length).toBe(orders.filter(o => o.status !== "opened").length);
 	});

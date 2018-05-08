@@ -1,12 +1,14 @@
 FROM node:9-alpine
 
-# install build tools
-RUN apk update && apk add --no-cache git make
-
-# copy and install package.json
 WORKDIR /opt/app
+
+# copy requirements
 COPY package*.json ./
-RUN npm i
+
+# install build tools
+RUN apk add -qU --no-cache -t .fetch-deps git make \
+    && npm i \
+    && apk del -q .fetch-deps
 
 # copy the code
 COPY . .

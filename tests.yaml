@@ -2,12 +2,12 @@ version: "3"
 
 services:
   psql:
+    image: postgres
     links:
       - postgres
     entrypoint: psql -h postgres -U user -d ecosystem
     environment:
       PGPASSWORD: pass
-    image: postgres
 
   create-db:
     image: kinecosystem/marketplace-server

@@ -129,6 +129,20 @@ export class Order extends CreationDateModel {
 		updateQueryWithFilter(query, "origin", filters.origin);
 		updateQueryWithFilter(query, "offer_id", filters.offerId);
 
+		/**
+		 * In case `filters` doesn't contain the `origin`, include the origin of the extending class.
+		 * So, when doing:
+		 *  MarketplaceOrder.getAll({ userId: "..."})
+		 * It will add `origin: "marketplace"` to the filters.
+		 *
+		 * When doing:
+		 *  ExternalOrder.getAll({ userId: "..."})
+		 * It will add `origin: "external"` to the filters.
+		 *
+		 * When doing:
+		 *  Order.getAll({ userId: "..."})
+		 * No origin is added
+		 */
 		if (!filters.origin && (this as OrderStatic<T>).CLASS_ORIGIN) {
 			query.andWhere("origin = :origin", { origin: (this as OrderStatic<T>).CLASS_ORIGIN });
 		}

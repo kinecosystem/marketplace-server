@@ -19,16 +19,16 @@ export function path(...paths: string[]): string {
 }
 
 export function random(): number;
+export function random(min: number, max: number): number;
+
 export function random<T = any>(arr: T[]): T;
 export function random<T = any>(map: Map<string, T>): [string, T];
 export function random<T = any>(obj: SimpleObject<T>): [string, T];
-export function random(min: number, max: number): number;
+
 export function random(first?: number | Map<string, any> | SimpleObject | any[], second?: number): number | [string, any] | any {
 	if (first instanceof Map) {
 		first = Array.from(first.entries());
-	}
-
-	if (isSimpleObject(first)) {
+	} else if (isSimpleObject(first)) {
 		first = Object.keys(first).map(key => [key, (first as SimpleObject)[key]]);
 	}
 

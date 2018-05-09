@@ -7,6 +7,7 @@ import * as metrics from "./metrics";
 import { generateId } from "./utils";
 import { MarketplaceError } from "./errors";
 import { getDefaultLogger } from "./logging";
+import { getConfig } from "./config";
 
 const START_TIME = (new Date()).toISOString();
 let logger: LoggerInstance;
@@ -122,11 +123,11 @@ export const statusHandler = async function(req: express.Request, res: express.R
 	res.status(200).send(
 		{
 			status: "ok",
-			app_name: process.env.APP_NAME,
+			app_name: getConfig().app_name,
 			start_time: START_TIME,
 			build: {
-				commit: process.env.BUILD_COMMIT,
-				timestamp: process.env.BUILD_TIMESTAMP,
+				commit: getConfig().commit,
+				timestamp: getConfig().timestamp,
 			}
 		});
 } as any as express.RequestHandler;

@@ -17,6 +17,9 @@ export interface Config {
 	};
 	payment_service: string;
 	payment_complete_callback: string;
+	app_name?: string;
+	commit?: string;
+	timestamp?: string;
 }
 
 let config: Config;
@@ -51,6 +54,15 @@ export function init(filePath: string) {
 	}
 	if (process.env.APP_PAYMENT_COMPLETE_CALLBACK) {
 		config.payment_complete_callback = process.env.APP_PAYMENT_COMPLETE_CALLBACK!;
+	}
+	if (process.env.APP_NAME) {
+		config.app_name = process.env.APP_NAME;
+	}
+	if (process.env.BUILD_COMMIT) {
+		config.commit = process.env.BUILD_COMMIT;
+	}
+	if (process.env.BUILD_TIMESTAMP) {
+		config.timestamp = process.env.BUILD_TIMESTAMP;
 	}
 }
 

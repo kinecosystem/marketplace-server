@@ -4,6 +4,11 @@ const fromProjectRoot = _path.join.bind(path, __dirname, "../../");
 
 export type ServerError = Error & { syscall: string; code: string; };
 
+export type SimpleObject<T = any> = { [key: string]: T };
+export function isSimpleObject(obj: any): obj is SimpleObject {
+	return typeof obj === "object" && !Array.isArray(obj);
+}
+
 export type Nothing = null | undefined;
 export function isNothing(obj: any): obj is Nothing {
 	return obj === null || obj === undefined;
@@ -15,9 +20,24 @@ export function path(...paths: string[]): string {
 
 export function random(): number;
 export function random(min: number, max: number): number;
-export function random(min?: number, max?: number): number {
-	if (min !== undefined && max !== undefined) {
-		return Math.random() * (max - min) + min;
+
+export function random<T = any>(arr: T[]): T;
+export function random<T = any>(map: Map<string, T>): [string, T];
+export function random<T = any>(obj: SimpleObject<T>): [string, T];
+
+export function random(first?: number | Map<string, any> | SimpleObject | any[], second?: number): number | [string, any] | any {
+	if (first instanceof Map) {
+		first = Array.from(first.entries());
+	} else if (isSimpleObject(first)) {
+		first = Object.keys(first).map(key => [key, (first as SimpleObject)[key]]);
+	}
+
+	if (Array.isArray(first)) {
+		return first[Math.floor(Math.random() * first.length)];
+	}
+
+	if (first !== undefined && second !== undefined) {
+		return Math.random() * (second - (first as number)) + (first as number);
 	}
 
 	return Math.random();

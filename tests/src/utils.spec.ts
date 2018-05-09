@@ -22,6 +22,27 @@ describe("util functions", () => {
 			testRandomNumber(utils.random(), 0, 1);
 		});
 
+		test("random([...] should return a random item from the array", () => {
+			const arr = [1, "2", "three", { key: "value" }, true];
+			expect(arr).toContain(utils.random(arr));
+		});
+
+		test("random({...} should return a random item from the object", () => {
+			const obj = {
+				k1: "v1",
+				k2: 2,
+				k3: [1, 2, 3]
+			};
+			const [key, value] = utils.random(obj);
+			expect(obj[key]).toEqual(value);
+		});
+
+		test("random(Map{ ... } should return a random item from the map", () => {
+			const map = new Map<string, any>([["k1", "v1"], ["k2", 2], ["k3", [1, 2, 3]]]);
+			const [key, value] = utils.random(map);
+			expect(map.get(key)).toEqual(value);
+		});
+
 		test("random(min, max) should return a new number [min, max) for each invocation", () => {
 			testRandomNumber(utils.random(0, 10), 0, 10);
 

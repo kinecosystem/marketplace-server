@@ -32,11 +32,30 @@ function updateQueryWithStatus(query: SelectQueryBuilder<any>, status?: OrderSta
 	}
 }
 
+function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, value?: string | null) {
+	if (!value) {
+		return;
+	}
+
+	if (value.startsWith("!")) {
+		query.andWhere(`${ name } != :value`, { value: value.substring(1) });
+	} else {
+		query.andWhere(`${ name } = :value`, { value });
+	}
+}
+
 export type OrderStatic<T extends Order = Order> = {
 	CLASS_ORIGIN: OrderOrigin | null;
 
 	new(): T;
 	createQueryBuilder(): SelectQueryBuilder<BaseEntity>;
+};
+
+export type GetOrderFilters = {
+	userId: string;
+	offerId?: string;
+	origin?: OrderOrigin;
+	status?: OrderStatusAndNegation;
 };
 
 @Entity({ name: "orders" })
@@ -99,21 +118,32 @@ export class Order extends CreationDateModel {
 		return query.getOne() as Promise<T | undefined>;
 	}
 
-	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string): Promise<T[]>;
-	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string, limit: number): Promise<T[]>;
-	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string, status: OrderStatusAndNegation): Promise<T[]>;
-	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string, status: OrderStatusAndNegation, limit: number): Promise<T[]>;
-	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string, second?: number | OrderStatusAndNegation, third?: number): Promise<T[]> {
-		const status: OrderStatusAndNegation | null = typeof second === "string" ? second : null;
-		const limit: number | null = typeof second === "number" ? second : (typeof third === "number" ? third : null);
+	public static getAll<T extends Order>(this: OrderStatic<T> | Function, filters: GetOrderFilters, limit?: number): Promise<T[]> {
 		const query = (this as OrderStatic<T>).createQueryBuilder()
-			.where("user_id = :userId", { userId })
+			.where("user_id = :userId", { userId: filters.userId })
 			.orderBy("current_status_date", "DESC")
 			.addOrderBy("id", "DESC");
 
-		updateQueryWithStatus(query, status);
+		// updateQueryWithStatus(query, filters.status);
+		updateQueryWithFilter(query, "status", filters.status);
+		updateQueryWithFilter(query, "origin", filters.origin);
+		updateQueryWithFilter(query, "offer_id", filters.offerId);
 
-		if ((this as OrderStatic<T>).CLASS_ORIGIN) {
+		/**
+		 * In case `filters` doesn't contain the `origin`, include the origin of the extending class.
+		 * So, when doing:
+		 *  MarketplaceOrder.getAll({ userId: "..."})
+		 * It will add `origin: "marketplace"` to the filters.
+		 *
+		 * When doing:
+		 *  ExternalOrder.getAll({ userId: "..."})
+		 * It will add `origin: "external"` to the filters.
+		 *
+		 * When doing:
+		 *  Order.getAll({ userId: "..."})
+		 * No origin is added
+		 */
+		if (!filters.origin && (this as OrderStatic<T>).CLASS_ORIGIN) {
 			query.andWhere("origin = :origin", { origin: (this as OrderStatic<T>).CLASS_ORIGIN });
 		}
 

@@ -28,12 +28,7 @@ db:
 	rm -f database.sqlite
 	npm run create-db
 
-db-prod: db
-	chown -R ubuntu:www-data .
-
-
-.PHONY: test run build install
-
+# docker targets
 revision := $(shell git rev-parse --short HEAD)
 image := "kinecosystem/marketplace-server"
 
@@ -48,7 +43,7 @@ push-image:
 	docker push ${image}:${revision}
 
 up:
-	docker-compose -f docker-compose.yaml -f deps.yaml up
+	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f deps.yaml up
 
 down:
 	docker-compose -f docker-compose.yaml -f deps.yaml down
@@ -58,7 +53,12 @@ psql:
 
 db-docker:
 	docker-compose -f docker-compose.yaml -f deps.yaml -f tests.yaml run --rm psql -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO postgres; GRANT ALL ON SCHEMA public TO public;"
-	docker-compose -f docker-compose.yaml -f deps.yaml -f tests.yaml run --rm create-db
+	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f deps.yaml -f tests.yaml run --rm create-db
 
 test-system-docker: db-docker
 	docker-compose -f docker-compose.yaml -f deps.yaml -f tests.yaml run --rm test-system
+
+generate-funding-address:
+	docker-compose -f docker-compose.yaml -f deps.yaml -f tests.yaml run generate-funding-address
+
+.PHONY: build-image push-image up down psql db-docker test-system-docker generate-funding-address test run build install db all split run-internal test-system

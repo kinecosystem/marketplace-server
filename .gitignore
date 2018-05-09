@@ -6,4 +6,4 @@ database.sqlite
 .tags
 .DS_Store
 examples/kik*
-.env
+.secrets*

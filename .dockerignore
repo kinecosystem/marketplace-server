@@ -3,4 +3,4 @@ npm-debug.log
 bin
 docker-compose.yaml
 Dockerfile*
-.env
+.secrets*

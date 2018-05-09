@@ -29,53 +29,45 @@ In any jetbrains based IDE (webstorm, pycharm, intellij, etc):
 
 ### Testing
 
-In order to setup local testing, first we need to create the DB:
+First compile the source:
+```
+make build
+```
+then create the DB:
 ```
 make db
 ```
-
-now we will edit the DB (sqlite3 is a prerequisite) and set an initial value manually, so run:
+Then run the tests:
 ```
-sqlite3 database.sqlite
-```
-
-now, run the following command in the sqlite REPL:
-```
-update orders set amount=1;
+make test
 ```
 
-insert mock data into the DB:
+### To system tests using docker:
+
+#### Setup
+If you *DON'T* have a wallet with XLM and KIN:
+Run the following command to generate a `secrets/.secrets` file with a pre-funded wallet:
 ```
-node scripts/bin/create
+make generate-funding-address
+```
+Note that this command will overwrite any existing file `secrets/.secrets`.
+
+If you have a wallet with XLM and KIN:
+You need to have a stellar account with funds and create a `secrets/.secrets` file locally with the following content:
+```
+export STELLAR_CHANNEL_SEEDS=SXXX
+export STELLAR_BASE_SEED=SXXX
+export STELLAR_ADDRESS=GXXX
 ```
 
-make sure that the files are compiled:
-```
-marketplace-server> npm run build
-```
-
-Or, if you want to avoid the *clean* and *lint* part:
-```
-marketplace-server> npm run transpile
-```
-
-After the scripts are compiled, run the tests:
-```
-marketplace-server> npm test
-```
-
-### To run docker tests:
-
-you need to have a stellar account with funds and create a `.env` file locally with the following content:
-```
-STELLAR_CHANNEL_SEEDS=SXXX
-STELLAR_BASE_SEED=SXXX
-STELLAR_ADDRESS=GXXX
-```
-
-Then run the following commands:
+#### Run docker servers and system tests
+Run the following commands:
 ```
 make build  # build typescript
 make up  # start all services
-make test-system-docker  # run tests
+```
+
+And in a separate shell:
+```
+make test-system-docker  # run tests 
 ```

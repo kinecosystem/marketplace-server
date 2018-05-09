@@ -37,3 +37,13 @@ services:
       MARKETPLACE_BASE: http://marketplace-server:3000
       JWT_SERVICE_BASE: http://jwt-service:3000
     command: npm run test-system
+
+  generate-funding-address:
+    image: kinecosystem/payment-service
+    command: pipenv run python generate_funding_address.py
+    volumes:
+      - ./secrets:/secrets
+    environment:
+      KIN_FAUCET: http://159.65.84.173:5005
+      XLM_FAUCET: https://friendbot.stellar.org
+      OUTPUT_DIR: /secrets

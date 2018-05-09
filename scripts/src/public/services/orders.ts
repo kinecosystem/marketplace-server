@@ -21,6 +21,7 @@ import {
 	InvalidPollAnswers,
 	ExternalOrderExhausted,
 	OpenedOrdersUnreturnable } from "../../errors";
+import { OrderStatusAndNegation } from "../../models/orders";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -198,14 +199,18 @@ export async function cancelOrder(orderId: string, logger: LoggerInstance): Prom
 
 export async function getOrderHistory(
 	userId: string,
-	filters: { origin?: string; offerId?: string; },
+	filters: { origin?: db.OrderOrigin; offerId?: string; },
 	logger: LoggerInstance,
 	limit: number = 25,
 	before?: string,
 	after?: string): Promise<OrderList> {
 
 	// XXX use the cursor input values
-	const orders = await db.Order.getAll({ userId, status: "!opened" }, limit) as Array<db.MarketplaceOrder | db.ExternalOrder>;
+	const status: db.OrderStatusAndNegation = "!opened";
+	const orders = await db.Order.getAll(
+		Object.assign({}, filters, { userId, status }),
+		limit
+	) as Array<db.MarketplaceOrder | db.ExternalOrder>;
 
 	return {
 		orders: orders.map(order => {

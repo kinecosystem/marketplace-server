@@ -53,8 +53,8 @@ export type OrderStatic<T extends Order = Order> = {
 
 export type GetOrderFilters = {
 	userId: string;
-	origin?: string;
 	offerId?: string;
+	origin?: OrderOrigin;
 	status?: OrderStatusAndNegation;
 };
 

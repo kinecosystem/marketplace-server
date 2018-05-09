@@ -103,7 +103,7 @@ export const cancelOrder = async function(req: Request, res: Response) {
 export type GetOrderHistoryRequest = Request & {
 	query: {
 		origin?: string;
-		offerId?: string;
+		offer_id?: string;
 	}
 };
 
@@ -111,7 +111,11 @@ export type GetOrderHistoryRequest = Request & {
  * get user history
  */
 export const getOrderHistory = async function(req: GetOrderHistoryRequest, res: Response) {
-	const orderList = await getOrderHistoryService(req.context.user!.id, req.query, req.logger);
+	const filters = {
+		origin: req.query.origin,
+		offerId: req.query.offer_id
+	};
+	const orderList = await getOrderHistoryService(req.context.user!.id, filters, req.logger);
 	res.status(200).send(orderList);
 } as any as RequestHandler;
 

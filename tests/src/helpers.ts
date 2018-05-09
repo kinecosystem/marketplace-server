@@ -1,7 +1,7 @@
 import { User, AuthToken } from "../../scripts/bin/models/users";
 import { Asset, Offer } from "../../scripts/bin/models/offers";
 import { Poll, PageType } from "../../scripts/bin/public/services/offer_contents";
-import { MarketplaceOrder, Order } from "../../scripts/bin/models/orders";
+import { MarketplaceOrder, ExternalOrder, Order } from "../../scripts/bin/models/orders";
 import { createEarn, createSpend } from "../../scripts/bin/create_data/offers";
 import { generateId } from "../../scripts/bin/utils";
 import { CompletedPayment, paymentComplete } from "../../scripts/bin/internal/services";
@@ -55,7 +55,7 @@ function orderFromOffer(offer: Offer, userId: string): MarketplaceOrder {
 	return order;
 }
 
-export async function createOrders(userId: string) {
+export async function createOrders(userId: string): Promise<number> {
 	let offers = await Offer.find({ where: { type: "spend" }, take: 3 });
 	let order = orderFromOffer(offers[0], userId);
 	order.status = "completed";
@@ -85,6 +85,30 @@ export async function createOrders(userId: string) {
 	order = orderFromOffer(offers[2], userId);
 	order.status = "pending";
 	await order.save();
+
+	return 6;
+}
+
+export async function createExternalOrders(userId: string): Promise<number> {
+	const order = ExternalOrder.new({
+		userId,
+		amount: 65,
+		type: "earn",
+		status: "pending",
+		offerId: "external1",
+		meta: {
+			title: "external order #1",
+			description: "first external order"
+		},
+		blockchainData: {
+			transaction_id: "A123123123123123",
+			recipient_address: "G123123123123",
+			sender_address: "G123123123123"
+		}
+	});
+	await order.save();
+
+	return 1;
 }
 
 export async function createOffers() {

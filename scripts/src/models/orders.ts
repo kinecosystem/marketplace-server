@@ -38,9 +38,9 @@ function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, val
 	}
 
 	if (value.startsWith("!")) {
-		query.andWhere(":name != :value", { name, value: value.substring(1) });
+		query.andWhere(`${ name } != :value`, { value: value.substring(1) });
 	} else {
-		query.andWhere("name = :value", { name, value });
+		query.andWhere(`${ name } = :value`, { value });
 	}
 }
 
@@ -118,14 +118,7 @@ export class Order extends CreationDateModel {
 		return query.getOne() as Promise<T | undefined>;
 	}
 
-	/*public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string, limit: number): Promise<T[]>;
-	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string, status: OrderStatusAndNegation): Promise<T[]>;
-	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string): Promise<T[]>;
-	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string, status: OrderStatusAndNegation, limit: number): Promise<T[]>;
-	public static getAll<T extends Order>(this: OrderStatic<T> | Function, userId: string, second?: number | OrderStatusAndNegation, third?: number): Promise<T[]> {*/
 	public static getAll<T extends Order>(this: OrderStatic<T> | Function, filters: GetOrderFilters, limit?: number): Promise<T[]> {
-		/*const status: OrderStatusAndNegation | null = typeof second === "string" ? second : null;
-		const limit: number | null = typeof second === "number" ? second : (typeof third === "number" ? third : null);*/
 		const query = (this as OrderStatic<T>).createQueryBuilder()
 			.where("user_id = :userId", { userId: filters.userId })
 			.orderBy("current_status_date", "DESC")

@@ -1,5 +1,6 @@
 import * as moment from "moment";
 
+import { random } from "../../../scripts/bin/utils";
 import { User } from "../../../scripts/bin/models/users";
 import { Order } from "../../../scripts/bin/models/orders";
 import { Offer } from "../../../scripts/bin/models/offers";
@@ -27,12 +28,26 @@ describe("test orders", async () => {
 		done();
 	});
 
-	test("getAllNonOpen", async () => {
+	test("getAll and filters", async () => {
 		const user = await helpers.createUser();
-		await helpers.createOrders(user.id);
-		const orders = await Order.getAll({ userId: user.id, status: "!opened" }, 25);
-		expect(orders.length).toBeGreaterThan(0);
+		let count = await helpers.createOrders(user.id);
+
+		let orders = await Order.getAll({ userId: user.id, status: "!opened" }, 25);
+		expect(orders.length).toBe(count);
 		expect(orders.length).toBe(orders.filter(o => o.status !== "opened").length);
+
+		const offers = new Map<string, number>();
+		(await Order.getAll({ userId: user.id })).forEach(order => {
+			offers.set(order.offerId, offers.has(order.offerId) ? offers.get(order.offerId) + 1 : 1);
+		});
+
+		const [offerId, ordersCount] = random(offers);
+		orders = await Order.getAll({ userId: user.id, offerId }, 25);
+		expect(orders.length).toBe(ordersCount);
+
+		count = await helpers.createExternalOrders(user.id);
+		orders = await Order.getAll({ userId: user.id, origin: "external" }, 25);
+		expect(orders.length).toBe(count);
 	});
 
 	test("return same order when one is open", async () => {

@@ -15,6 +15,14 @@ server.listen(config.port);
 server.on("error", onError);
 server.on("listening", onListening);
 
+function cleanup() {
+	logger.info("Shutting down");
+	server.close(() => {
+		logger.info("Done, have a great day!");
+		process.exit(1);
+	});
+}
+
 /**
  * Event listener for HTTP server "error" event.
  */
@@ -43,5 +51,7 @@ function onError(error: ServerError) {
  */
 function onListening() {
 	const addr = server.address();
+	process.on("SIGINT", cleanup);
+	process.on("SIGTERM", cleanup);
 	logger.debug(`Listening on ${ addr.port }`);
 }

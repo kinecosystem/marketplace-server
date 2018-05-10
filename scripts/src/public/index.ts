@@ -18,7 +18,7 @@ function cleanup() {
 	logger.info("Shutting down");
 	server.close(() => {
 		logger.info("Done, have a great day!");
-		process.exit(1);
+		process.exit(0);
 	});
 }
 

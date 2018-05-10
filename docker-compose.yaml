@@ -10,8 +10,6 @@ services:
       - redis
       - payment-service
       - postgres
-    volumes:
-      - .:/opt/app
     environment:
       &app_env_vars
       APP_DEBUG: 'True'
@@ -40,8 +38,6 @@ services:
     environment:
       <<: *app_env_vars
       APP_NAME: 'marketplace-internal'
-    volumes:
-      - .:/opt/app
 
   postgres:
     image: postgres

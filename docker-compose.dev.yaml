@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+
+  marketplace-server:
+    volumes:
+      - .:/opt/app
+  marketplace-internal:
+    volumes:
+      - .:/opt/app

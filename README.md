@@ -42,10 +42,13 @@ Then run the tests:
 make test
 ```
 
-### To system tests using docker:
+### Running in Docker
+To run and test using docker follow the instructions bellow:
 
 #### Setup
-If you *DON'T* have a wallet with XLM and KIN:
+*Download docker + docker-compose for your environment.*
+
+If you **DON'T** have a wallet with XLM and KIN:
 Run the following command to generate a `secrets/.secrets` file with a pre-funded wallet:
 ```
 make generate-funding-address
@@ -61,13 +64,27 @@ export STELLAR_ADDRESS=GXXX
 ```
 
 #### Run docker servers and system tests
-Run the following commands:
+Run the following command:
 ```
-make build  # build typescript
 make up  # start all services
 ```
 
 And in a separate shell:
 ```
 make test-system-docker  # run tests 
+```
+
+To stop the services, either run Ctrl-C or 
+```
+make down
+```
+
+#### Run with mounted code for development
+You will need to install the dependencies and build the code locally using:
+```
+make install build
+```
+Then when you want to run your local version, instead of `make up`, run:
+```
+make up-dev
 ```

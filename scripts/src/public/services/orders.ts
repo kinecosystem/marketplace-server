@@ -5,7 +5,7 @@ import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
 
-import { validateSpendJWT } from "../services/applications";
+import { validateExternalOrderJWT } from "../services/applications";
 
 import { Paging } from "./index";
 import * as payment from "./payment";
@@ -110,13 +110,14 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 }
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
-	const offer = await validateSpendJWT(jwt, logger);
+	const payload = await validateExternalOrderJWT(jwt, logger);
+	const offer = payload.offer;
+
 	await addWatcherEndpoint([offer.wallet_address]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
 
 	let order = await db.Order.getOpenOrder(offer.id, user.id);
 
 	if (!order) {
-
 		const count = await db.Order.countByOffer(offer.id, user.id);
 		if (count > 0) {
 			throw ExternalOrderExhausted();
@@ -126,7 +127,7 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 			userId: user.id,
 			offerId: offer.id,
 			amount: offer.amount,
-			type: "spend", // TODO: we currently only support native spend
+			type: payload.sub,
 			status: "opened",
 			meta: {
 				title: offer.title,

@@ -536,7 +536,7 @@ async function nativeSpendFlow() {
 
 	expect(order.result!.type).toBe("confirm_payment");
 	const paymentJwt = (order.result! as JWTValue).jwt;
-	const jwtPayload = jsonwebtoken.decode(paymentJwt, { complete: true }) as JWTContent<PaymentPayload>;
+	const jwtPayload = jsonwebtoken.decode(paymentJwt, { complete: true }) as JWTContent<PaymentPayload, "confirm_payment">;
 	expect(jwtPayload.payload.payment.offer_id).toBe(order.offer_id);
 	expect(jwtPayload.payload.payment.user_id).toBe(userId);
 	expect(jwtPayload.header.kid).toBeDefined();

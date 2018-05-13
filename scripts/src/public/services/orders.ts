@@ -20,8 +20,10 @@ import {
 	OpenOrderExpired,
 	InvalidPollAnswers,
 	ExternalOrderExhausted,
-	OpenedOrdersUnreturnable } from "../../errors";
+	OpenedOrdersUnreturnable,
+	ExternalEarnOfferByDifferentUser } from "../../errors";
 import { OrderStatusAndNegation } from "../../models/orders";
+import { EarnPayload } from "./applications";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -111,8 +113,12 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	const payload = await validateExternalOrderJWT(jwt, logger);
-	const offer = payload.offer;
 
+	if (payload.sub === "earn" && (payload as EarnPayload).user_id !== user.id) {
+		throw ExternalEarnOfferByDifferentUser(user.id, (payload as EarnPayload).user_id);
+	}
+
+	const offer = payload.offer;
 	await addWatcherEndpoint([offer.wallet_address]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
 
 	let order = await db.Order.getOpenOrder(offer.id, user.id);

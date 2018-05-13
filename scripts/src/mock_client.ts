@@ -19,7 +19,7 @@ import {
 	CollectionPage, OperationRecord
 } from "stellar-sdk";
 import { CompletedPayment, PaymentPayload } from "./internal/services";
-import { SpendPayloadOffer } from "./public/services/applications";
+import { ExternalOfferPayload } from "./public/services/applications";
 import { JWTValue } from "./models/offers";
 import { JWTContent } from "./public/jwt";
 import * as expect from "expect";
@@ -59,7 +59,7 @@ class SampleAppClient {
 		return res.data.jwt;
 	}
 
-	public async getOffers(): Promise<SpendPayloadOffer[]> {
+	public async getOffers(): Promise<ExternalOfferPayload[]> {
 		const res = await axios.default.get(JWT_SERVICE_BASE + "/offers");
 		return res.data.offers;
 	}

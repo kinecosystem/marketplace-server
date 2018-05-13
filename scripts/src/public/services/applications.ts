@@ -14,19 +14,23 @@ export type SignInContext = {
 	appUserId: string;
 };
 
-export type SpendPayloadOffer = {
+export type ExternalOfferPayload = {
 	id: string;
 	title: string;
 	description: string;
 	amount: number;
 	wallet_address: string;
 };
+export type EarnPayload = {
+	user_id: string;
+	offer: ExternalOfferPayload;
+};
 export type SpendPayload = {
-	offer: SpendPayloadOffer;
+	offer: ExternalOfferPayload;
 };
 
 export async function validateExternalOrderJWT(jwt: string, logger: LoggerInstance) {
-	const decoded = await verifyJWT<SpendPayload, "spend" | "earn">(jwt, logger);
+	const decoded = await verifyJWT<SpendPayload | EarnPayload, "spend" | "earn">(jwt, logger);
 	return decoded.payload;
 }
 

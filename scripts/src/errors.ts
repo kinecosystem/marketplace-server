@@ -27,7 +27,8 @@ const CODES = {
 		OpenOrderExpired: 1
 	},
 	Conflict: {
-		ExternalOrderExhausted: 1
+		ExternalOrderExhausted: 1,
+		ExternalEarnOfferByDifferentUser: 2
 	},
 	InternalServerError: {
 		OpenedOrdersOnly: 1,
@@ -123,6 +124,11 @@ function ConflictError(index: number, message: string) {
 
 export function ExternalOrderExhausted() {
 	return ConflictError(CODES.Conflict.ExternalOrderExhausted, "User already completed offer, or has a pending order");
+}
+
+export function ExternalEarnOfferByDifferentUser(loggedInUser: string, payToUser: string) {
+	const message = `Pay to user (${ payToUser } is not the logged in user (${ loggedInUser })`;
+	return ConflictError(CODES.Conflict.ExternalEarnOfferByDifferentUser, message);
 }
 
 export function OfferCapReached(id: string) {

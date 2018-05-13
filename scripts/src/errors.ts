@@ -37,7 +37,8 @@ const CODES = {
 	BadRequest: {
 		UnknownSignInType: 1,
 		WrongJWTAlgorithm: 2,
-		InvalidPollAnswers: 3
+		InvalidPollAnswers: 3,
+		InvalidExternalOrderJWT: 4
 	}
 };
 
@@ -161,4 +162,8 @@ export function WrongJWTAlgorithm(type: string) {
 
 export function InvalidPollAnswers() {
 	return BadRequestError(CODES.BadRequest.InvalidPollAnswers, "submitted form is invalid");
+}
+
+export function InvalidExternalOrderJWT() {
+	return BadRequestError(CODES.BadRequest.InvalidExternalOrderJWT, "subject can be either \"earn\" or \"spend\"");
 }

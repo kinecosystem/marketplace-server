@@ -22,7 +22,6 @@ import {
 	ExternalOrderExhausted,
 	OpenedOrdersUnreturnable,
 	ExternalEarnOfferByDifferentUser } from "../../errors";
-import { OrderStatusAndNegation } from "../../models/orders";
 import { EarnPayload } from "./applications";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
@@ -114,8 +113,8 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	const payload = await validateExternalOrderJWT(jwt, logger);
 
-	if (payload.sub === "earn" && (payload as EarnPayload).user_id !== user.id) {
-		throw ExternalEarnOfferByDifferentUser(user.id, (payload as EarnPayload).user_id);
+	if (payload.sub === "earn" && payload.user_id !== user.appUserId) {
+		throw ExternalEarnOfferByDifferentUser(user.appUserId, payload.user_id);
 	}
 
 	const offer = payload.offer;

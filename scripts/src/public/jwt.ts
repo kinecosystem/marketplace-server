@@ -5,25 +5,25 @@ import { isNothing } from "../utils";
 import { Application } from "../models/applications";
 import { NoSuchApp, NoSuchPublicKey, JwtKidMissing, WrongJWTAlgorithm } from "../errors";
 
-export type JWTClaims<T extends string> = {
+export type JWTClaims<SUB extends string> = {
 	iss: string; // issuer - the app_id
 	exp: number; // expiration
 	iat: number; // issued at
-	sub: T; // subject
+	sub: SUB; // subject
 };
 
-export type JWTContent<T, S extends string> = {
+export type JWTContent<T, SUB extends string> = {
 	header: {
 		typ: string;
 		alg: string;
 		kid: string;
 	};
-	payload: JWTClaims<S> & T;
+	payload: JWTClaims<SUB> & T;
 	signature: string;
 };
 
-export async function verify<T, S extends string>(token: string, logger: LoggerInstance): Promise<JWTContent<T, S>> {
-	const decoded = jsonwebtoken.decode(token, { complete: true }) as JWTContent<T, S>;
+export async function verify<T, SUB extends string>(token: string, logger: LoggerInstance): Promise<JWTContent<T, SUB>> {
+	const decoded = jsonwebtoken.decode(token, { complete: true }) as JWTContent<T, SUB>;
 	if (decoded.header.alg.toUpperCase() !== "ES256") {
 		logger.warn(`got JWT with wrong algorithm ${decoded.header.alg}. ignoring`);
 		// throw WrongJWTAlgorithm(decoded.header.alg);  // TODO uncomment when we deprecate other algo support

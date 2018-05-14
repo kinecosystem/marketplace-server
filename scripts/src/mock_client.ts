@@ -24,9 +24,8 @@ import { JWTValue } from "./models/offers";
 import { JWTContent } from "./public/jwt";
 import * as expect from "expect";
 
-// const BASE = "https://api.kinmarketplace.com"; // production - XXX get this from env var?
-const BASE = "http://localhost:3000";
-const JWT_SERVICE_BASE = "http://localhost:3002";
+const BASE = process.env.MARKETPLACE_BASE;
+const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
 
 class Stellar {
 	public static MEMO_VERSION = 1;
@@ -580,14 +579,14 @@ async function tryToNativeSpendTwice() {
 }
 
 async function main() {
-	// await earnFlow();
+	await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
-	await earnTutorial();
+	// await earnTutorial();
 	// await spendFlow();
 	// await justPay();
 	// await registerJWT();
-	// await nativeSpendFlow();
+	await nativeSpendFlow();
 	// await tryToNativeSpendTwice();
 }
 

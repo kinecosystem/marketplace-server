@@ -1,0 +1,49 @@
+version: "3"
+
+services:
+
+  marketplace-server:
+    image: kinecosystem/marketplace-server
+    ports:
+      - 3000
+    links:
+      - redis
+      - payment-service
+      - postgres
+    environment:
+      &app_env_vars
+      APP_DEBUG: 'True'
+      APP_PORT: 3000
+      APP_HOST: '0.0.0.0'
+      APP_NAME: 'marketplace-server'
+      APP_REDIS: redis://redis:6379/0
+      APP_PAYMENT_SERVICE: http://payment-service:3000
+      APP_PAYMENT_COMPLETE_CALLBACK: http://marketplace-internal:3000/v1/internal/payments
+      APP_DB_TYPE: postgres
+      APP_DB_USERNAME: user
+      APP_DB_PASSWORD: pass
+      APP_DB_PORT: 5432 
+      APP_DB_HOST: postgres
+      APP_DB_DATABASE: ecosystem
+
+  marketplace-internal:
+    image: kinecosystem/marketplace-server
+    command: npm run start-internal
+    ports:
+      - 3000
+    links:
+      - redis
+      - payment-service
+      - postgres
+    environment:
+      <<: *app_env_vars
+      APP_NAME: 'marketplace-internal'
+
+  postgres:
+    image: postgres
+    ports:
+      - 5432
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: ecosystem

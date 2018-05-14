@@ -29,37 +29,62 @@ In any jetbrains based IDE (webstorm, pycharm, intellij, etc):
 
 ### Testing
 
-In order to setup local testing, first we need to create the DB:
+First compile the source:
+```
+make build
+```
+then create the DB:
 ```
 make db
 ```
-
-now we will edit the DB (sqlite3 is a prerequisite) and set an initial value manually, so run:
+Then run the tests:
 ```
-sqlite3 database.sqlite
-```
-
-now, run the following command in the sqlite REPL:
-```
-update orders set amount=1;
+make test
 ```
 
-insert mock data into the DB:
+### Running in Docker
+To run and test using docker follow the instructions bellow:
+
+#### Setup
+*Download docker + docker-compose for your environment.*
+
+If you **DON'T** have a wallet with XLM and KIN:
+Run the following command to generate a `secrets/.secrets` file with a pre-funded wallet:
 ```
-node scripts/bin/create_from_csv.js
+make generate-funding-address
+```
+Note that this command will overwrite any existing file `secrets/.secrets`.
+
+If you have a wallet with XLM and KIN:
+You need to have a stellar account with funds and create a `secrets/.secrets` file locally with the following content:
+```
+export STELLAR_CHANNEL_SEEDS=SXXX
+export STELLAR_BASE_SEED=SXXX
+export STELLAR_ADDRESS=GXXX
 ```
 
-make sure that the files are compiled:
+#### Run docker servers and system tests
+Run the following command:
 ```
-marketplace-server> npm run build
-```
-
-Or, if you want to avoid the *clean* and *lint* part:
-```
-marketplace-server> npm run transpile
+make up  # start all services
 ```
 
-After the scripts are compiled, run the tests:
+And in a separate shell:
 ```
-marketplace-server> npm test
+make test-system-docker  # run tests 
+```
+
+To stop the services, either run Ctrl-C or 
+```
+make down
+```
+
+#### Run with mounted code for development
+You will need to install the dependencies and build the code locally using:
+```
+make install build
+```
+Then when you want to run your local version, instead of `make up`, run:
+```
+make up-dev
 ```

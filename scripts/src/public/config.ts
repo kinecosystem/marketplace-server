@@ -2,8 +2,6 @@ import { Config as BaseConfig, init as baseInit, getConfig as baseGetConfig } fr
 
 export interface Config extends BaseConfig {
 	assets_base: string;
-	payment_service: string;
-	payment_complete_callback: string;
 }
 
 export function getConfig(): Config {

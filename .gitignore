@@ -1,8 +1,9 @@
 .idea
 scripts/bin
-tests/src/**/*.js
 node_modules
+tests/src/**/*.js
 database.sqlite
 .tags
 .DS_Store
 examples/kik*
+.secrets*

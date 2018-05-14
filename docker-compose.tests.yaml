@@ -1,0 +1,49 @@
+version: "3"
+
+services:
+  psql:
+    image: postgres
+    links:
+      - postgres
+    entrypoint: psql -h postgres -U user -d ecosystem
+    environment:
+      PGPASSWORD: pass
+
+  create-db:
+    image: kinecosystem/marketplace-server
+    volumes:
+      - .:/opt/app
+    links:
+      - postgres
+    command: npm run create-db 
+    environment:
+      APP_DB_TYPE: postgres
+      APP_DB_USERNAME: user
+      APP_DB_PASSWORD: pass
+      APP_DB_PORT: 5432 
+      APP_DB_HOST: postgres
+      APP_DB_DATABASE: ecosystem
+      STELLAR_ADDRESS: ${STELLAR_ADDRESS}
+      REDUCE_AMOUNT: 'true'
+
+  test-system:
+    image: kinecosystem/marketplace-server
+    volumes:
+      - .:/opt/app
+    links:
+      - marketplace-server
+      - jwt-service
+    environment:
+      MARKETPLACE_BASE: http://marketplace-server:3000
+      JWT_SERVICE_BASE: http://jwt-service:3000
+    command: npm run test-system
+
+  generate-funding-address:
+    image: kinecosystem/payment-service
+    command: pipenv run python generate_funding_address.py
+    volumes:
+      - ./secrets:/secrets
+    environment:
+      KIN_FAUCET: http://159.65.84.173:5005
+      XLM_FAUCET: https://friendbot.stellar.org
+      OUTPUT_DIR: /secrets

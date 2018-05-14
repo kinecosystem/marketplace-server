@@ -9,6 +9,8 @@ import { getOffers } from "./offers";
 import { getUser, signInUser, activateUser } from "./users";
 import { getOrder, cancelOrder, getOrderHistory, submitOrder, createMarketplaceOrder, createExternalOrder } from "./orders";
 
+import { statusHandler } from "../middleware";
+
 export type Context = {
 	token: db.AuthToken | undefined;
 	user: db.User | undefined;
@@ -101,6 +103,8 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 			.post("/", signInUser)
 			.authenticated()
 				.post("/me/activate", activateUser));
+
+	app.get("/status", statusHandler);
 }
 
 function createPath(path: string, prefix?: string): string {

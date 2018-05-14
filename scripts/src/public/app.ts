@@ -1,11 +1,11 @@
 import * as express from "express";
 import "express-async-errors";  // handle async/await errors in middleware
 
-import { initLogger } from "../logging";
+import { getDefaultLogger } from "../logging";
 import { getConfig } from "./config";
 
 const config = getConfig();
-const logger = initLogger(...config.loggers!);
+const logger = getDefaultLogger();
 
 import { createRoutes } from "./routes/index";
 import { init as initModels } from "../models/index";

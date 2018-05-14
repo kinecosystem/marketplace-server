@@ -117,36 +117,40 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 		throw ExternalEarnOfferByDifferentUser(user.appUserId, payload.user_id);
 	}
 
-	const offer = payload.offer;
-	await addWatcherEndpoint([offer.wallet_address]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
+	if (payload.sub === "spend") {
+		await addWatcherEndpoint([payload.offer.wallet_address]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
+	}
 
-	let order = await db.Order.getOpenOrder(offer.id, user.id);
+	let order = await db.Order.getOpenOrder(payload.offer.id, user.id);
 
 	if (!order) {
-		const count = await db.Order.countByOffer(offer.id, user.id);
+		const count = await db.Order.countByOffer(payload.offer.id, user.id);
 		if (count > 0) {
 			throw ExternalOrderExhausted();
 		}
 
+		// hack
+		const tmpBlockchainData = (await offerDb.Offer.findOne({ type: payload.sub }))!.blockchainData;
+
 		order = db.ExternalOrder.new({
 			userId: user.id,
-			offerId: offer.id,
-			amount: offer.amount,
+			offerId: payload.offer.id,
+			amount: payload.offer.amount,
 			type: payload.sub,
 			status: "opened",
 			meta: {
-				title: offer.title,
-				description: offer.description
+				title: payload.offer.title,
+				description: payload.offer.description
 			},
 			blockchainData: {
-				sender_address: user.walletAddress,
-				recipient_address: offer.wallet_address
+				sender_address: payload.sub === "spend" ? user.walletAddress : tmpBlockchainData.sender_address,
+				recipient_address: payload.sub === "spend" ? tmpBlockchainData.recipient_address : user.walletAddress
 			}
 		});
 		await order.save();
 	}
 
-	logger.info("created new open external order", { offerId: offer.id, userId: user.id, orderId: order.id });
+	logger.info("created new open external order", { offerId: payload.offer.id, userId: user.id, orderId: order.id });
 
 	return openOrderDbToApi(order);
 }
@@ -170,15 +174,15 @@ export async function submitOrder(
 		if (!offer) {
 			throw NoSuchOffer(order.offerId);
 		}
-	}
 
-	if (order.type === "earn") {
-		// validate form
-		if (!offerContents.isValid(order.offerId, form)) {
-			throw InvalidPollAnswers();
+		if (order.type === "earn") {
+			// validate form
+			if (!offerContents.isValid(order.offerId, form)) {
+				throw InvalidPollAnswers();
+			}
+
+			await offerContents.savePollAnswers(order.userId, order.offerId, orderId, form);
 		}
-
-		await offerContents.savePollAnswers(order.userId, order.offerId, orderId, form);
 	}
 
 	order.setStatus("pending");

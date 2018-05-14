@@ -128,7 +128,7 @@ export function ExternalOrderExhausted() {
 }
 
 export function ExternalEarnOfferByDifferentUser(loggedInUser: string, payToUser: string) {
-	const message = `Pay to user (${ payToUser } is not the logged in user (${ loggedInUser })`;
+	const message = `Pay to user (${ payToUser }) is not the logged in user (${ loggedInUser })`;
 	return ConflictError(CODES.Conflict.ExternalEarnOfferByDifferentUser, message);
 }
 
@@ -165,5 +165,5 @@ export function InvalidPollAnswers() {
 }
 
 export function InvalidExternalOrderJWT() {
-	return BadRequestError(CODES.BadRequest.InvalidExternalOrderJWT, "subject can be either \"earn\" or \"spend\"");
+	return BadRequestError(CODES.BadRequest.InvalidExternalOrderJWT, `subject can be either "earn" or "spend"`);
 }

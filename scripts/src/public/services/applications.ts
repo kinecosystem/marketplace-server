@@ -9,24 +9,29 @@ export type RegisterPayload = {
 	user_id: string;
 	api_key: string;
 };
+
 export type SignInContext = {
 	appId: string;
 	appUserId: string;
 };
-
 export type ExternalOfferPayload = {
 	id: string;
 	title: string;
 	description: string;
 	amount: number;
+};
+
+export type ExternalSpendOfferPayload = ExternalOfferPayload & {
 	wallet_address: string;
 };
+
 export type EarnPayload = {
 	user_id: string;
 	offer: ExternalOfferPayload;
 };
+
 export type SpendPayload = {
-	offer: ExternalOfferPayload;
+	offer: ExternalSpendOfferPayload;
 };
 
 export type ExternalEarnOrderJWT = JWTClaims<"earn"> & EarnPayload;

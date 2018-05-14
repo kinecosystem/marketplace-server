@@ -1,14 +1,8 @@
 import * as axios from "axios";
 import * as uuid4 from "uuid4";
-import * as jsonwebtoken from "jsonwebtoken";
-import { Offer, OfferList } from "./public/services/offers";
-import { OpenOrder, Order, OrderList } from "./public/services/orders";
-import { Poll, Tutorial, TUTORIAL_DESCRIPTION } from "./public/services/offer_contents";
-import { delay, generateId, retry } from "./utils";
-import { Application } from "./models/applications";
-import { ApiError } from "./errors";
+import * as expect from "expect";
 import * as StellarSdk from "stellar-sdk";
-import { AuthToken } from "./public/services/users";
+import * as jsonwebtoken from "jsonwebtoken";
 import {
 	Operation,
 	xdr,
@@ -18,11 +12,18 @@ import {
 	PaymentOperationRecord,
 	CollectionPage, OperationRecord
 } from "stellar-sdk";
-import { CompletedPayment, PaymentPayload } from "./internal/services";
-import { ExternalOfferPayload } from "./public/services/applications";
-import { JWTValue } from "./models/offers";
+
+import { ApiError } from "./errors";
 import { JWTContent } from "./public/jwt";
-import * as expect from "expect";
+import { JWTValue } from "./models/offers";
+import { delay, generateId, retry } from "./utils";
+import { AuthToken } from "./public/services/users";
+import { Application } from "./models/applications";
+import { Offer, OfferList } from "./public/services/offers";
+import { Poll, Tutorial } from "./public/services/offer_contents";
+import { ExternalOfferPayload, ExternalSpendOfferPayload } from "./public/services/applications";
+import { OpenOrder, Order, OrderList } from "./public/services/orders";
+import { CompletedPayment, PaymentPayload } from "./internal/services";
 
 const BASE = process.env.MARKETPLACE_BASE;
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
@@ -50,12 +51,17 @@ function isJWT(obj: any): obj is { jwt: string } {
 
 class SampleAppClient {
 	public async getRegisterJWT(userId: string): Promise<string> {
-		const res = await axios.default.get(JWT_SERVICE_BASE + "/register/token?user_id=" + userId);
+		const res = await axios.default.get(JWT_SERVICE_BASE + `/register/token?user_id=${ userId }`);
 		return res.data.jwt;
 	}
 
 	public async getSpendJWT(offerId: string): Promise<string> {
-		const res = await axios.default.get(JWT_SERVICE_BASE + "/spend/token?offer_id=" + offerId);
+		const res = await axios.default.get(JWT_SERVICE_BASE + `/spend/token?offer_id=${ offerId }`);
+		return res.data.jwt;
+	}
+
+	public async getEarnJWT(userId: string, offerId: string): Promise<string> {
+		const res = await axios.default.get(JWT_SERVICE_BASE + `/earn/token?user_id=${ userId }&offer_id=${ offerId }`);
 		return res.data.jwt;
 	}
 
@@ -65,13 +71,12 @@ class SampleAppClient {
 	}
 
 	public async isValidSignature(jwt: string): Promise<boolean> {
-		const res = await axios.default.get(JWT_SERVICE_BASE + `/validate?jwt=${jwt}`);
+		const res = await axios.default.get(JWT_SERVICE_BASE + `/validate?jwt=${ jwt }`);
 		return res.data.is_valid;
 	}
 }
 
 class Client {
-
 	private static KinPaymentFromStellar(operation: PaymentOperationRecord, transaction: TransactionRecord): CompletedPayment | undefined {
 		try {
 			const [, appId, id] = transaction.memo.split("-", 3);
@@ -376,7 +381,7 @@ function isValidPayment(order: Order, appId: string, payment: CompletedPayment):
 }
 
 async function earnFlow() {
-	console.log("=====================================earn=====================================");
+	console.log("===================================== earn =====================================");
 	const client = new Client();
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "doody98ds4" },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
@@ -430,7 +435,7 @@ async function earnFlow() {
 }
 
 async function earnTutorial() {
-	console.log("=====================================earnTutorial=====================================");
+	console.log("===================================== earnTutorial =====================================");
 	const client = new Client();
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "new_test_user" },
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
@@ -467,13 +472,13 @@ async function earnTutorial() {
 }
 
 async function testRegisterNewUser() {
-	console.log("=====================================testRegisterNewUser=====================================");
+	console.log("===================================== testRegisterNewUser =====================================");
 	const client = new Client();
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: generateId() });
 }
 
 async function justPay() {
-	console.log("=====================================justPay=====================================");
+	console.log("===================================== justPay =====================================");
 	const client = new Client();
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: generateId() });
 	await client.pay("GCZ72HXIUSDXEEL2RVZR6PXHGYU7S3RMQQ4O6UVIXWOU4OUVNIQKQR2X", 1, "SOME_ORDER");
@@ -481,7 +486,7 @@ async function justPay() {
 }
 
 async function registerJWT() {
-	console.log("=====================================registerJWT=====================================");
+	console.log("===================================== registerJWT =====================================");
 
 	const client = new Client();
 	const userId = generateId();
@@ -491,7 +496,7 @@ async function registerJWT() {
 }
 
 async function nativeSpendFlow() {
-	console.log("=====================================nativeSpendFlow=====================================");
+	console.log("===================================== nativeSpendFlow =====================================");
 
 	const client = new Client();
 	// this address is prefunded with test kin
@@ -503,13 +508,14 @@ async function nativeSpendFlow() {
 		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 
-	const selectedOffer = (await appClient.getOffers())[0];
+	const selectedOffer = (await appClient.getOffers())[0] as ExternalSpendOfferPayload;
 	const offerJwt = await appClient.getSpendJWT(selectedOffer.id);
-	console.log(`requesting order for offer: ${selectedOffer.id}: ${offerJwt}`);
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ offerJwt }`);
 
 	const openOrder = await client.createExternalOrder(offerJwt);
 	console.log(`got open order`, openOrder);
 
+	expect(openOrder.offer_type).toBe("spend");
 	expect(openOrder.amount).toBe(selectedOffer.amount);
 	expect(openOrder.blockchain_data.recipient_address).toBe(selectedOffer.wallet_address);
 	expect(openOrder.offer_id).toBe(selectedOffer.id);
@@ -545,7 +551,7 @@ async function nativeSpendFlow() {
 }
 
 async function tryToNativeSpendTwice() {
-	console.log("=====================================tryToNativeSpendTwice=====================================");
+	console.log("===================================== tryToNativeSpendTwice =====================================");
 	const client = new Client();
 	const userId = "rich_user:" + generateId();
 	const appClient = new SampleAppClient();
@@ -555,7 +561,7 @@ async function tryToNativeSpendTwice() {
 		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 
-	const selectedOffer = (await appClient.getOffers())[0];
+	const selectedOffer = (await appClient.getOffers())[0] as ExternalSpendOfferPayload;
 	const offerJwt = await appClient.getSpendJWT(selectedOffer.id);
 	const openOrder = await client.createExternalOrder(offerJwt);
 	console.log(`created order`, openOrder.id, `for offer`, selectedOffer.id);
@@ -578,16 +584,60 @@ async function tryToNativeSpendTwice() {
 	}
 }
 
+async function nativeEarnFlow() {
+	console.log("===================================== nativeEarnFlow =====================================");
+
+	const client = new Client();
+	// this address is prefunded with test kin
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+
+	await client.register({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	await client.activate();
+
+	const selectedOffer = (await appClient.getOffers()).filter((item: any) => item.type === "earn")[0] as ExternalSpendOfferPayload;
+	const offerJwt = await appClient.getEarnJWT(userId, selectedOffer.id);
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ offerJwt }`);
+
+	const openOrder = await client.createExternalOrder(offerJwt);
+	console.log(`got open order`, openOrder);
+
+	expect(openOrder.amount).toBe(selectedOffer.amount);
+	expect(openOrder.offer_id).toBe(selectedOffer.id);
+	expect(openOrder.offer_type).toBe("earn");
+
+	// pay for the offer
+	await client.submitOrder(openOrder.id);
+
+	// poll on order payment
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
+	console.log(`completion date: ${order.completion_date}`);
+
+	// find payment on blockchain
+	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+
+	expect(payment).toBeDefined();
+
+	console.log(`payment on blockchain:`, payment);
+	expect(isValidPayment(order, client.appId, payment)).toBeTruthy();
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+}
+
 async function main() {
-	await earnFlow();
+	// await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
 	// await earnTutorial();
 	// await spendFlow();
 	// await justPay();
 	// await registerJWT();
-	await nativeSpendFlow();
+	// await nativeSpendFlow();
 	// await tryToNativeSpendTwice();
+
+	await nativeEarnFlow();
 }
 
 main()

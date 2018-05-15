@@ -5,7 +5,7 @@ import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
 
-import { validateSpendJWT } from "../services/applications";
+import { validateExternalOrderJWT } from "../services/applications";
 
 import { Paging } from "./index";
 import * as payment from "./payment";
@@ -20,8 +20,9 @@ import {
 	OpenOrderExpired,
 	InvalidPollAnswers,
 	ExternalOrderExhausted,
-	OpenedOrdersUnreturnable } from "../../errors";
-import { OrderStatusAndNegation } from "../../models/orders";
+	OpenedOrdersUnreturnable,
+	ExternalEarnOfferByDifferentUser } from "../../errors";
+import { EarnPayload } from "./applications";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -110,37 +111,46 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 }
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
-	const offer = await validateSpendJWT(jwt, logger);
-	await addWatcherEndpoint([offer.wallet_address]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
+	const payload = await validateExternalOrderJWT(jwt, logger);
 
-	let order = await db.Order.getOpenOrder(offer.id, user.id);
+	if (payload.sub === "earn" && payload.user_id !== user.appUserId) {
+		throw ExternalEarnOfferByDifferentUser(user.appUserId, payload.user_id);
+	}
+
+	if (payload.sub === "spend") {
+		await addWatcherEndpoint([payload.offer.wallet_address]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
+	}
+
+	let order = await db.Order.getOpenOrder(payload.offer.id, user.id);
 
 	if (!order) {
-
-		const count = await db.Order.countByOffer(offer.id, user.id);
+		const count = await db.Order.countByOffer(payload.offer.id, user.id);
 		if (count > 0) {
 			throw ExternalOrderExhausted();
 		}
 
+		// hack
+		const tmpBlockchainData = (await offerDb.Offer.findOne({ type: payload.sub }))!.blockchainData;
+
 		order = db.ExternalOrder.new({
 			userId: user.id,
-			offerId: offer.id,
-			amount: offer.amount,
-			type: "spend", // TODO: we currently only support native spend
+			offerId: payload.offer.id,
+			amount: payload.offer.amount,
+			type: payload.sub,
 			status: "opened",
 			meta: {
-				title: offer.title,
-				description: offer.description
+				title: payload.offer.title,
+				description: payload.offer.description
 			},
 			blockchainData: {
-				sender_address: user.walletAddress,
-				recipient_address: offer.wallet_address
+				sender_address: payload.sub === "spend" ? user.walletAddress : tmpBlockchainData.sender_address,
+				recipient_address: payload.sub === "spend" ? tmpBlockchainData.recipient_address : user.walletAddress
 			}
 		});
 		await order.save();
 	}
 
-	logger.info("created new open external order", { offerId: offer.id, userId: user.id, orderId: order.id });
+	logger.info("created new open external order", { offerId: payload.offer.id, userId: user.id, orderId: order.id });
 
 	return openOrderDbToApi(order);
 }
@@ -164,15 +174,15 @@ export async function submitOrder(
 		if (!offer) {
 			throw NoSuchOffer(order.offerId);
 		}
-	}
 
-	if (order.type === "earn") {
-		// validate form
-		if (!offerContents.isValid(order.offerId, form)) {
-			throw InvalidPollAnswers();
+		if (order.type === "earn") {
+			// validate form
+			if (!offerContents.isValid(order.offerId, form)) {
+				throw InvalidPollAnswers();
+			}
+
+			await offerContents.savePollAnswers(order.userId, order.offerId, orderId, form);
 		}
-
-		await offerContents.savePollAnswers(order.userId, order.offerId, orderId, form);
 	}
 
 	order.setStatus("pending");

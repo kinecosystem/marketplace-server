@@ -27,7 +27,8 @@ const CODES = {
 		OpenOrderExpired: 1
 	},
 	Conflict: {
-		ExternalOrderExhausted: 1
+		ExternalOrderExhausted: 1,
+		ExternalEarnOfferByDifferentUser: 2
 	},
 	InternalServerError: {
 		OpenedOrdersOnly: 1,
@@ -36,7 +37,8 @@ const CODES = {
 	BadRequest: {
 		UnknownSignInType: 1,
 		WrongJWTAlgorithm: 2,
-		InvalidPollAnswers: 3
+		InvalidPollAnswers: 3,
+		InvalidExternalOrderJWT: 4
 	}
 };
 
@@ -125,6 +127,11 @@ export function ExternalOrderExhausted() {
 	return ConflictError(CODES.Conflict.ExternalOrderExhausted, "User already completed offer, or has a pending order");
 }
 
+export function ExternalEarnOfferByDifferentUser(loggedInUser: string, payToUser: string) {
+	const message = `Pay to user (${ payToUser }) is not the logged in user (${ loggedInUser })`;
+	return ConflictError(CODES.Conflict.ExternalEarnOfferByDifferentUser, message);
+}
+
 export function OfferCapReached(id: string) {
 	return NotFoundError(CODES.NotFound.OfferCapReached, `Cap reached for offer: ${ id }`);
 }
@@ -155,4 +162,8 @@ export function WrongJWTAlgorithm(type: string) {
 
 export function InvalidPollAnswers() {
 	return BadRequestError(CODES.BadRequest.InvalidPollAnswers, "submitted form is invalid");
+}
+
+export function InvalidExternalOrderJWT() {
+	return BadRequestError(CODES.BadRequest.InvalidExternalOrderJWT, `subject can be either "earn" or "spend"`);
 }

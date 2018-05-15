@@ -1,14 +1,12 @@
 import * as http from "http";
 
-import { ServerError } from "../utils";
+import { getConfig } from "./config";
 import { initLogger } from "../logging";
 
-import { getConfig } from "./config";
-
 const config = getConfig();
+import { app } from "./app";
 
 import { onError, onListening } from "../server";
-import { app } from "./app";
 
 const server = http.createServer(app);
 server.listen(config.port);

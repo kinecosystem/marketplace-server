@@ -1,9 +1,10 @@
 import * as http from "http";
 
 import { getConfig } from "./config";
-import { app } from "./app";
+import { initLogger } from "../logging";
 
 const config = getConfig();
+import { app } from "./app";
 
 import { onError, onListening } from "../server";
 

@@ -42,6 +42,9 @@ push-image:
 	docker push ${image}:latest
 	docker push ${image}:${revision}
 
+pull:
+	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml pull
+
 up:
 	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml up
 

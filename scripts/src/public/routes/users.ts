@@ -13,12 +13,6 @@ import {
 	validateWhitelist
 } from "../services/applications";
 
-// get a user
-export const getUser = async function(req: Request, res: Response) {
-	const user = await db.User.findOne({ id: req.query.id });
-	res.status(200).send({ user });
-} as any as RequestHandler;
-
 type CommonSignInData = {
 	sign_in_type: "jwt" | "whitelist";
 	device_id: string;
@@ -36,6 +30,13 @@ type WhitelistSignInData = CommonSignInData & {
 	user_id: string;
 	api_key: string;
 };
+
+// get a user
+export const getUser = async function(req: Request, res: Response) {
+	console.log("get User!");
+	const user = await db.User.findOne({ id: req.query.id });
+	res.status(200).send({ user });
+} as any as RequestHandler;
 
 type RegisterRequest = Request & { body: WhitelistSignInData | JwtSignInData };
 

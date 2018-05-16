@@ -21,9 +21,9 @@ import { AuthToken } from "./public/services/users";
 import { Application } from "./models/applications";
 import { Offer, OfferList } from "./public/services/offers";
 import { Poll, Tutorial } from "./public/services/offer_contents";
-import { ExternalOfferPayload, ExternalSpendOfferPayload } from "./public/services/applications";
+import { ExternalOfferPayload } from "./public/services/native_offers";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
-import { CompletedPayment, PaymentPayload } from "./internal/services";
+import { CompletedPayment, JWTBodyPaymentConfirmation } from "./internal/services";
 
 const BASE = process.env.MARKETPLACE_BASE;
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
@@ -508,7 +508,7 @@ async function nativeSpendFlow() {
 		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 
-	const selectedOffer = (await appClient.getOffers())[0] as ExternalSpendOfferPayload;
+	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
 	const offerJwt = await appClient.getSpendJWT(selectedOffer.id);
 	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ offerJwt }`);
 
@@ -517,11 +517,10 @@ async function nativeSpendFlow() {
 
 	expect(openOrder.offer_type).toBe("spend");
 	expect(openOrder.amount).toBe(selectedOffer.amount);
-	expect(openOrder.blockchain_data.recipient_address).toBe(selectedOffer.wallet_address);
 	expect(openOrder.offer_id).toBe(selectedOffer.id);
 
 	// pay for the offer
-	const res = await client.pay(selectedOffer.wallet_address, selectedOffer.amount, openOrder.id);
+	const res = await client.pay(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
 	console.log("pay result hash: " + res.hash);
 	await client.submitOrder(openOrder.id);
 
@@ -540,11 +539,11 @@ async function nativeSpendFlow() {
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 
-	expect(order.result!.type).toBe("confirm_payment");
+	expect(order.result!.type).toBe("payment_confirmation");
 	const paymentJwt = (order.result! as JWTValue).jwt;
-	const jwtPayload = jsonwebtoken.decode(paymentJwt, { complete: true }) as JWTContent<PaymentPayload, "confirm_payment">;
-	expect(jwtPayload.payload.payment.offer_id).toBe(order.offer_id);
-	expect(jwtPayload.payload.payment.user_id).toBe(userId);
+	const jwtPayload = jsonwebtoken.decode(paymentJwt, { complete: true }) as JWTContent<JWTBodyPaymentConfirmation, "payment_confirmation">;
+	expect(jwtPayload.payload.offer_id).toBe(order.offer_id);
+	expect(jwtPayload.payload.sender_user_id).toBe(userId);
 	expect(jwtPayload.header.kid).toBeDefined();
 	// verify using kin public key
 	expect(await appClient.isValidSignature(paymentJwt)).toBeTruthy();
@@ -561,12 +560,12 @@ async function tryToNativeSpendTwice() {
 		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 
-	const selectedOffer = (await appClient.getOffers())[0] as ExternalSpendOfferPayload;
+	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
 	const offerJwt = await appClient.getSpendJWT(selectedOffer.id);
 	const openOrder = await client.createExternalOrder(offerJwt);
 	console.log(`created order`, openOrder.id, `for offer`, selectedOffer.id);
 	// pay for the offer
-	const res = await client.pay(selectedOffer.wallet_address, selectedOffer.amount, openOrder.id);
+	const res = await client.pay(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
 	await client.submitOrder(openOrder.id);
 
 	// poll on order payment
@@ -596,7 +595,7 @@ async function nativeEarnFlow() {
 	await client.register({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
-	const selectedOffer = (await appClient.getOffers()).filter((item: any) => item.type === "earn")[0] as ExternalSpendOfferPayload;
+	const selectedOffer = (await appClient.getOffers()).filter((item: any) => item.type === "earn")[0] as ExternalOfferPayload;
 	const offerJwt = await appClient.getEarnJWT(userId, selectedOffer.id);
 	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ offerJwt }`);
 
@@ -619,22 +618,28 @@ async function nativeEarnFlow() {
 	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
 
 	expect(payment).toBeDefined();
-
 	console.log(`payment on blockchain:`, payment);
 	expect(isValidPayment(order, client.appId, payment)).toBeTruthy();
+
+	const paymentJwt = (order.result! as JWTValue).jwt;
+	const jwtPayload = jsonwebtoken.decode(paymentJwt, { complete: true }) as JWTContent<JWTBodyPaymentConfirmation, "payment_confirmation">;
+
+	expect(jwtPayload.payload.offer_id).toBe(order.offer_id);
+	expect(jwtPayload.payload.recipient_user_id).toBe(userId);
+
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 }
 
 async function main() {
-	// await earnFlow();
+	await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
 	// await earnTutorial();
-	// await spendFlow();
+	await spendFlow();
 	// await justPay();
 	// await registerJWT();
-	// await nativeSpendFlow();
+	await nativeSpendFlow();
 	// await tryToNativeSpendTwice();
 
 	await nativeEarnFlow();

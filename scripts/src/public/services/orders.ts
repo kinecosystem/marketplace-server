@@ -5,7 +5,7 @@ import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
 
-import { validateExternalOrderJWT } from "../services/applications";
+import { validateExternalOrderJWT, EarnPayload } from "../services/native_offers";
 
 import { Paging } from "./index";
 import * as payment from "./payment";
@@ -20,9 +20,9 @@ import {
 	OpenOrderExpired,
 	InvalidPollAnswers,
 	ExternalOrderExhausted,
-	OpenedOrdersUnreturnable,
-	ExternalEarnOfferByDifferentUser } from "../../errors";
-import { EarnPayload } from "./applications";
+	OpenedOrdersUnreturnable
+} from "../../errors";
+import { ExternalSpendOrderJWT, ExternalEarnOrderJWT } from "./native_offers";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -111,15 +111,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 }
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
-	const payload = await validateExternalOrderJWT(jwt, logger);
-
-	if (payload.sub === "earn" && payload.user_id !== user.appUserId) {
-		throw ExternalEarnOfferByDifferentUser(user.appUserId, payload.user_id);
-	}
-
-	if (payload.sub === "spend") {
-		await addWatcherEndpoint([payload.offer.wallet_address]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
-	}
+	const payload = await validateExternalOrderJWT(jwt, user.appUserId, logger);
 
 	let order = await db.Order.getOpenOrder(payload.offer.id, user.id);
 
@@ -129,8 +121,28 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 			throw ExternalOrderExhausted();
 		}
 
-		// hack
+		// hack - to get the wallet for this digital service
+		// currently there is only a single wallet, so I'm just selecting the first wallet data
 		const tmpBlockchainData = (await offerDb.Offer.findOne({ type: payload.sub }))!.blockchainData;
+
+		let title: string;
+		let description: string;
+		let sender_address: string;
+		let recipient_address: string;
+		if (payload.sub === "earn") {
+			title = (payload as ExternalEarnOrderJWT).recipient.title;
+			description = (payload as ExternalEarnOrderJWT).recipient.description;
+			sender_address = tmpBlockchainData.sender_address!;
+			recipient_address = user.walletAddress;
+		} else {
+			// spend or pay_to_user
+			await addWatcherEndpoint([tmpBlockchainData.recipient_address!]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
+			title = (payload as ExternalSpendOrderJWT).sender.title;
+			description = (payload as ExternalSpendOrderJWT).sender.description;
+			sender_address = user.walletAddress;
+			// TODO in case of pay_to_user, needs another lookup for the recipient_user_wallet
+			recipient_address = tmpBlockchainData.recipient_address!;
+		}
 
 		order = db.ExternalOrder.new({
 			userId: user.id,
@@ -139,18 +151,22 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 			type: payload.sub,
 			status: "opened",
 			meta: {
-				title: payload.offer.title,
-				description: payload.offer.description
+				title,
+				description
 			},
 			blockchainData: {
-				sender_address: payload.sub === "spend" ? user.walletAddress : tmpBlockchainData.sender_address,
-				recipient_address: payload.sub === "spend" ? tmpBlockchainData.recipient_address : user.walletAddress
+				sender_address,
+				recipient_address
 			}
 		});
 		await order.save();
-	}
 
-	logger.info("created new open external order", { offerId: payload.offer.id, userId: user.id, orderId: order.id });
+		logger.info("created new open external order", {
+			offerId: payload.offer.id,
+			userId: user.id,
+			orderId: order.id
+		});
+	}
 
 	return openOrderDbToApi(order);
 }
@@ -272,7 +288,7 @@ function orderDbToApi(order: db.Order): Order {
 		content: order.meta.content,  // will be empty for external order
 		blockchain_data: order.blockchainData,
 		error: order.error as ApiError,  // will be null for anything other than "failed"
-		result: order.value,  // will be a coupon code or a confirm_payment JWT
+		result: order.value,  // will be a coupon code or a payment_confirmation JWT
 	};
 }
 

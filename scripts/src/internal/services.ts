@@ -10,6 +10,8 @@ import { sign as signJWT } from "./jwt";
 import { Order } from "../models/orders";
 import { User } from "../models/users";
 
+const BLOCKCHAIN = "stellar-testnet";
+
 export interface CompletedPayment {
 	id: string;
 	app_id: string;
@@ -20,27 +22,35 @@ export interface CompletedPayment {
 	timestamp: string;
 }
 
-export type PaymentPayload = {
+export type JWTBodyPaymentConfirmation = {
+	offer_id: string;
+	sender_user_id?: string;
+	recipient_user_id?: string;
 	payment: {
-		date: number;
-		user_id: string;
-		offer_id: string;
+		blockchain: string;
+		transaction_id: string;
 	}
 };
 
-async function getPaymentJWT(order: Order): Promise<OrderValue> {
+async function getPaymentJWT(order: Order, appId: string): Promise<OrderValue> {
 	const user: User = (await User.findOneById(order.userId))!;
-	const payload: PaymentPayload = {
+	const payload: JWTBodyPaymentConfirmation = {
+		offer_id: order.offerId,
 		payment: {
-			date: Date.now(),
-			user_id: user.appUserId,
-			offer_id: order.offerId
+			blockchain: BLOCKCHAIN,
+			transaction_id: order.blockchainData.transaction_id!
 		}
 	};
+	if (order.type === "earn") {
+		payload.recipient_user_id = user.appUserId;
+	} else {
+		payload.sender_user_id = user.appUserId;
+	}
+	// XXX if it's p2p, add both recipient and sender user_ids
 
 	return {
-		type: "confirm_payment",
-		jwt: signJWT("confirm_payment", payload)
+		type: "payment_confirmation",
+		jwt: signJWT("payment_confirmation", payload, appId !== "kik" ? "rs512_0" : "es256_0") // TODO all apps should run with es256 keys
 	};
 }
 
@@ -99,8 +109,8 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 
 	order.blockchainData = pick(payment, "transaction_id", "sender_address", "recipient_address");
 
-	if (order.type === "spend") {
-		if (order.isMarketplaceOrder()) {
+	if (order.isMarketplaceOrder()) {
+		if (order.type === "spend") {
 			// XXX can we call findOne?
 			const asset = await Asset.findOne({ where: { offerId: order.offerId, ownerId: null } });
 			if (!asset) {
@@ -118,11 +128,11 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 				asset.ownerId = order.userId;
 				await asset.save();  // XXX should be in a transaction with order.save
 			}
-		} else if (order.isExternalOrder()) {
-			order.value = await getPaymentJWT(order);
 		}
-	} else {
-		// earn offer - no extra steps
+	} else if (order.isExternalOrder()) {
+		// XXX for p2p don't put the JWT in the recipient order's value
+		// XXX for p2p create a completed order for the recipient too
+		order.value = await getPaymentJWT(order, payment.app_id);
 	}
 
 	if (order.status !== "pending") {

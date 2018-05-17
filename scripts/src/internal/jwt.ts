@@ -20,8 +20,10 @@ class KeyMap extends Map<string, { algorithm: string; key: Buffer; }> {
 
 const KEYS = new KeyMap();
 
-export function sign(subject: string, payload: any) {
-	const keyid = "rs512_0";  // TODO change to es256_0
+export function sign(subject: string, payload: any, keyid?: string) {
+	if (!keyid) {
+			keyid = "es256_0";  // TODO the key should be randomly chosen or timely rotated
+	}
 	const signWith = KEYS.get(keyid)!;
 	return jsonwebtoken.sign(payload, signWith.key, {
 		subject,

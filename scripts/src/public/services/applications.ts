@@ -1,51 +1,17 @@
 import { LoggerInstance } from "winston";
 
-import { InvalidApiKey, InvalidExternalOrderJWT } from "../../errors";
+import { ExternalEarnOfferByDifferentUser, InvalidApiKey, InvalidExternalOrderJWT } from "../../errors";
 import { Application, AppWhitelists } from "../../models/applications";
-
 import { JWTClaims, verify as verifyJWT } from "../jwt";
 
 export type RegisterPayload = {
 	user_id: string;
 	api_key: string;
 };
-
 export type SignInContext = {
 	appId: string;
 	appUserId: string;
 };
-export type ExternalOfferPayload = {
-	id: string;
-	title: string;
-	description: string;
-	amount: number;
-};
-
-export type ExternalSpendOfferPayload = ExternalOfferPayload & {
-	wallet_address: string;
-};
-
-export type EarnPayload = {
-	user_id: string;
-	offer: ExternalOfferPayload;
-};
-
-export type SpendPayload = {
-	offer: ExternalSpendOfferPayload;
-};
-
-export type ExternalEarnOrderJWT = JWTClaims<"earn"> & EarnPayload;
-export type ExternalSpendOrderJWT = JWTClaims<"spend"> & SpendPayload;
-export type ExternalOrderJWT = ExternalEarnOrderJWT | ExternalSpendOrderJWT;
-export async function validateExternalOrderJWT(jwt: string, logger: LoggerInstance): Promise<ExternalOrderJWT> {
-	const decoded = await verifyJWT<SpendPayload | EarnPayload, "spend" | "earn">(jwt, logger);
-
-	if (decoded.payload.sub !== "earn" && decoded.payload.sub !== "spend") {
-		throw InvalidExternalOrderJWT();
-	}
-
-	return decoded.payload as ExternalOrderJWT;
-}
 
 export async function validateRegisterJWT(jwt: string, logger: LoggerInstance): Promise<SignInContext> {
 	const decoded = await verifyJWT<RegisterPayload, "register">(jwt, logger);

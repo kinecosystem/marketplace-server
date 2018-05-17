@@ -2,7 +2,7 @@ version: "3"
 
 services:
   payment-service:
-    image: kinecosystem/payment-service
+    image: kinecosystem/payment-service:d2757ef
     ports:
       - 3000
     links:
@@ -19,7 +19,7 @@ services:
       STELLAR_ADDRESS: ${STELLAR_ADDRESS}
 
   payment-worker:
-    image: kinecosystem/payment-service
+    image: kinecosystem/payment-service:d2757ef
     command: pipenv run rq worker --url redis://redis:6379/0
     links:
       - redis
@@ -27,12 +27,12 @@ services:
       <<: *payment_env_vars
 
   redis:
-    image: redis
+    image: redis:4.0
     ports:
       - 6379
 
   jwt-service:
-    image: kinecosystem/jwt-service
+    image: kinecosystem/jwt-service:c79727b
     ports:
       - 3000
     environment:

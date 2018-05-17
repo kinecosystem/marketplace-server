@@ -17,7 +17,6 @@ type CommonSignInData = {
 	sign_in_type: "jwt" | "whitelist";
 	device_id: string;
 	wallet_address: string;
-	public_address?: string;  // XXX ECO-249 deprecate and set wallet_address to definite input
 };
 
 type JwtSignInData = CommonSignInData & {
@@ -61,7 +60,7 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	const authToken = await getOrCreateUserCredentials(
 		context.appUserId,
 		context.appId,
-		data.wallet_address || data.public_address!,  // XXX ECO-249 deprecate
+		data.wallet_address,
 		data.device_id,
 		req.logger);
 

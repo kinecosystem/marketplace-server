@@ -2,7 +2,7 @@ version: "3"
 
 services:
   psql:
-    image: postgres
+    image: postgres:10.4
     links:
       - postgres
     entrypoint: psql -h postgres -U user -d ecosystem
@@ -10,7 +10,7 @@ services:
       PGPASSWORD: pass
 
   create-db:
-    image: kinecosystem/marketplace-server
+    image: kinecosystem/marketplace-server:latest
     volumes:
       - .:/opt/app
     links:
@@ -27,7 +27,7 @@ services:
       REDUCE_AMOUNT: 'true'
 
   test-system:
-    image: kinecosystem/marketplace-server
+    image: kinecosystem/marketplace-server:latest
     volumes:
       - .:/opt/app
     links:
@@ -39,7 +39,7 @@ services:
     command: npm run test-system
 
   generate-funding-address:
-    image: kinecosystem/payment-service
+    image: kinecosystem/payment-service:d2757ef
     command: pipenv run python generate_funding_address.py
     volumes:
       - ./secrets:/secrets

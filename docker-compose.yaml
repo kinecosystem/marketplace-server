@@ -3,7 +3,7 @@ version: "3"
 services:
 
   marketplace-server:
-    image: kinecosystem/marketplace-server
+    image: kinecosystem/marketplace-server:d39adef
     ports:
       - 3000
     links:
@@ -27,7 +27,7 @@ services:
       APP_DB_DATABASE: ecosystem
 
   marketplace-internal:
-    image: kinecosystem/marketplace-server
+    image: kinecosystem/marketplace-server:d39adef
     command: npm run start-internal
     ports:
       - 3000
@@ -40,7 +40,7 @@ services:
       APP_NAME: 'marketplace-internal'
 
   postgres:
-    image: postgres
+    image: postgres:10.4
     ports:
       - 5432
     environment:

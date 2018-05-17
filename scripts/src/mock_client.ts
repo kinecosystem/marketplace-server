@@ -632,17 +632,18 @@ async function nativeEarnFlow() {
 }
 
 async function main() {
-	await earnFlow();
+	// await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
 	// await earnTutorial();
-	await spendFlow();
+	// await spendFlow();
 	// await justPay();
 	// await registerJWT();
+	await nativeEarnFlow();
+
 	await nativeSpendFlow();
 	// await tryToNativeSpendTwice();
 
-	await nativeEarnFlow();
 }
 
 main()

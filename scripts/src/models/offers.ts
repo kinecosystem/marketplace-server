@@ -89,7 +89,7 @@ export class OfferContent extends Model {
 	public offerId!: string;
 
 	@Column("simple-json")
-	public content!: string;
+	public content!: string; // should be object
 
 	@Column({ name: "content_type" })
 	public contentType!: ContentType;

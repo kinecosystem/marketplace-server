@@ -2,7 +2,7 @@ import { getConfig } from "./config";
 import { StatsD } from "hot-shots";
 
 // XXX can add general tags to the metrics (i.e. - public/ internal, machine name etc)
-const statsd = new StatsD(getConfig().statsd);
+const statsd = new StatsD(Object.assign({ prefix: "marketplace_" }, getConfig().statsd));
 
 export function userRegister(newUser: boolean, walletCreated: boolean) {
 	statsd.increment("user_register", 1, undefined, { new_user: newUser.toString() });

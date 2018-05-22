@@ -32,16 +32,29 @@ class Stellar {
 	public static MEMO_VERSION = 1;
 	public server!: StellarSdk.Server; // StellarSdk.Server
 	public kinAsset!: StellarSdk.Asset; // StellarSdk.Asset
-	public constructor(network: "production" | "testnet") {
-		if (network === "testnet") {
-			StellarSdk.Network.useTestNetwork();
-			this.server = new StellarSdk.Server("https://horizon-testnet.stellar.org");
-			this.kinAsset = new StellarSdk.Asset("KIN", "GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V");
-		} // else - get production values
+	public constructor(network: "production" | "testnet" | "private") {
+		switch (network) {
+			case "testnet":
+				StellarSdk.Network.useTestNetwork();
+				this.server = new StellarSdk.Server("https://horizon-testnet.stellar.org");
+				this.kinAsset = new StellarSdk.Asset("KIN", "GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V");
+				break;
+			case "production":
+				throw new Error("production not supported");
+			case "private":
+				StellarSdk.Network.use(new StellarSdk.Network("private testnet"));
+				this.server = new StellarSdk.Server("https://horizon-kik.kininfrastructure.com");
+				this.kinAsset = new StellarSdk.Asset("KIN", "GBQ3DQOA7NF52FVV7ES3CR3ZMHUEY4LTHDAQKDTO6S546JCLFPEQGCPK");
+				break;
+			default:
+				throw new Error(`${network} not supported`);
+
+		}
+
 	}
 }
 
-const STELLAR = new Stellar("testnet");
+const STELLAR = new Stellar("private");
 
 type SignInPayload = { apiKey: string, userId: string } | { jwt: string };
 
@@ -225,6 +238,27 @@ class Client {
 		return res.data as OrderList;
 	}
 
+	public async establishTrustLine(): Promise<TransactionRecord> {
+		const op = StellarSdk.Operation.changeTrust({
+			asset: STELLAR.kinAsset
+		});
+
+		let error: Error | undefined;
+		for (let i = 0; i < 3; i++) {
+			try {
+				return await this.stellarOperation(op);
+			} catch (e) {
+				error = e;
+
+				if (i < 2) {
+					await delay(3000);
+				}
+			}
+		}
+
+		throw error;
+	}
+
 	private handleAxiosError(ex: axios.AxiosError): never {
 		const apiError: ApiError = ex.response!.data;
 		throw Error(`server error ${ex.response!.status}(${apiError.code}): ${apiError.error}`);
@@ -289,30 +323,16 @@ class Client {
 			return await STELLAR.server.submitTransaction(transaction);
 		} catch (e) {
 			const err: TransactionError = e;
-			throw new Error(`\nStellar Error:\ntransaction: ${err.data.extras.result_codes.transaction}` +
-				`\n\toperations: ${err.data.extras.result_codes.operations.join(",")}`);
-		}
-	}
-
-	private async establishTrustLine(): Promise<TransactionRecord> {
-		const op = StellarSdk.Operation.changeTrust({
-			asset: STELLAR.kinAsset
-		});
-
-		let error: Error | undefined;
-		for (let i = 0; i < 3; i++) {
-			try {
-				return await this.stellarOperation(op);
-			} catch (e) {
-				error = e;
-
-				if (i < 2) {
-					await delay(3000);
-				}
+			if (err.data && err.data.extras && err.data.extras.result_codes &&
+				err.data.extras.result_codes.transaction &&
+				err.data.extras.result_codes.operations) {
+				throw new Error(`\nStellar Error:\ntransaction: ${err.data.extras.result_codes.transaction}` +
+					`\n\toperations: ${err.data.extras.result_codes.operations.join(",")}`);
+			} else {
+				console.log(`failed`, err.data.extras, err.data);
+				throw err;
 			}
 		}
-
-		throw error;
 	}
 }
 
@@ -631,7 +651,18 @@ async function nativeEarnFlow() {
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 }
 
+async function createTrust() {
+	console.log("===================================== createTrust =====================================");
+	const client = new Client();
+	// this address is prefunded with test kin
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "rich_user2" },
+		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	const record = await client.establishTrustLine();
+	console.log("established trust", record.hash);
+}
+
 async function main() {
+	await createTrust();
 	// await earnFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();

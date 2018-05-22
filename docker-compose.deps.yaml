@@ -2,7 +2,7 @@ version: "3"
 
 services:
   payment-service:
-    image: kinecosystem/payment-service:d2757ef
+    image: kinecosystem/payment-service:4fd7542
     ports:
       - 3000
     links:
@@ -17,10 +17,23 @@ services:
       STELLAR_CHANNEL_SEEDS: ${STELLAR_CHANNEL_SEEDS}
       STELLAR_BASE_SEED: ${STELLAR_BASE_SEED}
       STELLAR_ADDRESS: ${STELLAR_ADDRESS}
+      STELLAR_HORIZON_URL: 'https://horizon-kik.kininfrastructure.com'
+      STELLAR_NETWORK: 'private testnet'
+      STELLAR_KIN_ISSUER_ADDRESS: 'GBQ3DQOA7NF52FVV7ES3CR3ZMHUEY4LTHDAQKDTO6S546JCLFPEQGCPK'
+      STELLAR_KIN_TOKEN_NAME: 'KIN'
+      STELLAR_INITIAL_XLM_AMOUNT: 2
 
   payment-worker:
-    image: kinecosystem/payment-service:d2757ef
+    image: kinecosystem/payment-service:4fd7542
     command: pipenv run rq worker --url redis://redis:6379/0
+    links:
+      - redis
+    environment:
+      <<: *payment_env_vars
+
+  payment-watcher:
+    image: kinecosystem/payment-service:4fd7542
+    command: pipenv run python watcher.py
     links:
       - redis
     environment:

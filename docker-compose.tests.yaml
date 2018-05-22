@@ -39,11 +39,15 @@ services:
     command: npm run test-system
 
   generate-funding-address:
-    image: kinecosystem/payment-service:d2757ef
+    image: kinecosystem/payment-service:4fd7542
     command: pipenv run python generate_funding_address.py
     volumes:
       - ./secrets:/secrets
     environment:
-      KIN_FAUCET: http://159.65.84.173:5005
-      XLM_FAUCET: https://friendbot.stellar.org
+      KIN_FAUCET: http://159.65.84.173:5000
+      XLM_FAUCET: http://friendbot-kik.kininfrastructure.com
       OUTPUT_DIR: /secrets
+      STELLAR_HORIZON_URL: 'https://horizon-kik.kininfrastructure.com'
+      STELLAR_NETWORK: 'private testnet'
+      STELLAR_KIN_ISSUER_ADDRESS: 'GBQ3DQOA7NF52FVV7ES3CR3ZMHUEY4LTHDAQKDTO6S546JCLFPEQGCPK'
+      STELLAR_KIN_TOKEN_NAME: 'KIN'

@@ -1,10 +1,12 @@
 {
 	"port": 0,
-	"loggers": [{
-		"name": "console",
-		"type": "console",
-		"format": "pretty-json"
-	}],
+	"loggers": [
+		{
+			"name": "console",
+			"type": "console",
+			"format": "pretty-json"
+		}
+	],
 	"assets_base": "https://s3.amazonaws.com/kinmarketplace-assets/version1/",
 	"db": {
 		"type": "sqlite",
@@ -26,6 +28,14 @@
 	"jwt": {
 		"private_keys": {
 			"default": {
+				"algorithm": "ES256",
+				"file": "examples/kin-es256_0-priv.pem"
+			},
+			"rs512_0": {
+				"algorithm": "RS512",
+				"file": "examples/kin-rs512_0-priv.pem"
+			},
+			"es256_0": {
 				"algorithm": "ES256",
 				"file": "examples/kin-es256_0-priv.pem"
 			}

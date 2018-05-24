@@ -20,7 +20,7 @@ import {
 	OpenOrderExpired,
 	InvalidPollAnswers,
 	ExternalOrderExhausted,
-	OpenedOrdersUnreturnable
+	OpenedOrdersUnreturnable, CompletedOrderCantTransitionToFailed
 } from "../../errors";
 import { ExternalSpendOrderJWT, ExternalEarnOrderJWT } from "./native_offers";
 
@@ -63,7 +63,24 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 
 	checkIfTimedOut(order); // no need to wait for the promise
 
-	logger.info("getOne returning", { orderId, status: order.status, offerId: order.offerId, userId: order.userId });
+	logger.debug("getOne returning", { orderId, status: order.status, offerId: order.offerId, userId: order.userId });
+	return orderDbToApi(order);
+}
+
+export async function changeOrder(orderId: string, change: Partial<Order>, logger: LoggerInstance): Promise<Order> {
+	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
+
+	if (!order) {
+		throw NoSuchOrder(orderId);
+	}
+	if (order.status === "completed") {
+		throw CompletedOrderCantTransitionToFailed();
+	}
+	order.error = change.error;
+	order.status = "failed";
+	await order.save();
+
+	logger.debug("order patched with error", { orderId, userId: order.userId, error: change.error });
 	return orderDbToApi(order);
 }
 

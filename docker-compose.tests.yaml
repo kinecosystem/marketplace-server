@@ -39,7 +39,7 @@ services:
     command: npm run test-system
 
   generate-funding-address:
-    image: kinecosystem/payment-service:e899b43
+    image: kinecosystem/payment-service:9ae7d7a
     command: pipenv run python generate_funding_address.py
     volumes:
       - ./secrets:/secrets

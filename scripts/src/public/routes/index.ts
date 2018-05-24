@@ -6,8 +6,15 @@ import { TOSMissingOrOldToken } from "../../errors";
 import { authenticate } from "../auth";
 
 import { getOffers } from "./offers";
-import { getUser, signInUser, activateUser } from "./users";
-import { getOrder, cancelOrder, getOrderHistory, submitOrder, createMarketplaceOrder, createExternalOrder } from "./orders";
+import { signInUser, activateUser } from "./users";
+import {
+	getOrder,
+	cancelOrder,
+	getOrderHistory,
+	submitOrder,
+	createMarketplaceOrder,
+	createExternalOrder
+} from "./orders";
 
 import { statusHandler } from "../middleware";
 
@@ -79,30 +86,29 @@ function Router(): ExtendedRouter {
 export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.use(createPath("offers", pathPrefix),
 		Router()
-			.authenticated()
-				.get("/", getOffers)
-				.post("/external/orders", createExternalOrder)
-				.post("/:offer_id/orders", createMarketplaceOrder));
+			.authenticated() // no TOS scope
+			.get("/", getOffers));
 
-	app.use(createPath("orders", pathPrefix),
+	app.use(createPath("offers", pathPrefix),
 		Router()
-			.authenticated()
-				.get("/", getOrderHistory)
-				.get("/:order_id", getOrder));
+			.authenticated(AuthScopes.TOS)
+			.post("/external/orders", createExternalOrder)
+			.post("/:offer_id/orders", createMarketplaceOrder));
 
 	app.use(createPath("orders", pathPrefix),
 		Router()
 			.authenticated(AuthScopes.TOS)
-				.post("/:order_id", submitOrder)
-				.delete("/:order_id", cancelOrder));
+			.get("/", getOrderHistory)
+			.get("/:order_id", getOrder)
+			.post("/:order_id", submitOrder)
+			.delete("/:order_id", cancelOrder));
 
 	// XXX missing changeOrder to add error
 	app.use(createPath("users", pathPrefix),
 		Router()
-			.get("/", getUser)
 			.post("/", signInUser)
-			.authenticated()
-				.post("/me/activate", activateUser));
+			.authenticated() // no TOS scope
+			.post("/me/activate", activateUser));
 
 	app.get("/status", statusHandler);
 }

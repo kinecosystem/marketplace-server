@@ -17,6 +17,6 @@ describe("api tests for /users", async () => {
 		await mock(app)
 			.get("/v1/users?id=1234")
 			.set("x-request-id", "123")
-			.expect(200);
+			.expect(404);
 	});
 });

@@ -12,6 +12,7 @@ import {
 	validateRegisterJWT,
 	validateWhitelist
 } from "../services/applications";
+import { Application } from "../../models/applications";
 
 type CommonSignInData = {
 	sign_in_type: "jwt" | "whitelist";
@@ -50,7 +51,13 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
 
+	const app: Application = await Application.findOneById(context.appId);
+	if (!app.config.loginTypes.includes(data.sign_in_type)) {
+		throw UnknownSignInType((data as any).sign_in_type);
+	}
+
 	const authToken = await getOrCreateUserCredentials(
+		app,
 		context.appUserId,
 		context.appId,
 		data.wallet_address,

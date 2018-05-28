@@ -1,9 +1,14 @@
 import { generateId, IdPrefix } from "../utils";
 import { Column, Entity, Index, JoinTable, ManyToMany } from "typeorm";
-import { CreationDateModel, Model, register as Register, initializer as Initializer } from "./index";
+import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
 import { Offer } from "./offers";
 
+export const NO_WALLET_LIMIT = -1;
 export type StringMap = { [key: string]: string; };  // key => value pairs
+export type ApplicationConfig = {
+	maxUserWallets: number;
+	loginTypes: ["jwt"] | ["whitelist"] | ["jwt", "whitelist"];
+};
 
 @Entity({ name: "applications" })
 @Register
@@ -23,6 +28,9 @@ export class Application extends CreationDateModel {
 
 	@Column("simple-json", { name: "wallet_addresses" })
 	public walletAddresses!: { recipient: string; sender: string };
+
+	@Column("simple-json", { name: "config" })
+	public config!: ApplicationConfig;
 
 	@ManyToMany(type => Offer)
 	@JoinTable()

@@ -1,9 +1,8 @@
 import { LoggerInstance } from "winston";
 
+import { verify as verifyJwt } from "../jwt";
 import { InvalidApiKey } from "../../errors";
 import { Application, AppWhitelists } from "../../models/applications";
-
-import { verify as verifyJwt } from "../jwt";
 
 export type RegisterPayload = {
 	user_id: string;

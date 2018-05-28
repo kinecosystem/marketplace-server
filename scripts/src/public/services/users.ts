@@ -44,6 +44,9 @@ export async function getOrCreateUserCredentials(
 		logger.info("found existing user", { appId, appUserId, userId: user.id });
 		if (user.walletAddress !== walletAddress) {
 			logger.warn(`existing user registered with new wallet ${user.walletAddress} !== ${walletAddress}`);
+			user.walletAddress = walletAddress;
+			await user.save();
+			await payment.createWallet(user.walletAddress, user.appId, logger);
 		}
 		logger.info(`returning existing user ${user.id}`);
 		metrics.userRegister(false, false);

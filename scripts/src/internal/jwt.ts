@@ -28,6 +28,7 @@ export function sign(subject: string, payload: any, keyid?: string) {
 	return jsonwebtoken.sign(payload, signWith.key, {
 		subject,
 		keyid,
+		issuer: "kin",
 		algorithm: signWith.algorithm,
 		expiresIn: moment().add(6, "hours").valueOf()
 	});

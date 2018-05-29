@@ -28,7 +28,8 @@ const CODES = {
 	},
 	Conflict: {
 		ExternalOrderExhausted: 1,
-		ExternalEarnOfferByDifferentUser: 2
+		ExternalEarnOfferByDifferentUser: 2,
+		CompletedOrderCantTransitionToFailed: 3
 	},
 	InternalServerError: {
 		OpenedOrdersOnly: 1,
@@ -130,6 +131,11 @@ export function ExternalOrderExhausted() {
 export function ExternalEarnOfferByDifferentUser(loggedInUser: string, payToUser: string) {
 	const message = `Pay to user (${ payToUser }) is not the logged in user (${ loggedInUser })`;
 	return ConflictError(CODES.Conflict.ExternalEarnOfferByDifferentUser, message);
+}
+
+export function CompletedOrderCantTransitionToFailed() {
+	const message = `cant set an error message to a completed order`;
+	return ConflictError(CODES.Conflict.CompletedOrderCantTransitionToFailed, message);
 }
 
 export function OfferCapReached(id: string) {

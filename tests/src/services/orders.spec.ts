@@ -8,7 +8,12 @@ import * as payment from "../../../scripts/bin/public/services/payment";
 import { getOffers } from "../../../scripts/bin/public/services/offers";
 import { getDefaultLogger, initLogger } from "../../../scripts/bin/logging";
 import { init as initModels, close as closeModels } from "../../../scripts/bin/models/index";
-import { createMarketplaceOrder, submitOrder } from "../../../scripts/bin/public/services/orders";
+import {
+	createMarketplaceOrder,
+	submitOrder,
+	getOrder,
+	changeOrder
+} from "../../../scripts/bin/public/services/orders";
 import { JWTContent } from "../../../scripts/bin/public/jwt";
 
 import * as helpers from "../helpers";
@@ -104,6 +109,7 @@ describe("test orders", async () => {
 				(completedOrder.value as JWTValue).jwt, { complete: true }
 			) as JWTContent<any, "payment_confirmation">;
 		}
+
 		const kikJWT = await getPaymentJWT("kik");
 		expect(kikJWT.header.alg.toLowerCase()).toBe("es256");
 		expect(kikJWT.header.kid).toBe("es256_0");
@@ -120,6 +126,29 @@ describe("test orders", async () => {
 		const now = moment();
 		const openOrder = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
 		expect(moment(openOrder.expiration_date).diff(now, "minutes")).toBe(10);
+	});
+
+	test("changeOrder adds error and changes to fail", async () => {
+		const user: User = await helpers.createUser();
+		const offers = await getOffers(user.id, user.appId, { type: "spend" }, getDefaultLogger());
+		const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
+		await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
+		// failed to pay to blockchain
+		const error = {
+			message: "failed to submit to blockchain",
+			error: "blockchain_timeout",
+			code: 2323
+		};
+		const changedOrder = await changeOrder(
+			openOrder.id,
+			{
+				error
+			},
+			getDefaultLogger());
+		expect(changedOrder.status).toBe("failed");
+		const order = await getOrder(openOrder.id, getDefaultLogger());
+		expect(order.status).toBe("failed");
+		expect(order.error).toEqual(error);
 	});
 
 	test("only app offers should return", async () => {

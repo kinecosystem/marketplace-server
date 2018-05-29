@@ -12,6 +12,7 @@ import {
 	cancelOrder,
 	getOrderHistory,
 	submitOrder,
+	changeOrder,
 	createMarketplaceOrder,
 	createExternalOrder
 } from "./orders";
@@ -101,9 +102,9 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 			.get("/", getOrderHistory)
 			.get("/:order_id", getOrder)
 			.post("/:order_id", submitOrder)
-			.delete("/:order_id", cancelOrder));
+			.delete("/:order_id", cancelOrder)
+			.patch("/:order_id", changeOrder));
 
-	// XXX missing changeOrder to add error
 	app.use(createPath("users", pathPrefix),
 		Router()
 			.post("/", signInUser)

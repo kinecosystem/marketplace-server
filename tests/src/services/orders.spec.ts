@@ -148,7 +148,7 @@ describe("test orders", async () => {
 		expect(changedOrder.status).toBe("failed");
 		const order = await getOrder(openOrder.id, getDefaultLogger());
 		expect(order.status).toBe("failed");
-		expect(order.error).toBe(error);
+		expect(order.error).toEqual(error);
 	});
 
 	test("only app offers should return", async () => {

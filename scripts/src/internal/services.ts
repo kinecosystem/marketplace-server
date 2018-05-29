@@ -72,7 +72,11 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 			`amount mismatch ${ order.amount } !== ${ payment.amount }`);
 		// 2. don't complete the transaction? complete only if the server got more than expected?
 		// TODO: report to error reporting service
-		order.error = { code: 1113, error: "wrong_amount", message: "transaction failed - wrong amount" };
+		order.error = {
+			code: 1113,
+			error: "wrong_amount",
+			message: "transaction failed"
+		};
 		order.setStatus("failed");
 		await order.save();
 		return;
@@ -86,7 +90,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		order.error = {
 			code: 1112,
 			error: "wrong_address",
-			message: "transaction failed - wrong recipient"
+			message: "transaction failed"
 		};
 		order.setStatus("failed");
 		await order.save();
@@ -100,7 +104,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		order.error = {
 			code: 1111,
 			error: "wrong_address",
-			message: "transaction failed - wrong sender"
+			message: "transaction failed"
 		};
 		order.setStatus("failed");
 		await order.save();
@@ -118,7 +122,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 				order.error = {
 					code: 1114,
 					error: "unavailable_asset",
-					message: "failed transaction - contact support"
+					message: "failed transaction"
 				};
 				order.setStatus("failed");
 				await order.save();

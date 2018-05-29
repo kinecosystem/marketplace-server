@@ -72,7 +72,11 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 			`amount mismatch ${ order.amount } !== ${ payment.amount }`);
 		// 2. don't complete the transaction? complete only if the server got more than expected?
 		// TODO: report to error reporting service
-		order.error = { code: 1113, error: "wrong_amount", message: "amount on blockchain does not match order" };
+		order.error = {
+			code: 1113,
+			error: "wrong_amount",
+			message: "transaction failed"
+		};
 		order.setStatus("failed");
 		await order.save();
 		return;
@@ -86,7 +90,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		order.error = {
 			code: 1112,
 			error: "wrong_address",
-			message: "recipient address on blockchain does not match order"
+			message: "transaction failed"
 		};
 		order.setStatus("failed");
 		await order.save();
@@ -100,7 +104,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		order.error = {
 			code: 1111,
 			error: "wrong_address",
-			message: `sender address on blockchain does not match order`
+			message: "transaction failed"
 		};
 		order.setStatus("failed");
 		await order.save();
@@ -118,7 +122,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 				order.error = {
 					code: 1114,
 					error: "unavailable_asset",
-					message: "failed to find an available asset - contact support"
+					message: "failed transaction"
 				};
 				order.setStatus("failed");
 				await order.save();

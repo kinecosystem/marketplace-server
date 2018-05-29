@@ -565,6 +565,7 @@ async function nativeSpendFlow() {
 	expect(jwtPayload.payload.offer_id).toBe(order.offer_id);
 	expect(jwtPayload.payload.sender_user_id).toBe(userId);
 	expect(jwtPayload.header.kid).toBeDefined();
+	expect(jwtPayload.payload.iss).toEqual("kin");
 	// verify using kin public key
 	expect(await appClient.isValidSignature(paymentJwt)).toBeTruthy();
 }

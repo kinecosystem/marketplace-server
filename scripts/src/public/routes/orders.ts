@@ -1,13 +1,14 @@
 import { Request, RequestHandler, Response } from "express";
 
 import {
+	Order,
 	getOrder as getOrderService,
 	cancelOrder as cancelOrderService,
 	submitOrder as submitOrderService,
 	changeOrder as changeOrderService,
 	getOrderHistory as getOrderHistoryService,
 	createExternalOrder as createExternalOrderService,
-	createMarketplaceOrder as createMarketplaceOrderService, Order,
+	createMarketplaceOrder as createMarketplaceOrderService,
 } from "../services/orders";
 
 export type CreateMarketplaceOrderRequest = Request & {

@@ -6,6 +6,7 @@ import * as db from "../../models/users";
 import * as payment from "./payment";
 import { pick } from "../../utils";
 import * as metrics from "../../metrics";
+import { Application, NO_WALLET_LIMIT } from "../../models/applications";
 
 export type AuthToken = {
 	token: string;
@@ -24,19 +25,19 @@ function AuthTokenDbToApi(authToken: db.AuthToken, user: db.User, logger: Logger
 }
 
 export async function getOrCreateUserCredentials(
+	app: Application,
 	appUserId: string,
 	appId: string,
 	walletAddress: string,
 	deviceId: string, logger: LoggerInstance): Promise<AuthToken> {
 
 	let user = await db.User.findOne({ appId, appUserId });
+
 	if (!user) {
 		logger.info("creating a new user", { appId, appUserId });
 		// new user
 		user = db.User.new({ appUserId, appId, walletAddress });
 		await user.save();
-
-		// create wallet with lumens:
 		logger.info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
 		await payment.createWallet(user.walletAddress, user.appId, logger);
 		metrics.userRegister(true, true);
@@ -44,9 +45,12 @@ export async function getOrCreateUserCredentials(
 		logger.info("found existing user", { appId, appUserId, userId: user.id });
 		if (user.walletAddress !== walletAddress) {
 			logger.warn(`existing user registered with new wallet ${user.walletAddress} !== ${walletAddress}`);
-			user.walletAddress = walletAddress;
-			await user.save();
-			await payment.createWallet(user.walletAddress, user.appId, logger);
+			if (app.config.maxUserWallets === NO_WALLET_LIMIT || user.walletCount < app.config.maxUserWallets) {
+				user.walletCount += 1;
+				user.walletAddress = walletAddress;
+				await user.save();
+				await payment.createWallet(user.walletAddress, user.appId, logger);
+			} // else // TODO should we raise an error or expect the user to fund itself?
 		}
 		logger.info(`returning existing user ${user.id}`);
 		metrics.userRegister(false, false);

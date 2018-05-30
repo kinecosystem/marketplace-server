@@ -1,8 +1,7 @@
 import { LoggerInstance } from "winston";
-
-import { ExternalEarnOfferByDifferentUser, InvalidApiKey, InvalidExternalOrderJWT } from "../../errors";
+import { InvalidApiKey } from "../../errors";
 import { Application, AppWhitelists } from "../../models/applications";
-import { JWTClaims, verify as verifyJWT } from "../jwt";
+import { verify as verifyJWT } from "../jwt";
 
 export type RegisterPayload = {
 	user_id: string;

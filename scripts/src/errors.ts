@@ -3,6 +3,7 @@ export type ApiError = {
 	error: string;
 	message: string;
 };
+export type HeaderValue = number | string | string[];
 
 /**
  * Code additions (/postfix) to be added to the http status code per error.
@@ -27,7 +28,7 @@ const CODES = {
 		OpenOrderExpired: 1
 	},
 	Conflict: {
-		ExternalOrderExhausted: 1,
+		ExternalOrderAlreadyCompleted: 1,
 		ExternalEarnOfferByDifferentUser: 2,
 		CompletedOrderCantTransitionToFailed: 3
 	},
@@ -47,12 +48,18 @@ export class MarketplaceError extends Error {
 	public readonly title: string;
 	public readonly status: number; // http status code
 	public readonly code: number; // our own internal codes
+	public readonly headers: { [name: string]: HeaderValue };
 
 	constructor(status: number, index: number, title: string, message: string) {
 		super(message);
 		this.code = Number(status + "" + index);
 		this.title = title;
 		this.status = status;
+		this.headers = {};
+	}
+
+	public setHeader(name: string, value: HeaderValue) {
+		this.headers[name] = value;
 	}
 
 	public toJson(): ApiError {
@@ -124,8 +131,10 @@ function ConflictError(index: number, message: string) {
 	return new MarketplaceError(409, index, "Conflict", message);
 }
 
-export function ExternalOrderExhausted() {
-	return ConflictError(CODES.Conflict.ExternalOrderExhausted, "User already completed offer, or has a pending order");
+export function ExternalOrderAlreadyCompleted(orderId: string) {
+	const error = ConflictError(CODES.Conflict.ExternalOrderAlreadyCompleted, "User already completed offer, or has a pending order");
+	error.setHeader("Location", `/v1/orders/${orderId}`);
+	return error;
 }
 
 export function ExternalEarnOfferByDifferentUser(loggedInUser: string, payToUser: string) {

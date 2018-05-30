@@ -97,7 +97,9 @@ export function generalErrorHandler(err: any, req: Request, res: Response, next:
 }
 
 function clientErrorHandler(err: MarketplaceError, req: Request, res: Response) {
-	logger.error("client error (4xx): ", err);
+	logger.error(`client error (4xx)`, err);
+	// set headers from the error if any
+	Object.keys(err.headers).forEach(key => res.setHeader(key, err.headers[key]));
 	res.status(err.status).send(err.toJson());
 }
 

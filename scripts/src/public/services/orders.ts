@@ -19,7 +19,7 @@ import {
 	OpenedOrdersOnly,
 	OpenOrderExpired,
 	InvalidPollAnswers,
-	ExternalOrderExhausted,
+	ExternalOrderAlreadyCompleted,
 	OpenedOrdersUnreturnable, CompletedOrderCantTransitionToFailed
 } from "../../errors";
 import { ExternalSpendOrderJWT, ExternalEarnOrderJWT } from "./native_offers";
@@ -130,13 +130,12 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	const payload = await validateExternalOrderJWT(jwt, user.appUserId, logger);
 
-	let order = await db.Order.getOpenOrder(payload.offer.id, user.id);
+	let order = await db.Order.findOne({ userId: user.id, offerId: payload.offer.id });
 
-	if (!order) {
-		const count = await db.Order.countByOffer(payload.offer.id, user.id);
-		if (count > 0) {
-			throw ExternalOrderExhausted();
-		}
+	if (!order || order.status !== "opened") {
+		if (order && (order.status === "completed" || order.status === "pending")) {
+			throw ExternalOrderAlreadyCompleted(order.id);
+		} // else order.status === "failed" - act as if order didn't exist
 
 		// hack - to get the wallet for this digital service
 		// currently there is only a single wallet, so I'm just selecting the first wallet data

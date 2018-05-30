@@ -24,6 +24,7 @@ import { Poll, Tutorial } from "./public/services/offer_contents";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { CompletedPayment, JWTBodyPaymentConfirmation } from "./internal/services";
+import { AxiosResponse } from "axios";
 
 const BASE = process.env.MARKETPLACE_BASE;
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
@@ -48,15 +49,18 @@ class Stellar {
 				break;
 			default:
 				throw new Error(`${network} not supported`);
-
 		}
-
 	}
 }
 
-const STELLAR = new Stellar("private");
+class ClientError extends Error {
+	public response?: AxiosResponse;
+}
 
-type SignInPayload = { apiKey: string, userId: string } | { jwt: string };
+const STELLAR = new Stellar("private");
+type JWTPayload = { jwt: string };
+type WhitelistSignInPayload = { apiKey: string, userId: string };
+type SignInPayload = WhitelistSignInPayload | JWTPayload;
 
 function isJWT(obj: any): obj is { jwt: string } {
 	return !!obj.jwt;
@@ -64,27 +68,27 @@ function isJWT(obj: any): obj is { jwt: string } {
 
 class SampleAppClient {
 	public async getRegisterJWT(userId: string): Promise<string> {
-		const res = await axios.default.get(JWT_SERVICE_BASE + `/register/token?user_id=${ userId }`);
+		const res = await axios.default.get<JWTPayload>(JWT_SERVICE_BASE + `/register/token?user_id=${ userId }`);
 		return res.data.jwt;
 	}
 
 	public async getSpendJWT(offerId: string): Promise<string> {
-		const res = await axios.default.get(JWT_SERVICE_BASE + `/spend/token?offer_id=${ offerId }`);
+		const res = await axios.default.get<JWTPayload>(JWT_SERVICE_BASE + `/spend/token?offer_id=${ offerId }`);
 		return res.data.jwt;
 	}
 
 	public async getEarnJWT(userId: string, offerId: string): Promise<string> {
-		const res = await axios.default.get(JWT_SERVICE_BASE + `/earn/token?user_id=${ userId }&offer_id=${ offerId }`);
+		const res = await axios.default.get<JWTPayload>(JWT_SERVICE_BASE + `/earn/token?user_id=${ userId }&offer_id=${ offerId }`);
 		return res.data.jwt;
 	}
 
 	public async getOffers(): Promise<ExternalOfferPayload[]> {
-		const res = await axios.default.get(JWT_SERVICE_BASE + "/offers");
+		const res = await axios.default.get<{ offers: ExternalOfferPayload[] }>(JWT_SERVICE_BASE + "/offers");
 		return res.data.offers;
 	}
 
 	public async isValidSignature(jwt: string): Promise<boolean> {
-		const res = await axios.default.get(JWT_SERVICE_BASE + `/validate?jwt=${ jwt }`);
+		const res = await axios.default.get<{ is_valid: boolean }>(JWT_SERVICE_BASE + `/validate?jwt=${ jwt }`);
 		return res.data.is_valid;
 	}
 }
@@ -135,7 +139,7 @@ class Client {
 			Object.assign(data, { sign_in_type: "whitelist", user_id: payload.userId, api_key: payload.apiKey });
 		}
 
-		const res = await this._post("/v1/users", data);
+		const res = await this._post<AuthToken>("/v1/users", data);
 
 		this.authToken = res.data;
 		(this.appId as any) = this.authToken.app_id;
@@ -190,52 +194,51 @@ class Client {
 	}
 
 	public async activate() {
-		const res = await this._post("/v1/users/me/activate");
+		const res = await this._post<AuthToken>("/v1/users/me/activate");
 		this.authToken = res.data;
 	}
 
 	public async getOffers(): Promise<OfferList> {
-		const res = await this._get("/v1/offers");
-		return res.data as OfferList;
+		const res = await this._get<OfferList>("/v1/offers");
+		return res.data;
 	}
 
 	public async createOrder(offerId: string): Promise<OpenOrder> {
-		const res = await this._post(`/v1/offers/${offerId}/orders`);
-		return res.data as OpenOrder;
+		const res = await this._post<OpenOrder>(`/v1/offers/${offerId}/orders`);
+		return res.data;
 	}
 
 	public async createExternalOrder(jwt: string): Promise<OpenOrder> {
-		const res = await this._post(`/v1/offers/external/orders`, { jwt });
-		return res.data as OpenOrder;
+		const res = await this._post<OpenOrder>(`/v1/offers/external/orders`, { jwt });
+		return res.data;
 	}
 
 	public async submitOrder(orderId: string, content?: string): Promise<Order> {
-		const res = await this._post(`/v1/orders/${orderId}`, { content });
-		return res.data as Order;
+		const res = await this._post<Order>(`/v1/orders/${orderId}`, { content });
+		return res.data;
 	}
 
 	public async getOrder(orderId: string): Promise<Order> {
-		const res = await this._get(`/v1/orders/${orderId}`);
-		return res.data as Order;
+		const res = await this._get<Order>(`/v1/orders/${orderId}`);
+		return res.data;
 	}
 
 	public async cancelOrder(orderId: string): Promise<void> {
 		const res = await this._delete(`/v1/orders/${orderId}`);
 	}
 
-	public async changeOrder(orderId: string, data: any): Promise<Order> {
-		const res = await this._patch(`/v1/orders/${orderId}`, data);
-		return res.data as Order;
+	public async changeOrder(orderId: string, data: Partial<Order>): Promise<Order> {
+		const res = await this._patch<Order>(`/v1/orders/${orderId}`, data);
+		return res.data;
 	}
 
 	public async changeOrderToFailed(orderId: string, error: string, code: number, message: string): Promise<Order> {
-		const res = await this._patch(`/v1/orders/${orderId}`, { error: { error, code, message } });
-		return res.data as Order;
+		return await this.changeOrder(orderId, { error: { error, code, message } });
 	}
 
 	public async getOrders(): Promise<OrderList> {
-		const res = await this._get("/v1/orders");
-		return res.data as OrderList;
+		const res = await this._get<OrderList>("/v1/orders");
+		return res.data;
 	}
 
 	public async establishTrustLine(): Promise<TransactionRecord> {
@@ -259,40 +262,42 @@ class Client {
 		throw error;
 	}
 
-	private handleAxiosError(ex: axios.AxiosError): never {
+	private handleAxiosError(ex: axios.AxiosError): ClientError {
 		const apiError: ApiError = ex.response!.data;
-		throw Error(`server error ${ex.response!.status}(${apiError.code}): ${apiError.error}`);
+		const error = new ClientError(`server error ${ex.response!.status}(${apiError.code}): ${apiError.error}`);
+		error.response = ex.response;
+		return error;
 	}
 
-	private async _delete(url: string): Promise<any> {
+	private async _delete(url: string): Promise<AxiosResponse<void>> {
 		try {
 			return await axios.default.delete(BASE + url, this.getConfig());
 		} catch (error) {
-			this.handleAxiosError(error);
+			throw this.handleAxiosError(error);
 		}
 	}
 
-	private async _patch(url: string, data: any): Promise<any> {
+	private async _patch<T>(url: string, data: any): Promise<AxiosResponse<T>> {
 		try {
-			return await axios.default.patch(BASE + url, data, this.getConfig());
+			return await axios.default.patch<T>(BASE + url, data, this.getConfig());
 		} catch (error) {
-			this.handleAxiosError(error);
+			throw this.handleAxiosError(error);
 		}
 	}
 
-	private async _get(url: string): Promise<any> {
+	private async _get<T>(url: string): Promise<AxiosResponse<T>> {
 		try {
-			return await axios.default.get(BASE + url, this.getConfig());
+			return await axios.default.get<T>(BASE + url, this.getConfig());
 		} catch (error) {
-			this.handleAxiosError(error);
+			throw this.handleAxiosError(error);
 		}
 	}
 
-	private async _post(url: string, data: any = {}): Promise<any> {
+	private async _post<T>(url: string, data: any = {}): Promise<AxiosResponse<T>> {
 		try {
-			return await axios.default.post(BASE + url, data, this.getConfig());
+			return await axios.default.post<T>(BASE + url, data, this.getConfig());
 		} catch (error) {
-			this.handleAxiosError(error);
+			throw this.handleAxiosError(error);
 		}
 	}
 
@@ -587,6 +592,7 @@ async function tryToNativeSpendTwice() {
 	console.log(`created order`, openOrder.id, `for offer`, selectedOffer.id);
 	// pay for the offer
 	const res = await client.pay(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
+	console.log("pay result hash: " + res.hash);
 	await client.submitOrder(openOrder.id);
 
 	// poll on order payment
@@ -600,6 +606,8 @@ async function tryToNativeSpendTwice() {
 		await client.createExternalOrder(offerJwt2);
 		throw new Error("should not allow to create more than one order");
 	} catch (e) {
+		const err: ClientError = e;
+		expect(err.response!.headers.location).toEqual(`/v1/orders/${order.id}`);
 		// ok
 	}
 }
@@ -673,8 +681,8 @@ async function main() {
 	// await registerJWT();
 	await nativeEarnFlow();
 
-	await nativeSpendFlow();
-	// await tryToNativeSpendTwice();
+	// await nativeSpendFlow();
+	await tryToNativeSpendTwice();
 
 }
 

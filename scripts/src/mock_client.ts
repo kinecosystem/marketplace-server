@@ -58,8 +58,9 @@ class ClientError extends Error {
 }
 
 const STELLAR = new Stellar("private");
-
-type SignInPayload = { apiKey: string, userId: string } | { jwt: string };
+type JWTPayload = { jwt: string };
+type WhitelistSignInPayload = { apiKey: string, userId: string };
+type SignInPayload = WhitelistSignInPayload | JWTPayload;
 
 function isJWT(obj: any): obj is { jwt: string } {
 	return !!obj.jwt;
@@ -67,17 +68,17 @@ function isJWT(obj: any): obj is { jwt: string } {
 
 class SampleAppClient {
 	public async getRegisterJWT(userId: string): Promise<string> {
-		const res = await axios.default.get<{ jwt: string }>(JWT_SERVICE_BASE + `/register/token?user_id=${ userId }`);
+		const res = await axios.default.get<JWTPayload>(JWT_SERVICE_BASE + `/register/token?user_id=${ userId }`);
 		return res.data.jwt;
 	}
 
 	public async getSpendJWT(offerId: string): Promise<string> {
-		const res = await axios.default.get<{ jwt: string }>(JWT_SERVICE_BASE + `/spend/token?offer_id=${ offerId }`);
+		const res = await axios.default.get<JWTPayload>(JWT_SERVICE_BASE + `/spend/token?offer_id=${ offerId }`);
 		return res.data.jwt;
 	}
 
 	public async getEarnJWT(userId: string, offerId: string): Promise<string> {
-		const res = await axios.default.get<{ jwt: string }>(JWT_SERVICE_BASE + `/earn/token?user_id=${ userId }&offer_id=${ offerId }`);
+		const res = await axios.default.get<JWTPayload>(JWT_SERVICE_BASE + `/earn/token?user_id=${ userId }&offer_id=${ offerId }`);
 		return res.data.jwt;
 	}
 

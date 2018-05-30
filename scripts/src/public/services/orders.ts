@@ -130,7 +130,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	const payload = await validateExternalOrderJWT(jwt, user.appUserId, logger);
 
-	let order =	await db.Order.findOne({ userId: user.id, offerId: payload.offer.id });
+	let order = await db.Order.findOne({ userId: user.id, offerId: payload.offer.id });
 
 	if (!order || order.status !== "opened") {
 		if (order && (order.status === "completed" || order.status === "pending")) {

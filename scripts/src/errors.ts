@@ -38,10 +38,10 @@ const CODES = {
 	},
 	BadRequest: {
 		UnknownSignInType: 1,
-		WrongJWTAlgorithm: 2,
-		InvalidJWT: 3,
+		WrongJwtAlgorithm: 2,
+		InvalidJwtSignature: 3,
 		InvalidPollAnswers: 4,
-		InvalidExternalOrderJWT: 5
+		InvalidExternalOrderJwt: 5
 	}
 };
 
@@ -172,18 +172,18 @@ export function UnknownSignInType(type: string) {
 	return BadRequestError(CODES.BadRequest.UnknownSignInType, `Unknown sign-in type: ${ type }`);
 }
 
-export function WrongJWTAlgorithm(type: string) {
+export function WrongJwtAlgorithm(type: string) {
 	return BadRequestError(CODES.BadRequest.UnknownSignInType, `algorithm type ("${ type }") not supported`);
 }
 
-export function InvalidJWT() {
-	return BadRequestError(CODES.BadRequest.InvalidJWT, `the JWT failed to verify`);
+export function InvalidJwtSignature() {
+	return BadRequestError(CODES.BadRequest.InvalidJwtSignature, `the JWT failed to verify`);
 }
 
 export function InvalidPollAnswers() {
 	return BadRequestError(CODES.BadRequest.InvalidPollAnswers, "submitted form is invalid");
 }
 
-export function InvalidExternalOrderJWT() {
-	return BadRequestError(CODES.BadRequest.InvalidExternalOrderJWT, `subject can be either "earn" or "spend"`);
+export function InvalidExternalOrderJwt() {
+	return BadRequestError(CODES.BadRequest.InvalidExternalOrderJwt, `subject can be either "earn" or "spend"`);
 }

@@ -1,8 +1,9 @@
 import { LoggerInstance } from "winston";
 
-import { ExternalEarnOfferByDifferentUser, InvalidApiKey, InvalidExternalOrderJWT } from "../../errors";
+import { InvalidApiKey } from "../../errors";
 import { Application, AppWhitelists } from "../../models/applications";
-import { JWTClaims, verify as verifyJWT } from "../jwt";
+
+import { verify as verifyJwt } from "../jwt";
 
 export type RegisterPayload = {
 	user_id: string;
@@ -14,7 +15,7 @@ export type SignInContext = {
 };
 
 export async function validateRegisterJWT(jwt: string, logger: LoggerInstance): Promise<SignInContext> {
-	const decoded = await verifyJWT<RegisterPayload, "register">(jwt, logger);
+	const decoded = await verifyJwt<RegisterPayload, "register">(jwt, logger);
 	const appId = decoded.payload.iss;
 	const appUserId = decoded.payload.user_id;
 

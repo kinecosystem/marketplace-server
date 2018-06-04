@@ -3,7 +3,7 @@ import * as jsonwebtoken from "jsonwebtoken";
 
 import { isNothing } from "../utils";
 import { Application } from "../models/applications";
-import { NoSuchApp, NoSuchPublicKey, JwtKidMissing, WrongJWTAlgorithm, InvalidJWT } from "../errors";
+import { NoSuchApp, NoSuchPublicKey, JwtKidMissing, WrongJwtAlgorithm, InvalidJwtSignature } from "../errors";
 
 export type JWTClaims<SUB extends string> = {
 	iss: string; // issuer - the app_id
@@ -48,7 +48,7 @@ export async function verify<T, SUB extends string>(token: string, logger: Logge
 	try {
 		jsonwebtoken.verify(token, publicKey); // throws
 	} catch (e) {
-		throw InvalidJWT();
+		throw InvalidJwtSignature();
 	}
 
 	return decoded;

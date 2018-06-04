@@ -1,5 +1,6 @@
-import { getConfig } from "./config";
 import { StatsD } from "hot-shots";
+
+import { getConfig } from "./config";
 
 // XXX can add general tags to the metrics (i.e. - public/ internal, machine name etc)
 const statsd = new StatsD(Object.assign({ prefix: "marketplace_" }, getConfig().statsd));

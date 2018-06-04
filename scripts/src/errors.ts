@@ -39,8 +39,9 @@ const CODES = {
 	BadRequest: {
 		UnknownSignInType: 1,
 		WrongJWTAlgorithm: 2,
-		InvalidPollAnswers: 3,
-		InvalidExternalOrderJWT: 4
+		InvalidJWT: 3,
+		InvalidPollAnswers: 4,
+		InvalidExternalOrderJWT: 5
 	}
 };
 
@@ -173,6 +174,10 @@ export function UnknownSignInType(type: string) {
 
 export function WrongJWTAlgorithm(type: string) {
 	return BadRequestError(CODES.BadRequest.UnknownSignInType, `algorithm type ("${ type }") not supported`);
+}
+
+export function InvalidJWT() {
+	return BadRequestError(CODES.BadRequest.InvalidJWT, `the JWT failed to verify`);
 }
 
 export function InvalidPollAnswers() {

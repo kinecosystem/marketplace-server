@@ -1,6 +1,7 @@
 import { StatsD } from "hot-shots";
 
 import { getConfig } from "./config";
+import { MarketplaceError } from "./errors";
 
 // XXX can add general tags to the metrics (i.e. - public/ internal, machine name etc)
 const statsd = new StatsD(Object.assign({ prefix: "marketplace_" }, getConfig().statsd));
@@ -27,4 +28,12 @@ export function completeOrder(offerType: "earn" | "spend", offerId: string) {
 
 export function offersReturned(numOffers: number) {
 	statsd.histogram("offers_returned", numOffers);
+}
+
+export function reportClientError(error: MarketplaceError) {
+	statsd.increment("client_error", 1, undefined, { status: error.status.toString(), title: error.title });
+}
+
+export function reportServerError(method: string, path: string) {
+	statsd.increment("server_error", 1, undefined, { method, path });
 }

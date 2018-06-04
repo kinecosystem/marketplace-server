@@ -4,10 +4,10 @@ import { LoggerInstance } from "winston";
 import { Request, Response } from "express-serve-static-core";
 
 import * as metrics from "./metrics";
+import { getConfig } from "./config";
 import { generateId } from "./utils";
 import { MarketplaceError } from "./errors";
 import { getDefaultLogger } from "./logging";
-import { getConfig } from "./config";
 
 const START_TIME = (new Date()).toISOString();
 let logger: LoggerInstance;
@@ -96,29 +96,32 @@ export function generalErrorHandler(err: any, req: Request, res: Response, next:
 	}
 }
 
-function clientErrorHandler(err: MarketplaceError, req: Request, res: Response) {
-	logger.error(`client error (4xx)`, err);
+function clientErrorHandler(error: MarketplaceError, req: Request, res: Response) {
+	logger.error(`client error (4xx)`, error);
+	metrics.reportClientError(error);
 	// set headers from the error if any
-	Object.keys(err.headers).forEach(key => res.setHeader(key, err.headers[key]));
-	res.status(err.status).send(err.toJson());
+	Object.keys(error.headers).forEach(key => res.setHeader(key, error.headers[key]));
+	res.status(error.status).send(error.toJson());
 }
 
-function serverErrorHandler(err: any, req: Request, res: Response) {
+function serverErrorHandler(error: any, req: Request, res: Response) {
+	metrics.reportServerError(req.method, req.url);
+
 	let message = `Error
 	method: ${ req.method }
 	path: ${ req.url }
 	payload: ${ JSON.stringify(req.body) }
 	`;
 
-	if (err instanceof Error) {
-		message += `message: ${ err.message }
-	stack: ${ err.stack }`;
+	if (error instanceof Error) {
+		message += `message: ${ error.message }
+	stack: ${ error.stack }`;
 	} else {
-		message += `message: ${ err.toString() }`;
+		message += `message: ${ error.toString() }`;
 	}
 
 	logger.error(message);
-	res.status(500).send({ code: 500, error: err.message || "Server error", message:  err.message });
+	res.status(500).send({ code: 500, error: error.message || "Server error", message:  error.message });
 }
 
 export const statusHandler = async function(req: express.Request, res: express.Response) {

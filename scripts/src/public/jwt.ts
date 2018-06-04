@@ -44,7 +44,7 @@ export async function verify<T, SUB extends string>(token: string, logger: Logge
 	if (!publicKey) {
 		throw NoSuchPublicKey(appId, kid);
 	}
-	
+
 	try {
 		jsonwebtoken.verify(token, publicKey); // throws
 	} catch (e) {

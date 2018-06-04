@@ -1,5 +1,5 @@
 import { JWTClaims, verify as verifyJWT } from "../jwt";
-import { ExternalEarnOfferByDifferentUser, InvalidExternalOrderJWT } from "../../errors";
+import { ExternalEarnOfferByDifferentUser, InvalidExternalOrderJwt } from "../../errors";
 import { LoggerInstance } from "winston";
 
 export type ExternalOfferPayload = {
@@ -25,14 +25,14 @@ export type PayToUserPayload = EarnPayload & SpendPayload;
 
 export type ExternalEarnOrderJWT = JWTClaims<"earn"> & EarnPayload;
 export type ExternalSpendOrderJWT = JWTClaims<"spend"> & SpendPayload;
-export type ExternalPayToUserOrderJWT = JWTClaims<"pay_to_user"> & PayToUserPayload;
+export type ExternalPayToUserOrderJwt = JWTClaims<"pay_to_user"> & PayToUserPayload;
 export type ExternalOrderJWT = ExternalEarnOrderJWT | ExternalSpendOrderJWT;
 
 export async function validateExternalOrderJWT(jwt: string, appUserId: string, logger: LoggerInstance): Promise<ExternalOrderJWT> {
 	const decoded = await verifyJWT<PayToUserPayload, "spend" | "earn" | "pay_to_user">(jwt, logger);
 
 	if (decoded.payload.sub !== "earn" && decoded.payload.sub !== "spend" && decoded.payload.sub !== "pay_to_user") {
-		throw InvalidExternalOrderJWT();
+		throw InvalidExternalOrderJwt();
 	}
 
 	if ((decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user") &&

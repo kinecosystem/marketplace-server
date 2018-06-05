@@ -1,5 +1,6 @@
 import * as moment from "moment";
-import { readFileSync } from "fs";
+import * as fs from "fs";
+import { join } from "path";
 import * as jsonwebtoken from "jsonwebtoken";
 import { path } from "../utils";
 import { getConfig } from "./config";
@@ -22,7 +23,7 @@ const KEYS = new KeyMap();
 
 export function sign(subject: string, payload: any, keyid?: string) {
 	if (!keyid) {
-			keyid = "es256_0";  // TODO the key should be randomly chosen or timely rotated
+			keyid = "kin-es256_0";  // TODO the key should be randomly chosen or timely rotated
 	}
 	const signWith = KEYS.get(keyid)!;
 	return jsonwebtoken.sign(payload, signWith.key, {
@@ -36,7 +37,11 @@ export function sign(subject: string, payload: any, keyid?: string) {
 
 // init
 (() => {
-	Object.entries(CONFIG.jwt.private_keys).forEach(([ name, key ]) => {
-		KEYS.set(name, { algorithm: key.algorithm, key: readFileSync(path(key.file)) });
+	fs.readdirSync(CONFIG.jwt.private_keys_dir).forEach(filename => {
+		// filename format is kin-es256_0-priv.pem
+		const keyid = filename.split("-priv.")[0];
+		const algorithm = filename.split("_")[0].split("kin-")[1].toUpperCase();
+		KEYS.set(keyid, { algorithm, key: fs.readFileSync(path(join(CONFIG.jwt.private_keys_dir, filename))) });
+		console.log("got keys", KEYS);
 	});
 })();

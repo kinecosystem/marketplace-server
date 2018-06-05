@@ -18,6 +18,7 @@ import {
 } from "./orders";
 
 import { statusHandler } from "../middleware";
+import { getConfigHandler } from "../../../bin/public/routes/config";
 
 export type Context = {
 	token: db.AuthToken | undefined;
@@ -85,6 +86,10 @@ function Router(): ExtendedRouter {
 }
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
+	app.use(createPath("config", pathPrefix),
+		Router()
+			.get("/", getConfigHandler));
+
 	app.use(createPath("offers", pathPrefix),
 		Router()
 			.authenticated() // no TOS scope

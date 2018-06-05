@@ -2,6 +2,9 @@ import { Config as BaseConfig, init as baseInit, getConfig as baseGetConfig } fr
 
 export interface Config extends BaseConfig {
 	assets_base: string;
+	jwt: {
+		public_keys_dir: string;
+	};
 }
 
 export function getConfig(): Config {

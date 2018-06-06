@@ -2,9 +2,7 @@ import * as express from "express";
 
 import * as db from "../../models/users";
 import { TOSMissingOrOldToken } from "../../errors";
-
 import { authenticate } from "../auth";
-
 import { getOffers } from "./offers";
 import { signInUser, activateUser } from "./users";
 import {
@@ -16,9 +14,8 @@ import {
 	createMarketplaceOrder,
 	createExternalOrder
 } from "./orders";
-
+import { getConfigHandler } from "./config";
 import { statusHandler } from "../middleware";
-import { getConfigHandler } from "../../../bin/public/routes/config";
 
 export type Context = {
 	token: db.AuthToken | undefined;

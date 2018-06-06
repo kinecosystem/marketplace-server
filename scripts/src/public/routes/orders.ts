@@ -83,7 +83,7 @@ export const cancelOrder = async function(req: getOrderRequest, res: Response) {
 	res.status(204).send();
 } as any as RequestHandler;
 
-export type changeOrder = Request & {
+export type changeOrderRequest = Request & {
 	params: {
 		order_id: string;
 	},
@@ -92,7 +92,7 @@ export type changeOrder = Request & {
 /**
  * change an order - add an error
  */
-export const changeOrder = async function(req: changeOrder, res: Response) {
+export const changeOrder = async function(req: changeOrderRequest, res: Response) {
 	const order = await changeOrderService(req.params.order_id, req.body, req.logger);
 	res.status(200).send(order);
 } as any as RequestHandler;

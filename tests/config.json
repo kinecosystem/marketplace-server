@@ -26,19 +26,7 @@
 	"payment_service": "http://localhost:5000",
 	"payment_complete_callback": "http://localhost:3001/v1/internal/payments",
 	"jwt": {
-		"private_keys": {
-			"default": {
-				"algorithm": "ES256",
-				"file": "examples/kin-es256_0-priv.pem"
-			},
-			"rs512_0": {
-				"algorithm": "RS512",
-				"file": "examples/kin-rs512_0-priv.pem"
-			},
-			"es256_0": {
-				"algorithm": "ES256",
-				"file": "examples/kin-es256_0-priv.pem"
-			}
-		}
+		"private_keys_dir": "tests/priv_keys",
+		"public_keys_dir": "tests/pub_keys"
 	}
 }

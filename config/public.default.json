@@ -21,6 +21,9 @@
 		"host": "localhost",
 		"port": 8125
 	},
+  "jwt": {
+    "public_keys_dir": "pub_keys"
+  },
 	"payment_service": "http://localhost:5000",
 	"payment_complete_callback": "http://localhost:3001/v1/internal/payments"
 }

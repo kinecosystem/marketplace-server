@@ -2,9 +2,7 @@ import * as express from "express";
 
 import * as db from "../../models/users";
 import { TOSMissingOrOldToken } from "../../errors";
-
 import { authenticate } from "../auth";
-
 import { getOffers } from "./offers";
 import { signInUser, activateUser } from "./users";
 import {
@@ -16,7 +14,7 @@ import {
 	createMarketplaceOrder,
 	createExternalOrder
 } from "./orders";
-
+import { getConfigHandler } from "./config";
 import { statusHandler } from "../middleware";
 
 export type Context = {
@@ -85,6 +83,10 @@ function Router(): ExtendedRouter {
 }
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
+	app.use(createPath("config", pathPrefix),
+		Router()
+			.get("/", getConfigHandler));
+
 	app.use(createPath("offers", pathPrefix),
 		Router()
 			.authenticated() // no TOS scope

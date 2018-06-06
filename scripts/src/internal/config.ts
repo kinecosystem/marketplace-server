@@ -2,10 +2,7 @@ import { Config as BaseConfig, getConfig as baseGetConfig, init as baseInit } fr
 
 export interface Config extends BaseConfig {
 	jwt: {
-		private_keys: { [name: string]: {
-				algorithm: string;
-				file: string;
-			} };
+		private_keys_dir: string;
 	};
 }
 

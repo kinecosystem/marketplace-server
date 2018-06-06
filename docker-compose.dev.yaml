@@ -6,7 +6,11 @@ services:
     image: kinecosystem/marketplace-server:latest
     volumes:
       - .:/opt/app
+    ports:
+      - 3000:3000
   marketplace-internal:
     image: kinecosystem/marketplace-server:latest
     volumes:
       - .:/opt/app
+    ports:
+      - 3001:3001

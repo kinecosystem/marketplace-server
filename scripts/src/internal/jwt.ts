@@ -40,8 +40,7 @@ export function sign(subject: string, payload: any, keyid?: string) {
 	fs.readdirSync(CONFIG.jwt.private_keys_dir).forEach(filename => {
 		// filename format is kin-es256_0-priv.pem
 		const keyid = filename.split("-priv.")[0];
-		const algorithm = filename.split("_")[0].split("kin-")[1].toUpperCase();
+		const algorithm = filename.split("_")[0].replace(/kin-/, "").toUpperCase();
 		KEYS.set(keyid, { algorithm, key: fs.readFileSync(path(join(CONFIG.jwt.private_keys_dir, filename))) });
-		console.log("got keys", KEYS);
 	});
 })();

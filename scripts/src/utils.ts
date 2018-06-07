@@ -1,15 +1,19 @@
 import * as _path from "path";
+import * as fs from "fs";
+import { join } from "path";
 
 const fromProjectRoot = _path.join.bind(path, __dirname, "../../");
 
 export type ServerError = Error & { syscall: string; code: string; };
 
 export type SimpleObject<T = any> = { [key: string]: T };
+
 export function isSimpleObject(obj: any): obj is SimpleObject {
 	return typeof obj === "object" && !Array.isArray(obj);
 }
 
 export type Nothing = null | undefined;
+
 export function isNothing(obj: any): obj is Nothing {
 	return obj === null || obj === undefined;
 }
@@ -108,4 +112,27 @@ export async function retry<T>(fn: () => T, predicate: (o: any) => boolean, erro
 		console.log("retrying...");
 	}
 	throw new Error(errorMessage || "failed");
+}
+
+export type KeyMap = { [name: string]: { algorithm: string, key: string } };
+
+/**
+ * read all keys from a directory
+ */
+export function readKeysDir(dir: string): KeyMap {
+	const keys: KeyMap = {};
+	fs.readdirSync(dir).forEach(filename => {
+		if (!filename.endsWith(".pem")) {
+			console.info(`readKeysDir: skipping non pem file ${filename}`);
+			return;
+		}
+		// filename format is kin-es256_0.pem or kin-es256_0-priv.pem or es256_0-priv.pem
+		const keyid = filename.replace(/-priv/, "").split(".")[0];
+		const algorithm = filename.split("_")[0].replace(/kin-/, "").toUpperCase();
+		keys[keyid] = {
+			algorithm,
+			key: fs.readFileSync(path(join(dir, filename))).toString()
+		};
+	});
+	return keys;
 }

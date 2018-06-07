@@ -8,6 +8,12 @@ services:
     entrypoint: psql -h postgres -U user -d ecosystem
     environment:
       PGPASSWORD: pass
+  
+  redis-cli:
+    image: redis:4.0
+    links:
+      - redis
+    entrypoint: redis-cli -h redis -p 6379
 
   create-db:
     image: kinecosystem/marketplace-server:latest

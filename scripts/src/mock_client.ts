@@ -690,4 +690,5 @@ main()
 	.then(() => console.log("done"))
 	.catch(err => {
 		console.log(err.message + "\n" + err.stack);
+		process.exitCode = 1;
 	});

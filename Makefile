@@ -46,10 +46,13 @@ pull:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml pull
 
 up:
-	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml up
+	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml up -d
 
 up-dev:
-	. ./secrets/.secrets && docker-compose -f docker-compose.dev.yaml -f docker-compose.yaml -f docker-compose.deps.yaml up
+	. ./secrets/.secrets && docker-compose -f docker-compose.dev.yaml -f docker-compose.yaml -f docker-compose.deps.yaml up -d
+
+logs:
+	. ./secrets/.secrets && docker-compose -f docker-compose.dev.yaml -f docker-compose.yaml -f docker-compose.deps.yaml logs 
 
 down:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml down

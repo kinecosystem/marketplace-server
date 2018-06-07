@@ -93,3 +93,15 @@ export async function addWatcherEndpoint(addresses: string[]): Promise<Watcher> 
 	const res = await axios.default.post(`${config.payment_service}/watchers/${SERVICE_ID}`, payload);
 	return res.data;
 }
+
+export type BlockchainConfig = {
+	horizon_url: string;
+	network_passphrase: string;
+	kin_issuer: string;
+	kin_token: string;
+};
+
+export async function getBlockchainConfig(logger: LoggerInstance): Promise<BlockchainConfig> {
+	const res = await axios.default.get(`${config.payment_service}/config`);
+	return res.data;
+}

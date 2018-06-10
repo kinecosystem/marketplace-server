@@ -1,5 +1,21 @@
 language: node_js
+sudo: required
+services: docker
+
 node_js:
   - "8"
-before_script: make build db
-script: make test
+
+before_script:
+  - make build db # db - for make test
+  - make generate-funding-address
+  - make up-dev # clear-redis # up-dev - for test-system-docker
+
+script:
+  - make test
+  - make test-system-docker
+
+after_failure:
+  - make logs
+
+after_script:
+  - make down

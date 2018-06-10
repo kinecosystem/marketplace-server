@@ -35,6 +35,7 @@ services:
       - redis
       - payment-service
       - postgres
+      - marketplace-server # so I can wait for it
     environment:
       <<: *app_env_vars
       APP_NAME: 'marketplace-internal'

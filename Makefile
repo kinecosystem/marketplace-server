@@ -46,10 +46,13 @@ pull:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml pull
 
 up:
-	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml up
+	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml up -d
 
 up-dev:
-	. ./secrets/.secrets && docker-compose -f docker-compose.dev.yaml -f docker-compose.yaml -f docker-compose.deps.yaml up
+	. ./secrets/.secrets && docker-compose -f docker-compose.dev.yaml -f docker-compose.yaml -f docker-compose.deps.yaml up -d
+
+logs:
+	. ./secrets/.secrets && docker-compose -f docker-compose.dev.yaml -f docker-compose.yaml -f docker-compose.deps.yaml logs 
 
 down:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml down
@@ -60,9 +63,11 @@ psql:
 redis-cli:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm redis-cli
 
-db-docker:
-	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm psql -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO postgres; GRANT ALL ON SCHEMA public TO public;"
+db-docker: clear-db
 	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm create-db
+
+clear-db:
+	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm psql -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO postgres; GRANT ALL ON SCHEMA public TO public;"
 
 clear-redis:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm redis-cli del cursor

@@ -7,7 +7,7 @@ getConfig();
 
 import * as fs from "fs";
 import { init as initModels, close as closeModels } from "./models";
-import { PageType, Poll, Tutorial } from "./public/services/offer_contents";
+import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
 import { createEarn, createSpend } from "./create_data/offers";
 import { Offer } from "./models/offers";
 import { StringMap, Application } from "./models/applications";
@@ -113,7 +113,7 @@ async function parseSpend(data: string[][]) {
 async function parseEarn(data: string[][]) {
 	const list = toMap(data);
 
-	const poll: Poll | Tutorial = { pages: [] };
+	const poll: Quiz | Poll | Tutorial = { pages: [] };
 	let offer: Map<string, string> | undefined;
 
 	async function createEarnInner(v: Map<string, string>, poll: Poll | Tutorial): Promise<Offer> {
@@ -158,6 +158,23 @@ async function parseEarn(data: string[][]) {
 						v.get("PollAnswer4")!,
 					],
 				},
+			});
+		} else if (v.get("PollPageType")! === "TimedFullPageMultiChoice") {
+			(poll as Quiz).pages.push({
+				type: PageType.TimedFullPageMultiChoice,
+				title: v.get("PollTitle")!,
+				description: v.get("PollDescription")!,
+				question: {
+					id: v.get("PollQuestionId")!,
+					answers: [
+						v.get("PollAnswer1")!,
+						v.get("PollAnswer2")!,
+						v.get("PollAnswer3")!,
+						v.get("PollAnswer4")!,
+					],
+				},
+				rightAnswer: parseInt(v.get("rightAnswer")!, 10),
+				amount: reduceAmount(parseInt(v.get("amount")!, 10)),
 			});
 		} else if (v.get("PollPageType")! === "EarnThankYou") {
 			(poll as Poll).pages.push({
@@ -206,7 +223,7 @@ initModels().then(async () => {
 	// create offers from csv
 	const parseCsv = require("csv-parse/lib/sync");
 
-	for (let i = 1; i <= 3; i++) {
+	for (let i = 1; i <= 4; i++) {
 		const spend = fs.readFileSync(`./data/${i}.csv`);
 		const parsed = parseCsv(spend);
 		const title = readTitle(parsed[0][0]);
@@ -216,9 +233,6 @@ initModels().then(async () => {
 		} else if (title === "Earn") {
 			await parseEarn(parsed);
 			console.log(`created earn offers`);
-		} else if (title === "Tutorial") {
-			await parseEarn(parsed);
-			console.log(`created tutorial offers`);
 		} else {
 			throw new Error("Failed to parse " + parsed[0][0]);
 		}

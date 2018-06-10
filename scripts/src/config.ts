@@ -20,6 +20,7 @@ export interface Config {
 	app_name?: string;
 	commit?: string;
 	timestamp?: string;
+	bi_service: string;
 }
 
 let config: Config;
@@ -54,6 +55,9 @@ export function init(filePath: string) {
 	}
 	if (process.env.APP_PAYMENT_COMPLETE_CALLBACK) {
 		config.payment_complete_callback = process.env.APP_PAYMENT_COMPLETE_CALLBACK!;
+	}
+	if (process.env.APP_BI_SERVICE) {
+		config.bi_service = process.env.APP_BI_SERVICE!;
 	}
 	if (process.env.APP_NAME) {
 		config.app_name = process.env.APP_NAME;

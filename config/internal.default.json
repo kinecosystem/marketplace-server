@@ -1,10 +1,12 @@
 {
 	"port": 3001,
-	"loggers": [{
-		"name": "console",
-		"type": "console",
-		"format": "pretty-json"
-	}],
+	"loggers": [
+		{
+			"name": "console",
+			"type": "console",
+			"format": "pretty-json"
+		}
+	],
 	"db": {
 		"type": "sqlite",
 		"host": "localhost",
@@ -19,5 +21,6 @@
 	"payment_complete_callback": "http://localhost:3001/v1/internal/payments",
 	"jwt": {
 		"private_keys_dir": "priv_keys"
-	}
+	},
+	"bi_service": "https://kin-bi.appspot.com/eco_"
 }

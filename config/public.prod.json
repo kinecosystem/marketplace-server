@@ -1,10 +1,12 @@
 {
 	"port": 3000,
-	"loggers": [{
-		"name": "console",
-		"type": "console",
-		"format": "json"
-	}],
+	"loggers": [
+		{
+			"name": "console",
+			"type": "console",
+			"format": "json"
+		}
+	],
 	"assets_base": "https://s3.amazonaws.com/kinmarketplace-assets/version1/",
 	"db": {
 		"type": "sqlite",
@@ -17,6 +19,6 @@
 		"logging": false
 	},
 	"payment_service": "http://payment-service.kinmarketplace.com",
-	"payment_complete_callback": "http://api.kinmarketplace.com/v1/internal/payments"
-
+	"payment_complete_callback": "http://api.kinmarketplace.com/v1/internal/payments",
+	"bi_service": "https://kin-bi.appspot.com/eco_"
 }

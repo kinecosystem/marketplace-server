@@ -30,17 +30,17 @@ export async function createSpend(
 		image: orderContentImage
 	};
 
-	const couponInfo: CouponInfo = {
-		title: couponTitle,
-		description: couponDescription,
-		amount,
-		image: couponImage,
-		confirmation: {
-			title: couponConfirmTitle,
-			description: couponConfirmSubtitle,
-			image: couponConfirmImage
+	const couponInfo: string = `{
+		"title": "${couponTitle}",
+		"description": "${couponDescription}",
+		"amount": \${amount},
+		"image": "${couponImage}",
+		"confirmation": {
+			"title": "${couponConfirmTitle}",
+			"description": "${couponConfirmSubtitle}",
+			"image": "${couponConfirmImage}"
 		}
-	};
+	}`;
 
 	const offer = Offer.new({
 		name: offerName,
@@ -64,7 +64,8 @@ export async function createSpend(
 	const content = OfferContent.new({
 		contentType: "coupon",
 		offerId: offer.id,
-		content: JSON.stringify(couponInfo)
+		content: couponInfo
+
 	});
 	await content.save();
 

@@ -8,6 +8,7 @@ import { ModelFilters } from "../../models/index";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import { Application } from "../../models/applications";
+import { replaceTemplateVars } from "./offer_contents";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -32,11 +33,7 @@ export interface OfferList {
 }
 
 function offerDbToApi(offer: db.Offer, content: db.OfferContent) {
-	function replaceTemplateVars(template: string) {
-		// XXX currently replace here instead of client
-		return template.replace(/\${amount}/g, offer.amount.toLocaleString("en-US"));
-	}
-
+	content.content = replaceTemplateVars(offer, content.content);
 	return {
 		id: offer.id,
 		title: offer.meta.title,
@@ -45,7 +42,7 @@ function offerDbToApi(offer: db.Offer, content: db.OfferContent) {
 		amount: offer.amount,
 		blockchain_data: offer.blockchainData,
 		offer_type: offer.type,
-		content: replaceTemplateVars(content.content),
+		content: content.content,
 		content_type: content.contentType,
 	};
 }
@@ -64,7 +61,7 @@ async function filterOffers(userId: string, app: Application | undefined, logger
 					return null;
 				}
 
-				const content = await offerContents.getOffer(offer.id, logger);
+				const content = await offerContents.getOfferContent(offer.id, logger);
 
 				if (!content) {
 					return null;

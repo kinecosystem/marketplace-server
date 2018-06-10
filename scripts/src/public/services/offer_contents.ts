@@ -2,6 +2,7 @@ import { LoggerInstance } from "winston";
 
 import { isNothing } from "../../utils";
 import * as db from "../../models/offers";
+import { QuizPage } from "../../../bin/public/services/offer_contents";
 
 export interface Question {
 	id: string;
@@ -79,11 +80,19 @@ export interface CouponOrderContent {
 	image: string;
 }
 
-export async function getOffer(offerId: string, logger: LoggerInstance): Promise<db.OfferContent | undefined> {
+/**
+ * replace template variables in offer content or order contents
+ */
+export function replaceTemplateVars(args: { amount: number }, template: string) {
+	// XXX currently replace here instead of client
+	return template.replace(/\${amount}/g, args.amount.toLocaleString("en-US"));
+}
+
+export async function getOfferContent(offerId: string, logger: LoggerInstance): Promise<db.OfferContent | undefined> {
 	return await db.OfferContent.findOne({ offerId });
 }
 
-export function isValid(offerId: string, form: string | undefined): form is string {
+export function isValid(offerContent: db.OfferContent, form: string | undefined): form is string {
 	if (isNothing(form)) {
 		return false;
 	}
@@ -96,6 +105,31 @@ export function isValid(offerId: string, form: string | undefined): form is stri
 	}
 
 	return typeof answers === "object" && !Array.isArray(answers);
+}
+
+export function sumCorrectQuizAnswers(offerContent: db.OfferContent, form: string | undefined): number {
+	if (isNothing(form)) {
+		return 0;
+	}
+
+	let answers: Answers;
+	try {
+		answers = JSON.parse(form);
+	} catch (e) {
+		return 0;
+	}
+	const quiz: Quiz = JSON.parse(offerContent.content);  // this might fail if not valid json without replaceTemplateVars
+	let amountSum = 0;
+	for (let i = 0; i < quiz.pages.length; i++) {
+		if (quiz.pages[i].type == PageType.TimedFullPageMultiChoice) {
+			const page: QuizPage = (quiz.pages[i] as QuizPage);
+			const answerIndex = page.question.answers.indexOf(answers[page.question.id]) + 1;
+			if (answerIndex == page.rightAnswer) {
+				amountSum += page.amount;
+			}
+		}
+	}
+	return amountSum;
 }
 
 export async function savePollAnswers(userId: string, offerId: string, orderId: string, content: string): Promise<void> {

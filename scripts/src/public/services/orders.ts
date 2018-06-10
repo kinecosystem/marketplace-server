@@ -23,6 +23,7 @@ import {
 	OpenedOrdersUnreturnable, CompletedOrderCantTransitionToFailed
 } from "../../errors";
 import { ExternalSpendOrderJWT, ExternalEarnOrderJWT } from "./native_offers";
+import { getOfferContent, replaceTemplateVars } from "./offer_contents";
 
 const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
 
@@ -104,7 +105,9 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 				amount: offer.amount,
 				type: offer.type,
 				status: "opened",
-				meta: offer.meta.order_meta,
+				meta: Object.assign(
+					offer.meta.order_meta,
+					{ content: replaceTemplateVars(offer, offer.meta.order_meta.content!) }),
 				blockchainData: {
 					sender_address: offer.type === "spend" ? user.walletAddress : offer.blockchainData.sender_address,
 					recipient_address: offer.type === "spend" ? offer.blockchainData.recipient_address : user.walletAddress
@@ -208,13 +211,26 @@ export async function submitOrder(
 		}
 
 		if (order.type === "earn") {
-			// validate form
-			if (!offerContents.isValid(order.offerId, form)) {
-				throw InvalidPollAnswers();
+			const offerContent = (await offerContents.getOfferContent(order.offerId, logger))!;
+			switch (offerContent.contentType) {
+				// TODO this switch-case should be inside the offerContents module
+				case "poll":
+					// validate form
+					if (!offerContents.isValid(offerContent, form)) {
+						throw InvalidPollAnswers();
+					}
+					await offerContents.savePollAnswers(order.userId, order.offerId, orderId, form); // TODO should we also save quiz results?
+					break
+				case "quiz":
+					order.amount = offerContents.sumCorrectQuizAnswers(offerContent, form) || 1; // TODO remove || 1 - don't give idiots kin
+					order.meta.content = offerContents.replaceTemplateVars(order, offer.meta.order_meta.content!);
+					break;
+				default:
+					logger.warn(`unexpected content type ${offerContent.contentType}`);
 			}
 
-			await offerContents.savePollAnswers(order.userId, order.offerId, orderId, form);
 		}
+
 	}
 
 	order.setStatus("pending");

@@ -13,12 +13,14 @@ getBlockchainConfig(getDefaultLogger()).then(data => BLOCKCHAIN = data);
 type ConfigResponse = {
 	keys: { [name: string]: { algorithm: string, key: string } },
 	blockchain: BlockchainConfig;
+	bi_service: string;
 };
 
 export const getConfigHandler = async function(req: Request, res: Response, next: NextFunction) {
 	const data: ConfigResponse = {
 		keys: KEYS,
 		blockchain: BLOCKCHAIN,
+		bi_service: CONFIG.bi_service
 	};
 	res.status(200).send(data);
 } as RequestHandler;

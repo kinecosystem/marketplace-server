@@ -1,17 +1,18 @@
 import * as axios from "axios";
+import { AxiosResponse } from "axios";
 import * as uuid4 from "uuid4";
 import * as expect from "expect";
 import * as StellarSdk from "stellar-sdk";
-import * as jsonwebtoken from "jsonwebtoken";
 import {
-	Operation,
-	xdr,
+	CollectionPage,
 	Memo,
-	TransactionRecord,
-	TransactionError,
+	Operation,
 	PaymentOperationRecord,
-	CollectionPage, OperationRecord
+	TransactionError,
+	TransactionRecord,
+	xdr
 } from "stellar-sdk";
+import * as jsonwebtoken from "jsonwebtoken";
 
 import { ApiError } from "./errors";
 import { JWTContent } from "./public/jwt";
@@ -24,7 +25,6 @@ import { Poll, Tutorial } from "./public/services/offer_contents";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { CompletedPayment, JWTBodyPaymentConfirmation } from "./internal/services";
-import { AxiosResponse } from "axios";
 
 const BASE = process.env.MARKETPLACE_BASE;
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;

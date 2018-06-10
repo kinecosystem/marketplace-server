@@ -4,12 +4,14 @@ services:
 
   marketplace-server:
     image: kinecosystem/marketplace-server:latest
+    command: ./tests/wait-for postgres:5432 -- npm run start
     volumes:
       - .:/opt/app
     ports:
       - 3000:3000
   marketplace-internal:
     image: kinecosystem/marketplace-server:latest
+    command: ./tests/wait-for marketplace-server:3000 -- npm run start-internal
     volumes:
       - .:/opt/app
     ports:

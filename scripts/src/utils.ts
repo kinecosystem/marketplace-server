@@ -47,6 +47,7 @@ export function random(first?: number | Map<string, any> | SimpleObject | any[],
 	return Math.random();
 }
 
+// return a random number between min (including) and max (excluding) i.e. min <= rand() < max
 export function randomInteger(min: number, max: number): number {
 	min = Math.ceil(min);
 	max = Math.floor(max);

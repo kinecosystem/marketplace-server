@@ -105,9 +105,9 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 				amount: offer.amount,
 				type: offer.type,
 				status: "opened",
-				meta: Object.assign(
-					offer.meta.order_meta,
-					{ content: replaceTemplateVars(offer, offer.meta.order_meta.content!) }),
+				// TODO if order meta content is a template:
+				// replaceTemplateVars(offer, offer.meta.order_meta.content!)
+				meta: offer.meta.order_meta,
 				blockchainData: {
 					sender_address: offer.type === "spend" ? user.walletAddress : offer.blockchainData.sender_address,
 					recipient_address: offer.type === "spend" ? offer.blockchainData.recipient_address : user.walletAddress
@@ -223,7 +223,7 @@ export async function submitOrder(
 					break;
 				case "quiz":
 					order.amount = offerContents.sumCorrectQuizAnswers(offerContent, form) || 1; // TODO remove || 1 - don't give idiots kin
-					order.meta.content = offerContents.replaceTemplateVars(order, offer.meta.order_meta.content!);
+					// should we replace order.meta.content
 					break;
 				default:
 					logger.warn(`unexpected content type ${offerContent.contentType}`);

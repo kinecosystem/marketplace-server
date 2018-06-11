@@ -9,7 +9,7 @@ import * as fs from "fs";
 import { init as initModels, close as closeModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
 import { createEarn, createSpend } from "./create_data/offers";
-import { Offer } from "./models/offers";
+import { ContentType, Offer } from "./models/offers";
 import { StringMap, Application } from "./models/applications";
 import "./models/orders";
 import "./models/users";
@@ -37,11 +37,7 @@ async function createApp(appId: string, name: string, keyNames: string[], apiKey
 
 function readTitle(title: string): string {
 	// read until first space
-	if (title.includes(" ")) {
-		return title.substr(0, title.indexOf(" "));
-	} else {
-		return title;
-	}
+	return title.split(/ +/, 1)[0];
 }
 
 function toMap(data: string[][]): Array<Map<string, string>> {
@@ -102,13 +98,13 @@ async function parseSpend(data: string[][]) {
 	}
 }
 
-async function parseEarn(data: string[][]) {
+async function parseEarn(data: string[][], contentType: ContentType) {
 	const list = toMap(data);
 
 	const poll: Quiz | Poll | Tutorial = { pages: [] };
 	let offer: Map<string, string> | undefined;
 
-	async function createEarnInner(v: Map<string, string>, poll: Poll | Tutorial): Promise<Offer> {
+	async function createEarnInner(v: Map<string, string>, poll: Quiz | Poll | Tutorial): Promise<Offer> {
 		const offer = await createEarn(
 			v.get("OfferName")!,
 			STELLAR_ADDRESS || v.get("WalletAddress")!,
@@ -121,6 +117,7 @@ async function parseEarn(data: string[][]) {
 			parseInt(v.get("CapPerUser")!, 10),
 			v.get("OrderTitle")!,
 			v.get("OrderDescription")!,
+			contentType,
 			poll);
 		return offer;
 	}
@@ -223,7 +220,8 @@ initModels().then(async () => {
 			await parseSpend(parsed);
 			console.log(`created spend offers`);
 		} else if (title === "Earn") {
-			await parseEarn(parsed);
+			const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
+			await parseEarn(parsed, contentType);
 			console.log(`created earn offers`);
 		} else {
 			throw new Error("Failed to parse " + parsed[0][0]);

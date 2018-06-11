@@ -17,11 +17,11 @@ import * as jsonwebtoken from "jsonwebtoken";
 import { ApiError } from "./errors";
 import { JWTContent } from "./public/jwt";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
-import { delay, generateId, retry } from "./utils";
+import { delay, generateId, randomInteger, retry } from "./utils";
 import { AuthToken } from "./public/services/users";
 import { Application } from "./models/applications";
 import { Offer, OfferList } from "./public/services/offers";
-import { Poll, PollPage, Quiz, QuizPage, Tutorial } from "./public/services/offer_contents";
+import { Answers, Poll, PollPage, Quiz, QuizPage, Tutorial } from "./public/services/offer_contents";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { CompletedPayment, JWTBodyPaymentConfirmation } from "./internal/services";
@@ -456,6 +456,20 @@ async function earnPollFlow() {
 }
 
 async function earnQuizFlow() {
+	// return answers and expected amount
+	function chooseAnswers(quiz: Quiz): [Answers, number] {
+		const answers: Answers = {};
+		let sum = 0;
+		for (const page of quiz.pages.slice(0, quiz.pages.length - 1)) {
+			const p = (page as QuizPage);
+			const choice = randomInteger(0, p.question.answers.length + 1);  // 0 marks unanswered
+			if (choice === p.rightAnswer) {
+				sum += p.amount;
+			}
+			answers[p.question.id] = choice > 0 ? p.question.answers[choice - 1] : "";
+		}
+		return [answers, sum || 1]; // server will give 1 kin for failed quizes
+	}
 	console.log("===================================== earn quiz =====================================");
 	const client = new Client();
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "quiz_user" },
@@ -473,15 +487,16 @@ async function earnQuizFlow() {
 	const quiz: Quiz = JSON.parse(selectedOffer.content);
 
 	// TODO write a function to choose the right/ wrong answers
-	const content = JSON.stringify({
-		[(quiz.pages[0] as QuizPage).question.id]: (quiz.pages[0] as QuizPage).question.answers[0] });
-	console.log("answers " + content);
+	const [answers, expectedSum] = chooseAnswers(quiz);
+	const content = JSON.stringify(answers);
+	console.log("answers " + content, " expected sum " + expectedSum);
 
 	await client.submitOrder(openOrder.id, content);
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 	console.log(`completion date: ${order.completion_date}`);
+	expect(order.amount).toEqual(expectedSum);
 
 	// check order on blockchain
 	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;

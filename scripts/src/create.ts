@@ -15,14 +15,6 @@ import "./models/orders";
 import "./models/users";
 
 const STELLAR_ADDRESS = process.env.STELLAR_ADDRESS;  // address to use instead of the ones defined in the data
-const REDUCE_AMOUNT = !!process.env.REDUCE_AMOUNT;  // divide amounts by 1000
-
-function reduceAmount(amount: number): number {
-	if (REDUCE_AMOUNT) {
-		amount = Math.max(Math.floor(amount / 1000), 1);
-	}
-	return amount;
-}
 
 async function createApp(appId: string, name: string, keyNames: string[], apiKey?: string) {
 	const jwtPublicKeys: StringMap = {};
@@ -83,7 +75,7 @@ async function parseSpend(data: string[][]) {
 			v.get("Title")!,
 			v.get("Description")!,
 			v.get("Image")!,
-			reduceAmount(parseInt(v.get("Amount")!, 10)),
+			parseInt(v.get("Amount")!, 10),
 			parseInt(v.get("CapTotal")!, 10),
 			parseInt(v.get("CapPerUser")!, 10),
 			v.get("OrderTitle")!,
@@ -124,7 +116,7 @@ async function parseEarn(data: string[][]) {
 			v.get("Title")!,
 			v.get("Description")!,
 			v.get("Image")!,
-			reduceAmount(parseInt(v.get("Amount")!, 10)),
+			parseInt(v.get("Amount")!, 10),
 			parseInt(v.get("CapTotal")!, 10),
 			parseInt(v.get("CapPerUser")!, 10),
 			v.get("OrderTitle")!,
@@ -174,7 +166,7 @@ async function parseEarn(data: string[][]) {
 					],
 				},
 				rightAnswer: parseInt(v.get("rightAnswer")!, 10),
-				amount: reduceAmount(parseInt(v.get("amount")!, 10)),
+				amount: parseInt(v.get("amount")!, 10),
 			});
 		} else if (v.get("PollPageType")! === "EarnThankYou") {
 			(poll as Poll).pages.push({

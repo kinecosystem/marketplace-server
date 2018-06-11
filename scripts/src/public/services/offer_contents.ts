@@ -2,7 +2,6 @@ import { LoggerInstance } from "winston";
 
 import { isNothing } from "../../utils";
 import * as db from "../../models/offers";
-import { QuizPage } from "../../../bin/public/services/offer_contents";
 
 export interface Question {
 	id: string;
@@ -120,12 +119,13 @@ export function sumCorrectQuizAnswers(offerContent: db.OfferContent, form: strin
 	}
 	const quiz: Quiz = JSON.parse(offerContent.content);  // this might fail if not valid json without replaceTemplateVars
 	let amountSum = 0;
-	for (let i = 0; i < quiz.pages.length; i++) {
-		if (quiz.pages[i].type == PageType.TimedFullPageMultiChoice) {
-			const page: QuizPage = (quiz.pages[i] as QuizPage);
-			const answerIndex = page.question.answers.indexOf(answers[page.question.id]) + 1;
-			if (answerIndex == page.rightAnswer) {
-				amountSum += page.amount;
+
+	for (const page of quiz.pages) {
+		if (page.type === PageType.TimedFullPageMultiChoice) {
+			const p = (page as QuizPage);
+			const answerIndex = p.question.answers.indexOf(answers[p.question.id]) + 1;
+			if (answerIndex === p.rightAnswer) {
+				amountSum += p.amount;
 			}
 		}
 	}

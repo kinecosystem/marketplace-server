@@ -220,7 +220,7 @@ export async function submitOrder(
 						throw InvalidPollAnswers();
 					}
 					await offerContents.savePollAnswers(order.userId, order.offerId, orderId, form); // TODO should we also save quiz results?
-					break
+					break;
 				case "quiz":
 					order.amount = offerContents.sumCorrectQuizAnswers(offerContent, form) || 1; // TODO remove || 1 - don't give idiots kin
 					order.meta.content = offerContents.replaceTemplateVars(order, offer.meta.order_meta.content!);

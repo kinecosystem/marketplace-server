@@ -344,15 +344,14 @@ class Client {
 /**
  * helper function to get a specific offer
  */
-async function getOffer(client: Client, offerType: OfferType, contentType?: ContentType, title?: string): Promise<Offer> {
+async function getOffer(client: Client, offerType: OfferType, contentType?: ContentType): Promise<Offer> {
 	const offers = await client.getOffers();
 
 	let selectedOffer: Offer | undefined;
 
 	for (const offer of offers.offers.reverse()) {
 		if (offer.offer_type === offerType &&
-			(!contentType || offer.content_type === contentType) &&
-			(!title || offer.title === title)) {
+			(!contentType || offer.content_type === contentType)) {
 			selectedOffer = offer;
 		}
 	}
@@ -517,7 +516,7 @@ async function earnTutorial() {
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 	await client.activate();
 
-	const selectedOffer = await getOffer(client, "earn", "poll", "About Kin");
+	const selectedOffer = await getOffer(client, "earn", "tutorial");
 
 	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content.slice(0, 100)}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
@@ -709,18 +708,18 @@ async function createTrust() {
 }
 
 async function main() {
-	// await createTrust();
-	// await earnTutorial();
-	// await earnPollFlow();
+	await createTrust();
+	await earnTutorial();
+	await earnPollFlow();
 	await earnQuizFlow();
-	// await didNotApproveTOS();
-	// await testRegisterNewUser();
-	// await spendFlow();
-	// // await justPay();
-	// await registerJWT();
-	// await nativeEarnFlow();
-	// await nativeSpendFlow();
-	// await tryToNativeSpendTwice();
+	await didNotApproveTOS();
+	await testRegisterNewUser();
+	await spendFlow();
+	// await justPay();
+	await registerJWT();
+	await nativeEarnFlow();
+	await nativeSpendFlow();
+	await tryToNativeSpendTwice();
 }
 
 main()

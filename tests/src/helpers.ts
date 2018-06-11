@@ -118,7 +118,7 @@ export async function createOffers() {
 		await createEarn(
 			`${uniqueId}_earn${i}`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
-			`earn${i}`, `earn${i}`, `earn${i}`, `earn${i}`, 100, 30, 2, `earn${i}`, `earn${i}`, animalPoll
+			`earn${i}`, `earn${i}`, `earn${i}`, `earn${i}`, 100, 30, 2, `earn${i}`, `earn${i}`, "poll", animalPoll
 		);
 	}
 

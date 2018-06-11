@@ -9,6 +9,7 @@ import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import { Application } from "../../models/applications";
 import { replaceTemplateVars } from "./offer_contents";
+import { ContentType, OfferType } from "../../models/offers";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -23,8 +24,8 @@ export interface Offer {
 	amount: number;
 	blockchain_data: db.BlockchainData;
 	content: string;
-	content_type: "coupon" | "poll";
-	offer_type: "earn" | "spend";
+	content_type: ContentType;
+	offer_type: OfferType;
 }
 
 export interface OfferList {

@@ -16,12 +16,12 @@ import * as jsonwebtoken from "jsonwebtoken";
 
 import { ApiError } from "./errors";
 import { JWTContent } from "./public/jwt";
-import { JWTValue } from "./models/offers";
+import { ContentType, JWTValue, OfferType } from "./models/offers";
 import { delay, generateId, retry } from "./utils";
 import { AuthToken } from "./public/services/users";
 import { Application } from "./models/applications";
 import { Offer, OfferList } from "./public/services/offers";
-import { Poll, Tutorial } from "./public/services/offer_contents";
+import { Poll, PollPage, Quiz, QuizPage, Tutorial } from "./public/services/offer_contents";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { CompletedPayment, JWTBodyPaymentConfirmation } from "./internal/services";
@@ -341,6 +341,27 @@ class Client {
 	}
 }
 
+/**
+ * helper function to get a specific offer
+ */
+async function getOffer(client: Client, offerType: OfferType, contentType?: ContentType, title?: string): Promise<Offer> {
+	const offers = await client.getOffers();
+
+	let selectedOffer: Offer | undefined;
+
+	for (const offer of offers.offers.reverse()) {
+		if (offer.offer_type === offerType &&
+			(!contentType || offer.content_type === contentType) &&
+			(!title || offer.title === title)) {
+			selectedOffer = offer;
+		}
+	}
+	if (!selectedOffer) {
+		throw new Error(`did not find a ${offerType}:${contentType} offer`);
+	}
+	return selectedOffer;
+}
+
 async function didNotApproveTOS() {
 	console.log("=====================================didNotApproveTOS=====================================");
 	const client = new Client();
@@ -364,18 +385,7 @@ async function spendFlow() {
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "rich_user2" },
 		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
-	const offers = await client.getOffers();
-
-	let selectedOffer: Offer | undefined;
-
-	for (const offer of offers.offers.reverse()) {
-		if (offer.offer_type === "spend") {
-			selectedOffer = offer;
-		}
-	}
-	if (!selectedOffer) {
-		throw new Error("did not find a spend offer");
-	}
+	const selectedOffer = await getOffer(client, "spend");
 
 	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
@@ -405,26 +415,14 @@ function isValidPayment(order: Order, appId: string, payment: CompletedPayment):
 		appId === payment.app_id);
 }
 
-async function earnFlow() {
-	console.log("===================================== earn =====================================");
+async function earnPollFlow() {
+	console.log("===================================== earn poll =====================================");
 	const client = new Client();
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "doody98ds4" },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
-	const offers = await client.getOffers();
-
-	let selectedOffer: Offer | undefined;
-
-	for (const offer of offers.offers.reverse()) {
-		if (offer.offer_type === "earn") {
-			selectedOffer = offer;
-		}
-	}
-
-	if (!selectedOffer) {
-		throw new Error("no earn offer");
-	}
+	const selectedOffer = await getOffer(client, "earn", "poll");
 
 	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
@@ -434,12 +432,11 @@ async function earnFlow() {
 	console.log("poll " + selectedOffer.content);
 	const poll: Poll = JSON.parse(selectedOffer.content);
 
-	// TODO: Lior, you need to fix this.
-	/*const content = JSON.stringify({ [poll.pages[0].question.id]: poll.pages[0].question.answers[0] });
+	const content = JSON.stringify({
+		[(poll.pages[0] as PollPage).question.id]: (poll.pages[0] as PollPage).question.answers[0] });
 	console.log("answers " + content);
 
-	await client.submitOrder(openOrder.id, content);*/
-	await client.submitOrder(openOrder.id, "{}");
+	await client.submitOrder(openOrder.id, content);
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
@@ -456,7 +453,46 @@ async function earnFlow() {
 	if (!isValidPayment(order, client.appId, payment)) {
 		throw new Error("payment is not valid - different than order");
 	}
+}
 
+async function earnQuizFlow() {
+	console.log("===================================== earn quiz =====================================");
+	const client = new Client();
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "quiz_user" },
+		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	await client.activate();
+
+	const selectedOffer = await getOffer(client, "earn", "quiz");
+
+	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
+	const openOrder = await client.createOrder(selectedOffer.id);
+	console.log(`got open order`, openOrder);
+
+	// answer the quiz
+	console.log("quiz " + selectedOffer.content);
+	const quiz: Quiz = JSON.parse(selectedOffer.content);
+
+	// TODO write a function to choose the right/ wrong answers
+	const content = JSON.stringify({
+		[(quiz.pages[0] as QuizPage).question.id]: (quiz.pages[0] as QuizPage).question.answers[0] });
+	console.log("answers " + content);
+
+	await client.submitOrder(openOrder.id, content);
+
+	// poll on order payment
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	console.log(`completion date: ${order.completion_date}`);
+
+	// check order on blockchain
+	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+	console.log(`payment on blockchain:`, payment);
+
+	if (!isValidPayment(order, client.appId, payment)) {
+		throw new Error("payment is not valid - different than order");
+	}
 }
 
 async function earnTutorial() {
@@ -466,20 +502,7 @@ async function earnTutorial() {
 		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
 	await client.activate();
 
-	const offers = await client.getOffers();
-
-	let selectedOffer: Offer | undefined;
-
-	for (const offer of offers.offers) {
-		if (offer.title === "About Kin") {
-			console.log("offer", offer);
-			selectedOffer = offer;
-		}
-	}
-
-	if (!selectedOffer) {
-		throw new Error("no tutorial found");
-	}
+	const selectedOffer = await getOffer(client, "earn", "poll", "About Kin");
 
 	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content.slice(0, 100)}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
@@ -671,19 +694,18 @@ async function createTrust() {
 }
 
 async function main() {
-	await createTrust();
-	// await earnFlow();
+	// await createTrust();
+	// await earnTutorial();
+	// await earnPollFlow();
+	await earnQuizFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
-	// await earnTutorial();
 	// await spendFlow();
-	// await justPay();
+	// // await justPay();
 	// await registerJWT();
-	await nativeEarnFlow();
-
+	// await nativeEarnFlow();
 	// await nativeSpendFlow();
-	await tryToNativeSpendTwice();
-
+	// await tryToNativeSpendTwice();
 }
 
 main()

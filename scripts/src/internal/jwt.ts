@@ -8,7 +8,7 @@ const KEYS = readKeysDir(CONFIG.jwt.private_keys_dir);
 
 export function sign(subject: string, payload: any, keyid?: string) {
 	if (!keyid) {
-			keyid = "kin-es256_0";  // TODO the key should be randomly chosen or timely rotated
+			keyid = "es256_0";  // TODO the key should be randomly chosen or timely rotated
 	}
 	const signWith = KEYS[keyid];
 	return jsonwebtoken.sign(payload, signWith.key, {

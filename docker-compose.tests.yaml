@@ -30,7 +30,6 @@ services:
       APP_DB_HOST: postgres
       APP_DB_DATABASE: ecosystem
       STELLAR_ADDRESS: ${STELLAR_ADDRESS}
-      REDUCE_AMOUNT: 'true'
 
   test-system:
     image: kinecosystem/marketplace-server:latest
@@ -45,7 +44,7 @@ services:
     command: npm run test-system
 
   generate-funding-address:
-    image: kinecosystem/payment-service:0c62c6e
+    image: kinecosystem/payment-service:906f29c
     command: pipenv run python generate_funding_address.py
     volumes:
       - ./secrets:/secrets

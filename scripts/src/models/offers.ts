@@ -23,7 +23,7 @@ export type Cap = {
 };
 
 export type OfferType = "spend" | "earn";
-export type ContentType = "poll" | "coupon";
+export type ContentType = "quiz" | "poll" | "tutorial" | "coupon";
 
 @Entity({ name: "offer_owners" })
 @Register

@@ -16,40 +16,67 @@ import * as jsonwebtoken from "jsonwebtoken";
 
 import { ApiError } from "./errors";
 import { JWTContent } from "./public/jwt";
-import { JWTValue } from "./models/offers";
-import { delay, generateId, retry } from "./utils";
+import { ContentType, JWTValue, OfferType } from "./models/offers";
+import { delay, generateId, randomInteger, retry } from "./utils";
 import { AuthToken } from "./public/services/users";
 import { Application } from "./models/applications";
 import { Offer, OfferList } from "./public/services/offers";
-import { Poll, Tutorial } from "./public/services/offer_contents";
+import { Answers, Poll, PollPage, Quiz, QuizPage, Tutorial } from "./public/services/offer_contents";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { CompletedPayment, JWTBodyPaymentConfirmation } from "./internal/services";
+import { ConfigResponse } from "./public/routes/config";
+import { BlockchainConfig } from "./public/services/payment";
 
 const BASE = process.env.MARKETPLACE_BASE;
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
 
 class Stellar {
 	public static MEMO_VERSION = 1;
-	public server!: StellarSdk.Server; // StellarSdk.Server
-	public kinAsset!: StellarSdk.Asset; // StellarSdk.Asset
-	public constructor(network: "production" | "testnet" | "private") {
-		switch (network) {
+
+	public static async get(networkName: "production" | "testnet" | "auto"): Promise<Stellar> {
+		let network: StellarSdk.Network;
+		let horizonUrl: string;
+		let kinAssetCode: string;
+		let kinAssetIssuer: string;
+
+		switch (networkName) {
 			case "testnet":
-				StellarSdk.Network.useTestNetwork();
-				this.server = new StellarSdk.Server("https://horizon-testnet.stellar.org");
-				this.kinAsset = new StellarSdk.Asset("KIN", "GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V");
+				network = new StellarSdk.Network(StellarSdk.Networks.TESTNET);
+				horizonUrl = "https://horizon-testnet.stellar.org";
+				kinAssetCode = "KIN";
+				kinAssetIssuer = "GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V";
 				break;
 			case "production":
+				network = new StellarSdk.Network(StellarSdk.Networks.PUBLIC);
 				throw new Error("production not supported");
-			case "private":
-				StellarSdk.Network.use(new StellarSdk.Network("private testnet"));
-				this.server = new StellarSdk.Server("https://horizon-kik.kininfrastructure.com");
-				this.kinAsset = new StellarSdk.Asset("KIN", "GBQ3DQOA7NF52FVV7ES3CR3ZMHUEY4LTHDAQKDTO6S546JCLFPEQGCPK");
+			case "auto":
+				const res = await axios.default.get<ConfigResponse>(BASE + "/v1/config");
+				const config: BlockchainConfig = res.data.blockchain;
+				network = new StellarSdk.Network(config.network_passphrase);
+				horizonUrl = config.horizon_url;
+				kinAssetCode = config.kin_token;
+				kinAssetIssuer = config.kin_issuer;
 				break;
 			default:
-				throw new Error(`${network} not supported`);
+				throw new Error(`${networkName} not supported`);
 		}
+
+		return new Stellar(network, kinAssetCode, kinAssetIssuer, horizonUrl);
+	}
+
+	public server!: StellarSdk.Server; // StellarSdk.Server
+	public kinAsset!: StellarSdk.Asset; // StellarSdk.Asset
+
+	private constructor(
+		network: StellarSdk.Network,
+		kinAssetCode: string,
+		kinAssetIssuer: string,
+		horizonUrl: string) {
+
+		StellarSdk.Network.use(network);
+		this.server = new StellarSdk.Server(horizonUrl);
+		this.kinAsset = new StellarSdk.Asset(kinAssetCode, kinAssetIssuer);
 	}
 }
 
@@ -57,7 +84,7 @@ class ClientError extends Error {
 	public response?: AxiosResponse;
 }
 
-const STELLAR = new Stellar("private");
+let STELLAR: Stellar;
 type JWTPayload = { jwt: string };
 type WhitelistSignInPayload = { apiKey: string, userId: string };
 type SignInPayload = WhitelistSignInPayload | JWTPayload;
@@ -245,21 +272,16 @@ class Client {
 		const op = StellarSdk.Operation.changeTrust({
 			asset: STELLAR.kinAsset
 		});
-
-		let error: Error | undefined;
-		for (let i = 0; i < 3; i++) {
+		const self = this;
+		async function safeOperation() {
 			try {
-				return await this.stellarOperation(op);
+				return await self.stellarOperation(op);
 			} catch (e) {
-				error = e;
-
-				if (i < 2) {
-					await delay(3000);
-				}
+				return null;
 			}
 		}
-
-		throw error;
+		const res = await retry(() => safeOperation(), res => res !== null, "failed to establish trustline");
+		return res!;
 	}
 
 	private handleAxiosError(ex: axios.AxiosError): ClientError {
@@ -334,11 +356,30 @@ class Client {
 				throw new Error(`\nStellar Error:\ntransaction: ${err.data.extras.result_codes.transaction}` +
 					`\n\toperations: ${err.data.extras.result_codes.operations.join(",")}`);
 			} else {
-				console.log(`failed`, err.data.extras, err.data);
 				throw err;
 			}
 		}
 	}
+}
+
+/**
+ * helper function to get a specific offer
+ */
+async function getOffer(client: Client, offerType: OfferType, contentType?: ContentType): Promise<Offer> {
+	const offers = await client.getOffers();
+
+	let selectedOffer: Offer | undefined;
+
+	for (const offer of offers.offers.reverse()) {
+		if (offer.offer_type === offerType &&
+			(!contentType || offer.content_type === contentType)) {
+			selectedOffer = offer;
+		}
+	}
+	if (!selectedOffer) {
+		throw new Error(`did not find a ${offerType}:${contentType} offer`);
+	}
+	return selectedOffer;
 }
 
 async function didNotApproveTOS() {
@@ -346,7 +387,7 @@ async function didNotApproveTOS() {
 	const client = new Client();
 
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "new_user_123" },
-		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
+		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	const offers = await client.getOffers();
 	try {
 		await client.createOrder(offers.offers[0].id);
@@ -364,18 +405,7 @@ async function spendFlow() {
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "rich_user2" },
 		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
-	const offers = await client.getOffers();
-
-	let selectedOffer: Offer | undefined;
-
-	for (const offer of offers.offers.reverse()) {
-		if (offer.offer_type === "spend") {
-			selectedOffer = offer;
-		}
-	}
-	if (!selectedOffer) {
-		throw new Error("did not find a spend offer");
-	}
+	const selectedOffer = await getOffer(client, "spend");
 
 	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
@@ -405,26 +435,14 @@ function isValidPayment(order: Order, appId: string, payment: CompletedPayment):
 		appId === payment.app_id);
 }
 
-async function earnFlow() {
-	console.log("===================================== earn =====================================");
+async function earnPollFlow() {
+	console.log("===================================== earn poll =====================================");
 	const client = new Client();
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "doody98ds4" },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
-	const offers = await client.getOffers();
-
-	let selectedOffer: Offer | undefined;
-
-	for (const offer of offers.offers.reverse()) {
-		if (offer.offer_type === "earn") {
-			selectedOffer = offer;
-		}
-	}
-
-	if (!selectedOffer) {
-		throw new Error("no earn offer");
-	}
+	const selectedOffer = await getOffer(client, "earn", "poll");
 
 	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
@@ -434,12 +452,12 @@ async function earnFlow() {
 	console.log("poll " + selectedOffer.content);
 	const poll: Poll = JSON.parse(selectedOffer.content);
 
-	// TODO: Lior, you need to fix this.
-	/*const content = JSON.stringify({ [poll.pages[0].question.id]: poll.pages[0].question.answers[0] });
+	const content = JSON.stringify({
+		[(poll.pages[0] as PollPage).question.id]: (poll.pages[0] as PollPage).question.answers[0]
+	});
 	console.log("answers " + content);
 
-	await client.submitOrder(openOrder.id, content);*/
-	await client.submitOrder(openOrder.id, "{}");
+	await client.submitOrder(openOrder.id, content);
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
@@ -456,30 +474,72 @@ async function earnFlow() {
 	if (!isValidPayment(order, client.appId, payment)) {
 		throw new Error("payment is not valid - different than order");
 	}
+}
 
+async function earnQuizFlow() {
+	// return answers and expected amount
+	function chooseAnswers(quiz: Quiz): [Answers, number] {
+		const answers: Answers = {};
+		let sum = 0;
+		for (const page of quiz.pages.slice(0, quiz.pages.length - 1)) {
+			const p = (page as QuizPage);
+			const choice = randomInteger(0, p.question.answers.length + 1);  // 0 marks unanswered
+			if (choice === p.rightAnswer) {
+				sum += p.amount;
+			}
+			answers[p.question.id] = choice > 0 ? p.question.answers[choice - 1] : "";
+		}
+		return [answers, sum || 1]; // server will give 1 kin for failed quizes
+	}
+
+	console.log("===================================== earn quiz =====================================");
+	const client = new Client();
+	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "quiz_user" },
+		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	await client.activate();
+
+	const selectedOffer = await getOffer(client, "earn", "quiz");
+
+	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
+	const openOrder = await client.createOrder(selectedOffer.id);
+	console.log(`got open order`, openOrder);
+
+	// answer the quiz
+	console.log("quiz " + selectedOffer.content);
+	const quiz: Quiz = JSON.parse(selectedOffer.content);
+
+	// TODO write a function to choose the right/ wrong answers
+	const [answers, expectedSum] = chooseAnswers(quiz);
+	const content = JSON.stringify(answers);
+	console.log("answers " + content, " expected sum " + expectedSum);
+
+	await client.submitOrder(openOrder.id, content);
+
+	// poll on order payment
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	console.log(`completion date: ${order.completion_date}`);
+	expect(order.amount).toEqual(expectedSum);
+
+	// check order on blockchain
+	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+	console.log(`payment on blockchain:`, payment);
+
+	if (!isValidPayment(order, client.appId, payment)) {
+		throw new Error("payment is not valid - different than order");
+	}
 }
 
 async function earnTutorial() {
 	console.log("===================================== earnTutorial =====================================");
 	const client = new Client();
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "new_test_user" },
-		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
+		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
-	const offers = await client.getOffers();
-
-	let selectedOffer: Offer | undefined;
-
-	for (const offer of offers.offers) {
-		if (offer.title === "About Kin") {
-			console.log("offer", offer);
-			selectedOffer = offer;
-		}
-	}
-
-	if (!selectedOffer) {
-		throw new Error("no tutorial found");
-	}
+	const selectedOffer = await getOffer(client, "earn", "tutorial");
 
 	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content.slice(0, 100)}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
@@ -671,19 +731,19 @@ async function createTrust() {
 }
 
 async function main() {
+	STELLAR = await Stellar.get("auto");
 	await createTrust();
-	// await earnFlow();
-	// await didNotApproveTOS();
-	// await testRegisterNewUser();
-	// await earnTutorial();
-	// await spendFlow();
-	// await justPay();
-	// await registerJWT();
+	await earnTutorial();
+	await earnPollFlow();
+	await earnQuizFlow();
+	await didNotApproveTOS();
+	await testRegisterNewUser();
+	await spendFlow();
+	// // await justPay();
+	await registerJWT();
 	await nativeEarnFlow();
-
-	// await nativeSpendFlow();
+	await nativeSpendFlow();
 	await tryToNativeSpendTwice();
-
 }
 
 main()

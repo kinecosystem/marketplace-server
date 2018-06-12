@@ -1,5 +1,5 @@
-import { Asset, Offer, OfferContent, OfferOwner } from "../models/offers";
-import { CouponInfo, CouponOrderContent, Poll, Tutorial } from "../public/services/offer_contents";
+import { Asset, ContentType, Offer, OfferContent, OfferOwner } from "../models/offers";
+import { CouponInfo, CouponOrderContent, Poll, Quiz, Tutorial } from "../public/services/offer_contents";
 
 async function getOrCreateOwner(brandName: string): Promise<OfferOwner> {
 	let owner = await OfferOwner.findOne({ name: brandName });
@@ -30,17 +30,17 @@ export async function createSpend(
 		image: orderContentImage
 	};
 
-	const couponInfo: CouponInfo = {
-		title: couponTitle,
-		description: couponDescription,
-		amount,
-		image: couponImage,
-		confirmation: {
-			title: couponConfirmTitle,
-			description: couponConfirmSubtitle,
-			image: couponConfirmImage
+	const couponInfo: string = `{
+		"title": "${couponTitle}",
+		"description": "${couponDescription}",
+		"amount": \${amount},
+		"image": "${couponImage}",
+		"confirmation": {
+			"title": "${couponConfirmTitle}",
+			"description": "${couponConfirmSubtitle}",
+			"image": "${couponConfirmImage}"
 		}
-	};
+	}`;
 
 	const offer = Offer.new({
 		name: offerName,
@@ -64,7 +64,8 @@ export async function createSpend(
 	const content = OfferContent.new({
 		contentType: "coupon",
 		offerId: offer.id,
-		content: JSON.stringify(couponInfo)
+		content: couponInfo
+
 	});
 	await content.save();
 
@@ -87,7 +88,8 @@ export async function createEarn(
 	offerName: string, walletAddress: string,
 	brand: string, title: string, description: string, image: string, amount: number,
 	capTotal: number, capPerUser: number,
-	orderTitle: string, orderDescription: string, poll: Poll | Tutorial): Promise<Offer> {
+	orderTitle: string, orderDescription: string, contentType: ContentType,
+	poll: Quiz | Poll | Tutorial): Promise<Offer> {
 
 	const owner = await getOrCreateOwner(brand);
 
@@ -110,7 +112,7 @@ export async function createEarn(
 	await offer.save();
 
 	const content = OfferContent.new({
-		contentType: "poll",
+		contentType,
 		offerId: offer.id,
 		content: JSON.stringify(poll)
 	});

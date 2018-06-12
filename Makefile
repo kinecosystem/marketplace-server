@@ -48,11 +48,11 @@ pull:
 up:
 	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml up -d
 
-up-dev:
+up-dev: db-docker
 	. ./secrets/.secrets && docker-compose -f docker-compose.dev.yaml -f docker-compose.yaml -f docker-compose.deps.yaml up -d
 
 logs:
-	. ./secrets/.secrets && docker-compose -f docker-compose.dev.yaml -f docker-compose.yaml -f docker-compose.deps.yaml logs 
+	docker-compose -f docker-compose.dev.yaml -f docker-compose.yaml -f docker-compose.deps.yaml logs 
 
 down:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml down
@@ -63,7 +63,7 @@ psql:
 redis-cli:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm redis-cli
 
-db-docker: clear-db
+db-docker:
 	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm create-db
 
 clear-db:
@@ -72,7 +72,7 @@ clear-db:
 clear-redis:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm redis-cli del cursor
 
-test-system-docker: db-docker clear-redis
+test-system-docker: clear-db db-docker clear-redis
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm test-system
 
 generate-funding-address:

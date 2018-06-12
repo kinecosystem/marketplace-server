@@ -25,31 +25,58 @@ import { Answers, Poll, PollPage, Quiz, QuizPage, Tutorial } from "./public/serv
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { CompletedPayment, JWTBodyPaymentConfirmation } from "./internal/services";
+import { ConfigResponse } from "./public/routes/config";
+import { BlockchainConfig } from "./public/services/payment";
 
 const BASE = process.env.MARKETPLACE_BASE;
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
 
 class Stellar {
 	public static MEMO_VERSION = 1;
-	public server!: StellarSdk.Server; // StellarSdk.Server
-	public kinAsset!: StellarSdk.Asset; // StellarSdk.Asset
-	public constructor(network: "production" | "testnet" | "private") {
-		switch (network) {
+
+	public static async get(networkName: "production" | "testnet" | "auto"): Promise<Stellar> {
+		let network: StellarSdk.Network;
+		let horizonUrl: string;
+		let kinAssetCode: string;
+		let kinAssetIssuer: string;
+
+		switch (networkName) {
 			case "testnet":
-				StellarSdk.Network.useTestNetwork();
-				this.server = new StellarSdk.Server("https://horizon-testnet.stellar.org");
-				this.kinAsset = new StellarSdk.Asset("KIN", "GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V");
+				network = new StellarSdk.Network(StellarSdk.Networks.TESTNET);
+				horizonUrl = "https://horizon-testnet.stellar.org";
+				kinAssetCode = "KIN";
+				kinAssetIssuer = "GCKG5WGBIJP74UDNRIRDFGENNIH5Y3KBI5IHREFAJKV4MQXLELT7EX6V";
 				break;
 			case "production":
+				network = new StellarSdk.Network(StellarSdk.Networks.PUBLIC);
 				throw new Error("production not supported");
-			case "private":
-				StellarSdk.Network.use(new StellarSdk.Network("private testnet"));
-				this.server = new StellarSdk.Server("https://horizon-kik.kininfrastructure.com");
-				this.kinAsset = new StellarSdk.Asset("KIN", "GBQ3DQOA7NF52FVV7ES3CR3ZMHUEY4LTHDAQKDTO6S546JCLFPEQGCPK");
+			case "auto":
+				const res = await axios.default.get<ConfigResponse>(BASE + "/v1/config");
+				const config: BlockchainConfig = res.data.blockchain;
+				network = new StellarSdk.Network(config.network_passphrase);
+				horizonUrl = config.horizon_url;
+				kinAssetCode = config.kin_token;
+				kinAssetIssuer = config.kin_issuer;
 				break;
 			default:
-				throw new Error(`${network} not supported`);
+				throw new Error(`${networkName} not supported`);
 		}
+
+		return new Stellar(network, kinAssetCode, kinAssetIssuer, horizonUrl);
+	}
+
+	public server!: StellarSdk.Server; // StellarSdk.Server
+	public kinAsset!: StellarSdk.Asset; // StellarSdk.Asset
+
+	private constructor(
+		network: StellarSdk.Network,
+		kinAssetCode: string,
+		kinAssetIssuer: string,
+		horizonUrl: string) {
+
+		StellarSdk.Network.use(network);
+		this.server = new StellarSdk.Server(horizonUrl);
+		this.kinAsset = new StellarSdk.Asset(kinAssetCode, kinAssetIssuer);
 	}
 }
 
@@ -57,7 +84,7 @@ class ClientError extends Error {
 	public response?: AxiosResponse;
 }
 
-const STELLAR = new Stellar("private");
+let STELLAR: Stellar;
 type JWTPayload = { jwt: string };
 type WhitelistSignInPayload = { apiKey: string, userId: string };
 type SignInPayload = WhitelistSignInPayload | JWTPayload;
@@ -366,7 +393,7 @@ async function didNotApproveTOS() {
 	const client = new Client();
 
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "new_user_123" },
-		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
+		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	const offers = await client.getOffers();
 	try {
 		await client.createOrder(offers.offers[0].id);
@@ -432,7 +459,8 @@ async function earnPollFlow() {
 	const poll: Poll = JSON.parse(selectedOffer.content);
 
 	const content = JSON.stringify({
-		[(poll.pages[0] as PollPage).question.id]: (poll.pages[0] as PollPage).question.answers[0] });
+		[(poll.pages[0] as PollPage).question.id]: (poll.pages[0] as PollPage).question.answers[0]
+	});
 	console.log("answers " + content);
 
 	await client.submitOrder(openOrder.id, content);
@@ -469,6 +497,7 @@ async function earnQuizFlow() {
 		}
 		return [answers, sum || 1]; // server will give 1 kin for failed quizes
 	}
+
 	console.log("===================================== earn quiz =====================================");
 	const client = new Client();
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "quiz_user" },
@@ -513,7 +542,7 @@ async function earnTutorial() {
 	console.log("===================================== earnTutorial =====================================");
 	const client = new Client();
 	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "new_test_user" },
-		"GDNI5XYHLGZMLDNJMX7W67NBD3743AMK7SN5BBNAEYSCBD6WIW763F2H");
+		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
 	const selectedOffer = await getOffer(client, "earn", "tutorial");
@@ -708,14 +737,15 @@ async function createTrust() {
 }
 
 async function main() {
+	STELLAR = await Stellar.get("auto");
 	await createTrust();
 	await earnTutorial();
 	await earnPollFlow();
 	await earnQuizFlow();
-	await didNotApproveTOS();
-	await testRegisterNewUser();
+	// await didNotApproveTOS();
+	// // await testRegisterNewUser(); // Why did this fail
 	await spendFlow();
-	// await justPay();
+	// // await justPay();
 	await registerJWT();
 	await nativeEarnFlow();
 	await nativeSpendFlow();

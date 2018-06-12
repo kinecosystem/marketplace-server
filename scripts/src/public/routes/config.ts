@@ -10,7 +10,7 @@ const KEYS = readKeysDir(CONFIG.jwt.public_keys_dir);
 let BLOCKCHAIN: BlockchainConfig;
 getBlockchainConfig(getDefaultLogger()).then(data => BLOCKCHAIN = data);
 
-type ConfigResponse = {
+export type ConfigResponse = {
 	keys: { [name: string]: { algorithm: string, key: string } },
 	blockchain: BlockchainConfig;
 	bi_service: string;

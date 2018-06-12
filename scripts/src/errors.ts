@@ -14,34 +14,34 @@ const CODES = {
 		MissingToken: 1,
 		InvalidToken: 2,
 		InvalidApiKey: 3,
-		JwtKidMissing: 4,
-		TOSMissingOrOldToken: 5
+		TOSMissingOrOldToken: 4,
 	},
 	NotFound: {
 		App: 1,
 		Offer: 2,
 		Order: 3,
 		PublicKey: 4,
-		OfferCapReached: 5
+		OfferCapReached: 5,
 	},
 	RequestTimeout: {
-		OpenOrderExpired: 1
+		OpenOrderExpired: 1,
 	},
 	Conflict: {
 		ExternalOrderAlreadyCompleted: 1,
 		ExternalEarnOfferByDifferentUser: 2,
-		CompletedOrderCantTransitionToFailed: 3
+		CompletedOrderCantTransitionToFailed: 3,
 	},
 	InternalServerError: {
 		OpenedOrdersOnly: 1,
-		OpenedOrdersUnreturnable: 2
+		OpenedOrdersUnreturnable: 2,
 	},
 	BadRequest: {
 		UnknownSignInType: 1,
 		WrongJwtAlgorithm: 2,
-		InvalidJwtSignature: 3,
-		InvalidPollAnswers: 4,
-		InvalidExternalOrderJwt: 5
+		InvalidPollAnswers: 3,
+		InvalidExternalOrderJwt: 4,
+		InvalidJwtSignature: 5,
+		JwtKidMissing: 6,
 	}
 };
 
@@ -90,10 +90,6 @@ export function InvalidToken(token: string) {
 
 export function InvalidApiKey(apiKey: string) {
 	return UnauthorizedError(CODES.Unauthorized.InvalidApiKey, `invalid api key: ${ apiKey }`);
-}
-
-export function JwtKidMissing() {
-	return UnauthorizedError(CODES.Unauthorized.JwtKidMissing, "kid is missing from the JWT");
 }
 
 export function TOSMissingOrOldToken() {
@@ -186,4 +182,8 @@ export function InvalidPollAnswers() {
 
 export function InvalidExternalOrderJwt() {
 	return BadRequestError(CODES.BadRequest.InvalidExternalOrderJwt, `subject can be either "earn" or "spend"`);
+}
+
+export function JwtKidMissing() {
+	return BadRequestError(CODES.BadRequest.JwtKidMissing, "kid is missing from the JWT");
 }

@@ -12,6 +12,8 @@ export type AuthToken = {
 	activated: boolean;
 	expiration_date: string;
 	app_id: string;
+	user_id: string;
+	ecosystem_user_id: string;
 };
 
 function AuthTokenDbToApi(authToken: db.AuthToken, user: db.User, logger: LoggerInstance): AuthToken {
@@ -19,6 +21,8 @@ function AuthTokenDbToApi(authToken: db.AuthToken, user: db.User, logger: Logger
 		token: authToken.id,
 		activated: user.activated,
 		app_id: user.appId,
+		user_id: user.appUserId,
+		ecosystem_user_id: user.id,
 		expiration_date: authToken.expireDate.toISOString()
 	};
 }
@@ -60,7 +64,7 @@ export async function getOrCreateUserCredentials(
 }
 
 export async function activateUser(
-		authToken: db.AuthToken, user: db.User, logger: LoggerInstance): Promise<AuthToken> {
+	authToken: db.AuthToken, user: db.User, logger: LoggerInstance): Promise<AuthToken> {
 
 	logger.info("activating user", { userId: user.id });
 	if (!user.activated) {

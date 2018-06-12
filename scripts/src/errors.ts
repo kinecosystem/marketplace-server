@@ -14,7 +14,7 @@ const CODES = {
 		MissingToken: 1,
 		InvalidToken: 2,
 		InvalidApiKey: 3,
-		TOSMissingOrOldToken: 5,
+		TOSMissingOrOldToken: 4,
 	},
 	NotFound: {
 		App: 1,

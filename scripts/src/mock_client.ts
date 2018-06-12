@@ -272,21 +272,16 @@ class Client {
 		const op = StellarSdk.Operation.changeTrust({
 			asset: STELLAR.kinAsset
 		});
-
-		let error: Error | undefined;
-		for (let i = 0; i < 3; i++) {
+		const self = this;
+		async function safeOperation() {
 			try {
-				return await this.stellarOperation(op);
+				return await self.stellarOperation(op);
 			} catch (e) {
-				error = e;
-
-				if (i < 2) {
-					await delay(3000);
-				}
+				return null;
 			}
 		}
-
-		throw error;
+		const res = await retry(() => safeOperation(), res => res !== null, "failed to establish trustline");
+		return res!;
 	}
 
 	private handleAxiosError(ex: axios.AxiosError): ClientError {
@@ -361,7 +356,6 @@ class Client {
 				throw new Error(`\nStellar Error:\ntransaction: ${err.data.extras.result_codes.transaction}` +
 					`\n\toperations: ${err.data.extras.result_codes.operations.join(",")}`);
 			} else {
-				console.log(`failed`, err.data.extras, err.data);
 				throw err;
 			}
 		}
@@ -742,8 +736,8 @@ async function main() {
 	await earnTutorial();
 	await earnPollFlow();
 	await earnQuizFlow();
-	// await didNotApproveTOS();
-	// // await testRegisterNewUser(); // Why did this fail
+	await didNotApproveTOS();
+	await testRegisterNewUser();
 	await spendFlow();
 	// // await justPay();
 	await registerJWT();

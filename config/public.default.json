@@ -28,5 +28,8 @@
 	},
 	"payment_service": "http://localhost:5000",
 	"payment_complete_callback": "http://localhost:3001/v1/internal/payments",
-	"bi_service": "https://kin-bi.appspot.com/eco_"
+	"bi_service": "https://kin-bi.appspot.com/eco_",
+	"webview": "https://some-url.com",
+	"ecosystem_service": "http://localhost:3000",
+	"environment_name": "local"
 }

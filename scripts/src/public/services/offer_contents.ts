@@ -13,6 +13,7 @@ export enum PageType {
 	"TimedFullPageMultiChoice",
 	"ImageAndText",
 	"EarnThankYou",
+	"SuccessBasedThankYou",
 }
 
 export interface BaseEarnPage {

@@ -3,4 +3,4 @@ WalletAddress,Brand,OfferName = internal identifier for noa,Amount,Title = Marke
 GATAQ2E2TE5H4I3TWLHP3YTCRCLF7YEF64VF2ZMIHPNT6YAJE3QHMWLQ,Kin,Online Quiz #1,42,Take a quiz,Share a thought,https://s3.amazonaws.com/kinmarketplace-assets/version1/internet_poll.png,Kin Quiz,Completed Quiz,1000,1,1,TimedFullPageMultiChoice,Who do you think uses FB the most?,Complete the quiz to earn ${amount} Kin,My parents,Younger brother or sister,Everyone uses it,Definitely not me,1,10
 ,,,,,,,,,,,2,TimedFullPageMultiChoice,How do you spend your free time?,Complete the quiz to earn ${amount} Kin,Hanging out with friends,With my family,On my own,Online,2,20
 ,,,,,,,,,,,3,TimedFullPageMultiChoice,How much time do you spend online?,Complete the quiz to earn ${amount} Kin,Over 2 hours a day ,About an hour,As little as possible,Basically all day,4,12
-,,,,,,,,,,,,EarnThankYou,,${amount},,,,,,
+,,,,,,,,,,,,SuccessBasedThankYou,,${amount},,,,,,

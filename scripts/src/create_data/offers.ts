@@ -33,7 +33,7 @@ export async function createSpend(
 	const couponInfo: string = `{
 		"title": "${couponTitle}",
 		"description": "${couponDescription}",
-		"amount": \${amount},
+		"amount": \${amount.raw},
 		"image": "${couponImage}",
 		"confirmation": {
 			"title": "${couponConfirmTitle}",

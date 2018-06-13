@@ -84,7 +84,9 @@ export interface CouponOrderContent {
  */
 export function replaceTemplateVars(args: { amount: number }, template: string) {
 	// XXX currently replace here instead of client
-	return template.replace(/\${amount}/g, args.amount.toLocaleString("en-US"));
+	return template
+		.replace(/\${amount}/g, args.amount.toLocaleString("en-US"))
+		.replace(/\${amount.raw}/g, args.amount.toString());
 }
 
 export async function getOfferContent(offerId: string, logger: LoggerInstance): Promise<db.OfferContent | undefined> {

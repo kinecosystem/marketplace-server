@@ -64,8 +64,8 @@ class Stellar {
 				const config: BlockchainConfig = res.data.blockchain;
 				network = new StellarSdk.Network(config.network_passphrase);
 				horizonUrl = config.horizon_url;
-				kinAssetCode = config.kin_token;
-				kinAssetIssuer = config.kin_issuer;
+				kinAssetCode = config.asset_code;
+				kinAssetIssuer = config.asset_issuer;
 				break;
 			default:
 				throw new Error(`${networkName} not supported`);

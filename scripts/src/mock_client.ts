@@ -21,7 +21,16 @@ import { delay, generateId, randomInteger, retry } from "./utils";
 import { AuthToken } from "./public/services/users";
 import { Application } from "./models/applications";
 import { Offer, OfferList } from "./public/services/offers";
-import { Answers, Poll, PollPage, Quiz, QuizPage, Tutorial } from "./public/services/offer_contents";
+import {
+	Answers,
+	CouponInfo,
+	CouponOrderContent,
+	Poll,
+	PollPage,
+	Quiz,
+	QuizPage,
+	Tutorial
+} from "./public/services/offer_contents";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { CompletedPayment, JWTBodyPaymentConfirmation } from "./internal/services";
@@ -406,10 +415,14 @@ async function spendFlow() {
 		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 	const selectedOffer = await getOffer(client, "spend");
+	const couponInfo: CouponInfo = JSON.parse(selectedOffer.content);
+
+	expect(couponInfo.amount).toEqual(selectedOffer.amount);
 
 	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got open order`, openOrder);
+
 	// pay for the offer
 	await client.submitOrder(openOrder.id); // XXX allow the flow where this line is missing
 	const res = await client.pay(selectedOffer.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
@@ -418,11 +431,11 @@ async function spendFlow() {
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
-
 	console.log(`completion date: ${order.completion_date}`);
-
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+
+	const couponOrderContent: CouponOrderContent = JSON.parse(order.content!);
 }
 
 function isValidPayment(order: Order, appId: string, payment: CompletedPayment): boolean {

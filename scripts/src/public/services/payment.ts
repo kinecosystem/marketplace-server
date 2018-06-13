@@ -97,8 +97,8 @@ export async function addWatcherEndpoint(addresses: string[]): Promise<Watcher> 
 export type BlockchainConfig = {
 	horizon_url: string;
 	network_passphrase: string;
-	kin_issuer: string;
-	kin_token: string;
+	asset_issuer: string;
+	asset_code: string;
 };
 
 export async function getBlockchainConfig(logger: LoggerInstance): Promise<BlockchainConfig> {

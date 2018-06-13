@@ -55,9 +55,9 @@ function toMap(data: string[][]): Array<Map<string, string>> {
 }
 
 async function getAllApps(): Promise<Application[]> {
-	 return await Application.createQueryBuilder("app")
+	return await Application.createQueryBuilder("app")
 		.leftJoinAndSelect("app.offers", "offer")
-		 .getMany();
+		.getMany();
 }
 
 async function parseSpend(data: string[][]) {
@@ -168,6 +168,11 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 		} else if (v.get("PollPageType")! === "EarnThankYou") {
 			(poll as Poll).pages.push({
 				type: PageType.EarnThankYou,
+				description: v.get("PollDescription")!
+			});
+		} else if (v.get("PollPageType")! === "SuccessBasedThankYou") {
+			(poll as Quiz).pages.push({
+				type: PageType.SuccessBasedThankYou,
 				description: v.get("PollDescription")!
 			});
 		} else if (v.get("PollPageType")! === "ImageAndText") {

@@ -10,9 +10,9 @@ export interface Question {
 
 export enum PageType {
 	"FullPageMultiChoice",
-	"TimedFullPageMultiChoice",
 	"ImageAndText",
 	"EarnThankYou",
+	"TimedFullPageMultiChoice",
 	"SuccessBasedThankYou",
 }
 
@@ -36,12 +36,17 @@ export interface EarnThankYouPage {
 	description: string;
 }
 
+export interface SuccessBasedThankYouPage {
+	type: PageType.SuccessBasedThankYou;
+	description: string;
+}
+
 export interface Poll {
 	pages: Array<PollPage | EarnThankYouPage>;
 }
 
 export interface Quiz {
-	pages: Array<QuizPage | EarnThankYouPage>;
+	pages: Array<QuizPage | SuccessBasedThankYouPage>;
 }
 
 export type TutorialPage = {

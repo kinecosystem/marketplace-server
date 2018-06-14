@@ -20,7 +20,7 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 <h1>Marketplace Admin</h1>
 <div id="content">${content}</div>
 </body>
-</html>`
+</html>`;
 		res.status(200).send(html);
 	} as any as RequestHandler;
 }

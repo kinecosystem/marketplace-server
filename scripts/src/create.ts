@@ -202,17 +202,19 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 
 initModels().then(async () => {
 	// create apps
-	const app1 = await createApp("smpl", "Sample Application", ["default"], Application.SAMPLE_API_KEY);
+	const app1 = await createApp("smpl", "Sample Application", ["default", "1"], Application.SAMPLE_API_KEY);
 	const app2 = await createApp("kik", "Kik Messenger", ["1"]);
-	const apps = [app1, app2];
+	const app3 = await createApp("test", "Test App", ["es256_0", "rs512_0"]);
+
+	const apps = [app1, app2, app3];
 	const offers: Offer[] = await Offer.find(); // add all offers to both apps
 
 	// adding all offers to all apps
 	for (const app of apps) {
 		app.offers = offers;
 		await app.save();
+		console.log(`created application`, app.id);
 	}
-	console.log(`created applications`, app1.id, app2.id);
 
 	// create offers from csv
 	const parseCsv = require("csv-parse/lib/sync");
@@ -221,13 +223,13 @@ initModels().then(async () => {
 		const spend = fs.readFileSync(`./data/${i}.csv`);
 		const parsed = parseCsv(spend);
 		const title = readTitle(parsed[0][0]);
+		const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
 		if (title === "Spend") {
 			await parseSpend(parsed);
-			console.log(`created spend offers`);
+			console.log(`created spend:${contentType} offers`);
 		} else if (title === "Earn") {
-			const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
 			await parseEarn(parsed, contentType);
-			console.log(`created earn offers`);
+			console.log(`created earn:${contentType} offers`);
 		} else {
 			throw new Error("Failed to parse " + parsed[0][0]);
 		}

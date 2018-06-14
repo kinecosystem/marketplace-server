@@ -9,9 +9,10 @@ const logger = initLogger(...config.loggers!);
 
 import { createRoutes } from "./routes";
 import { init as initModels } from "../models/index";
-import { notFoundHandler, generalErrorHandler } from "../middleware";
+import { notFoundHandler, generalErrorHandler, init as initMiddleware } from "../middleware";
 
 function createApp() {
+	initMiddleware();
 	const app = express();
 	app.set("port", getConfig().port);
 	return app;

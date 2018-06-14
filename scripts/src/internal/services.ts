@@ -2,15 +2,35 @@ import { LoggerInstance } from "winston";
 
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
-import { Asset, Offer, OrderValue } from "../models/offers";
+import { User } from "../models/users";
 import { pick, removeDuplicates } from "../utils";
+import { Asset, Offer, OrderValue } from "../models/offers";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
+import { create as createWalletCreationSucceeded } from "../analytics/events/wallet_creation_succeeded";
+import { create as createStellarAccountCreationFailed } from "../analytics/events/stellar_account_creation_failed";
+import { create as createStellarAccountCreationSucceeded } from "../analytics/events/stellar_account_creation_succeeded";
 
 import { sign as signJWT } from "./jwt";
-import { Order } from "../models/orders";
-import { User } from "../models/users";
 
 const BLOCKCHAIN = "stellar-testnet";
+
+export type WalletCreationSuccessData = {
+	id: string; // user id
+};
+
+export function walletCreationSuccess(data: WalletCreationSuccessData) {
+	createWalletCreationSucceeded(data.id).report();
+	createStellarAccountCreationSucceeded(data.id).report();
+}
+
+export type WalletCreationFailureData = {
+	id: string; // user id
+	reason: string;
+};
+
+export function walletCreationFailure(data: WalletCreationFailureData) {
+	createStellarAccountCreationFailed(data.id, data.reason).report();
+}
 
 export interface CompletedPayment {
 	id: string;
@@ -32,7 +52,7 @@ export type JWTBodyPaymentConfirmation = {
 	}
 };
 
-async function getPaymentJWT(order: Order, appId: string): Promise<OrderValue> {
+async function getPaymentJWT(order: db.Order, appId: string): Promise<OrderValue> {
 	const user: User = (await User.findOneById(order.userId))!;
 	const payload: JWTBodyPaymentConfirmation = {
 		offer_id: order.offerId,

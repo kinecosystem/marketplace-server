@@ -2,11 +2,10 @@ import { Application } from "../models/applications";
 import { Offer, PollAnswer } from "../models/offers";
 import { getManager } from "typeorm";
 import { User } from "../models/users";
-import { Order } from "../models/orders";
+import { OpenOrderStatus, Order } from "../models/orders";
 import { IdPrefix } from "../utils";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getDefaultLogger } from "../logging";
-import { GetOrderFilters } from "../../bin/models/orders";
 
 let BLOCKCHAIN: BlockchainConfig;
 getBlockchainConfig(getDefaultLogger()).then(data => BLOCKCHAIN = data);
@@ -250,8 +249,8 @@ export async function getApplicationUserData(params: { user_id: string, app_id: 
 	return userToHtml(user);
 }
 
-export async function getOrders(params: any, query: { status?: string, user_id?: string, offer_id?: string }): Promise<string> {
-	const queryBy: { offerId?: string, userId?: string, status?: string } = {};
+export async function getOrders(params: any, query: { status?: OpenOrderStatus, user_id?: string, offer_id?: string }): Promise<string> {
+	const queryBy: { offerId?: string, userId?: string, status?: OpenOrderStatus } = {};
 	if (query.offer_id) {
 		queryBy.offerId = query.offer_id;
 	}
@@ -261,7 +260,7 @@ export async function getOrders(params: any, query: { status?: string, user_id?:
 	if (query.status) {
 		queryBy.status = query.status;
 	}
-	let orders = await Order.find(queryBy);
+	const orders = await Order.find(queryBy);
 	let ret = `<table>${ORDER_HEADERS}`;
 	for (const order of orders) {
 		ret += orderToHtml(order);

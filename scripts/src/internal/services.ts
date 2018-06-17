@@ -18,7 +18,7 @@ export type WalletCreationSuccessData = {
 	id: string; // user id
 };
 
-export function walletCreationSuccess(data: WalletCreationSuccessData) {
+export async function walletCreationSuccess(data: WalletCreationSuccessData) {
 	createWalletCreationSucceeded(data.id).report();
 	createStellarAccountCreationSucceeded(data.id).report();
 }
@@ -28,7 +28,7 @@ export type WalletCreationFailureData = {
 	reason: string;
 };
 
-export function walletCreationFailure(data: WalletCreationFailureData) {
+export async function walletCreationFailure(data: WalletCreationFailureData) {
 	createStellarAccountCreationFailed(data.id, data.reason).report();
 }
 

@@ -6,6 +6,8 @@ import {
 	paymentComplete as paymentCompleteService,
 	walletCreationFailure as walletCreationFailureService,
 	walletCreationSuccess as walletCreationSuccessService,
+	WalletCreationSuccessData,
+	WalletCreationFailureData,
 } from "./services";
 
 import { statusHandler } from "./middleware";
@@ -20,17 +22,13 @@ export type WalletRequest<T> = T & WebHookRequestPayload & {
 	action: "creation";
 };
 
-/*export type PaymentRequest<T> = T & WebHookRequestPayload & {
+export type PaymentRequest<T> = T & WebHookRequestPayload & {
 	object: "payment";
 	action: "sent" | "received";
 };
 
-export type PaymentFailedRequest<T> = PaymentRequest<T> & {
-	state: "fail";
-};*/
-
 export type WebHookRequest<T = any> = Request & {
-	body: WalletRequest<T>; // | PaymentRequest<T> | PaymentFailedRequest<T>;
+	body: WalletRequest<T> | PaymentRequest<T>;
 };
 
 export const webhookHandler = async function(req: WebHookRequest, res: Response) {
@@ -43,9 +41,9 @@ export const webhookHandler = async function(req: WebHookRequest, res: Response)
 	} else if (req.body.object === "wallet") {
 		if (req.body.action === "creation") {
 			if (req.body.state === "success") {
-				walletCreationSuccessService(req.body);
+				await walletCreationSuccessService(req.body as WalletCreationSuccessData);
 			} else {
-				walletCreationFailureService(req.body);
+				await walletCreationFailureService(req.body as WalletCreationFailureData);
 			}
 		} else {
 			req.logger.error(`unknown action ("${ req.body.action }" for wallet webhook)`);

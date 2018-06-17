@@ -26,6 +26,7 @@ const OFFER_HEADERS = `<tr>
 <th>ID</th>
 <th>stats</th>
 <th>orders</th>
+<th>polls</th>
 <th>name</th>
 <th>type</th>
 <th>amount</th>
@@ -123,6 +124,7 @@ function offerToHtml(offer: Offer): string {
 <td>${offer.id}</td>
 <td><a href="/offers/${offer.id}/stats">stats</a></td>
 <td><a href="/orders?offer_id=${offer.id}">orders</a></td>
+<td><a href="/polls/${offer.id}">polls</a></td>
 <td>${offer.name}</td>
 <td>${offer.type}</td>
 <td>${offer.amount}</td>

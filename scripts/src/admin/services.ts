@@ -142,7 +142,7 @@ function orderToHtml(order: Order): string {
 	return `<tr>
 <td>${order.id}</td>
 <td class="status_${order.status}"><a href="/orders?status=${order.status}">${order.status}</a></td>
-<td>${order.error}</td>
+<td><pre>${JSON.stringify(order.error)}</pre></td>
 <td>${order.origin}</td>
 <td>${order.type}</td>
 <td><a href="/users/${order.userId}">${order.userId}</a></td>

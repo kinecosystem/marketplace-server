@@ -7,8 +7,11 @@ import { pick, removeDuplicates } from "../utils";
 import { Asset, Offer, OrderValue } from "../models/offers";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
 import { create as createWalletCreationSucceeded } from "../analytics/events/wallet_creation_succeeded";
+import { create as createSpendOrderPaymentConfirmed } from "../analytics/events/spend_order_payment_confirmed";
 import { create as createStellarAccountCreationFailed } from "../analytics/events/stellar_account_creation_failed";
 import { create as createStellarAccountCreationSucceeded } from "../analytics/events/stellar_account_creation_succeeded";
+import { create as createEarnTransactionBroadcastToBlockchainFailed } from "../analytics/events/earn_transaction_broadcast_to_blockchain_failed";
+import { create as createEarnTransactionBroadcastToBlockchainSucceeded } from "../analytics/events/earn_transaction_broadcast_to_blockchain_succeeded";
 
 import { sign as signJWT } from "./jwt";
 
@@ -79,6 +82,12 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	if (!order) {
 		logger.error(`received payment for unknown order id ${ payment.id }`);
 		return;
+	}
+
+	if (order.type === "spend") {
+		createSpendOrderPaymentConfirmed(order.userId, payment.transaction_id, order.offerId, order.id).report();
+	} else {
+		createEarnTransactionBroadcastToBlockchainSucceeded(order.userId, payment.transaction_id, order.offerId, order.id).report();
 	}
 
 	if (order.status === "completed") {
@@ -173,6 +182,14 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 }
 
 export async function paymentFailed(payment: CompletedPayment, reason: string, logger: LoggerInstance) {
+	const order = await db.Order.findOneById(payment.id);
+	if (!order) {
+		logger.error(`received payment for unknown order id ${ payment.id }`);
+		return;
+	}
+
+	createEarnTransactionBroadcastToBlockchainFailed(order.userId, reason, order.offerId, order.id).report();
+
 	// TODO: doody, decide what you wanna do here
 
 	/*const order = await db.Order.findOneById(payment.id);

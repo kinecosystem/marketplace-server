@@ -138,6 +138,7 @@ function offerToHtml(offer: Offer): string {
 }
 
 function orderToHtml(order: Order): string {
+	const transactionId = order.blockchainData ? order.blockchainData.transaction_id : null;
 	return `<tr>
 <td>${order.id}</td>
 <td class="status_${order.status}"><a href="/orders?status=${order.status}">${order.status}</a></td>
@@ -150,7 +151,7 @@ function orderToHtml(order: Order): string {
 <td>${order.meta.description}</td>
 <td><pre>${order.meta.content}</pre></td>
 <td><a href="/offers/${order.offerId}">${order.offerId}</a></td>
-<td><a href="${BLOCKCHAIN.horizon_url}/operations/${order.blockchainData.transaction_id}">${order.blockchainData.transaction_id}</a></td>
+<td><a href="${BLOCKCHAIN.horizon_url}/operations/${transactionId}">${transactionId}</a></td>
 </tr>`;
 }
 
@@ -168,7 +169,7 @@ function userToHtml(user: User): string {
 }
 
 export async function getApplications(params: any, query: any): Promise<string> {
-	const apps = await Application.find();
+	const apps = await Application.find({ order: { createdDate: "DESC" } });
 	let ret = "<table>";
 	for (const app of apps) {
 		ret += appToHtml(app);
@@ -186,7 +187,7 @@ export async function getApplication(params: { app_id: string }, query: any): Pr
 }
 
 export async function getApplicationUsers(params: { app_id: string }, query: any): Promise<string> {
-	const users: User[] = await User.find({ appId: params.app_id });
+	const users: User[] = await User.find({ where: { appId: params.app_id }, order: { createdDate: "DESC" } });
 	let ret = "";
 	for (const user of users) {
 		ret += userToHtml(user);
@@ -195,7 +196,7 @@ export async function getApplicationUsers(params: { app_id: string }, query: any
 }
 
 export async function getOffers(params: any, query: any): Promise<string> {
-	const offers = await Offer.find();
+	const offers = await Offer.find({ order: { createdDate: "DESC" } });
 	let ret = `<table>${OFFER_HEADERS}`;
 	for (const offer of offers) {
 		ret += offerToHtml(offer);
@@ -260,7 +261,7 @@ export async function getOrders(params: any, query: { status?: OpenOrderStatus, 
 	if (query.status) {
 		queryBy.status = query.status;
 	}
-	const orders = await Order.find(queryBy);
+	const orders = await Order.find({ where: queryBy, order: { createdDate: "DESC" } });
 	let ret = `<table>${ORDER_HEADERS}`;
 	for (const order of orders) {
 		ret += orderToHtml(order);
@@ -278,7 +279,10 @@ export async function getOrder(params: { order_id: string }, query: any): Promis
 }
 
 export async function getPollResults(params: { offer_id: string }, query: any): Promise<string> {
-	const answers: PollAnswer[] = await PollAnswer.find({ offerId: params.offer_id });
+	const answers: PollAnswer[] = await PollAnswer.find({
+		where: { offerId: params.offer_id },
+		order: { createdDate: "DESC" }
+	});
 	let ret = `<table>`;
 	for (const answer of answers) {
 		ret += `<tr><td><pre>${answer.content}</pre></td></tr>`;

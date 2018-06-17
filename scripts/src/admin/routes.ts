@@ -35,6 +35,8 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 			font-family: "Courier New";
 			background: #eeeeee;
 			padding: 5px;
+			width: 250px;
+			overflow: scroll;
 		}
 		.status_completed {
 			color: green;

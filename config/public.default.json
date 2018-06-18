@@ -27,9 +27,9 @@
 		"public_keys_dir": "pub_keys"
 	},
 	"payment_service": "http://localhost:5000",
-	"payment_complete_callback": "http://localhost:3001/v1/internal/payments",
-	"bi_service": "https://kin-bi.appspot.com/eco_",
+	"internal_webhook": "http://localhost:3001/v1/internal/webhook",
 	"webview": "https://some-url.com",
 	"ecosystem_service": "http://localhost:3000",
-	"environment_name": "local"
+	"environment_name": "local",
+	"bi_service": "https://kin-bi.appspot.com/eco_"
 }

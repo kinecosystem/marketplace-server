@@ -53,3 +53,9 @@ services:
       APP_PORT: 3000
       APP_HOST: '0.0.0.0'
       APP_NAME: 'smpl'
+
+  bi-service:
+    image: mendhak/http-https-echo
+    ports:
+      - 80
+      - 443

@@ -10,6 +10,7 @@ services:
       - redis
       - payment-service
       - postgres
+      - bi-service
     environment:
       &app_env_vars
       APP_DEBUG: 'True'
@@ -18,7 +19,8 @@ services:
       APP_NAME: 'marketplace-server'
       APP_REDIS: redis://redis:6379/0
       APP_PAYMENT_SERVICE: http://payment-service:3000
-      APP_PAYMENT_COMPLETE_CALLBACK: http://marketplace-internal:3000/v1/internal/payments
+      APP_INTERNAL_WEBHOOK: http://marketplace-internal:3000/v1/internal/webhook
+      APP_BI_SERVICE: https://bi-service
       APP_DB_TYPE: postgres
       APP_DB_USERNAME: user
       APP_DB_PASSWORD: pass

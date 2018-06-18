@@ -1,10 +1,12 @@
-import uuid from "uuid4";
+import { sync as uuid } from "uuid4";
 import * as axios from "axios";
 
 import { getConfig } from "../config";
 import { Common } from "./events/common";
+import { normalizeError } from "../utils";
 
-export interface EventData {}
+export interface EventData {
+}
 
 export class Event<T extends EventData = EventData> {
 	public static common(userId: string): Common {
@@ -24,6 +26,11 @@ export class Event<T extends EventData = EventData> {
 	}
 
 	public report(): Promise<void> {
-		return axios.default.post(getConfig().bi_service, JSON.stringify(this.data)) as any;
+		try {
+			return axios.default.post(getConfig().bi_service, JSON.stringify(this.data)) as any;
+		} catch (e) {
+			// nothing to do
+			return Promise.reject(`failed to report to bi: ${normalizeError(e)}`);
+		}
 	}
 }

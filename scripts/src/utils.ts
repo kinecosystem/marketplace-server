@@ -76,6 +76,10 @@ export function generateId(prefix: IdPrefix | string = IdPrefix.None): string {
 }
 
 export function normalizeError(error: string | Error | any): string {
+	if (isNothing(error)) {
+		return "";
+	}
+
 	if (typeof error === "string") {
 		return error;
 	}

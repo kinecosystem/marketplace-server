@@ -42,7 +42,7 @@ export async function getOrCreateUserCredentials(
 
 		// create wallet with lumens:
 		logger.info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
-		await payment.createWallet(user.walletAddress, user.appId, logger);
+		await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
 		metrics.userRegister(true, true);
 	} else {
 		logger.info("found existing user", { appId, appUserId, userId: user.id });
@@ -50,7 +50,7 @@ export async function getOrCreateUserCredentials(
 			logger.warn(`existing user registered with new wallet ${user.walletAddress} !== ${walletAddress}`);
 			user.walletAddress = walletAddress;
 			await user.save();
-			await payment.createWallet(user.walletAddress, user.appId, logger);
+			await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
 		}
 		logger.info(`returning existing user ${user.id}`);
 		metrics.userRegister(false, false);

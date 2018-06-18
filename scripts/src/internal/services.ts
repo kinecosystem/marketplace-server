@@ -21,9 +21,10 @@ export type WalletCreationSuccessData = {
 	id: string; // user id
 };
 
-export async function walletCreationSuccess(data: WalletCreationSuccessData) {
+export async function walletCreationSuccess(data: WalletCreationSuccessData, logger: LoggerInstance) {
 	createWalletCreationSucceeded(data.id).report();
 	createStellarAccountCreationSucceeded(data.id).report();
+	logger.info("wallet created", { userId: data.id });
 }
 
 export type WalletCreationFailureData = {
@@ -31,8 +32,9 @@ export type WalletCreationFailureData = {
 	reason: string;
 };
 
-export async function walletCreationFailure(data: WalletCreationFailureData) {
+export async function walletCreationFailure(data: WalletCreationFailureData, logger: LoggerInstance) {
 	createStellarAccountCreationFailed(data.id, data.reason).report();
+	logger.warn("wallet failed to create", { userId: data.id, reason: data.reason });
 }
 
 export interface CompletedPayment {
@@ -43,6 +45,11 @@ export interface CompletedPayment {
 	sender_address: string;
 	amount: number;
 	timestamp: string;
+}
+
+export interface FailedPayment {
+	id: string;
+	reason: string;
 }
 
 export type JWTBodyPaymentConfirmation = {
@@ -84,10 +91,11 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		return;
 	}
 
-	if (order.type === "spend") {
-		createSpendOrderPaymentConfirmed(order.userId, payment.transaction_id, order.offerId, order.id).report();
-	} else {
+	if (order.type === "earn") {
 		createEarnTransactionBroadcastToBlockchainSucceeded(order.userId, payment.transaction_id, order.offerId, order.id).report();
+	} else {
+		// both spend and p2p
+		createSpendOrderPaymentConfirmed(order.userId, payment.transaction_id, order.offerId, order.id).report();
 	}
 
 	if (order.status === "completed") {
@@ -181,30 +189,21 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	logger.info(`completed order with payment <${ payment.id }, ${ payment.transaction_id }>`);
 }
 
-export async function paymentFailed(payment: CompletedPayment, reason: string, logger: LoggerInstance) {
+export async function paymentFailed(payment: FailedPayment, logger: LoggerInstance) {
 	const order = await db.Order.findOneById(payment.id);
 	if (!order) {
 		logger.error(`received payment for unknown order id ${ payment.id }`);
 		return;
 	}
 
-	createEarnTransactionBroadcastToBlockchainFailed(order.userId, reason, order.offerId, order.id).report();
+	createEarnTransactionBroadcastToBlockchainFailed(order.userId, payment.reason, order.offerId, order.id).report();
 
 	// TODO: doody, decide what you wanna do here
 
-	/*const order = await db.Order.findOneById(payment.id);
-	if (!order) {
-		logger.error(`received payment for unknown order id ${payment.id}`);
-		return;
-	}
-
-	order.blockchainData = pick(payment, "transaction_id", "sender_address", "recipient_address");
-	order.completionDate = moment(payment.timestamp).toDate();
-	order.status = "failed";
-	order.error = { message: reason, error: "blockchain_error", code: 5001 };  // XXX where do I define this error + codes?
+	order.setStatus("failed");
+	order.error = { message: payment.reason, error: "blockchain_error", code: 1115 };  // XXX where do I define this error + codes?
 	await order.save();
-	logger.info(`failed order with payment <${payment.id}, ${payment.transaction_id}>`);
-	*/
+	logger.info(`failed order with payment <${payment.id}>`);
 }
 
 /**

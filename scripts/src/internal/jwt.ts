@@ -6,10 +6,21 @@ import { getConfig } from "./config";
 const CONFIG = getConfig();
 const KEYS = readKeysDir(CONFIG.jwt.private_keys_dir);
 
-export function sign(subject: string, payload: any, keyid?: string) {
-	if (!keyid) {
-			keyid = "es256_0";  // TODO the key should be randomly chosen or timely rotated
+function getKeyForAlgorithm(alg: string): string {
+	let keyid: string | undefined;
+	for (const currKeyid of Object.keys(KEYS)) {
+		if (KEYS[currKeyid].algorithm.toUpperCase() === alg.toUpperCase()) {
+			keyid = currKeyid;
+		}
 	}
+	if (!keyid) {
+		throw Error(`key not found for algorithm ${alg}`);
+	}
+	return keyid;
+}
+
+export function sign(subject: string, payload: any, alg?: string) {
+	const keyid = getKeyForAlgorithm(alg || "es256");
 	const signWith = KEYS[keyid];
 	return jsonwebtoken.sign(payload, signWith.key, {
 		subject,

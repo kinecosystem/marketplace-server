@@ -12,6 +12,9 @@ fi
 
 keys=`aws --region=us-east-1 ssm describe-parameters | jq -r '.Parameters[].Name' | grep 'prod-kin-.*pem' | grep $PUBLIC_FLAG -- '-priv.pem'`
 
+# empty out current dir items
+rm -f $DIR/*.pem
+
 for key in $keys; do
     # write the keys with the same name as the parameter name stripping off the "prod-kin-" prefix
     mkdir -p $DIR

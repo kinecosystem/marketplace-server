@@ -762,7 +762,7 @@ async function main() {
 	await didNotApproveTOS();
 	await testRegisterNewUser();
 	await spendFlow();
-	// // await justPay();
+	// await justPay();
 	await registerJWT();
 	await nativeEarnFlow();
 	await nativeSpendFlow();

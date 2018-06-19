@@ -4,6 +4,7 @@ import * as axios from "axios";
 import { getConfig } from "../config";
 import { Common } from "./events/common";
 import { normalizeError } from "../utils";
+import { getDefaultLogger } from "../logging";
 
 export interface EventData {
 }
@@ -30,7 +31,8 @@ export class Event<T extends EventData = EventData> {
 			return axios.default.post(getConfig().bi_service, JSON.stringify(this.data)) as any;
 		} catch (e) {
 			// nothing to do
-			return Promise.reject(`failed to report to bi: ${normalizeError(e)}`);
+			getDefaultLogger().warn(`failed to report to bi: ${normalizeError(e)}`);
+			return Promise.resolve();
 		}
 	}
 }

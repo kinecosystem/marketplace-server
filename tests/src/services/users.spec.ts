@@ -2,10 +2,12 @@ import mock = require("supertest");
 
 import { app } from "../../../scripts/bin/public/app";
 import { init as initModels, close as closeModels } from "../../../scripts/bin/models/index";
+import * as payment from "../../../scripts/bin/public/services/payment";
 
 describe("api tests for /users", async () => {
 	beforeAll(async done => {
 		await initModels();
+		(payment.getBlockchainConfig as any) = () => 1; // XXX use a patching library
 		done();
 	});
 

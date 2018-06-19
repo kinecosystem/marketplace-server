@@ -114,14 +114,10 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 		throw NoSuchOffer(offerId);
 	}
 
-	/*let order = await lock(getLockResource("get", offerId, user.id), async () => {
-		return await db.Order.getOpenOrder(offerId, user.id);
-	});*/
-	let order = await lock(getLockResource("get", offerId, user.id), () => db.Order.getOpenOrder(offerId, user.id));
-
-	if (!order) {
-		order = await lock(getLockResource("create", offerId), () => createOrder(offer, user));
-	}
+	const order = await lock(getLockResource("get", offerId, user.id), async () =>
+		(await db.Order.getOpenOrder(offerId, user.id)) ||
+		(await lock(getLockResource("create", offerId), () => createOrder(offer, user)))
+	);
 
 	if (!order) {
 		throw OfferCapReached(offerId);

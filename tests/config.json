@@ -24,7 +24,7 @@
 		"port": 8125
 	},
 	"payment_service": "http://localhost:5000",
-	"payment_complete_callback": "http://localhost:3001/v1/internal/payments",
+	"internal_webhook": "http://localhost:3001/v1/internal/webhook",
 	"jwt": {
 		"private_keys_dir": "tests/priv_keys",
 		"public_keys_dir": "tests/pub_keys"

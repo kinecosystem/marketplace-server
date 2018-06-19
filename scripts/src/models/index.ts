@@ -74,7 +74,6 @@ export function init(): Promise<string> {
 	if (initPromise) {
 		return initPromise;
 	}
-
 	dbConfig = Object.assign({}, getConfig().db);
 	if (dbConfig.type === "sqlite" && !/^[./]/.test(dbConfig.database)) {
 		(dbConfig as any).database = path(dbConfig.database);

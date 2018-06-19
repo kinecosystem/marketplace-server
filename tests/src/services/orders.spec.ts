@@ -7,6 +7,7 @@ import { Offer, JWTValue } from "../../../scripts/bin/models/offers";
 import * as payment from "../../../scripts/bin/public/services/payment";
 import { getOffers } from "../../../scripts/bin/public/services/offers";
 import { getDefaultLogger, initLogger } from "../../../scripts/bin/logging";
+import { Event } from "../../../scripts/bin/analytics";
 import { init as initModels, close as closeModels } from "../../../scripts/bin/models/index";
 import {
 	createMarketplaceOrder,
@@ -22,12 +23,17 @@ import * as expect from "expect";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
-
 	beforeEach(async done => {
 		initLogger();
 		await initModels();
 		await helpers.clearDatabase();
 		await helpers.createOffers();
+		(payment.payTo as any) = () => 1; // XXX use a patching library
+		(payment.getBlockchainConfig as any) = () => 1; // XXX use a patching library
+		(payment.setWatcherEndpoint as any) = () => 1; // XXX use a patching library
+		(payment.createWallet as any) = () => 1; // XXX use a patching library
+		Event.prototype.report = () => Promise.resolve();
+
 		done();
 	});
 
@@ -68,10 +74,6 @@ describe("test orders", async () => {
 	});
 
 	test("return getOrder reduces cap", async () => {
-		(payment.payTo as any) = function () {
-			return 1;
-		}; // XXX use a patching library
-
 		const user: User = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		const offer = await Offer.findOneById(offers.offers[0].id);

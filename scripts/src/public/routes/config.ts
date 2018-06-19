@@ -8,7 +8,10 @@ const CONFIG = getConfig();
 const JWT_KEYS = readKeysDir(CONFIG.jwt.public_keys_dir);
 // one time get config from payment service
 let BLOCKCHAIN: BlockchainConfig;
-getBlockchainConfig(getDefaultLogger()).then(data => BLOCKCHAIN = data);
+
+export async function init() {
+	BLOCKCHAIN = await getBlockchainConfig(getDefaultLogger());
+}
 
 export type ConfigResponse = {
 	jwt_keys: { [name: string]: { algorithm: string, key: string } },

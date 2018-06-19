@@ -2,10 +2,10 @@ import * as moment from "moment";
 
 import { random } from "../../../scripts/bin/utils";
 import { User } from "../../../scripts/bin/models/users";
-import { Order, ExternalOrder } from "../../../scripts/bin/models/orders";
 import { Offer, JWTValue } from "../../../scripts/bin/models/offers";
 import * as payment from "../../../scripts/bin/public/services/payment";
 import { getOffers } from "../../../scripts/bin/public/services/offers";
+import { Order, ExternalOrder } from "../../../scripts/bin/models/orders";
 import { getDefaultLogger, initLogger } from "../../../scripts/bin/logging";
 import { init as initModels, close as closeModels } from "../../../scripts/bin/models/index";
 import {

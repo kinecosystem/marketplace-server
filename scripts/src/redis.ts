@@ -5,6 +5,9 @@ import Redlock = require("redlock");
 import { getConfig } from "./config";
 import { getDefaultLogger } from "./logging";
 
+let isMocked = false;
+let client: RedisAsyncClient;
+
 export type RedisAsyncFunctions = {
 	get(key: string): Promise<string>;
 	set(key: string, value: string): Promise<"OK">;
@@ -15,10 +18,9 @@ export type RedisAsyncClient = RedisClient & {
 	async: RedisAsyncFunctions;
 };
 
-export function getRedis(): RedisAsyncClient {
-	let client: RedisAsyncClient;
-
+export function getRedisClient(): RedisAsyncClient {
 	if (getConfig().redis === "mock") {
+		isMocked = true;
 		client = require("redis-mock").createClient();
 	} else {
 		client = require("redis").createClient(getConfig().redis);
@@ -35,7 +37,7 @@ export function getRedis(): RedisAsyncClient {
 
 const logger = getDefaultLogger();
 const redlock = new Redlock(
-	[getRedis()],
+	[getRedisClient()],
 	{
 		// the expected clock drift; for more details
 		// see http://redis.io/topics/distlock
@@ -69,13 +71,17 @@ export async function lock<T>(resource: string, p1: number | LockHandler<T>, p2?
 	const ttl = typeof p1 === "number" ? p1 : 1000;
 	const fn = typeof p1 === "number" ? p2! : p1;
 
+	if (isMocked) {
+		return Promise.resolve(fn());
+	}
+
 	const alock = await redlock.lock(resource, ttl);
 	let result = fn();
 	if ((result as Promise<any>).then) {
 		result = await result;
 	}
 
-	alock.unlock();
+	await alock.unlock();
 
 	return result as T;
 }

@@ -1,16 +1,12 @@
 import { LoggerInstance } from "winston";
+
+import { lock } from "../../redis";
 import * as metrics from "../../metrics";
 import { User } from "../../models/users";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
-
-import { validateExternalOrderJWT, EarnPayload } from "../services/native_offers";
-
-import { Paging } from "./index";
-import * as payment from "./payment";
-import { addWatcherEndpoint } from "./payment";
-import * as offerContents from "./offer_contents";
+import { validateExternalOrderJWT } from "../services/native_offers";
 import {
 	ApiError,
 	NoSuchOrder,
@@ -22,10 +18,12 @@ import {
 	ExternalOrderAlreadyCompleted,
 	OpenedOrdersUnreturnable, CompletedOrderCantTransitionToFailed
 } from "../../errors";
-import { ExternalSpendOrderJWT, ExternalEarnOrderJWT } from "./native_offers";
-import { getOfferContent, replaceTemplateVars } from "./offer_contents";
 
-const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
+import { Paging } from "./index";
+import * as payment from "./payment";
+import { addWatcherEndpoint } from "./payment";
+import * as offerContents from "./offer_contents";
+import { ExternalSpendOrderJWT, ExternalEarnOrderJWT } from "./native_offers";
 
 export interface OrderList {
 	orders: Order[];
@@ -85,6 +83,30 @@ export async function changeOrder(orderId: string, change: Partial<Order>, logge
 	return orderDbToApi(order);
 }
 
+async function createOrder(offer: offerDb.Offer, user: User) {
+	if (await offer.didExceedCap(user.id)) {
+		return undefined;
+	}
+
+	const order = db.MarketplaceOrder.new({
+		userId: user.id,
+		type: offer.type,
+		status: "opened",
+		offerId: offer.id,
+		amount: offer.amount,
+		// TODO if order meta content is a template:
+		// replaceTemplateVars(offer, offer.meta.order_meta.content!)
+		meta: offer.meta.order_meta,
+		blockchainData: {
+			sender_address: offer.type === "spend" ? user.walletAddress : offer.blockchainData.sender_address,
+			recipient_address: offer.type === "spend" ? offer.blockchainData.recipient_address : user.walletAddress
+		}
+	});
+
+	await order.save();
+	return order;
+}
+
 export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	logger.info("creating marketplace order for", { offerId, userId: user.id });
 	const offer = await offerDb.Offer.findOneById(offerId);
@@ -92,34 +114,10 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 		throw NoSuchOffer(offerId);
 	}
 
-	let order = await db.Order.getOpenOrder(offerId, user.id);
-
-	if (!order) {
-		const create = async () => {
-			if (await offer.didExceedCap(user.id)) {
-				return undefined;
-			}
-			const order = db.MarketplaceOrder.new({
-				offerId,
-				userId: user.id,
-				amount: offer.amount,
-				type: offer.type,
-				status: "opened",
-				// TODO if order meta content is a template:
-				// replaceTemplateVars(offer, offer.meta.order_meta.content!)
-				meta: offer.meta.order_meta,
-				blockchainData: {
-					sender_address: offer.type === "spend" ? user.walletAddress : offer.blockchainData.sender_address,
-					recipient_address: offer.type === "spend" ? offer.blockchainData.recipient_address : user.walletAddress
-				}
-			});
-			await order.save();
-			return order;
-		};
-
-		// order = await lock(createOrderResourceId, create());
-		order = await create();
-	}
+	const order = await lock(getLockResource("get", offerId, user.id), async () =>
+		(await db.Order.getOpenOrder(offerId, user.id)) ||
+		(await lock(getLockResource("create", offerId), () => createOrder(offer, user)))
+	);
 
 	if (!order) {
 		throw OfferCapReached(offerId);
@@ -333,4 +331,8 @@ function checkIfTimedOut(order: db.Order): Promise<void> {
 	}
 
 	return Promise.resolve();
+}
+
+function getLockResource(type: "create" | "get", ...ids: string[]) {
+	return `locks:orders:${ type }:${ ids.join(":") }`;
 }

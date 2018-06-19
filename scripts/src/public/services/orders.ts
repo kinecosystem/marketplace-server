@@ -25,8 +25,6 @@ import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
 import { ExternalSpendOrderJWT, ExternalEarnOrderJWT } from "./native_offers";
 
-const CREATE_ORDER_RESOURCE_ID = "locks:orders:create";
-
 export interface OrderList {
 	orders: Order[];
 	paging: Paging;
@@ -116,12 +114,13 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 		throw NoSuchOffer(offerId);
 	}
 
-	let order = await db.Order.getOpenOrder(offerId, user.id);
+	/*let order = await lock(getLockResource("get", offerId, user.id), async () => {
+		return await db.Order.getOpenOrder(offerId, user.id);
+	});*/
+	let order = await lock(getLockResource("get", offerId, user.id), () => db.Order.getOpenOrder(offerId, user.id));
 
 	if (!order) {
-		// order = await lock(createOrderResourceId, create());
-		// order = await createOrder(offer, user);
-		order = await lock(CREATE_ORDER_RESOURCE_ID, () => createOrder(offer, user));
+		order = await lock(getLockResource("create", offerId), () => createOrder(offer, user));
 	}
 
 	if (!order) {
@@ -336,4 +335,8 @@ function checkIfTimedOut(order: db.Order): Promise<void> {
 	}
 
 	return Promise.resolve();
+}
+
+function getLockResource(type: "create" | "get", ...ids: string[]) {
+	return `locks:orders:${ type }:${ ids.join(":") }`;
 }

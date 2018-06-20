@@ -64,16 +64,18 @@ export type GetOrderFilters = {
 @Register
 export class Order extends CreationDateModel {
 	/**
-	 * count all offers that are completed, pending but expired, opened but not expired - i.e. not failed and not expired
+	 * count all offers that are completed, pending but not expired, opened but not expired - i.e. not failed and not expired
 	 */
 	public static countByOffer(offerId: string, userId?: string): Promise<number> {
+		const statuses = userId ? ["pending"] : ["opened", "pending"];
+
 		const query = Order.createQueryBuilder()
 			.where("offer_id = :offerId", { offerId })
 			.andWhere(new Brackets(qb => {
 				qb.where("status = :status", { status: "completed" })
 					.orWhere(
 						new Brackets(qb2 => {
-							qb2.where("status IN (:statuses)", { statuses: ["opened", "pending"] })
+							qb2.where("status IN (:statuses)", { statuses })
 								.andWhere("expiration_date > :date", { date: new Date() });
 						})
 					);
@@ -82,6 +84,24 @@ export class Order extends CreationDateModel {
 			query.andWhere("user_id = :userId", { userId });
 		}
 		return query.getCount();
+	}
+
+	public static countToday(userId: string): Promise<number> {
+		const midnight = new Date((new Date()).setUTCHours(0, 0, 0, 0));
+		const query = Order.createQueryBuilder()
+			.where("user_id = :userId", { userId })
+			.andWhere("current_status_date > :midnight", { midnight })
+			.andWhere(new Brackets(qb => {
+				qb.where("status = :completed", { completed: "completed" })
+					.orWhere(
+						new Brackets(qb2 => {
+							qb2.where("status = :pending", { pending: "pending" })
+								.andWhere("expiration_date > :expiration_date", { expiration_date: new Date() });
+						})
+					);
+			}));
+		return query.getCount();
+
 	}
 
 	public static getOpenOrder<T extends Order>(offerId: string, userId: string): Promise<T | undefined> {
@@ -173,7 +193,7 @@ export class Order extends CreationDateModel {
 	public meta!: OrderMeta;
 
 	@Column("simple-json", { nullable: true })
-	public error?: ApiError| null;
+	public error?: ApiError | null;
 
 	@Column()
 	public amount!: number;

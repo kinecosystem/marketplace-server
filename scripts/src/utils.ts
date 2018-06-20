@@ -126,7 +126,7 @@ export type KeyMap = { [name: string]: { algorithm: string, key: string } };
  */
 export function readKeysDir(dir: string): KeyMap {
 	const keys: KeyMap = {};
-	fs.readdirSync(dir).forEach(filename => {
+	fs.readdirSync(path(dir)).forEach(filename => {
 		if (!filename.endsWith(".pem")) {
 			console.info(`readKeysDir: skipping non pem file ${filename}`);
 			return;

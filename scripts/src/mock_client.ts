@@ -39,7 +39,7 @@ import { BlockchainConfig } from "./public/services/payment";
 
 const BASE = process.env.MARKETPLACE_BASE;
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
-
+const API_KEY = Application.SAMPLE_API_KEY;  // get this from JWT_SERVICE
 class Stellar {
 	public static MEMO_VERSION = 1;
 
@@ -282,6 +282,7 @@ class Client {
 			asset: STELLAR.kinAsset
 		});
 		const self = this;
+
 		async function safeOperation() {
 			try {
 				return await self.stellarOperation(op);
@@ -289,6 +290,7 @@ class Client {
 				return null;
 			}
 		}
+
 		const res = await retry(() => safeOperation(), res => res !== null, "failed to establish trustline");
 		return res!;
 	}
@@ -395,7 +397,7 @@ async function didNotApproveTOS() {
 	console.log("=====================================didNotApproveTOS=====================================");
 	const client = new Client();
 
-	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "new_user_123" },
+	await client.register({ apiKey: API_KEY, userId: "new_user_123" },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	const offers = await client.getOffers();
 	try {
@@ -411,7 +413,7 @@ async function spendFlow() {
 	const client = new Client();
 	// this address is prefunded with test kin
 
-	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "rich_user2" },
+	await client.register({ apiKey: API_KEY, userId: "rich_user2" },
 		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 	const selectedOffer = await getOffer(client, "spend");
@@ -449,9 +451,20 @@ function isValidPayment(order: Order, appId: string, payment: CompletedPayment):
 }
 
 async function earnPollFlow() {
+	function choosePollAnswers(poll: Poll): Answers {
+		const answers: Answers = {};
+		let sum = 0;
+		for (const page of poll.pages.slice(0, poll.pages.length - 1)) {
+			const p = (page as PollPage);
+			const choice = randomInteger(0, p.question.answers.length);
+			answers[p.question.id] = p.question.answers[choice];
+		}
+		return answers;
+	}
+
 	console.log("===================================== earn poll =====================================");
 	const client = new Client();
-	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "doody98ds4" },
+	await client.register({ apiKey: API_KEY, userId: "earn:" + generateId() },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
@@ -465,9 +478,7 @@ async function earnPollFlow() {
 	console.log("poll " + selectedOffer.content);
 	const poll: Poll = JSON.parse(selectedOffer.content);
 
-	const content = JSON.stringify({
-		[(poll.pages[0] as PollPage).question.id]: (poll.pages[0] as PollPage).question.answers[0]
-	});
+	const content = JSON.stringify(choosePollAnswers(poll));
 	console.log("answers " + content);
 
 	await client.submitOrder(openOrder.id, content);
@@ -507,7 +518,7 @@ async function earnQuizFlow() {
 
 	console.log("===================================== earn quiz =====================================");
 	const client = new Client();
-	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "quiz_user" },
+	await client.register({ apiKey: API_KEY, userId: "quiz_user:" + generateId() },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
@@ -548,7 +559,7 @@ async function earnQuizFlow() {
 async function earnTutorial() {
 	console.log("===================================== earnTutorial =====================================");
 	const client = new Client();
-	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "new_test_user" },
+	await client.register({ apiKey: API_KEY, userId: "tutorial:" + generateId() },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
@@ -572,13 +583,13 @@ async function earnTutorial() {
 async function testRegisterNewUser() {
 	console.log("===================================== testRegisterNewUser =====================================");
 	const client = new Client();
-	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: generateId() });
+	await client.register({ apiKey: API_KEY, userId: "new_user:" + generateId() });
 }
 
 async function justPay() {
 	console.log("===================================== justPay =====================================");
 	const client = new Client();
-	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: generateId() });
+	await client.register({ apiKey: API_KEY, userId: generateId() });
 	await client.pay("GCZ72HXIUSDXEEL2RVZR6PXHGYU7S3RMQQ4O6UVIXWOU4OUVNIQKQR2X", 1, "SOME_ORDER");
 
 }
@@ -737,7 +748,7 @@ async function createTrust() {
 	console.log("===================================== createTrust =====================================");
 	const client = new Client();
 	// this address is prefunded with test kin
-	await client.register({ apiKey: Application.SAMPLE_API_KEY, userId: "rich_user2" },
+	await client.register({ apiKey: API_KEY, userId: "rich_user2" },
 		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	const record = await client.establishTrustLine();
 	console.log("established trust", record.hash);

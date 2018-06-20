@@ -204,10 +204,10 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 
 function getStellarAddresses() {
 	if (STELLAR_ADDRESS) {
-		return { earn: STELLAR_ADDRESS, spend: STELLAR_ADDRESS };
+		return { recipient: STELLAR_ADDRESS, sender: STELLAR_ADDRESS };
 	} else {
 		const address = StellarSdk.Keypair.random().publicKey();
-		return { earn: address, spend: address };
+		return { recipient: address, sender: address };
 	}
 }
 

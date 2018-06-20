@@ -22,7 +22,7 @@ export class Application extends CreationDateModel {
 	public jwtPublicKeys!: StringMap;
 
 	@Column("simple-json", { name: "wallet_addresses" })
-	public walletAddresses!: { earn: string; spend: string };
+	public walletAddresses!: { recipient: string; sender: string };
 
 	@ManyToMany(type => Offer)
 	@JoinTable()

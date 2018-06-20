@@ -174,7 +174,7 @@ export async function createApp(appId: string): Promise<Application> {
 		id: appId,
 		name: appId,
 		jwtPublicKeys: {},
-		walletAddresses: { earn: address, spend: address }
+		walletAddresses: { recipient: address, sender: address }
 	});
 	await app.save();
 	return app;

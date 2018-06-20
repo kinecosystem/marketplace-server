@@ -152,16 +152,16 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 		if (payload.sub === "earn") {
 			title = (payload as ExternalEarnOrderJWT).recipient.title;
 			description = (payload as ExternalEarnOrderJWT).recipient.description;
-			sender_address = app.walletAddresses.spend;
+			sender_address = app.walletAddresses.sender;
 			recipient_address = user.walletAddress;
 		} else {
 			// spend or pay_to_user
-			await addWatcherEndpoint([app.walletAddresses.earn]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
+			await addWatcherEndpoint([app.walletAddresses.recipient]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
 			title = (payload as ExternalSpendOrderJWT).sender.title;
 			description = (payload as ExternalSpendOrderJWT).sender.description;
 			sender_address = user.walletAddress;
 			// TODO in case of pay_to_user, needs another lookup for the recipient_user_wallet
-			recipient_address = app.walletAddresses.earn;
+			recipient_address = app.walletAddresses.recipient;
 		}
 
 		order = db.ExternalOrder.new({

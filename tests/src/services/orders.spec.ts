@@ -64,6 +64,30 @@ describe("test orders", async () => {
 		expect(orders.length).toBe(count);
 	});
 
+	test("offer list returns an offer with my open order", async () => {
+		const user = await helpers.createUser();
+		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
+		let offerId: string | undefined;
+		for (const offer of offers.offers) {
+			if (offer.offer_type === "earn") {
+				offerId = offer.id;
+			}
+		}
+		if (!offerId) {
+			throw Error("failed to find earn order");
+		}
+		const order = await createMarketplaceOrder(offerId, user, getDefaultLogger());
+
+		const offers2 = await getOffers(user.id, user.appId, {}, getDefaultLogger());
+		let foundOffer = false;
+		for (const offer of offers2.offers) {
+			if (offer.id === offerId) {
+				foundOffer = true;
+			}
+		}
+		expect(foundOffer).toBeTruthy();
+	});
+
 	test("return same order when one is open", async () => {
 		const user = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
@@ -71,6 +95,17 @@ describe("test orders", async () => {
 		const order2 = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
 
 		expect(order.id).toBe(order2.id);
+	});
+
+	test("countToday counts todays completed orders", async () => {
+		const user: User = await helpers.createUser();
+		expect(await Order.countToday(user.id)).toEqual(0);
+		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
+		const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
+		const order = await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
+		await helpers.completePayment(order.id);
+
+		expect(await Order.countToday(user.id)).toEqual(1);
 	});
 
 	test("return getOrder reduces cap", async () => {

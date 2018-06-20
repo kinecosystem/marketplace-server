@@ -2,14 +2,14 @@ import { LoggerInstance } from "winston";
 
 import * as metrics from "../../metrics";
 import * as db from "../../models/offers";
-import * as dbOrder from "../../models/orders";
 import { ModelFilters } from "../../models/index";
-
+import * as dbOrders from "../../models/orders";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import { Application } from "../../models/applications";
-import { replaceTemplateVars } from "./offer_contents";
 import { ContentType, OfferType } from "../../models/offers";
+
+const MAX_DAILY_EARN_OFFERS = 4;
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -34,7 +34,7 @@ export interface OfferList {
 }
 
 function offerDbToApi(offer: db.Offer, content: db.OfferContent) {
-	content.content = replaceTemplateVars(offer, content.content);
+	content.content = offerContents.replaceTemplateVars(offer, content.content);
 	return {
 		id: offer.id,
 		title: offer.meta.title,
@@ -92,6 +92,8 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 				logger
 			)
 		);
+		// global earn capping
+		offers = offers.slice(0, MAX_DAILY_EARN_OFFERS - await dbOrders.Order.countToday(userId));
 	}
 
 	if (!filters.type || filters.type === "spend") {

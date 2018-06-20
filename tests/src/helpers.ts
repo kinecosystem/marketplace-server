@@ -1,3 +1,6 @@
+import { getManager } from "typeorm";
+import * as StellarSdk from "stellar-sdk";
+
 import { User, AuthToken } from "../../scripts/bin/models/users";
 import { Asset, Offer } from "../../scripts/bin/models/offers";
 import { Poll, PageType } from "../../scripts/bin/public/services/offer_contents";
@@ -6,7 +9,6 @@ import { createEarn, createSpend } from "../../scripts/bin/create_data/offers";
 import { generateId } from "../../scripts/bin/utils";
 import { CompletedPayment, paymentComplete } from "../../scripts/bin/internal/services";
 import { getDefaultLogger } from "../../scripts/bin/logging";
-import { getManager } from "typeorm";
 import { Application } from "../../scripts/bin/models/applications";
 
 const animalPoll: Poll = {
@@ -167,10 +169,12 @@ export async function clearDatabase() {
 }
 
 export async function createApp(appId: string): Promise<Application> {
+	const address = StellarSdk.Keypair.random().publicKey();
 	const app = Application.new({
 		id: appId,
 		name: appId,
-		jwtPublicKeys: {}
+		jwtPublicKeys: {},
+		walletAddresses: { earn: address, spend: address }
 	});
 	await app.save();
 	return app;

@@ -6,6 +6,8 @@ import { getConfig } from "./public/config"; // must be the first import
 getConfig();
 
 import * as fs from "fs";
+import * as StellarSdk from "stellar-sdk";
+
 import { init as initModels, close as closeModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
 import { createEarn, createSpend } from "./create_data/offers";
@@ -24,9 +26,10 @@ async function createApp(appId: string, name: string, keyNames: string[], apiKey
 		jwtPublicKeys[keyName] = keyValue;
 	}
 	const app = Application.new({
-		id: appId,
 		name,
-		jwtPublicKeys
+		jwtPublicKeys,
+		id: appId,
+		walletAddresses: getStellarAddresses()
 	});
 	if (apiKey) {
 		app.apiKey = apiKey;  // when apiKey given, run-over generated value
@@ -187,7 +190,6 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 		} else {
 			console.log(`poll type unknown: ${v.get("PollPageType")}`);
 		}
-
 	}
 
 	if (offer) {
@@ -197,6 +199,15 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 	for (const app of await getAllApps()) {
 		app.offers = app.offers.concat(offers);
 		await app.save();
+	}
+}
+
+function getStellarAddresses() {
+	if (STELLAR_ADDRESS) {
+		return { earn: STELLAR_ADDRESS, spend: STELLAR_ADDRESS };
+	} else {
+		const address = StellarSdk.Keypair.random().publicKey();
+		return { earn: address, spend: address };
 	}
 }
 

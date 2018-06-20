@@ -21,6 +21,9 @@ export class Application extends CreationDateModel {
 	@Column("simple-json", { name: "jwt_public_keys" })
 	public jwtPublicKeys!: StringMap;
 
+	@Column("simple-json", { name: "wallet_addresses" })
+	public walletAddresses!: { earn: string; spend: string };
+
 	@ManyToMany(type => Offer)
 	@JoinTable()
 	public offers: Offer[] = [];

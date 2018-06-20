@@ -453,7 +453,6 @@ function isValidPayment(order: Order, appId: string, payment: CompletedPayment):
 async function earnPollFlow() {
 	function choosePollAnswers(poll: Poll): Answers {
 		const answers: Answers = {};
-		let sum = 0;
 		for (const page of poll.pages.slice(0, poll.pages.length - 1)) {
 			const p = (page as PollPage);
 			const choice = randomInteger(0, p.question.answers.length);

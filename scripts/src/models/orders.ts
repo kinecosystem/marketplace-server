@@ -67,10 +67,8 @@ export class Order extends CreationDateModel {
 	 * count all offers that are completed, pending but not expired, opened but not expired - i.e. not failed and not expired
 	 */
 	public static countByOffer(offerId: string, userId?: string): Promise<number> {
-		let statuses = ["opened", "pending"];
-		if (userId) {
-			statuses = ["pending"];
-		}
+		const statuses = userId ? ["pending"] : ["opened", "pending"];
+
 		const query = Order.createQueryBuilder()
 			.where("offer_id = :offerId", { offerId })
 			.andWhere(new Brackets(qb => {

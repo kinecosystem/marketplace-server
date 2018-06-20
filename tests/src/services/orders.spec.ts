@@ -67,24 +67,14 @@ describe("test orders", async () => {
 	test("offer list returns an offer with my open order", async () => {
 		const user = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
-		let offerId: string | undefined;
-		for (const offer of offers.offers) {
-			if (offer.offer_type === "earn") {
-				offerId = offer.id;
-			}
-		}
-		if (!offerId) {
+		const offer = offers.offers.find(x => x.offer_type === "earn");
+		if (!offer) {
 			throw Error("failed to find earn order");
 		}
-		const order = await createMarketplaceOrder(offerId, user, getDefaultLogger());
+		const order = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
 
 		const offers2 = await getOffers(user.id, user.appId, {}, getDefaultLogger());
-		let foundOffer = false;
-		for (const offer of offers2.offers) {
-			if (offer.id === offerId) {
-				foundOffer = true;
-			}
-		}
+		const foundOffer = offers2.offers.find(x => x.id === offer.id);
 		expect(foundOffer).toBeTruthy();
 	});
 

@@ -10,6 +10,7 @@ import { Application } from "../../models/applications";
 import { ContentType, OfferType } from "../../models/offers";
 import { getConfig } from "../config";
 
+
 export interface PollAnswer {
 	content_type: "PollAnswer";
 	answers: { [key: string]: string };

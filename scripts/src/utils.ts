@@ -1,6 +1,9 @@
 import * as _path from "path";
-import * as fs from "fs";
 import { join } from "path";
+import * as fs from "fs";
+import { MarketplaceError } from "./errors";
+import * as metrics from "./metrics";
+import { Order } from "./models/orders";
 
 const fromProjectRoot = _path.join.bind(path, __dirname, "../../");
 
@@ -140,4 +143,11 @@ export function readKeysDir(dir: string): KeyMap {
 		};
 	});
 	return keys;
+}
+
+export async function setFailedOrder(order: Order, error: MarketplaceError): Promise<Order> {
+	order.setStatus("failed");
+	order.error = error.toJson();
+	metrics.orderFailed(order);
+	return await order.save();
 }

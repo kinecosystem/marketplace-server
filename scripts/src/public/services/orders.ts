@@ -11,21 +11,24 @@ import { validateExternalOrderJWT } from "../services/native_offers";
 import {
 	ApiError,
 	NoSuchApp,
-	NoSuchOrder,
+	CompletedOrderCantTransitionToFailed,
+	ExternalOrderAlreadyCompleted,
+	InvalidPollAnswers,
 	NoSuchOffer,
+	NoSuchOrder,
 	OfferCapReached,
 	OpenedOrdersOnly,
+	OpenedOrdersUnreturnable,
 	OpenOrderExpired,
-	InvalidPollAnswers,
-	ExternalOrderAlreadyCompleted,
-	OpenedOrdersUnreturnable, CompletedOrderCantTransitionToFailed, TransactionTimeout, AssetUnavailable
+	TransactionTimeout
 } from "../../errors";
 
 import { Paging } from "./index";
 import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
-import { ExternalSpendOrderJWT, ExternalEarnOrderJWT } from "./native_offers";
+import { ExternalEarnOrderJWT, ExternalSpendOrderJWT } from "./native_offers";
+import { setFailedOrder } from "../../utils";
 
 export interface OrderList {
 	orders: Order[];
@@ -331,8 +334,7 @@ function orderDbToApi(order: db.Order): Order {
 function checkIfTimedOut(order: db.Order): Promise<void> {
 	// TODO This should be done in a cron that runs every 10 minutes and closes these orders
 	if (order.status === "pending" && order.isExpired()) {
-		order.setFailed(TransactionTimeout().toJson());
-		return order.save() as any;
+		return setFailedOrder(order, TransactionTimeout()) as any;
 	}
 
 	return Promise.resolve();

@@ -3,7 +3,7 @@ import { LoggerInstance } from "winston";
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
 import { User } from "../models/users";
-import { pick, removeDuplicates } from "../utils";
+import { pick, removeDuplicates, setFailedOrder } from "../utils";
 import { Asset, Offer, OrderValue } from "../models/offers";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
 import { create as createWalletCreationSucceeded } from "../analytics/events/wallet_creation_succeeded";
@@ -110,8 +110,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 			`amount mismatch ${ order.amount } !== ${ payment.amount }`);
 		// 2. don't complete the transaction? complete only if the server got more than expected?
 
-		order.setFailed(WrongAmount().toJson());
-		await order.save();
+		await setFailedOrder(order, WrongAmount());
 		return;
 	}
 
@@ -119,8 +118,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
 			`addresses recipient mismatch ${ order.blockchainData!.recipient_address } !== ${ payment.recipient_address }`);
 
-		order.setFailed(WrongRecipient().toJson());
-		await order.save();
+		await setFailedOrder(order, WrongRecipient());
 		return;
 	}
 
@@ -128,8 +126,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
 			`addresses sender mismatch ${ order.blockchainData!.sender_address } !== ${ payment.sender_address }`);
 
-		order.setFailed(WrongSender().toJson());
-		await order.save();
+		await setFailedOrder(order, WrongSender());
 		return;
 	}
 
@@ -140,8 +137,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 			// XXX can we call findOne?
 			const asset = await Asset.findOne({ where: { offerId: order.offerId, ownerId: null } });
 			if (!asset) {
-				order.setFailed(AssetUnavailable().toJson());
-				await order.save();
+				await setFailedOrder(order, AssetUnavailable());
 				return;
 			} else {
 				order.value = asset.asOrderValue();
@@ -176,9 +172,7 @@ export async function paymentFailed(payment: FailedPayment, logger: LoggerInstan
 	}
 
 	createEarnTransactionBroadcastToBlockchainFailed(order.userId, payment.reason, order.offerId, order.id).report();
-
-	order.setFailed(BlockchainError().toJson());
-	await order.save();
+	await setFailedOrder(order, BlockchainError());
 	logger.info(`failed order with payment <${payment.id}>`);
 }
 

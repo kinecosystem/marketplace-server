@@ -87,7 +87,7 @@ export class Order extends CreationDateModel {
 	}
 
 	public static countToday(userId: string): Promise<number> {
-		const midnight = (new Date()).setUTCHours(0, 0, 0, 0);
+		const midnight = new Date((new Date()).setUTCHours(0, 0, 0, 0));
 		const query = Order.createQueryBuilder()
 			.where("user_id = :userId", { userId })
 			.andWhere("current_status_date > :midnight", { midnight })

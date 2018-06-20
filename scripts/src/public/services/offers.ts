@@ -8,8 +8,7 @@ import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import { Application } from "../../models/applications";
 import { ContentType, OfferType } from "../../models/offers";
-
-const MAX_DAILY_EARN_OFFERS = 4;
+import { getConfig } from "../config";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -93,7 +92,10 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 			)
 		);
 		// global earn capping
-		offers = offers.slice(0, MAX_DAILY_EARN_OFFERS - await dbOrders.Order.countToday(userId));
+		const max_daily_earn_offers = getConfig().max_daily_earn_offers;
+		if (max_daily_earn_offers !== null) {
+			offers = offers.slice(0, Math.max(0, max_daily_earn_offers - await dbOrders.Order.countToday(userId)));
+		}
 	}
 
 	if (!filters.type || filters.type === "spend") {

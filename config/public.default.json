@@ -31,5 +31,6 @@
 	"webview": "https://some-url.com",
 	"ecosystem_service": "http://localhost:3000",
 	"environment_name": "local",
-	"bi_service": "https://kin-bi.appspot.com/eco_"
+	"bi_service": "https://kin-bi.appspot.com/eco_",
+	"max_daily_earn_offers": 4
 }

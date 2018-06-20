@@ -82,18 +82,17 @@ export const reportMetrics = function(req: express.Request, res: express.Respons
 } as express.RequestHandler;
 
 export const notFoundHandler = function(req: Request, res: Response) {
-	// log.error(`Error 404 on ${req.url}.`);
 	res.status(404).send({ code: 404, error: "Not found", message: "Not found" });
 } as express.RequestHandler;
 
 /**
  * The "next" arg is needed even though it's not used, otherwise express won't understand that it's an error handler
  */
-export function generalErrorHandler(err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
+export function generalErrorHandler(err: any, req: Request, res: Response, next: express.NextFunction) {
 	if (err instanceof MarketplaceError) {
-		clientErrorHandler(err, req, res);
+		clientErrorHandler(err, req as express.Request, res);
 	} else {
-		serverErrorHandler(err, req, res);
+		serverErrorHandler(err, req as express.Request, res);
 	}
 }
 

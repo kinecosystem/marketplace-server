@@ -18,7 +18,7 @@ import {
 	OpenOrderExpired,
 	InvalidPollAnswers,
 	ExternalOrderAlreadyCompleted,
-	OpenedOrdersUnreturnable, CompletedOrderCantTransitionToFailed
+	OpenedOrdersUnreturnable, CompletedOrderCantTransitionToFailed, TransactionTimeout, AssetUnavailable
 } from "../../errors";
 
 import { Paging } from "./index";
@@ -226,6 +226,9 @@ export async function submitOrder(
 					order.amount = offerContents.sumCorrectQuizAnswers(offerContent, form) || 1; // TODO remove || 1 - don't give idiots kin
 					// should we replace order.meta.content
 					break;
+				case "tutorial":
+					// nothing
+					break;
 				default:
 					logger.warn(`unexpected content type ${offerContent.contentType}`);
 			}
@@ -326,10 +329,9 @@ function orderDbToApi(order: db.Order): Order {
 }
 
 function checkIfTimedOut(order: db.Order): Promise<void> {
+	// TODO This should be done in a cron that runs every 10 minutes and closes these orders
 	if (order.status === "pending" && order.isExpired()) {
-		order.setStatus("failed");
-		// TODO: add order.error
-
+		order.setFailed(TransactionTimeout().toJson());
 		return order.save() as any;
 	}
 

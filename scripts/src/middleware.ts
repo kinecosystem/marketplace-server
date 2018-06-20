@@ -11,6 +11,7 @@ import { getDefaultLogger } from "./logging";
 
 const START_TIME = (new Date()).toISOString();
 let logger: LoggerInstance;
+
 export function init() {
 	logger = getDefaultLogger();
 }
@@ -88,7 +89,7 @@ export const notFoundHandler = function(req: Request, res: Response) {
 /**
  * The "next" arg is needed even though it's not used, otherwise express won't understand that it's an error handler
  */
-export function generalErrorHandler(err: any, req: Request, res: Response, next: express.NextFunction) {
+export function generalErrorHandler(err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
 	if (err instanceof MarketplaceError) {
 		clientErrorHandler(err, req, res);
 	} else {
@@ -96,15 +97,19 @@ export function generalErrorHandler(err: any, req: Request, res: Response, next:
 	}
 }
 
-function clientErrorHandler(error: MarketplaceError, req: Request, res: Response) {
-	logger.error(`client error (4xx)`, error);
+function clientErrorHandler(error: MarketplaceError, req: express.Request, res: express.Response) {
+	const log = req.logger || logger;
+
+	log.error(`client error (4xx)`, error);
 	metrics.reportClientError(error);
 	// set headers from the error if any
 	Object.keys(error.headers).forEach(key => res.setHeader(key, error.headers[key]));
 	res.status(error.status).send(error.toJson());
 }
 
-function serverErrorHandler(error: any, req: Request, res: Response) {
+function serverErrorHandler(error: any, req: express.Request, res: express.Response) {
+	const log = req.logger || logger;
+
 	metrics.reportServerError(req.method, req.url);
 
 	let message = `Error
@@ -120,8 +125,9 @@ function serverErrorHandler(error: any, req: Request, res: Response) {
 		message += `message: ${ error.toString() }`;
 	}
 
-	logger.error(message);
-	res.status(500).send({ code: 500, error: error.message || "Server error", message:  error.message });
+	log.error(`server error (5xx)`, message);
+
+	res.status(500).send({ code: 500, error: error.message || "Server error", message: error.message });
 }
 
 export const statusHandler = async function(req: express.Request, res: express.Response) {

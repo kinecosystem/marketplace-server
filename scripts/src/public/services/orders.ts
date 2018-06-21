@@ -333,7 +333,8 @@ function orderDbToApi(order: db.Order): Order {
 export async function setFailedOrder(order: db.Order, error: MarketplaceError): Promise<db.Order> {
 	order.setStatus("failed");
 	order.error = error.toJson();
-	metrics.orderFailed(order);
+	const user = await User.findOneById(order.userId);
+	metrics.orderFailed(order, user ? user.appId : "");
 	return await order.save();
 }
 

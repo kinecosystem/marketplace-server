@@ -39,9 +39,20 @@ export function reportServerError(method: string, path: string) {
 	statsd.increment("server_error", 1, undefined, { method, path });
 }
 
-export function orderFailed(order: Order) {
+export function orderFailed(order: Order, appId: string) {
 	const unknownError = { error: "unknown_error", message: "unknown error" };
-	const message = `Order <${order.id}:${order.origin}:${order.type}> of user: <${order.userId}> failed with <${(order.error || unknownError).message}>`;
+	const message = `
+## Order <${order.id}> transitioned to failed state.
+Details:
+* ID: ${order.id}
+* Origin: ${order.origin}
+* Type: ${order.type}
+* AppId: ${appId}
+* UserId: ${order.userId}
+* Error: ${(order.error || unknownError).message}>
+* CreatedDate: ${order.createdDate.toISOString()}
+* LastDate: ${(order.currentStatusDate || order.createdDate).toISOString()}
+`;
 	const title = `order failed: ${(order.error || unknownError).error}`;
-	statsd.event(title, message, { alert_type: "warning" }, { type: "failed_order" });
+	statsd.event(title, message, { alert_type: "warning" }, { order_type: order.type, app_id: appId, order_id: order.id, order_origin: order.origin, type: "failed_order" });
 }

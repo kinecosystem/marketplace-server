@@ -216,8 +216,9 @@ export function AssetUnavailable() {
 	return TransactionFailed(CODES.TransactionFailed.AssetUnavailable, "unavailable_asset");
 }
 
-export function BlockchainError() {
-	return TransactionFailed(CODES.TransactionFailed.BlockchainError, "blockchain_error");
+export function BlockchainError(message?: string) {
+	message = message ? (": " + message) : "";
+	return TransactionFailed(CODES.TransactionFailed.BlockchainError, "blockchain_error" + message);
 }
 
 export function TransactionTimeout() {

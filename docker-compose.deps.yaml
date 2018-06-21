@@ -45,7 +45,7 @@ services:
       - 6379
 
   jwt-service:
-    image: kinecosystem/jwt-service:c79727b
+    image: kinecosystem/jwt-service:latest
     ports:
       - 3000
     environment:
@@ -53,6 +53,7 @@ services:
       APP_PORT: 3000
       APP_HOST: '0.0.0.0'
       APP_NAME: 'smpl'
+      APP_MARKETPLACE_SERVICE: 'marketplace-server'
 
   bi-service:
     image: mendhak/http-https-echo

@@ -11,6 +11,7 @@ import { getDefaultLogger } from "./logging";
 
 const START_TIME = (new Date()).toISOString();
 let logger: LoggerInstance;
+
 export function init() {
 	logger = getDefaultLogger();
 }
@@ -81,7 +82,6 @@ export const reportMetrics = function(req: express.Request, res: express.Respons
 } as express.RequestHandler;
 
 export const notFoundHandler = function(req: Request, res: Response) {
-	// log.error(`Error 404 on ${req.url}.`);
 	res.status(404).send({ code: 404, error: "Not found", message: "Not found" });
 } as express.RequestHandler;
 
@@ -90,21 +90,25 @@ export const notFoundHandler = function(req: Request, res: Response) {
  */
 export function generalErrorHandler(err: any, req: Request, res: Response, next: express.NextFunction) {
 	if (err instanceof MarketplaceError) {
-		clientErrorHandler(err, req, res);
+		clientErrorHandler(err, req as express.Request, res);
 	} else {
-		serverErrorHandler(err, req, res);
+		serverErrorHandler(err, req as express.Request, res);
 	}
 }
 
-function clientErrorHandler(error: MarketplaceError, req: Request, res: Response) {
-	logger.error(`client error (4xx)`, error);
+function clientErrorHandler(error: MarketplaceError, req: express.Request, res: express.Response) {
+	const log = req.logger || logger;
+
+	log.error(`client error (4xx)`, error);
 	metrics.reportClientError(error);
 	// set headers from the error if any
 	Object.keys(error.headers).forEach(key => res.setHeader(key, error.headers[key]));
 	res.status(error.status).send(error.toJson());
 }
 
-function serverErrorHandler(error: any, req: Request, res: Response) {
+function serverErrorHandler(error: any, req: express.Request, res: express.Response) {
+	const log = req.logger || logger;
+
 	metrics.reportServerError(req.method, req.url);
 
 	let message = `Error
@@ -120,8 +124,9 @@ function serverErrorHandler(error: any, req: Request, res: Response) {
 		message += `message: ${ error.toString() }`;
 	}
 
-	logger.error(message);
-	res.status(500).send({ code: 500, error: error.message || "Server error", message:  error.message });
+	log.error(`server error (5xx)`, message);
+
+	res.status(500).send({ code: 500, error: error.message || "Server error", message: error.message });
 }
 
 export const statusHandler = async function(req: express.Request, res: express.Response) {

@@ -11,21 +11,23 @@ import { validateExternalOrderJWT } from "../services/native_offers";
 import {
 	ApiError,
 	NoSuchApp,
-	NoSuchOrder,
+	CompletedOrderCantTransitionToFailed,
+	ExternalOrderAlreadyCompleted,
+	InvalidPollAnswers, MarketplaceError,
 	NoSuchOffer,
+	NoSuchOrder,
 	OfferCapReached,
 	OpenedOrdersOnly,
+	OpenedOrdersUnreturnable,
 	OpenOrderExpired,
-	InvalidPollAnswers,
-	ExternalOrderAlreadyCompleted,
-	OpenedOrdersUnreturnable, CompletedOrderCantTransitionToFailed
+	TransactionTimeout
 } from "../../errors";
 
 import { Paging } from "./index";
 import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
-import { ExternalSpendOrderJWT, ExternalEarnOrderJWT } from "./native_offers";
+import { ExternalEarnOrderJWT, ExternalSpendOrderJWT } from "./native_offers";
 
 export interface OrderList {
 	orders: Order[];
@@ -226,6 +228,9 @@ export async function submitOrder(
 					order.amount = offerContents.sumCorrectQuizAnswers(offerContent, form) || 1; // TODO remove || 1 - don't give idiots kin
 					// should we replace order.meta.content
 					break;
+				case "tutorial":
+					// nothing
+					break;
 				default:
 					logger.warn(`unexpected content type ${offerContent.contentType}`);
 			}
@@ -325,12 +330,17 @@ function orderDbToApi(order: db.Order): Order {
 	};
 }
 
-function checkIfTimedOut(order: db.Order): Promise<void> {
-	if (order.status === "pending" && order.isExpired()) {
-		order.setStatus("failed");
-		// TODO: add order.error
+export async function setFailedOrder(order: db.Order, error: MarketplaceError): Promise<db.Order> {
+	order.setStatus("failed");
+	order.error = error.toJson();
+	metrics.orderFailed(order);
+	return await order.save();
+}
 
-		return order.save() as any;
+function checkIfTimedOut(order: db.Order): Promise<void> {
+	// TODO This should be done in a cron that runs every 10 minutes and closes these orders
+	if (order.status === "pending" && order.isExpired()) {
+		return setFailedOrder(order, TransactionTimeout()) as any;
 	}
 
 	return Promise.resolve();

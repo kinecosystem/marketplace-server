@@ -68,6 +68,9 @@ export function init(filePath: string) {
 	if (process.env.BUILD_TIMESTAMP) {
 		config.timestamp = process.env.BUILD_TIMESTAMP;
 	}
+	if (process.env.APP_REDIS) {
+		config.redis = process.env.APP_REDIS;
+	}
 }
 
 export function getConfig<T extends Config>(): T {

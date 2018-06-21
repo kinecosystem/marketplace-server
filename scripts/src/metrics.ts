@@ -2,6 +2,7 @@ import { StatsD } from "hot-shots";
 
 import { getConfig } from "./config";
 import { MarketplaceError } from "./errors";
+import { Order } from "./models/orders";
 
 // XXX can add general tags to the metrics (i.e. - public/ internal, machine name etc)
 const statsd = new StatsD(Object.assign({ prefix: "marketplace_" }, getConfig().statsd));
@@ -36,4 +37,11 @@ export function reportClientError(error: MarketplaceError) {
 
 export function reportServerError(method: string, path: string) {
 	statsd.increment("server_error", 1, undefined, { method, path });
+}
+
+export function orderFailed(order: Order) {
+	const unknownError = { error: "unknown_error", message: "unknown error" };
+	const message = `Order <${order.id}:${order.origin}:${order.type}> of user: <${order.userId}> failed with <${(order.error || unknownError).message}>`;
+	const title = `order failed: ${(order.error || unknownError).error}`;
+	statsd.event(title, message);
 }

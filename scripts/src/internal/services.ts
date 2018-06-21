@@ -14,6 +14,8 @@ import { create as createEarnTransactionBroadcastToBlockchainFailed } from "../a
 import { create as createEarnTransactionBroadcastToBlockchainSucceeded } from "../analytics/events/earn_transaction_broadcast_to_blockchain_succeeded";
 
 import { sign as signJWT } from "./jwt";
+import { AssetUnavailable, BlockchainError, WrongAmount, WrongRecipient, WrongSender } from "../errors";
+import { setFailedOrder } from "../public/services/orders";
 
 const BLOCKCHAIN = "stellar-testnet";
 
@@ -108,14 +110,8 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
 			`amount mismatch ${ order.amount } !== ${ payment.amount }`);
 		// 2. don't complete the transaction? complete only if the server got more than expected?
-		// TODO: report to error reporting service
-		order.error = {
-			code: 1113,
-			error: "wrong_amount",
-			message: "transaction failed"
-		};
-		order.setStatus("failed");
-		await order.save();
+
+		await setFailedOrder(order, WrongAmount());
 		return;
 	}
 
@@ -123,28 +119,15 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
 			`addresses recipient mismatch ${ order.blockchainData!.recipient_address } !== ${ payment.recipient_address }`);
 
-		// TODO: report to error reporting service
-		order.error = {
-			code: 1112,
-			error: "wrong_address",
-			message: "transaction failed"
-		};
-		order.setStatus("failed");
-		await order.save();
+		await setFailedOrder(order, WrongRecipient());
 		return;
 	}
 
 	if (order.blockchainData!.sender_address !== payment.sender_address) {
 		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
 			`addresses sender mismatch ${ order.blockchainData!.sender_address } !== ${ payment.sender_address }`);
-		// TODO: report to error reporting service
-		order.error = {
-			code: 1111,
-			error: "wrong_address",
-			message: "transaction failed"
-		};
-		order.setStatus("failed");
-		await order.save();
+
+		await setFailedOrder(order, WrongSender());
 		return;
 	}
 
@@ -155,14 +138,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 			// XXX can we call findOne?
 			const asset = await Asset.findOne({ where: { offerId: order.offerId, ownerId: null } });
 			if (!asset) {
-				// TODO: report to error reporting service
-				order.error = {
-					code: 1114,
-					error: "unavailable_asset",
-					message: "failed transaction"
-				};
-				order.setStatus("failed");
-				await order.save();
+				await setFailedOrder(order, AssetUnavailable());
 				return;
 			} else {
 				order.value = asset.asOrderValue();
@@ -197,12 +173,7 @@ export async function paymentFailed(payment: FailedPayment, logger: LoggerInstan
 	}
 
 	createEarnTransactionBroadcastToBlockchainFailed(order.userId, payment.reason, order.offerId, order.id).report();
-
-	// TODO: doody, decide what you wanna do here
-
-	order.setStatus("failed");
-	order.error = { message: payment.reason, error: "blockchain_error", code: 1115 };  // XXX where do I define this error + codes?
-	await order.save();
+	await setFailedOrder(order, BlockchainError());
 	logger.info(`failed order with payment <${payment.id}>`);
 }
 

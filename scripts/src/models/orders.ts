@@ -1,10 +1,10 @@
 import * as moment from "moment";
 import { DeepPartial } from "typeorm/common/DeepPartial";
-import { Column, Entity, BaseEntity, SelectQueryBuilder, Brackets } from "typeorm";
+import { BaseEntity, Brackets, Column, Entity, SelectQueryBuilder } from "typeorm";
 
 import { generateId, IdPrefix } from "../utils";
 
-import { CreationDateModel, register as Register, initializer as Initializer, Model } from "./index";
+import { CreationDateModel, initializer as Initializer, register as Register } from "./index";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
 import { ApiError } from "../errors";
 

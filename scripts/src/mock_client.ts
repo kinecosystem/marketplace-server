@@ -17,7 +17,7 @@ import * as jsonwebtoken from "jsonwebtoken";
 import { ApiError } from "./errors";
 import { JWTContent } from "./public/jwt";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
-import { delay, generateId, randomInteger, retry } from "./utils";
+import { generateId, randomInteger, retry } from "./utils";
 import { AuthToken } from "./public/services/users";
 import { Application } from "./models/applications";
 import { Offer, OfferList } from "./public/services/offers";

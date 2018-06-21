@@ -42,6 +42,14 @@ const CODES = {
 		InvalidExternalOrderJwt: 4,
 		InvalidJwtSignature: 5,
 		JwtKidMissing: 6,
+	},
+	TransactionFailed: {
+		WrongSender: 1,
+		WrongRecipient: 2,
+		WrongAmount: 3,
+		AssetUnavailable: 4,
+		BlockchainError: 5,
+		TransactionTimeout: 6
 	}
 };
 
@@ -186,4 +194,32 @@ export function InvalidExternalOrderJwt() {
 
 export function JwtKidMissing() {
 	return BadRequestError(CODES.BadRequest.JwtKidMissing, "kid is missing from the JWT");
+}
+
+function TransactionFailed(index: number, message: string) {
+	return new MarketplaceError(700, index, "Transaction Failed", message);
+}
+
+export function WrongSender() {
+	return TransactionFailed(CODES.TransactionFailed.WrongSender, "wrong_sender");
+}
+
+export function WrongRecipient() {
+	return TransactionFailed(CODES.TransactionFailed.WrongRecipient, "wrong_recipient");
+}
+
+export function WrongAmount() {
+	return TransactionFailed(CODES.TransactionFailed.WrongAmount, "wrong_amount");
+}
+
+export function AssetUnavailable() {
+	return TransactionFailed(CODES.TransactionFailed.AssetUnavailable, "unavailable_asset");
+}
+
+export function BlockchainError() {
+	return TransactionFailed(CODES.TransactionFailed.BlockchainError, "blockchain_error");
+}
+
+export function TransactionTimeout() {
+	return TransactionFailed(CODES.TransactionFailed.TransactionTimeout, "transaction_timeout");
 }

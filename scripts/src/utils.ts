@@ -1,6 +1,6 @@
 import * as _path from "path";
-import * as fs from "fs";
 import { join } from "path";
+import * as fs from "fs";
 
 const fromProjectRoot = _path.join.bind(path, __dirname, "../../");
 

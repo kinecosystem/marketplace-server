@@ -1,7 +1,7 @@
 import { StatsD } from "hot-shots";
 
 import { getConfig } from "./config";
-import { ApiError, MarketplaceError } from "./errors";
+import { MarketplaceError } from "./errors";
 import { Order } from "./models/orders";
 
 // XXX can add general tags to the metrics (i.e. - public/ internal, machine name etc)

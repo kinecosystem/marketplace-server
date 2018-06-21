@@ -3,7 +3,7 @@ import { LoggerInstance } from "winston";
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
 import { User } from "../models/users";
-import { pick, removeDuplicates, setFailedOrder } from "../utils";
+import { pick, removeDuplicates } from "../utils";
 import { Asset, Offer, OrderValue } from "../models/offers";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
 import { create as createWalletCreationSucceeded } from "../analytics/events/wallet_creation_succeeded";
@@ -15,6 +15,7 @@ import { create as createEarnTransactionBroadcastToBlockchainSucceeded } from ".
 
 import { sign as signJWT } from "./jwt";
 import { AssetUnavailable, BlockchainError, WrongAmount, WrongRecipient, WrongSender } from "../errors";
+import { setFailedOrder } from "../public/services/orders";
 
 const BLOCKCHAIN = "stellar-testnet";
 

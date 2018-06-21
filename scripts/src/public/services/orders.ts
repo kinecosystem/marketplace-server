@@ -13,7 +13,7 @@ import {
 	NoSuchApp,
 	CompletedOrderCantTransitionToFailed,
 	ExternalOrderAlreadyCompleted,
-	InvalidPollAnswers,
+	InvalidPollAnswers, MarketplaceError,
 	NoSuchOffer,
 	NoSuchOrder,
 	OfferCapReached,
@@ -28,7 +28,6 @@ import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
 import { ExternalEarnOrderJWT, ExternalSpendOrderJWT } from "./native_offers";
-import { setFailedOrder } from "../../utils";
 
 export interface OrderList {
 	orders: Order[];
@@ -329,6 +328,13 @@ function orderDbToApi(order: db.Order): Order {
 		error: order.error as ApiError,  // will be null for anything other than "failed"
 		result: order.value,  // will be a coupon code or a payment_confirmation JWT
 	};
+}
+
+export async function setFailedOrder(order: db.Order, error: MarketplaceError): Promise<db.Order> {
+	order.setStatus("failed");
+	order.error = error.toJson();
+	metrics.orderFailed(order);
+	return await order.save();
 }
 
 function checkIfTimedOut(order: db.Order): Promise<void> {

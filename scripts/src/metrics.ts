@@ -49,7 +49,7 @@ Details:
 * Type: ${order.type}
 * AppId: ${appId}
 * UserId: ${order.userId}
-* Error: ${(order.error || unknownError).message}>
+* Error: ${(order.error || unknownError).message}
 * CreatedDate: ${order.createdDate.toISOString()}
 * LastDate: ${(order.currentStatusDate || order.createdDate).toISOString()}
 `;

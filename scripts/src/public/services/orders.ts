@@ -6,9 +6,11 @@ import { User } from "../../models/users";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
+import { Application } from "../../models/applications";
 import { validateExternalOrderJWT } from "../services/native_offers";
 import {
 	ApiError,
+	NoSuchApp,
 	NoSuchOrder,
 	NoSuchOffer,
 	OfferCapReached,
@@ -138,9 +140,10 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 			throw ExternalOrderAlreadyCompleted(order.id);
 		} // else order.status === "failed" - act as if order didn't exist
 
-		// hack - to get the wallet for this digital service
-		// currently there is only a single wallet, so I'm just selecting the first wallet data
-		const tmpBlockchainData = (await offerDb.Offer.findOne({ type: payload.sub }))!.blockchainData;
+		const app = await Application.findOneById(user.appId);
+		if (!app) {
+			throw NoSuchApp(user.appId);
+		}
 
 		let title: string;
 		let description: string;
@@ -149,16 +152,16 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 		if (payload.sub === "earn") {
 			title = (payload as ExternalEarnOrderJWT).recipient.title;
 			description = (payload as ExternalEarnOrderJWT).recipient.description;
-			sender_address = tmpBlockchainData.sender_address!;
+			sender_address = app.walletAddresses.sender;
 			recipient_address = user.walletAddress;
 		} else {
 			// spend or pay_to_user
-			await addWatcherEndpoint([tmpBlockchainData.recipient_address!]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
+			await addWatcherEndpoint([app.walletAddresses.recipient]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
 			title = (payload as ExternalSpendOrderJWT).sender.title;
 			description = (payload as ExternalSpendOrderJWT).sender.description;
 			sender_address = user.walletAddress;
 			// TODO in case of pay_to_user, needs another lookup for the recipient_user_wallet
-			recipient_address = tmpBlockchainData.recipient_address!;
+			recipient_address = app.walletAddresses.recipient;
 		}
 
 		order = db.ExternalOrder.new({

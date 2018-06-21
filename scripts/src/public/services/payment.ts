@@ -1,6 +1,7 @@
 // wrapper for the payment service
 // TODO: this is used by both public and internal so should move to shared dir
 import axios from "axios";
+
 const axiosRetry = require("axios-retry"); // TODO: nitzan this fails the tests: import axiosRetry from "axios-retry";
 import { LoggerInstance } from "winston";
 import { performance } from "perf_hooks";
@@ -9,7 +10,7 @@ import { getConfig } from "../config";
 
 const config = getConfig();
 const webhook = `${config.internal_service}/v1/internal/webhook`;
-const client = axios.create( { timeout: 1000 });
+const client = axios.create({ timeout: 1000 });
 axiosRetry(client, { retries: 3 }); // retries on 5xx errors
 
 interface PaymentRequest {
@@ -83,9 +84,14 @@ export async function getWalletData(walletAddress: string, logger: LoggerInstanc
 	return res.data;
 }
 
-export async function getPaymentData(orderId: string, logger: LoggerInstance): Promise<Payment> {
-	const res = await client.get(`${config.payment_service}/payments/${orderId}`);
+export async function getPayments(walletAddress: string, logger: LoggerInstance): Promise<{ payments: Payment[] }> {
+	const res = await client.get(`${config.payment_service}/wallets/${walletAddress}/payments`);
 	return res.data;
+}
+
+export async function getPayment(orderId: string, logger: LoggerInstance): Promise<Payment> {
+	const res = await client.get(`${config.payment_service}/payments/${orderId}`);
+	return res.data;g
 }
 
 export async function setWatcherEndpoint(addresses: string[]): Promise<Watcher> {

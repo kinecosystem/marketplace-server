@@ -6,6 +6,7 @@ import { OpenOrderStatus, Order } from "../models/orders";
 import { IdPrefix } from "../utils";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getDefaultLogger } from "../logging";
+import * as payment from "../public/services/payment";
 
 let BLOCKCHAIN: BlockchainConfig;
 getBlockchainConfig(getDefaultLogger()).then(data => BLOCKCHAIN = data);
@@ -167,7 +168,11 @@ function userToHtml(user: User): string {
 <li>ecosystem id: ${user.id}</li>
 <li>appId: ${user.appId}</li>
 <li>appUserId: ${user.appUserId}</li>
-<li>wallet: <a href="${BLOCKCHAIN.horizon_url}/accounts/${user.walletAddress}">${user.walletAddress}</a></li>
+<li>stellar account:
+<a href="${BLOCKCHAIN.horizon_url}/accounts/${user.walletAddress}">${user.walletAddress}</a>
+<a href="/wallets/${user.walletAddress}">balance</a>
+<a href="/wallets/${user.walletAddress}/payments">kin transactions</a>
+</li>
 <li>created: ${user.createdDate}</li>
 <li>activated: ${user.activatedDate}</li>
 <li><a href="/orders?user_id=${user.id}">orders</a></li>
@@ -310,4 +315,14 @@ export async function fuzzySearch(params: { some_id: string }, query: any): Prom
 		default:
 			return "unknown";
 	}
+}
+
+export async function getWallet(params: { wallet_address: string }, query: any): Promise<string> {
+	const data = await payment.getWalletData(params.wallet_address, getDefaultLogger());
+	return `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+}
+
+export async function getWalletPayments(params: { wallet_address: string }, query: any): Promise<string> {
+	const data = await payment.getPayments(params.wallet_address, getDefaultLogger());
+	return `<pre>${JSON.stringify(data, null, 2)}</pre>`;
 }

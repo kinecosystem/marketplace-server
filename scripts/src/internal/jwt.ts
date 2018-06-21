@@ -16,6 +16,6 @@ export function sign(subject: string, payload: any, keyid?: string) {
 		keyid,
 		issuer: "kin",
 		algorithm: signWith.algorithm,
-		expiresIn: moment().add(6, "hours").valueOf()
+		expiresIn: moment().add(6, "hours").unix()
 	});
 }

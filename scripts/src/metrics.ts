@@ -43,5 +43,5 @@ export function orderFailed(order: Order) {
 	const unknownError = { error: "unknown_error", message: "unknown error" };
 	const message = `Order <${order.id}:${order.origin}:${order.type}> of user: <${order.userId}> failed with <${(order.error || unknownError).message}>`;
 	const title = `order failed: ${(order.error || unknownError).error}`;
-	statsd.event(title, message);
+	statsd.event(title, message, { alert_type: "warning" }, { type: "failed_order" });
 }

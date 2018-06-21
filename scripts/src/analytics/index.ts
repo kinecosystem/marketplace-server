@@ -28,13 +28,11 @@ export class Event<T extends EventData = EventData> {
 
 	public report(): Promise<void> {
 		try {
-			return axios.default.post(
-				getConfig().bi_service,
-				JSON.stringify(this.data)
-			).catch(e => getDefaultLogger().warn(`failed to report to bi ${e}`)) as any;
+			return axios.default.post(getConfig().bi_service, this.data
+			).catch(e => getDefaultLogger().warn(`failed to report to bi ${normalizeError(e)}`, e)) as any;
 		} catch (e) {
 			// nothing to do
-			getDefaultLogger().warn(`failed to report to bi: ${normalizeError(e)}`);
+			getDefaultLogger().warn(`failed to report to bi: ${normalizeError(e)}`, e);
 			return Promise.resolve();
 		}
 	}

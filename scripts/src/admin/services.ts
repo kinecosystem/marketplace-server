@@ -38,6 +38,7 @@ const OFFER_HEADERS = `<tr>
 <th>owner</th>
 <th>recipient</th>
 <th>sender</th>
+<th>date</th>
 </tr>`;
 
 const STATS_HEADERS = `<tr>
@@ -65,6 +66,7 @@ const ORDER_HEADERS = `<tr>
 <th>content</th>
 <th>offerId</a></th>
 <th>transaction_id</th>
+<th>date</th>
 </tr>`;
 
 function getStatsQuery(offerId: string | "all") {
@@ -136,6 +138,7 @@ function offerToHtml(offer: Offer): string {
 <td>${offer.ownerId}</td>
 <td><a href="${BLOCKCHAIN.horizon_url}/accounts/${offer.blockchainData.recipient_address}">${offer.blockchainData.recipient_address}</a></td>
 <td><a href="${BLOCKCHAIN.horizon_url}/accounts/${offer.blockchainData.sender_address}">${offer.blockchainData.sender_address}</a></td>
+<td>${offer.createdDate.toISOString()}</td>
 </tr>`;
 }
 
@@ -154,6 +157,7 @@ function orderToHtml(order: Order): string {
 <td><pre>${order.meta.content}</pre></td>
 <td><a href="/offers/${order.offerId}">${order.offerId}</a></td>
 <td><a href="${BLOCKCHAIN.horizon_url}/operations/${transactionId}">${transactionId}</a></td>
+<td>${order.createdDate.toISOString()}</td>
 </tr>`;
 }
 

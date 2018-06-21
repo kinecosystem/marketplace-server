@@ -118,7 +118,7 @@ function appToHtml(app: Application): string {
 <td>${app.name}</td>
 <td>${app.apiKey}</td>
 <td><a href="/applications/${app.id}/users">users</a></td>
-<td><pre>${JSON.stringify(app.jwtPublicKeys, null, 2)}</pre></td>
+<td><pre class="wide">${JSON.stringify(app.jwtPublicKeys, null, 2)}</pre></td>
 </tr>`;
 }
 
@@ -296,7 +296,7 @@ export async function getPollResults(params: { offer_id: string }, query: any): 
 	});
 	let ret = `<table>`;
 	for (const answer of answers) {
-		ret += `<tr><td><pre>${answer.content}</pre></td></tr>`;
+		ret += `<tr><td><pre class="wide">${answer.content}</pre></td></tr>`;
 	}
 	ret += "</table>";
 	return ret;
@@ -319,10 +319,10 @@ export async function fuzzySearch(params: { some_id: string }, query: any): Prom
 
 export async function getWallet(params: { wallet_address: string }, query: any): Promise<string> {
 	const data = await payment.getWalletData(params.wallet_address, getDefaultLogger());
-	return `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+	return `<pre class="wide">${JSON.stringify(data, null, 2)}</pre>`;
 }
 
 export async function getWalletPayments(params: { wallet_address: string }, query: any): Promise<string> {
 	const data = await payment.getPayments(params.wallet_address, getDefaultLogger());
-	return `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+	return `<pre class="wide">${JSON.stringify(data, null, 2)}</pre>`;
 }

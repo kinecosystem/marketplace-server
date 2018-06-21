@@ -38,6 +38,9 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 			width: 250px;
 			overflow: scroll;
 		}
+		.wide {
+			width: 1250px;
+		}
 		.status_completed {
 			color: green;
 			font-weight: bold;

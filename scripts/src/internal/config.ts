@@ -3,6 +3,7 @@ import { Config as BaseConfig, getConfig as baseGetConfig, init as baseInit } fr
 export interface Config extends BaseConfig {
 	jwt: {
 		private_keys_dir: string;
+		public_keys_dir: string;
 	};
 }
 

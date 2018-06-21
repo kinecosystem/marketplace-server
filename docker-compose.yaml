@@ -19,7 +19,7 @@ services:
       APP_NAME: 'marketplace-server'
       APP_REDIS: redis://redis:6379/0
       APP_PAYMENT_SERVICE: http://payment-service:3000
-      APP_INTERNAL_WEBHOOK: http://marketplace-internal:3000/v1/internal/webhook
+      APP_INTERNAL_SERVICE: http://marketplace-internal:3000
       APP_BI_SERVICE: http://bi-service
       APP_DB_TYPE: postgres
       APP_DB_USERNAME: user

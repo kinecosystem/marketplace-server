@@ -16,7 +16,7 @@ export interface Config {
 		port: number;
 	};
 	payment_service: string;
-	internal_webhook: string;
+	internal_service: string;
 	app_name?: string;
 	commit?: string;
 	timestamp?: string;
@@ -53,8 +53,8 @@ export function init(filePath: string) {
 	if (process.env.APP_PAYMENT_SERVICE) {
 		config.payment_service = process.env.APP_PAYMENT_SERVICE!;
 	}
-	if (process.env.APP_INTERNAL_WEBHOOK) {
-		config.internal_webhook = process.env.APP_INTERNAL_WEBHOOK!;
+	if (process.env.APP_INTERNAL_SERVICE) {
+		config.internal_service = process.env.APP_INTERNAL_SERVICE!;
 	}
 	if (process.env.APP_BI_SERVICE) {
 		config.bi_service = process.env.APP_BI_SERVICE!;

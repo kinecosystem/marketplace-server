@@ -18,9 +18,10 @@
 		"logging": false
 	},
 	"payment_service": "http://localhost:5000",
-	"internal_webhook": "http://localhost:3001/v1/internal/webhook",
+	"internal_service": "http://localhost:3001",
 	"jwt": {
-		"private_keys_dir": "priv_keys"
+		"private_keys_dir": "priv_keys",
+		"public_keys_dir": "pub_keys"
 	},
 	"bi_service": "https://kin-bi.appspot.com/eco_"
 }

@@ -157,7 +157,7 @@ function orderToHtml(order: Order): string {
 <td><pre>${order.meta.content}</pre></td>
 <td><a href="/offers/${order.offerId}">${order.offerId}</a></td>
 <td><a href="${BLOCKCHAIN.horizon_url}/operations/${transactionId}">${transactionId}</a></td>
-<td>${order.createdDate.toISOString()}</td>
+<td>${(order.currentStatusDate || order.createdDate).toISOString()}</td>
 </tr>`;
 }
 
@@ -267,7 +267,7 @@ export async function getOrders(params: any, query: { status?: OpenOrderStatus, 
 	if (query.status) {
 		queryBy.status = query.status;
 	}
-	const orders = await Order.find({ where: queryBy, order: { createdDate: "DESC" } });
+	const orders = await Order.find({ where: queryBy, order: { currentStatusDate: "DESC" } });
 	let ret = `<table>${ORDER_HEADERS}`;
 	for (const order of orders) {
 		ret += orderToHtml(order);

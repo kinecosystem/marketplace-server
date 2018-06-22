@@ -61,6 +61,7 @@ export type GetOrderFilters = {
 @Entity({ name: "orders" })
 @Initializer("id", () => generateId(IdPrefix.Transaction))
 @Initializer("expirationDate", () => moment().add(10, "minutes").toDate()) // opened expiration
+@Initializer("currentStatusDate", () => moment().toDate())
 @Register
 export class Order extends CreationDateModel {
 	/**

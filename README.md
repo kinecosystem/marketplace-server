@@ -63,6 +63,11 @@ export STELLAR_BASE_SEED=SXXX
 export STELLAR_ADDRESS=GXXX
 ```
 
+##### Create JWT encryption keys
+```
+make create-jwt-keys:
+```
+will create the dir `jwt/` with random encryption keys. You can add other keys if you'd like. the keys in the public_keys dir will be exported via `/v1/config` call.
 #### Run docker servers and system tests
 Run the following command:
 ```

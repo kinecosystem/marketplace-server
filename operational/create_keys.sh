@@ -25,15 +25,15 @@ for i in `seq 1 10`; do
     pub=es256_$uuid.pem
     priv=es256_$uuid-priv.pem
 
-    mkdir -p $DIR/priv_keys
-    mkdir -p $DIR/pub_keys
+    mkdir -p $DIR/jwt/private_keys
+    mkdir -p $DIR/jwt/public_keys
 
-    openssl ecparam -name secp256k1 -genkey -noout -out $DIR/priv_keys/$priv 
-    openssl ec -in $DIR/priv_keys/$priv -pubout -out $DIR/pub_keys/$pub
+    openssl ecparam -name secp256k1 -genkey -noout -out $DIR/jwt/private_keys/$priv 
+    openssl ec -in $DIR/jwt/private_keys/$priv -pubout -out $DIR/jwt/public_keys/$pub
 
     if [ $PUBLISH -eq 1 ]
     then
-        aws ssm put-parameter --name prod-jwt-$pub --type "String" --overwrite --value "$(cat $DIR/pub_keys/$pub)"
-        aws ssm put-parameter --name prod-jwt-$priv --type "SecureString" --overwrite --value "$(cat $DIR/priv_keys/$priv)"
+        aws ssm put-parameter --name prod-jwt-$pub --type "String" --overwrite --value "$(cat $DIR/jwt/public_keys/$pub)"
+        aws ssm put-parameter --name prod-jwt-$priv --type "SecureString" --overwrite --value "$(cat $DIR/jwt/private_keys/$priv)"
     fi
 done

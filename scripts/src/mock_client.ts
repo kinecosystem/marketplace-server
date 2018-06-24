@@ -755,13 +755,13 @@ async function createTrust() {
 
 async function main() {
 	STELLAR = await Stellar.get("auto");
-	await createTrust();
-	await earnTutorial();
-	await earnPollFlow();
-	await earnQuizFlow();
-	await didNotApproveTOS();
-	await testRegisterNewUser();
-	await spendFlow();
+	// await createTrust();
+	// await earnTutorial();
+	// await earnPollFlow();
+	// await earnQuizFlow();
+	// await didNotApproveTOS();
+	// await testRegisterNewUser();
+	// await spendFlow();
 	// await justPay();
 	await registerJWT();
 	await nativeEarnFlow();

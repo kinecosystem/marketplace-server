@@ -24,7 +24,7 @@ services:
       APP_DB_TYPE: postgres
       APP_DB_USERNAME: user
       APP_DB_PASSWORD: pass
-      APP_DB_PORT: 5432 
+      APP_DB_PORT: 5432
       APP_DB_HOST: postgres
       APP_DB_DATABASE: ecosystem
 
@@ -41,6 +41,7 @@ services:
     environment:
       <<: *app_env_vars
       APP_NAME: 'marketplace-internal'
+      APP_JWT_KEYS_DIR: /opt/jwt
 
   postgres:
     image: postgres:10.4

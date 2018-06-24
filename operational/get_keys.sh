@@ -4,10 +4,10 @@
 if [ $# == 1 ] && [ $1 == private ]
 then
     PUBLIC_FLAG=
-    DIR=priv_keys
+    DIR=jwt/private_keys
 else
     PUBLIC_FLAG=-v
-    DIR=pub_keys
+    DIR=jwt/public_keys
 fi
 
 keys=`aws --region=us-east-1 ssm describe-parameters | jq -r '.Parameters[].Name' | grep 'prod-jwt-.*pem' | grep $PUBLIC_FLAG -- '-priv.pem'`

@@ -2,10 +2,11 @@ import * as moment from "moment";
 import * as jsonwebtoken from "jsonwebtoken";
 import { readKeysDir } from "../utils";
 import { getConfig } from "./config";
+import * as path from "path";
 
 const CONFIG = getConfig();
-const PRIVATE_KEYS = readKeysDir(CONFIG.jwt.private_keys_dir);
-export const PUBLIC_KEYS = readKeysDir(CONFIG.jwt.public_keys_dir);
+const PRIVATE_KEYS = readKeysDir(path.join(CONFIG.jwt_keys_dir, "private_keys"));
+export const PUBLIC_KEYS = readKeysDir(path.join(CONFIG.jwt_keys_dir, "public_keys"));
 
 function getKeyForAlgorithm(alg: string): string {
 	const keyid = Object.keys(PRIVATE_KEYS).find(k => PRIVATE_KEYS[k].algorithm.toUpperCase() === alg.toUpperCase());

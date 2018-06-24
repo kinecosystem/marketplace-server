@@ -2,15 +2,23 @@ import * as moment from "moment";
 import * as jsonwebtoken from "jsonwebtoken";
 import { readKeysDir } from "../utils";
 import { getConfig } from "./config";
+import * as path from "path";
 
 const CONFIG = getConfig();
-const KEYS = readKeysDir(CONFIG.jwt.private_keys_dir);
+const PRIVATE_KEYS = readKeysDir(path.join(CONFIG.jwt_keys_dir, "private_keys"));
+export const PUBLIC_KEYS = readKeysDir(path.join(CONFIG.jwt_keys_dir, "public_keys"));
 
-export function sign(subject: string, payload: any, keyid?: string) {
+function getKeyForAlgorithm(alg: string): string {
+	const keyid = Object.keys(PRIVATE_KEYS).find(k => PRIVATE_KEYS[k].algorithm.toUpperCase() === alg.toUpperCase());
 	if (!keyid) {
-			keyid = "es256_0";  // TODO the key should be randomly chosen or timely rotated
+		throw Error(`key not found for algorithm ${alg}`);
 	}
-	const signWith = KEYS[keyid];
+	return keyid;
+}
+
+export function sign(subject: string, payload: any, alg?: string) {
+	const keyid = getKeyForAlgorithm(alg || "es256");
+	const signWith = PRIVATE_KEYS[keyid];
 	return jsonwebtoken.sign(payload, signWith.key, {
 		subject,
 		keyid,

@@ -82,7 +82,7 @@ async function getPaymentJWT(order: db.Order, appId: string): Promise<OrderValue
 
 	return {
 		type: "payment_confirmation",
-		jwt: signJWT("payment_confirmation", payload, appId !== "kik" ? "rs512_0" : "es256_0") // TODO all apps should run with es256 keys
+		jwt: signJWT("payment_confirmation", payload, appId !== "kik" ? "rs512" : "es256") // TODO all apps should run with es256 keys
 	};
 }
 

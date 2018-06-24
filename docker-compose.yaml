@@ -3,7 +3,7 @@ version: "3"
 services:
 
   marketplace-server:
-    image: kinecosystem/marketplace-server:d39adef
+    image: kinecosystem/marketplace-server:f005b33
     ports:
       - 3000
     links:
@@ -19,17 +19,17 @@ services:
       APP_NAME: 'marketplace-server'
       APP_REDIS: redis://redis:6379/0
       APP_PAYMENT_SERVICE: http://payment-service:3000
-      APP_INTERNAL_WEBHOOK: http://marketplace-internal:3000/v1/internal/webhook
+      APP_INTERNAL_SERVICE: http://marketplace-internal:3000
       APP_BI_SERVICE: http://bi-service
       APP_DB_TYPE: postgres
       APP_DB_USERNAME: user
       APP_DB_PASSWORD: pass
-      APP_DB_PORT: 5432 
+      APP_DB_PORT: 5432
       APP_DB_HOST: postgres
       APP_DB_DATABASE: ecosystem
 
   marketplace-internal:
-    image: kinecosystem/marketplace-server:d39adef
+    image: kinecosystem/marketplace-server:f005b33
     command: npm run start-internal
     ports:
       - 3000
@@ -41,6 +41,7 @@ services:
     environment:
       <<: *app_env_vars
       APP_NAME: 'marketplace-internal'
+      APP_JWT_KEYS_DIR: /opt/app/jwt
 
   postgres:
     image: postgres:10.4

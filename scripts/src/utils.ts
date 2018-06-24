@@ -18,8 +18,11 @@ export function isNothing(obj: any): obj is Nothing {
 	return obj === null || obj === undefined;
 }
 
-export function path(...paths: string[]): string {
-	return fromProjectRoot(...paths);
+export function path(path: string): string {
+	if (path.startsWith("/")) {
+		return path;
+	}
+	return fromProjectRoot(path);
 }
 
 export function random(): number;
@@ -133,7 +136,7 @@ export function readKeysDir(dir: string): KeyMap {
 		}
 		// filename format is kin-es256_0.pem or kin-es256_0-priv.pem or es256_0-priv.pem
 		const keyid = filename.replace(/-priv/, "").split(".")[0];
-		const algorithm = filename.split("_")[0].replace(/kin-/, "").toUpperCase();
+		const algorithm = filename.split("_")[0].toUpperCase();
 		keys[keyid] = {
 			algorithm,
 			key: fs.readFileSync(path(join(dir, filename))).toString()

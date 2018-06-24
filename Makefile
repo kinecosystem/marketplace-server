@@ -78,4 +78,7 @@ test-system-docker: clear-db db-docker clear-redis
 generate-funding-address:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run generate-funding-address
 
+create-jwt-keys:
+	./operational/create_keys.sh .
+
 .PHONY: build-image push-image up down psql db-docker test-system-docker generate-funding-address test run build install db all split run-internal test-system

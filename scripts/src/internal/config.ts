@@ -1,9 +1,7 @@
 import { Config as BaseConfig, getConfig as baseGetConfig, init as baseInit } from "../config";
 
 export interface Config extends BaseConfig {
-	jwt: {
-		private_keys_dir: string;
-	};
+	jwt_keys_dir: string;
 }
 
 export function getConfig(): Config {
@@ -20,6 +18,9 @@ function init(): void {
 	path += "default";
 
 	baseInit(`${ path }.json`);
+
+	const config = getConfig();
+	config.jwt_keys_dir = process.env.APP_JWT_KEYS_DIR || config.jwt_keys_dir;
 }
 
 init();

@@ -7,6 +7,7 @@ import { performance } from "perf_hooks";
 import { getConfig } from "../config";
 
 const config = getConfig();
+const webhook = `${config.internal_service}/v1/internal/webhook`;
 
 interface PaymentRequest {
 	amount: number;
@@ -55,7 +56,7 @@ export async function payTo(
 		app_id: appId,
 		recipient_address: walletAddress,
 		id: orderId,
-		callback: config.internal_webhook,
+		callback: webhook,
 	};
 	const t = performance.now();
 	await axios.default.post(`${config.payment_service}/payments`, payload);
@@ -67,7 +68,7 @@ export async function createWallet(walletAddress: string, appId: string, id: str
 		id,
 		wallet_address: walletAddress,
 		app_id: appId,
-		callback: config.internal_webhook,
+		callback: webhook,
 	};
 	const t = performance.now();
 	await axios.default.post(`${config.payment_service}/wallets`, payload);
@@ -87,13 +88,13 @@ export async function getPaymentData(orderId: string, logger: LoggerInstance): P
 export async function setWatcherEndpoint(addresses: string[]): Promise<Watcher> {
 	// What about native spend addresses?
 	// XXX should be called from the internal server api upon creation
-	const payload: Watcher = { wallet_addresses: addresses, callback: config.internal_webhook };
+	const payload: Watcher = { wallet_addresses: addresses, callback: webhook };
 	const res = await axios.default.put(`${config.payment_service}/watchers/${SERVICE_ID}`, payload);
 	return res.data;
 }
 
 export async function addWatcherEndpoint(addresses: string[]): Promise<Watcher> {
-	const payload: Watcher = { wallet_addresses: addresses, callback: config.internal_webhook };
+	const payload: Watcher = { wallet_addresses: addresses, callback: webhook };
 	const res = await axios.default.post(`${config.payment_service}/watchers/${SERVICE_ID}`, payload);
 	return res.data;
 }

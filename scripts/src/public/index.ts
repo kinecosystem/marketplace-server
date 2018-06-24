@@ -14,6 +14,6 @@ init().then(() => {
 	server.listen(config.port);
 	server.on("error", onError);
 	server.on("listening", onListening(server));
-}).catch(() => {
-	console.log("failed to start server.");
+}).catch(e => {
+	console.log("failed to start server: " + e);
 });

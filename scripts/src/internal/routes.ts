@@ -11,6 +11,7 @@ import {
 } from "./services";
 
 import { statusHandler } from "./middleware";
+import { PUBLIC_KEYS } from "./jwt";
 
 export type WebHookRequestPayload = {
 	object: "wallet" | "payment";
@@ -77,30 +78,15 @@ export const webhookHandler = async function(req: WebHookRequest, res: Response)
 	res.status(200).send({ status: "ok" });
 } as any as RequestHandler;
 
-/**
- * DEPRECATED
- * only here for backwards compatibility
- */
-export const paymentComplete = async function(req: Request, res: Response) {
-	await paymentCompleteService(req.body as CompletedPayment, req.logger);
-	res.status(200).send({ status: "ok" });
-} as any as RequestHandler;
-
-/**
- * DEPRECATED
- * only here for backwards compatibility
- */
-export const paymentFailed = async function(req: Request, res: Response) {
-	await paymentFailedService(req.body as FailedPayment, req.logger);
-	res.status(200).send({ status: "ok" });
+export const getJwtKeys = async function(req: WebHookRequest, res: Response) {
+	res.status(200).send(PUBLIC_KEYS);
 } as any as RequestHandler;
 
 export function createRoutes(app: Express, pathPrefix?: string) {
 	const router = Router();
 	router
 		.post("/webhook", webhookHandler)
-		.post("/payments", paymentComplete) // deprecated
-		.post("/failed-payments", paymentFailed); // deprecated
+		.get("/jwt-keys", getJwtKeys);
 
 	app.use("/v1/internal/", router);
 	app.get("/status", statusHandler);

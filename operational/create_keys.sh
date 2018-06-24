@@ -22,8 +22,8 @@ fi
 for i in `seq 1 10`; do
     uuid=$(uuidgen)
 
-    pub=kin-es256_$uuid.pem
-    priv=kin-es256_$uuid-priv.pem
+    pub=es256_$uuid.pem
+    priv=es256_$uuid-priv.pem
 
     mkdir -p $DIR/priv_keys
     mkdir -p $DIR/pub_keys
@@ -33,7 +33,7 @@ for i in `seq 1 10`; do
 
     if [ $PUBLISH -eq 1 ]
     then
-        aws ssm put-parameter --name prod-$pub --type "String" --overwrite --value "$(cat $DIR/pub_keys/$pub)"
-        aws ssm put-parameter --name prod-$priv --type "SecureString" --overwrite --value "$(cat $DIR/priv_keys/$priv)"
+        aws ssm put-parameter --name prod-jwt-$pub --type "String" --overwrite --value "$(cat $DIR/pub_keys/$pub)"
+        aws ssm put-parameter --name prod-jwt-$priv --type "SecureString" --overwrite --value "$(cat $DIR/priv_keys/$priv)"
     fi
 done

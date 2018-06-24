@@ -8,6 +8,7 @@ node_js:
 before_script:
   - make build db # db - for make test
   - make generate-funding-address
+  - make create-jwt-keys
   - make up-dev # clear-redis # up-dev - for test-system-docker
 
 script:

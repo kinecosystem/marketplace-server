@@ -68,6 +68,7 @@ const ORDER_HEADERS = `<tr>
 <th>offerId</a></th>
 <th>transaction_id</th>
 <th>date</th>
+<th>payment confirmation</th>
 </tr>`;
 
 function getStatsQuery(offerId: string | "all") {
@@ -145,6 +146,7 @@ function offerToHtml(offer: Offer): string {
 
 function orderToHtml(order: Order): string {
 	const transactionId = order.blockchainData ? order.blockchainData.transaction_id : null;
+	const payJwt = order.value && order.value.type === "payment_confirmation"? order.value.jwt : null;
 	return `<tr>
 <td>${order.id}</td>
 <td class="status_${order.status}"><a href="/orders?status=${order.status}">${order.status}</a></td>
@@ -159,6 +161,7 @@ function orderToHtml(order: Order): string {
 <td><a href="/offers/${order.offerId}">${order.offerId}</a></td>
 <td><a href="${BLOCKCHAIN.horizon_url}/operations/${transactionId}">${transactionId}</a></td>
 <td>${(order.currentStatusDate || order.createdDate).toISOString()}</td>
+<td><a href="https://jwt.io?token=${payJwt}">${payJwt}</a></td>
 </tr>`;
 }
 

@@ -6,7 +6,6 @@ import { User } from "../models/users";
 import { pick, removeDuplicates } from "../utils";
 import { Asset, Offer, OrderValue } from "../models/offers";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
-import { create as createWalletCreationSucceeded } from "../analytics/events/wallet_creation_succeeded";
 import { create as createSpendOrderPaymentConfirmed } from "../analytics/events/spend_order_payment_confirmed";
 import { create as createStellarAccountCreationFailed } from "../analytics/events/stellar_account_creation_failed";
 import { create as createStellarAccountCreationSucceeded } from "../analytics/events/stellar_account_creation_succeeded";
@@ -24,7 +23,6 @@ export type WalletCreationSuccessData = {
 };
 
 export async function walletCreationSuccess(data: WalletCreationSuccessData, logger: LoggerInstance) {
-	createWalletCreationSucceeded(data.id).report();
 	createStellarAccountCreationSucceeded(data.id).report();
 	logger.info("wallet created", { userId: data.id });
 }

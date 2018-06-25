@@ -28,6 +28,9 @@ import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
 import { ExternalEarnOrderJWT, ExternalSpendOrderJWT } from "./native_offers";
+import {
+	create as createEarnTransactionBroadcastToBlockchainSubmitted
+} from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 
 export interface OrderList {
 	orders: Order[];
@@ -245,6 +248,7 @@ export async function submitOrder(
 
 	if (order.type === "earn") {
 		await payment.payTo(walletAddress, appId, order.amount, order.id, logger);
+		createEarnTransactionBroadcastToBlockchainSubmitted(order.userId, order.offerId, order.id).report();
 	}
 
 	metrics.submitOrder(order.type, order.offerId);

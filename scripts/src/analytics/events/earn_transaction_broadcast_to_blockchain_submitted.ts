@@ -8,23 +8,21 @@ import { Common } from "./common";
  */
 
 /**
- * General event for tracking errors returned by the blockchain sdk
+ * Server submits earn transaction to blockchain
  */
-export interface BlockchainSdkError extends EventData {
-	event_name: "blockchain_sdk_error";
+export interface EarnTransactionBroadcastToBlockchainSubmitted extends EventData {
+	event_name: "earn_transaction_broadcast_to_blockchain_submitted";
 	event_type: "log";
 	common: Common;
-	error_reason: string;
 	offer_id: string;
 	order_id: string;
 }
 
-export function create(user_id: string, error_reason: string, offer_id: string, order_id: string): Event<BlockchainSdkError> {
-	return new Event<BlockchainSdkError>({
-		event_name: "blockchain_sdk_error",
+export function create(user_id: string, offer_id: string, order_id: string): Event<EarnTransactionBroadcastToBlockchainSubmitted> {
+	return new Event<EarnTransactionBroadcastToBlockchainSubmitted>({
+		event_name: "earn_transaction_broadcast_to_blockchain_submitted",
 		event_type: "log",
 		common: Event.common(user_id),
-		error_reason,
 		offer_id,
 		order_id
 	});

@@ -3,6 +3,7 @@ import { StatsD } from "hot-shots";
 import { getConfig } from "./config";
 import { MarketplaceError } from "./errors";
 import { Order } from "./models/orders";
+import { User } from "./models/users";
 
 // XXX can add general tags to the metrics (i.e. - public/ internal, machine name etc)
 const statsd = new StatsD(Object.assign({ prefix: "marketplace_" }, getConfig().statsd));
@@ -39,20 +40,24 @@ export function reportServerError(method: string, path: string) {
 	statsd.increment("server_error", 1, undefined, { method, path });
 }
 
-export function orderFailed(order: Order, appId: string) {
-	const unknownError = { error: "unknown_error", message: "unknown error" };
+export function orderFailed(order: Order, user?: User) {
+	const unknownError = { error: "unknown_error", message: "unknown error", code: -1 };
+	const unknownUser = { id: "no_id", appId: "no_id", appUserId: "no_id", walletAddress: "no_wallet" };
+
 	const message = `
-## Order <${order.id}> transitioned to failed state.
-Details:
-* ID: ${order.id}
-* Origin: ${order.origin}
-* Type: ${order.type}
-* AppId: ${appId}
-* UserId: ${order.userId}
-* Error: ${(order.error || unknownError).message}
-* CreatedDate: ${order.createdDate.toISOString()}
-* LastDate: ${(order.currentStatusDate || order.createdDate).toISOString()}
+## Order <${order.id}> transitioned to failed state:
+ID: <${order.id}> | Type: ${order.type} | Origin: ${order.origin}
+UserId: ${(user || unknownUser).id} | AppId: <${(user || unknownUser).appId}> | UserAppId: ${(user || unknownUser).appUserId} | Wallet: ${(user || unknownUser).walletAddress}
+Error: ${(order.error || unknownError).message} | Code: ${(order.error || unknownError).code}
+CreatedDate: ${order.createdDate.toISOString()} | LastDate: ${(order.currentStatusDate || order.createdDate).toISOString()}
 `;
-	const title = `order failed: ${(order.error || unknownError).error}`;
-	statsd.event(title, message, { alert_type: "warning" }, { order_type: order.type, app_id: appId, order_id: order.id, order_origin: order.origin, type: "failed_order" });
+	const title = (order.error || unknownError).message;
+	statsd.event(title, message,
+		{ alert_type: "warning" },
+		{
+			order_type: order.type,
+			app_id: (user || unknownUser).appId,
+			order_id: order.id,
+			order_origin: order.origin,
+			type: "failed_order" });
 }

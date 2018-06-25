@@ -338,7 +338,7 @@ export async function setFailedOrder(order: db.Order, error: MarketplaceError): 
 	order.setStatus("failed");
 	order.error = error.toJson();
 	const user = await User.findOneById(order.userId);
-	metrics.orderFailed(order, user ? user.appId : "");
+	metrics.orderFailed(order, user);
 	return await order.save();
 }
 

@@ -146,7 +146,7 @@ function offerToHtml(offer: Offer): string {
 
 function orderToHtml(order: Order): string {
 	const transactionId = order.blockchainData ? order.blockchainData.transaction_id : null;
-	const payJwt = order.value && order.value.type === "payment_confirmation"? order.value.jwt : null;
+	const payJwt = order.value && order.value.type === "payment_confirmation" ? order.value.jwt : null;
 	return `<tr>
 <td>${order.id}</td>
 <td class="status_${order.status}"><a href="/orders?status=${order.status}">${order.status}</a></td>

@@ -26,8 +26,8 @@ export type ConfigResponse = {
 
 export const getConfigHandler = async function(req: Request, res: Response, next: NextFunction) {
 	const data: ConfigResponse = {
-		jwt_keys: JWT_KEYS,
-		blockchain: BLOCKCHAIN,
+		jwt_keys: await getJwtKeys(),
+		blockchain: await getBlockchainConfig(getDefaultLogger()),
 		bi_service: CONFIG.bi_service,
 		webview: CONFIG.webview,
 		environment_name: CONFIG.environment_name,

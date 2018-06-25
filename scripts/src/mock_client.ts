@@ -755,7 +755,7 @@ async function createTrust() {
 
 async function main() {
 	STELLAR = await Stellar.get("auto");
-	// await createTrust();
+	await createTrust();
 	// await earnTutorial();
 	// await earnPollFlow();
 	// await earnQuizFlow();

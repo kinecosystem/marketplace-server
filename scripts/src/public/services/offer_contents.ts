@@ -16,19 +16,19 @@ export enum PageType {
 	"SuccessBasedThankYou",
 }
 
-export interface BaseEarnPage {
+export interface PollPage {
 	type: PageType;
 	title: string;
-}
-
-export interface PollPage extends BaseEarnPage {
 	description: string;
 	question: Question;
 }
 
-export interface QuizPage extends PollPage {
+export interface QuizPage {
+	type: PageType;
+	description: string;
 	amount: number;
 	rightAnswer: number; // XXX change answers to have an id
+	question: Question;
 }
 
 export interface EarnThankYouPage {

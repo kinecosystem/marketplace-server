@@ -154,7 +154,6 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 		} else if (v.get("PollPageType")! === "TimedFullPageMultiChoice") {
 			(poll as Quiz).pages.push({
 				type: PageType.TimedFullPageMultiChoice,
-				title: v.get("PollTitle")!,
 				description: v.get("PollDescription")!,
 				question: {
 					id: v.get("PollQuestionId")!,

@@ -170,7 +170,7 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 		} else if (v.get("PollPageType")! === "EarnThankYou") {
 			(poll as Poll).pages.push({
 				type: PageType.EarnThankYou,
-				description: v.get("PollDescription") || v.get("PollFooterHtml")!;
+				description: v.get("PollDescription") || v.get("PollFooterHtml")!
 			});
 		} else if (v.get("PollPageType")! === "SuccessBasedThankYou") {
 			(poll as Quiz).pages.push({

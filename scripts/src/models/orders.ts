@@ -87,10 +87,11 @@ export class Order extends CreationDateModel {
 		return query.getCount();
 	}
 
-	public static countToday(userId: string): Promise<number> {
+	public static countToday(userId: string, type: OfferType): Promise<number> {
 		const midnight = new Date((new Date()).setUTCHours(0, 0, 0, 0));
 		const query = Order.createQueryBuilder()
 			.where("user_id = :userId", { userId })
+			.andWhere("type = :type", { type })
 			.andWhere("current_status_date > :midnight", { midnight })
 			.andWhere(new Brackets(qb => {
 				qb.where("status = :completed", { completed: "completed" })

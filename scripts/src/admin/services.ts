@@ -365,7 +365,7 @@ export async function getWallet(params: { wallet_address: string }, query: any):
 	let ret = `<pre class="wide">${JSON.stringify(data, null, 2)}</pre>`;
 
 	if (data.kin_balance === null) {
-		ret = `<h3>Untrusted!</h3>` + ret;
+		ret = `<h3 class="alert">Untrusted!</h3>` + ret;
 	}
 	return ret;
 }

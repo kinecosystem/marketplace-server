@@ -39,23 +39,26 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 			width: 250px;
 			overflow: scroll;
 		}
+		.alert {
+			color: red;
+		}
 		.wide {
 			width: 1250px;
 		}
-		.status_completed {
+		.status_completed a {
 			color: green;
 			font-weight: bold;
 		}
-		.stats_failed {
+		.status_failed a {
 			color: red;
 			font-weight: bold;
 		}
-		.status_pending {
+		.status_pending a {
 			color: yellow;
 			font-weight: bold;
 		}
-		.stats_opened {
-			color: yellow;
+		.stats_opened a {
+			color: purple;g
 			font-weight: bold;
 		}
 		</style>

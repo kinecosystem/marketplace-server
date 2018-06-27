@@ -187,8 +187,20 @@ async function userToHtml(user: User): Promise<string> {
 </ul>`;
 }
 
-export async function getApplications(params: any, query: any): Promise<string> {
-	const apps = await Application.find({ order: { createdDate: "DESC" } });
+export type Paging = { limit: number, page: number };
+const DEFAULT_PAGE = 0;
+const DEFAULT_LIMIT = 25;
+
+function skip(query: Paging): number {
+	return (query.page || 0) * take(query);
+}
+
+function take(query: Paging): number {
+	return (query.limit || DEFAULT_LIMIT);
+}
+
+export async function getApplications(params: any, query: Paging): Promise<string> {
+	const apps = await Application.find({ order: { createdDate: "DESC" }, take: take(query), skip: skip(query) });
 	let ret = "<table>";
 	for (const app of apps) {
 		ret += await appToHtml(app);
@@ -205,8 +217,13 @@ export async function getApplication(params: { app_id: string }, query: any): Pr
 	return `<table>${await appToHtml(app)}</table>`;
 }
 
-export async function getApplicationUsers(params: { app_id: string }, query: any): Promise<string> {
-	const users: User[] = await User.find({ where: { appId: params.app_id }, order: { createdDate: "DESC" } });
+export async function getApplicationUsers(params: { app_id: string }, query: Paging): Promise<string> {
+	const users: User[] = await User.find({
+		where: { appId: params.app_id },
+		order: { createdDate: "DESC" },
+		take: take(query),
+		skip: skip(query)
+	});
 	let ret = "";
 	for (const user of users) {
 		ret += await userToHtml(user);
@@ -214,8 +231,8 @@ export async function getApplicationUsers(params: { app_id: string }, query: any
 	return ret;
 }
 
-export async function getOffers(params: any, query: any): Promise<string> {
-	const offers = await Offer.find({ order: { createdDate: "DESC" } });
+export async function getOffers(params: any, query: Paging): Promise<string> {
+	const offers = await Offer.find({ order: { createdDate: "DESC" }, take: take(query), skip: skip(query) });
 	let ret = `<table>${OFFER_HEADERS}`;
 	for (const offer of offers) {
 		ret += await offerToHtml(offer);
@@ -224,11 +241,13 @@ export async function getOffers(params: any, query: any): Promise<string> {
 	return ret;
 }
 
-export async function getApplicationOffers(params: { app_id: string }, query: any): Promise<string> {
+export async function getApplicationOffers(params: { app_id: string }, query: Paging): Promise<string> {
 	const app = await Application.createQueryBuilder("app")
 		.where("app.id = :appId", { appId: params.app_id })
 		.leftJoinAndSelect("app.offers", "offer")
 		.addOrderBy("offer.created_date", "ASC")
+		.limit(take(query))
+		.offset(skip(query))
 		.getOne();
 
 	if (!app) {
@@ -304,7 +323,7 @@ export async function getApplicationUserData(params: { user_id: string, app_id: 
 	return await userToHtml(user);
 }
 
-export async function getOrders(params: any, query: { status?: OpenOrderStatus, user_id?: string, offer_id?: string }): Promise<string> {
+export async function getOrders(params: any, query: Paging & { status?: OpenOrderStatus, user_id?: string, offer_id?: string }): Promise<string> {
 	const queryBy: { offerId?: string, userId?: string, status?: OpenOrderStatus } = {};
 	if (query.offer_id) {
 		queryBy.offerId = query.offer_id;
@@ -315,7 +334,12 @@ export async function getOrders(params: any, query: { status?: OpenOrderStatus, 
 	if (query.status) {
 		queryBy.status = query.status;
 	}
-	const orders = await Order.find({ where: queryBy, order: { currentStatusDate: "DESC" } });
+	const orders = await Order.find({
+		where: queryBy,
+		order: { currentStatusDate: "DESC" },
+		take: take(query),
+		skip: skip(query)
+	});
 	let ret = `<table>${ORDER_HEADERS}`;
 	for (const order of orders) {
 		ret += await orderToHtml(order);
@@ -335,7 +359,7 @@ export async function getOrder(params: { order_id: string }, query: any): Promis
 export async function getPollResults(params: { offer_id: string }, query: any): Promise<string> {
 	const answers: PollAnswer[] = await PollAnswer.find({
 		where: { offerId: params.offer_id },
-		order: { createdDate: "DESC" }
+		order: { createdDate: "DESC" }, take: take(query), skip: skip(query)
 	});
 	let ret = `<table>`;
 	for (const answer of answers) {

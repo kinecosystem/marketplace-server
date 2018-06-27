@@ -189,7 +189,7 @@ async function userToHtml(user: User): Promise<string> {
 
 export type Paging = { limit: number, page: number };
 const DEFAULT_PAGE = 0;
-const DEFAULT_LIMIT = 25;
+const DEFAULT_LIMIT = 100;
 
 function skip(query: Paging): number {
 	return (query.page || 0) * take(query);

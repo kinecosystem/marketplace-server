@@ -111,7 +111,8 @@ function statsToHtml(stats: Stats) {
 </tr>`;
 }
 
-function appToHtml(app: Application): string {
+async function appToHtml(app: Application): Promise<string> {
+	const BLOCKCHAIN = await getBlockchainConfig(getDefaultLogger());
 	return `<tr>
 <td>${app.id}</td>
 <td>${app.name}</td>
@@ -190,7 +191,7 @@ export async function getApplications(params: any, query: any): Promise<string> 
 	const apps = await Application.find({ order: { createdDate: "DESC" } });
 	let ret = "<table>";
 	for (const app of apps) {
-		ret += appToHtml(app);
+		ret += await appToHtml(app);
 	}
 	ret += "</table>";
 	return ret;
@@ -201,7 +202,7 @@ export async function getApplication(params: { app_id: string }, query: any): Pr
 	if (!app) {
 		throw new Error("no such app: " + params.app_id);
 	}
-	return `<table>${appToHtml(app)}</table>`;
+	return `<table>${await appToHtml(app)}</table>`;
 }
 
 export async function getApplicationUsers(params: { app_id: string }, query: any): Promise<string> {

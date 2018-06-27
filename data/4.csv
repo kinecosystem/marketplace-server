@@ -5,9 +5,9 @@ When was Kik founded?",2006,2009,2008,2002,2,10
 ,,,,,,,,,,,2,TimedFullPageMultiChoice,What was Kik's first product?,Chat,Music Sharing,Recipe Book,Guide To Waterloo,2,10
 ,,,,,,,,,,,3,TimedFullPageMultiChoice,What's Ted Livingston's favorite T-shirt color?,Yellow,Black,Purple,Red,3,10
 ,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #2,30,Take a quiz,Noble Prize,https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,The first winner of the Nobel Prize from Asia was...?,C. V. Raman,Rajiv Gandhi,Rabindranath Tagore,Mother Teresa,3,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #2,30,Take a quiz,Nobel Prize,https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,The first winner of the Nobel Prize from Asia was...?,C. V. Raman,Rajiv Gandhi,Rabindranath Tagore,Mother Teresa,3,10
 ,,,,,,,,,,,2,TimedFullPageMultiChoice,The Nobel Prize was first awarded in...?,1976,1958,1901,1972,3,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,The Nobel Prize is awarded in...?,Oslo,Stockholm,Brussels,Geneva,1,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,The Nobel Peace Prize is awarded in...?,Oslo,Stockholm,Brussels,Geneva,1,10
 ,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
 GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #3,30,Take a quiz,Tech,https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,"The computer abbreviation ""OS"" stands for?",Order of Significance,Operating System,Open Software,Optical Sensor,2,10
 ,,,,,,,,,,,2,TimedFullPageMultiChoice,Who developed Yahoo?,Ritchie &Thompson,Filo & Yang,Cerf & Kahn,Case & Bezos,2,10
@@ -43,7 +43,7 @@ GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #10,30,
 ,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
 GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #11,30,Take a quiz,Geography,https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,What are the official languages of Canada?,English,"English, Spanish","English, French","English, Spanish, French",3,10
 ,,,,,,,,,,,2,TimedFullPageMultiChoice,What's the biggest country in the world?,Canada,USA,Russia,China,3,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,What is the most populated country in the world?,Canada,USA,Russia,China,1,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,What is the most populated country in the world?,Canada,USA,Russia,China,4,10
 ,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
 GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #12,30,Take a quiz,Travel,https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,What is the busiest airport in the world as of today?,Hartsfield-Jackson ATL,Beijing Capital ,Dubai Internal Airport,Tokyo Haneda ,3,10
 ,,,,,,,,,,,2,TimedFullPageMultiChoice,How many passengers travel in the most busiest airport annually?,"85,408,975","88,242,099","95,786,442","103,902,992",4,10
@@ -51,15 +51,15 @@ GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #12,30,
 ,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
 GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #13,30,Take a quiz,Games,https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,How many little blocks make up the Rubik's Cube?,27,25,26,30,2,10
 ,,,,,,,,,,,2,TimedFullPageMultiChoice,"What is the nationality of Ernő Rubik, the inventor of the Rubik's Cube?",Indian,Romanian,Hungarian,Polish,3,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,When was the Rubik's Cube invented?,1949,1974,1848,1985,4,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,When was the Rubik's Cube invented?,1949,1974,1848,1985,2,10
 ,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #14,30,Take a quiz,Search,https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,What car brand was most searched for in the US for 2017?,Ford,Lexus,Kia,Toyota,1,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #14,30,Take a quiz,General,https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,What car brand was most searched for in the US for 2017?,Ford,Lexus,Kia,Toyota,1,10
 ,,,,,,,,,,,2,TimedFullPageMultiChoice,What was the most searched term in the US for 2017?,Super Bowl,Hurricane Irma,Matt Lauer,Tom Petty,2,10
 ,,,,,,,,,,,3,TimedFullPageMultiChoice,"What was the most searched ""how to"" question in the US for 2017?",solar eclipse glasses,watch solar eclipse,buy Bitcoin,make slime,4,10
 ,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
 GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #15,30,Take a quiz,TV&Movies,https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,In which season of the award winning comedy 30 Rock did Tracy Jordan get the EGOT?,Season 3,Season 4,Season 5,Season 6,3,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,Which Pixar movie was the most profitable?,Finding Nemo,Toy Story 3,Finding Dory,Toy Story 2,3,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,How many Indiana Jones movies have been released?,3,4,5,2,2,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,Which Pixar movie was the most profitable?,Finding Nemo,Toy Story 3,Finding Dory,Toy Story 2,1,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,How many Indiana Jones movies have been released?,3,4,5,2,3,10
 ,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
 GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #16,30,Take a quiz,Fun,https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,Which video has the most views on YouTube?,Gangnam Style,See You Again ,Shape of You ,Despacito ,4,10
 ,,,,,,,,,,,2,TimedFullPageMultiChoice,Who has the most Twitter followers?,Katy Perry,Barack Obama,Lady Gaga,Ellen DeGeneres,1,10

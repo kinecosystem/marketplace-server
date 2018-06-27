@@ -89,13 +89,17 @@ describe("test orders", async () => {
 
 	test("countToday counts todays completed orders", async () => {
 		const user: User = await helpers.createUser();
-		expect(await Order.countToday(user.id)).toEqual(0);
+		expect(await Order.countToday(user.id, "earn")).toEqual(0);
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
-		const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
+		const offer = offers.offers.find(x => x.offer_type === "earn");
+		if (!offer) {
+			throw Error("failed to find earn order");
+		}
+		const openOrder = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
 		const order = await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
 		await helpers.completePayment(order.id);
 
-		expect(await Order.countToday(user.id)).toEqual(1);
+		expect(await Order.countToday(user.id, "earn")).toEqual(1);
 	});
 
 	test("return getOrder reduces cap", async () => {

@@ -57,7 +57,7 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 			color: yellow;
 			font-weight: bold;
 		}
-		.stats_opened a {
+		.status_opened a {
 			color: purple;g
 			font-weight: bold;
 		}

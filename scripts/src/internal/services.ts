@@ -95,7 +95,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		createEarnTransactionBroadcastToBlockchainSucceeded(order.userId, payment.transaction_id, order.offerId, order.id).report();
 	} else {
 		// both spend and p2p
-		createSpendOrderPaymentConfirmed(order.userId, payment.transaction_id, order.offerId, order.id).report();
+		createSpendOrderPaymentConfirmed(order.userId, payment.transaction_id, order.offerId, order.id, order.isExternalOrder()).report();
 	}
 
 	if (order.status === "completed") {

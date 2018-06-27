@@ -17,15 +17,17 @@ export interface SpendOrderPaymentConfirmed extends EventData {
 	transaction_id: string;
 	offer_id: string;
 	order_id: string;
+	is_native: boolean;
 }
 
-export function create(user_id: string, transaction_id: string, offer_id: string, order_id: string): Event<SpendOrderPaymentConfirmed> {
+export function create(user_id: string, transaction_id: string, offer_id: string, order_id: string, is_native: boolean): Event<SpendOrderPaymentConfirmed> {
 	return new Event<SpendOrderPaymentConfirmed>({
 		event_name: "spend_order_payment_confirmed",
 		event_type: "log",
 		common: Event.common(user_id),
 		transaction_id,
 		offer_id,
-		order_id
+		order_id,
+		is_native
 	});
 }

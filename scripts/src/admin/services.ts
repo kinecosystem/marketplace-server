@@ -4,7 +4,7 @@ import { getManager } from "typeorm";
 import { User } from "../models/users";
 import { OpenOrderStatus, Order } from "../models/orders";
 import { IdPrefix } from "../utils";
-import { getBlockchainConfig } from "../public/services/payment";
+import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getDefaultLogger } from "../logging";
 import { getOffers as getUserOffersService } from "../public/services/offers";
 import * as payment from "../public/services/payment";
@@ -20,6 +20,9 @@ type Stats = {
 	assets_left: number,
 	orders_missing_asset: number
 };
+
+let BLOCKCHAIN: BlockchainConfig;
+getBlockchainConfig(getDefaultLogger()).then(data => BLOCKCHAIN = data);
 
 const OFFER_HEADERS = `<tr>
 <th>ID</th>
@@ -112,7 +115,6 @@ function statsToHtml(stats: Stats) {
 }
 
 async function appToHtml(app: Application): Promise<string> {
-	const BLOCKCHAIN = await getBlockchainConfig(getDefaultLogger());
 	return `<tr>
 <td>${app.id}</td>
 <td>${app.name}</td>
@@ -126,7 +128,6 @@ async function appToHtml(app: Application): Promise<string> {
 }
 
 async function offerToHtml(offer: Offer): Promise<string> {
-	const BLOCKCHAIN = await getBlockchainConfig(getDefaultLogger());
 	return `<tr>
 <td>${offer.id}</td>
 <td><a href="/offers/${offer.id}/stats">stats</a></td>
@@ -148,7 +149,6 @@ async function offerToHtml(offer: Offer): Promise<string> {
 }
 
 async function orderToHtml(order: Order): Promise<string> {
-	const BLOCKCHAIN = await getBlockchainConfig(getDefaultLogger());
 	const transactionId = order.blockchainData ? order.blockchainData.transaction_id : null;
 	const payJwt = order.value && order.value.type === "payment_confirmation" ? order.value.jwt : null;
 	return `<tr>
@@ -170,7 +170,6 @@ async function orderToHtml(order: Order): Promise<string> {
 }
 
 async function userToHtml(user: User): Promise<string> {
-	const BLOCKCHAIN = await getBlockchainConfig(getDefaultLogger());
 	return `
 <ul>
 <li>ecosystem id: ${user.id}</li>

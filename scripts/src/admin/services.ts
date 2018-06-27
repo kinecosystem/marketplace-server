@@ -118,8 +118,8 @@ function appToHtml(app: Application): string {
 <td>${app.apiKey}</td>
 <td><a href="/applications/${app.id}/users">users</a></td>
 <td><a href="/applications/${app.id}/offers">offers</a></td>
-<td><a href="${app.walletAddresses.recipient}">${app.walletAddresses.recipient}</a></td>
-<td><a href="${app.walletAddresses.sender}">${app.walletAddresses.sender}</a></td>
+<td><a href="${BLOCKCHAIN.horizon_url}/accounts/${app.walletAddresses.sender}">sender wallet (earn)</a></td>
+<td><a href="${BLOCKCHAIN.horizon_url}/accounts/${app.walletAddresses.recipient}">recipient wallet (spend)</a></td>
 <td><pre class="wide">${JSON.stringify(app.jwtPublicKeys, null, 2)}</pre></td>
 </tr>`;
 }

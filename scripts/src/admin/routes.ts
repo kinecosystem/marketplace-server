@@ -6,7 +6,8 @@ import {
 	getOffer, getPollResults, getAllOfferStats,
 	getUserData, getApplicationUserData, getOrder,
 	getApplicationUsers, getOfferStats,
-	getOrders, fuzzySearch, getWallet, getWalletPayments
+	getOrders, fuzzySearch, getWallet, getWalletPayments,
+	getApplicationOffers, getUserOffers
 } from "./services";
 
 import { statusHandler } from "../middleware";
@@ -83,6 +84,7 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 	router
 		.get("/applications", wrapService(getApplications))
 		.get("/applications/:app_id", wrapService(getApplication))
+		.get("/applications/:app_id/offers", wrapService(getApplicationOffers))
 		.get("/applications/:app_id/users", wrapService(getApplicationUsers))
 		.get("/offers", wrapService(getOffers))
 		.get("/orders", wrapService(getOrders))
@@ -91,6 +93,7 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		.get("/offers/:offer_id/stats", wrapService(getOfferStats))
 		.get("/polls/:offer_id", wrapService(getPollResults))
 		.get("/users/:user_id", wrapService(getUserData))
+		.get("/users/:user_id/offers", wrapService(getUserOffers))
 		.get("/applications/:app_id/users/:app_user_id", wrapService(getApplicationUserData))
 		.get("/orders/:order_id", wrapService(getOrder))
 		.get("/fuzzy/:some_id", wrapService(fuzzySearch))

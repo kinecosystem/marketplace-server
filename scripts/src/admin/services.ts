@@ -4,12 +4,10 @@ import { getManager } from "typeorm";
 import { User } from "../models/users";
 import { OpenOrderStatus, Order } from "../models/orders";
 import { IdPrefix } from "../utils";
-import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
+import { getBlockchainConfig } from "../public/services/payment";
 import { getDefaultLogger } from "../logging";
+import { getOffers as getUserOffersService } from "../public/services/offers";
 import * as payment from "../public/services/payment";
-
-let BLOCKCHAIN: BlockchainConfig;
-getBlockchainConfig(getDefaultLogger()).then(data => BLOCKCHAIN = data);
 
 type Stats = {
 	id: string
@@ -119,11 +117,15 @@ function appToHtml(app: Application): string {
 <td>${app.name}</td>
 <td>${app.apiKey}</td>
 <td><a href="/applications/${app.id}/users">users</a></td>
+<td><a href="/applications/${app.id}/offers">offers</a></td>
+<td><a href="${app.walletAddresses.recipient}">${app.walletAddresses.recipient}</a></td>
+<td><a href="${app.walletAddresses.sender}">${app.walletAddresses.sender}</a></td>
 <td><pre class="wide">${JSON.stringify(app.jwtPublicKeys, null, 2)}</pre></td>
 </tr>`;
 }
 
-function offerToHtml(offer: Offer): string {
+async function offerToHtml(offer: Offer): Promise<string> {
+	const BLOCKCHAIN = await getBlockchainConfig(getDefaultLogger());
 	return `<tr>
 <td>${offer.id}</td>
 <td><a href="/offers/${offer.id}/stats">stats</a></td>
@@ -144,7 +146,8 @@ function offerToHtml(offer: Offer): string {
 </tr>`;
 }
 
-function orderToHtml(order: Order): string {
+async function orderToHtml(order: Order): Promise<string> {
+	const BLOCKCHAIN = await getBlockchainConfig(getDefaultLogger());
 	const transactionId = order.blockchainData ? order.blockchainData.transaction_id : null;
 	const payJwt = order.value && order.value.type === "payment_confirmation" ? order.value.jwt : null;
 	return `<tr>
@@ -165,7 +168,8 @@ function orderToHtml(order: Order): string {
 </tr>`;
 }
 
-function userToHtml(user: User): string {
+async function userToHtml(user: User): Promise<string> {
+	const BLOCKCHAIN = await getBlockchainConfig(getDefaultLogger());
 	return `
 <ul>
 <li>ecosystem id: ${user.id}</li>
@@ -204,7 +208,7 @@ export async function getApplicationUsers(params: { app_id: string }, query: any
 	const users: User[] = await User.find({ where: { appId: params.app_id }, order: { createdDate: "DESC" } });
 	let ret = "";
 	for (const user of users) {
-		ret += userToHtml(user);
+		ret += await userToHtml(user);
 	}
 	return ret;
 }
@@ -213,7 +217,27 @@ export async function getOffers(params: any, query: any): Promise<string> {
 	const offers = await Offer.find({ order: { createdDate: "DESC" } });
 	let ret = `<table>${OFFER_HEADERS}`;
 	for (const offer of offers) {
-		ret += offerToHtml(offer);
+		ret += await offerToHtml(offer);
+	}
+	ret += "</table>";
+	return ret;
+}
+
+export async function getApplicationOffers(params: { app_id: string }, query: any): Promise<string> {
+	const app = await Application.createQueryBuilder("app")
+		.where("app.id = :appId", { appId: params.app_id })
+		.leftJoinAndSelect("app.offers", "offer")
+		.addOrderBy("offer.created_date", "ASC")
+		.getOne();
+
+	if (!app) {
+		throw new Error("no such app: " + params.app_id);
+	}
+
+	const offers = app.offers;
+	let ret = `<table>${OFFER_HEADERS}`;
+	for (const offer of offers) {
+		ret += await offerToHtml(offer);
 	}
 	ret += "</table>";
 	return ret;
@@ -224,7 +248,7 @@ export async function getOffer(params: { offer_id: string }, query: any): Promis
 	if (!offer) {
 		throw new Error("no such offer: " + params.offer_id);
 	}
-	return `<table>${OFFER_HEADERS}${offerToHtml(offer)}</table>`;
+	return `<table>${OFFER_HEADERS}${await offerToHtml(offer)}</table>`;
 }
 
 export async function getOfferStats(params: { offer_id: string }, query: any): Promise<string> {
@@ -248,12 +272,27 @@ export async function getAllOfferStats(params: any, query: any): Promise<string>
 	return ret;
 }
 
+export async function getUserOffers(params: { user_id: string }, query: any): Promise<string> {
+	const user: User | undefined = await User.findOneById(params.user_id);
+	if (!user) {
+		throw new Error("user not found: " + params.user_id);
+	}
+	const offers = (await getUserOffersService(user.id, user.appId, {}, getDefaultLogger())).offers;
+	let ret = `<table>${OFFER_HEADERS}`;
+	for (const offer of offers) {
+		const dbOffer = (await Offer.findOneById(offer.id))!;
+		ret += await offerToHtml(dbOffer);
+	}
+	ret += "</table>";
+	return ret;
+}
+
 export async function getUserData(params: { user_id: string }, query: any): Promise<string> {
 	const user: User | undefined = await User.findOneById(params.user_id);
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
-	return userToHtml(user);
+	return await userToHtml(user);
 }
 
 export async function getApplicationUserData(params: { user_id: string, app_id: string }, query: any): Promise<string> {
@@ -261,7 +300,7 @@ export async function getApplicationUserData(params: { user_id: string, app_id: 
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
-	return userToHtml(user);
+	return await userToHtml(user);
 }
 
 export async function getOrders(params: any, query: { status?: OpenOrderStatus, user_id?: string, offer_id?: string }): Promise<string> {
@@ -278,7 +317,7 @@ export async function getOrders(params: any, query: { status?: OpenOrderStatus, 
 	const orders = await Order.find({ where: queryBy, order: { currentStatusDate: "DESC" } });
 	let ret = `<table>${ORDER_HEADERS}`;
 	for (const order of orders) {
-		ret += orderToHtml(order);
+		ret += await orderToHtml(order);
 	}
 	ret += "</table>";
 	return ret;
@@ -289,7 +328,7 @@ export async function getOrder(params: { order_id: string }, query: any): Promis
 	if (!order) {
 		throw new Error("order not found: " + params.order_id);
 	}
-	return `<table>${ORDER_HEADERS}${orderToHtml(order)}</table>`;
+	return `<table>${ORDER_HEADERS}${await orderToHtml(order)}</table>`;
 }
 
 export async function getPollResults(params: { offer_id: string }, query: any): Promise<string> {
@@ -322,7 +361,12 @@ export async function fuzzySearch(params: { some_id: string }, query: any): Prom
 
 export async function getWallet(params: { wallet_address: string }, query: any): Promise<string> {
 	const data = await payment.getWalletData(params.wallet_address, getDefaultLogger());
-	return `<pre class="wide">${JSON.stringify(data, null, 2)}</pre>`;
+	let ret = `<pre class="wide">${JSON.stringify(data, null, 2)}</pre>`;
+
+	if (data.kin_balance === null) {
+		ret = `<h3>Untrusted!</h3>` + ret;
+	}
+	return ret;
 }
 
 export async function getWalletPayments(params: { wallet_address: string }, query: any): Promise<string> {

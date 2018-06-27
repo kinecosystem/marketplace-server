@@ -172,7 +172,7 @@ async function orderToHtml(order: Order): Promise<string> {
 async function userToHtml(user: User): Promise<string> {
 	return `
 <ul>
-<li>ecosystem id: ${user.id}</li>
+<li>ecosystem id: <a href="/users/${user.id}">${user.id}</a></li>
 <li>appId: ${user.appId}</li>
 <li>appUserId: ${user.appUserId}</li>
 <li>stellar account:
@@ -183,6 +183,7 @@ async function userToHtml(user: User): Promise<string> {
 <li>created: ${user.createdDate}</li>
 <li>activated: ${user.activatedDate}</li>
 <li><a href="/orders?user_id=${user.id}">orders</a></li>
+<li><a href="/users/${user.id}/offers">offers</a></li>
 </ul>`;
 }
 

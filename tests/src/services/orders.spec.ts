@@ -100,6 +100,17 @@ describe("test orders", async () => {
 		await helpers.completePayment(order.id);
 
 		expect(await Order.countToday(user.id, "earn")).toEqual(1);
+
+		const spendOffer = offers.offers.find(x => x.offer_type === "spend");
+		if (!spendOffer) {
+			throw Error("failed to find spend order");
+		}
+
+		const spendopenOrder = await createMarketplaceOrder(spendOffer.id, user, getDefaultLogger());
+		const spendOrder = await submitOrder(spendopenOrder.id, null, user.walletAddress, user.appId, getDefaultLogger());
+		await helpers.completePayment(spendOrder.id);
+
+		expect(await Order.countToday(user.id, "earn")).toEqual(1);
 	});
 
 	test("return getOrder reduces cap", async () => {

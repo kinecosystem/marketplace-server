@@ -7,7 +7,7 @@ import {
 	getUserData, getApplicationUserData, getOrder,
 	getApplicationUsers, getOfferStats,
 	getOrders, fuzzySearch, getWallet, getWalletPayments,
-	getApplicationOffers, getUserOffers
+	getApplicationOffers, getUserOffers, retryOrder, retryWallet
 } from "./services";
 
 import { statusHandler } from "../middleware";
@@ -103,7 +103,9 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		.get("/wallets/:wallet_address", wrapService(getWallet))
 		.get("/wallets/:wallet_address/payments", wrapService(getWalletPayments))
 		.get("/", wrapService(index))
-	;
+		// retries
+		.get("/orders/:order_id/retry", wrapService(retryOrder))
+		.get("/wallets/:wallet_address/retry", wrapService(retryWallet));
 
 	app.use("", router);
 	app.get("/status", statusHandler);

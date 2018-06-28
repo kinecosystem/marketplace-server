@@ -348,6 +348,47 @@ export async function getOrders(params: any, query: Paging & { status?: OpenOrde
 	return ret;
 }
 
+export async function retryOrder(params: { order_id: string }, query: any): Promise<string> {
+	const order: Order | undefined = await Order.findOneById(params.order_id);
+	if (!order) {
+		throw new Error("order not found: " + params.order_id);
+	}
+	if (order.status !== "failed" || order.type !== "earn") {
+		throw new Error("cant retry non earn or non failed orders");
+	}
+	const user = await User.findOneById(order.userId);
+	if (!user) {
+		throw new Error("user not found: " + order.userId);
+	}
+	await payment.payTo(order.blockchainData.recipient_address!, user.appId, order.amount, order.id, getDefaultLogger());
+	return `<h3>Retrying...</h3>
+<div><a href="/orders/${order.id}">Go Back</a>
+<script>
+window.setTimeout(function(){
+        // Move to a new location or you can do something else
+        window.location.href = "/orders/${order.id}";
+    }, 5000);
+</script>
+</div>`;
+}
+
+export async function retryWallet(params: { user_id: string }, query: any): Promise<string> {
+	const user = await User.findOneById(params.user_id);
+	if (!user) {
+		throw new Error("user not found: " + params.user_id);
+	}
+	await payment.createWallet(user.walletAddress, user.appId, user.id, getDefaultLogger());
+	return `<h3>Retrying...</h3>
+<div><a href="/users/${user.id}">Go Back</a>
+<script>
+window.setTimeout(function(){
+        // Move to a new location or you can do something else
+        window.location.href = "/users/${user.id}";
+    }, 5000);
+</script>
+</div>`;
+}
+
 export async function getOrder(params: { order_id: string }, query: any): Promise<string> {
 	const order: Order | undefined = await Order.findOneById(params.order_id);
 	if (!order) {

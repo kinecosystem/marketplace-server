@@ -183,7 +183,7 @@ export async function paymentFailed(payment: FailedPayment, logger: LoggerInstan
 	}
 
 	createEarnTransactionBroadcastToBlockchainFailed(order.userId, payment.reason, order.offerId, order.id).report();
-	await setFailedOrder(order, BlockchainError());
+	await setFailedOrder(order, BlockchainError(payment.reason));
 	logger.info(`failed order with payment <${payment.id}>`);
 }
 

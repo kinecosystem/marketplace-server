@@ -47,7 +47,8 @@ export function orderFailed(order: Order, user?: User) {
 	const message = `
 ## Order <${order.id}> transitioned to failed state:
 ID: <${order.id}> | Type: ${order.type} | Origin: ${order.origin}
-UserId: ${(user || unknownUser).id} | AppId: <${(user || unknownUser).appId}> | UserAppId: ${(user || unknownUser).appUserId} | Wallet: ${(user || unknownUser).walletAddress}
+UserId: ${(user || unknownUser).id} | AppId: <${(user || unknownUser).appId}> | UserAppId: ${(user || unknownUser).appUserId}
+Wallet: ${(user || unknownUser).walletAddress}
 Error: ${(order.error || unknownError).message} | Code: ${(order.error || unknownError).code}
 CreatedDate: ${order.createdDate.toISOString()} | LastDate: ${(order.currentStatusDate || order.createdDate).toISOString()}
 `;

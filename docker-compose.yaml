@@ -3,7 +3,7 @@ version: "3"
 services:
 
   marketplace-server:
-    image: kinecosystem/marketplace-server:f005b33
+    image: kinecosystem/marketplace-server:1bb2838
     ports:
       - 3000
     links:
@@ -29,7 +29,7 @@ services:
       APP_DB_DATABASE: ecosystem
 
   marketplace-internal:
-    image: kinecosystem/marketplace-server:f005b33
+    image: kinecosystem/marketplace-server:1bb2838
     command: npm run start-internal
     ports:
       - 3000

@@ -16,4 +16,5 @@ init().then(() => {
 	server.on("listening", onListening(server));
 }).catch(e => {
 	console.log("failed to start server: " + e);
+	process.exit(1);
 });

@@ -91,7 +91,7 @@ export async function getPayments(walletAddress: string, logger: LoggerInstance)
 
 export async function getPayment(orderId: string, logger: LoggerInstance): Promise<Payment> {
 	const res = await client.get(`${config.payment_service}/payments/${orderId}`);
-	return res.data;g
+	return res.data;
 }
 
 export async function setWatcherEndpoint(addresses: string[]): Promise<Watcher> {

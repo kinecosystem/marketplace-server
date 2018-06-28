@@ -2,7 +2,7 @@ version: "3"
 
 services:
   payment-service:
-    image: kinecosystem/payment-service:49f791b
+    image: kinecosystem/payment-service:577d133
     ports:
       - 3000
     links:
@@ -24,7 +24,7 @@ services:
       STELLAR_INITIAL_XLM_AMOUNT: 2
 
   payment-worker:
-    image: kinecosystem/payment-service:49f791b
+    image: kinecosystem/payment-service:577d133
     command: pipenv run rq worker --url redis://redis:6379/0
     links:
       - redis
@@ -32,7 +32,7 @@ services:
       <<: *payment_env_vars
 
   payment-watcher:
-    image: kinecosystem/payment-service:49f791b
+    image: kinecosystem/payment-service:577d133
     command: pipenv run python watcher.py
     links:
       - redis

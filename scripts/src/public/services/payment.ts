@@ -1,6 +1,7 @@
 // wrapper for the payment service
 // TODO: this is used by both public and internal so should move to shared dir
-import * as axios from "axios";
+import axios from "axios";
+const axiosRetry = require("axios-retry"); // TODO: nitzan this fails the tests: import axiosRetry from "axios-retry";
 import { LoggerInstance } from "winston";
 import { performance } from "perf_hooks";
 
@@ -8,6 +9,8 @@ import { getConfig } from "../config";
 
 const config = getConfig();
 const webhook = `${config.internal_service}/v1/internal/webhook`;
+const client = axios.create( { timeout: 1000 });
+axiosRetry(client, { retries: 3 }); // retries on 5xx errors
 
 interface PaymentRequest {
 	amount: number;
@@ -59,7 +62,7 @@ export async function payTo(
 		callback: webhook,
 	};
 	const t = performance.now();
-	await axios.default.post(`${config.payment_service}/payments`, payload);
+	await client.post(`${config.payment_service}/payments`, payload);
 	console.log("pay to took " + (performance.now() - t) + "ms");
 }
 
@@ -71,17 +74,17 @@ export async function createWallet(walletAddress: string, appId: string, id: str
 		callback: webhook,
 	};
 	const t = performance.now();
-	await axios.default.post(`${config.payment_service}/wallets`, payload);
+	await client.post(`${config.payment_service}/wallets`, payload);
 	logger.info("wallet creation took " + (performance.now() - t) + "ms");
 }
 
 export async function getWalletData(walletAddress: string, logger: LoggerInstance): Promise<Wallet> {
-	const res = await axios.default.get(`${config.payment_service}/wallets/${walletAddress}`);
+	const res = await client.get(`${config.payment_service}/wallets/${walletAddress}`);
 	return res.data;
 }
 
 export async function getPaymentData(orderId: string, logger: LoggerInstance): Promise<Payment> {
-	const res = await axios.default.get(`${config.payment_service}/payments/${orderId}`);
+	const res = await client.get(`${config.payment_service}/payments/${orderId}`);
 	return res.data;
 }
 
@@ -89,13 +92,13 @@ export async function setWatcherEndpoint(addresses: string[]): Promise<Watcher> 
 	// What about native spend addresses?
 	// XXX should be called from the internal server api upon creation
 	const payload: Watcher = { wallet_addresses: addresses, callback: webhook };
-	const res = await axios.default.put(`${config.payment_service}/watchers/${SERVICE_ID}`, payload);
+	const res = await client.put(`${config.payment_service}/watchers/${SERVICE_ID}`, payload);
 	return res.data;
 }
 
 export async function addWatcherEndpoint(addresses: string[]): Promise<Watcher> {
 	const payload: Watcher = { wallet_addresses: addresses, callback: webhook };
-	const res = await axios.default.post(`${config.payment_service}/watchers/${SERVICE_ID}`, payload);
+	const res = await client.post(`${config.payment_service}/watchers/${SERVICE_ID}`, payload);
 	return res.data;
 }
 
@@ -107,6 +110,6 @@ export type BlockchainConfig = {
 };
 
 export async function getBlockchainConfig(logger: LoggerInstance): Promise<BlockchainConfig> {
-	const res = await axios.default.get(`${config.payment_service}/config`);
+	const res = await client.get(`${config.payment_service}/config`);
 	return res.data;
 }

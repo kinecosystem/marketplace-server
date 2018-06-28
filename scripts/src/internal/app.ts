@@ -11,6 +11,7 @@ import { createRoutes } from "./routes";
 import { initPaymentCallbacks } from "./services";
 import { init as initModels } from "../models/index";
 import { init as initCustomMiddleware, notFoundHandler, generalErrorHandler } from "./middleware";
+import { init as initRemoteConfig } from "../public/routes/config";
 
 function createApp() {
 	const app = express();
@@ -35,10 +36,10 @@ app.use(notFoundHandler);
 // catch errors
 app.use(generalErrorHandler);
 
-// initializing db and models
-initModels().then(msg => {
+export async function init() {
+	// initializing db and models
+	const msg = await initModels();
 	logger.info("init db", { msg });
-	initPaymentCallbacks(logger).then(res => {
-		logger.info("init payment result", { res });
-	});
-});
+	const res = await initPaymentCallbacks(logger);
+	logger.info("init payment result", { res });
+}

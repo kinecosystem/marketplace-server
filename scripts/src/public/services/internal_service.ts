@@ -1,7 +1,7 @@
 import axios from "axios";
-import axiosRetry from "axios-retry";
 import { getConfig } from "../config";
 import { KeyMap } from "../../utils";
+const axiosRetry = require("axios-retry");
 
 const config = getConfig();
 const client = axios.create( { timeout: 1000 });

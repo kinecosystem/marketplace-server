@@ -372,7 +372,7 @@ window.setTimeout(function(){
 </div>`;
 }
 
-export async function retryWallet(params: { user_id: string }, query: any): Promise<string> {
+export async function retryUserWallet(params: { user_id: string }, query: any): Promise<string> {
 	const user = await User.findOneById(params.user_id);
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);

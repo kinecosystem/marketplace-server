@@ -407,7 +407,7 @@ async function didNotApproveTOS() {
 	console.log("=====================================didNotApproveTOS=====================================");
 	const client = new Client();
 
-	await client.register({ apiKey: API_KEY, userId: "new_user_123" },
+	await client.register({ apiKey: API_KEY, userId: "test:new_user_123" },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	const offers = await client.getOffers();
 	try {
@@ -423,7 +423,7 @@ async function spendFlow() {
 	const client = new Client();
 	// this address is prefunded with test kin
 
-	await client.register({ apiKey: API_KEY, userId: "rich_user2" },
+	await client.register({ apiKey: API_KEY, userId: "test:rich_user2" },
 		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 	const selectedOffer = await getOffer(client, "spend");
@@ -473,7 +473,7 @@ async function earnPollFlow() {
 
 	console.log("===================================== earn poll =====================================");
 	const client = new Client();
-	await client.register({ apiKey: API_KEY, userId: "earn:" + generateId() },
+	await client.register({ apiKey: API_KEY, userId: "test:earn:" + generateId() },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
@@ -527,7 +527,7 @@ async function earnQuizFlow() {
 
 	console.log("===================================== earn quiz =====================================");
 	const client = new Client();
-	await client.register({ apiKey: API_KEY, userId: "quiz_user:" + generateId() },
+	await client.register({ apiKey: API_KEY, userId: "test:quiz_user:" + generateId() },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
@@ -568,7 +568,7 @@ async function earnQuizFlow() {
 async function earnTutorial() {
 	console.log("===================================== earnTutorial =====================================");
 	const client = new Client();
-	await client.register({ apiKey: API_KEY, userId: "tutorial:" + generateId() },
+	await client.register({ apiKey: API_KEY, userId: "test:tutorial:" + generateId() },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
@@ -592,13 +592,13 @@ async function earnTutorial() {
 async function testRegisterNewUser() {
 	console.log("===================================== testRegisterNewUser =====================================");
 	const client = new Client();
-	await client.register({ apiKey: API_KEY, userId: "new_user:" + generateId() });
+	await client.register({ apiKey: API_KEY, userId: "test:new_user:" + generateId() });
 }
 
 async function justPay() {
 	console.log("===================================== justPay =====================================");
 	const client = new Client();
-	await client.register({ apiKey: API_KEY, userId: generateId() });
+	await client.register({ apiKey: API_KEY, userId: "test:" + generateId() });
 	await client.pay("GCZ72HXIUSDXEEL2RVZR6PXHGYU7S3RMQQ4O6UVIXWOU4OUVNIQKQR2X", 1, "SOME_ORDER");
 
 }
@@ -607,7 +607,7 @@ async function registerJWT() {
 	console.log("===================================== registerJWT =====================================");
 
 	const client = new Client();
-	const userId = generateId();
+	const userId = "test:" + generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 	await client.register({ jwt });
@@ -618,7 +618,7 @@ async function nativeSpendFlow() {
 
 	const client = new Client();
 	// this address is prefunded with test kin
-	const userId = "rich_user:" + generateId();
+	const userId = "test:rich_user:" + generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 
@@ -671,7 +671,7 @@ async function nativeSpendFlow() {
 async function tryToNativeSpendTwice() {
 	console.log("===================================== tryToNativeSpendTwice =====================================");
 	const client = new Client();
-	const userId = "rich_user:" + generateId();
+	const userId = "test:rich_user:" + generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 
@@ -710,7 +710,7 @@ async function nativeEarnFlow() {
 
 	const client = new Client();
 	// this address is prefunded with test kin
-	const userId = generateId();
+	const userId = "test:" + generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 
@@ -757,7 +757,7 @@ async function createTrust() {
 	console.log("===================================== createTrust =====================================");
 	const client = new Client();
 	// this address is prefunded with test kin
-	await client.register({ apiKey: API_KEY, userId: "rich_user2" },
+	await client.register({ apiKey: API_KEY, userId: "test:rich_user2" },
 		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	const record = await client.establishTrustLine();
 	console.log("established trust", record.hash);
@@ -766,12 +766,12 @@ async function createTrust() {
 async function main() {
 	STELLAR = await Stellar.get("auto");
 	await createTrust();
-	// await earnTutorial();
-	// await earnPollFlow();
-	// await earnQuizFlow();
-	// await didNotApproveTOS();
-	// await testRegisterNewUser();
-	// await spendFlow();
+	await earnTutorial();
+	await earnPollFlow();
+	await earnQuizFlow();
+	await didNotApproveTOS();
+	await testRegisterNewUser();
+	await spendFlow();
 	// await justPay();
 	await registerJWT();
 	await nativeEarnFlow();

@@ -315,10 +315,10 @@ export async function getUserData(params: { user_id: string }, query: any): Prom
 	return await userToHtml(user);
 }
 
-export async function getApplicationUserData(params: { user_id: string, app_id: string }, query: any): Promise<string> {
-	const user: User | undefined = await User.findOne({ appUserId: params.user_id, appId: params.app_id });
+export async function getApplicationUserData(params: { app_user_id: string, app_id: string }, query: any): Promise<string> {
+	const user: User | undefined = await User.findOne({ appUserId: params.app_user_id, appId: params.app_id });
 	if (!user) {
-		throw new Error("user not found: " + params.user_id);
+		throw new Error("user not found: " + params.app_user_id);
 	}
 	return await userToHtml(user);
 }

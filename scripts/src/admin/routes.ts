@@ -106,7 +106,7 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		.get("/", wrapService(index))
 		// retries
 		.get("/orders/:order_id/retry", wrapService(retryOrder))
-		.get("users/:user_id/retry", wrapService(retryUserWallet));
+		.get("/users/:user_id/retry", wrapService(retryUserWallet));
 
 	app.use("", router);
 	app.get("/status", statusHandler);

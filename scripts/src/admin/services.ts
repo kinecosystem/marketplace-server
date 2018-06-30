@@ -9,7 +9,7 @@ import { getDefaultLogger } from "../logging";
 import { getOffers as getUserOffersService } from "../public/services/offers";
 import * as payment from "../public/services/payment";
 
-type Stats = {
+type OfferStats = {
 	id: string
 	name: string,
 	type: string,
@@ -19,6 +19,16 @@ type Stats = {
 	assets_owned: number,
 	assets_left: number,
 	orders_missing_asset: number
+};
+
+type AppStats = {
+	app_id: string
+	total_users: number,
+	total_activated: number,
+	earn: number,
+	spend: number,
+	failed_earn: number,
+	failed_spend: number,
 };
 
 let BLOCKCHAIN: BlockchainConfig;
@@ -43,7 +53,7 @@ const OFFER_HEADERS = `<tr>
 <th>date</th>
 </tr>`;
 
-const STATS_HEADERS = `<tr>
+const OFFER_STATS_HEADERS = `<tr>
 <th>ID</th>
 <th>name</th>
 <th>type</th>
@@ -53,6 +63,16 @@ const STATS_HEADERS = `<tr>
 <th>assets owned</th>
 <th>assets left</th>
 <th>orders missing asset</th>
+</tr>`;
+
+const APP_STATS_HEADERS = `<tr>
+<th>ID</th>
+<th>total users</th>
+<th>activated users</th>
+<th>completed earn</th>
+<th>completed spend</th>
+<th>failed earn</th>
+<th>failed spend</th>
 </tr>`;
 
 const ORDER_HEADERS = `<tr>
@@ -72,7 +92,7 @@ const ORDER_HEADERS = `<tr>
 <th>payment confirmation</th>
 </tr>`;
 
-function getStatsQuery(offerId: string | "all") {
+function getOfferStatsQuery(offerId: string | "all") {
 	return `
 	 select
   a.id,
@@ -100,7 +120,23 @@ where a.id = '${offerId}' or '${offerId}' = 'all'
 order by type desc, abs(ordered.num - owned.num) desc, ordered.num desc`;
 }
 
-function statsToHtml(stats: Stats) {
+function getApplicationStatsQuery(appId: string | "all") {
+	return `
+	select
+  users.app_id,
+  count(DISTINCT users.id) as total_users,
+  count(DISTINCT users.activated_date) as total_activated,
+  SUM(CASE WHEN orders.status = 'completed' and orders.type = 'earn' THEN 1 ELSE 0 END) as earn,
+  SUM(CASE WHEN orders.status = 'completed' and orders.type = 'spend' THEN 1 ELSE 0 END) as spend,
+  SUM(CASE WHEN orders.status != 'completed' and orders.type = 'earn' THEN 1 ELSE 0 END) as failed_earn,
+  SUM(CASE WHEN orders.status != 'completed' and orders.type = 'spend' THEN 1 ELSE 0 END) as failed_spend
+from orders
+  right join users on orders.user_id = users.id
+  where users.app_id = '${appId}' or '${appId}' = 'all'
+group by users.app_id`;
+}
+
+function offerStatsToHtml(stats: OfferStats) {
 	return `<tr>
 <td>${stats.id}</td>
 <td>${stats.name}</td>
@@ -114,6 +150,18 @@ function statsToHtml(stats: Stats) {
 </tr>`;
 }
 
+function appStatsToHtml(stats: AppStats) {
+	return `<tr>
+<td>${stats.app_id}</td>
+<td>${stats.total_users}</td>
+<td>${stats.total_activated}</td>
+<td>${stats.earn}</td>
+<td>${stats.spend}</td>
+<td>${stats.failed_earn}</td>
+<td>${stats.failed_spend}</td>
+</tr>`;
+}
+
 async function appToHtml(app: Application): Promise<string> {
 	return `<tr>
 <td>${app.id}</td>
@@ -121,6 +169,7 @@ async function appToHtml(app: Application): Promise<string> {
 <td>${app.apiKey}</td>
 <td><a href="/applications/${app.id}/users">users</a></td>
 <td><a href="/applications/${app.id}/offers">offers</a></td>
+<td><a href="/applications/${app.id}/stats">stats</a></td>
 <td><a href="${BLOCKCHAIN.horizon_url}/accounts/${app.walletAddresses.sender}">sender wallet (earn)</a></td>
 <td><a href="${BLOCKCHAIN.horizon_url}/accounts/${app.walletAddresses.recipient}">recipient wallet (spend)</a></td>
 <td><pre class="wide">${JSON.stringify(app.jwtPublicKeys, null, 2)}</pre></td>
@@ -272,21 +321,21 @@ export async function getOffer(params: { offer_id: string }, query: any): Promis
 }
 
 export async function getOfferStats(params: { offer_id: string }, query: any): Promise<string> {
-	const stats: Stats[] = await getManager().query(getStatsQuery(params.offer_id));
-	let ret = `<table>${STATS_HEADERS}`;
+	const stats: OfferStats[] = await getManager().query(getOfferStatsQuery(params.offer_id));
+	let ret = `<table>${OFFER_STATS_HEADERS}`;
 	for (const stat of stats) {
-		ret += statsToHtml(stat);
+		ret += offerStatsToHtml(stat);
 	}
 	ret += "</table>";
 	return ret;
 }
 
 export async function getAllOfferStats(params: any, query: any): Promise<string> {
-	const stats: Stats[] = await getManager().query(getStatsQuery("all"));
+	const stats: OfferStats[] = await getManager().query(getOfferStatsQuery("all"));
 
-	let ret = `<table>${STATS_HEADERS}`;
+	let ret = `<table>${OFFER_STATS_HEADERS}`;
 	for (const stat of stats) {
-		ret += statsToHtml(stat);
+		ret += offerStatsToHtml(stat);
 	}
 	ret += "</table>";
 	return ret;
@@ -405,6 +454,16 @@ export async function getPollResults(params: { offer_id: string }, query: any): 
 	let ret = `<table>`;
 	for (const answer of answers) {
 		ret += `<tr><td><pre class="wide">${answer.content}</pre></td></tr>`;
+	}
+	ret += "</table>";
+	return ret;
+}
+
+export async function getApplicationStats(params: { app_id: string }, query: any): Promise<string> {
+	const stats: AppStats[] = await getManager().query(getApplicationStatsQuery(params.app_id));
+	let ret = `<table>${APP_STATS_HEADERS}`;
+	for (const stat of stats) {
+		ret += appStatsToHtml(stat);
 	}
 	ret += "</table>";
 	return ret;

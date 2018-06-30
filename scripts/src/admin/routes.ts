@@ -8,7 +8,7 @@ import {
 	getApplicationUsers, getOfferStats,
 	getOrders, fuzzySearch, getWallet, getWalletPayments,
 	getApplicationOffers, getUserOffers,
-	retryOrder, retryUserWallet
+	retryOrder, retryUserWallet, getApplicationStats
 } from "./services";
 
 import { statusHandler } from "../middleware";
@@ -90,6 +90,7 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		.get("/applications/:app_id", wrapService(getApplication))
 		.get("/applications/:app_id/offers", wrapService(getApplicationOffers))
 		.get("/applications/:app_id/users", wrapService(getApplicationUsers))
+		.get("/applications/:app_id/stats", wrapService(getApplicationStats))
 		.get("/offers", wrapService(getOffers))
 		.get("/orders", wrapService(getOrders))
 		.get("/offers/stats", wrapService(getAllOfferStats))

@@ -128,8 +128,8 @@ function getApplicationStatsQuery(appId: string | "all") {
   count(DISTINCT users.activated_date) as total_activated,
   SUM(CASE WHEN orders.status = 'completed' and orders.type = 'earn' THEN 1 ELSE 0 END) as earn,
   SUM(CASE WHEN orders.status = 'completed' and orders.type = 'spend' THEN 1 ELSE 0 END) as spend,
-  SUM(CASE WHEN orders.status != 'completed' and orders.type = 'earn' THEN 1 ELSE 0 END) as failed_earn,
-  SUM(CASE WHEN orders.status != 'completed' and orders.type = 'spend' THEN 1 ELSE 0 END) as failed_spend
+  SUM(CASE WHEN orders.status in ('failed', 'pending') and orders.type = 'earn' THEN 1 ELSE 0 END) as failed_earn,
+  SUM(CASE WHEN orders.status in ('failed', 'pending') and orders.type = 'spend' THEN 1 ELSE 0 END) as failed_spend
 from orders
   right join users on orders.user_id = users.id
   where users.app_id = '${appId}' or '${appId}' = 'all'

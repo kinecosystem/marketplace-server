@@ -1,5 +1,6 @@
 import { LoggerInstance } from "winston";
 
+import { pick } from "../../utils";
 import { lock } from "../../redis";
 import * as metrics from "../../metrics";
 import { User } from "../../models/users";
@@ -58,6 +59,7 @@ export interface Order extends BaseOrder {
 	completion_date: string; // UTC ISO
 	result?: OrderValue;
 	call_to_action?: string;
+	origin: db.OrderOrigin;
 }
 
 export async function getOrder(orderId: string, logger: LoggerInstance): Promise<Order> {
@@ -317,7 +319,18 @@ function orderDbToApi(order: db.Order): Order {
 		throw OpenedOrdersUnreturnable();
 	}
 
-	return {
+	const apiOrder = Object.assign(
+		pick(order, "id", "origin", "status", "amount"), {
+			result: order.value,
+			offer_type: order.type,
+			offer_id: order.offerId,
+			title: order.meta.title,
+			error: order.error as ApiError,
+			blockchain_data: order.blockchainData,
+			completion_date: (order.currentStatusDate || order.createdDate).toISOString()
+		}, order.meta) as Order;
+
+	/*return {
 		id: order.id,
 		offer_id: order.offerId,
 		offer_type: order.type,
@@ -331,7 +344,9 @@ function orderDbToApi(order: db.Order): Order {
 		blockchain_data: order.blockchainData,
 		error: order.error as ApiError,  // will be null for anything other than "failed"
 		result: order.value,  // will be a coupon code or a payment_confirmation JWT
-	};
+	};*/
+
+	return apiOrder;
 }
 
 export async function setFailedOrder(order: db.Order, error: MarketplaceError): Promise<db.Order> {

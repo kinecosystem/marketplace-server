@@ -17,7 +17,7 @@ export function userActivate(newUser: boolean) {
 }
 
 export function timeRequest(time: number, method: string, path: string) {
-	statsd.timing("request", time, undefined, { path: `${method}: ${path}` });
+	statsd.timing("request", time, undefined, { path: `${ method }: ${ path }` });
 }
 
 export function submitOrder(offerType: "earn" | "spend", offerId: string) {

@@ -328,23 +328,7 @@ function orderDbToApi(order: db.Order): Order {
 			error: order.error as ApiError,
 			blockchain_data: order.blockchainData,
 			completion_date: (order.currentStatusDate || order.createdDate).toISOString()
-		}, order.meta) as Order;
-
-	/*return {
-		id: order.id,
-		offer_id: order.offerId,
-		offer_type: order.type,
-		status: order.status,
-		amount: order.amount,
-		title: order.meta.title,
-		description: order.meta.description,
-		call_to_action: order.meta.call_to_action,
-		completion_date: (order.currentStatusDate || order.createdDate).toISOString(), // XXX should we separate the dates?
-		content: order.meta.content,  // will be empty for external order
-		blockchain_data: order.blockchainData,
-		error: order.error as ApiError,  // will be null for anything other than "failed"
-		result: order.value,  // will be a coupon code or a payment_confirmation JWT
-	};*/
+		}, pick(order.meta, "title", "description", "content", "call_to_action")) as Order;
 
 	return apiOrder;
 }

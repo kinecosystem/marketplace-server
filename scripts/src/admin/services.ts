@@ -25,10 +25,14 @@ type AppStats = {
 	app_id: string
 	total_users: number,
 	total_activated: number,
-	earn: number,
-	spend: number,
-	failed_earn: number,
-	failed_spend: number,
+	users_completed_earn: number,
+	users_completed_spend: number,
+	users_failed_earn: number,
+	users_failed_spend: number,
+	earn_orders: number,
+	spend_orders: number,
+	failed_earn_orders: number,
+	failed_spend_orders: number,
 };
 
 let BLOCKCHAIN: BlockchainConfig;
@@ -69,10 +73,14 @@ const APP_STATS_HEADERS = `<tr>
 <th>ID</th>
 <th>total users</th>
 <th>activated users</th>
-<th>completed earn</th>
-<th>completed spend</th>
-<th>failed earn</th>
-<th>failed spend</th>
+<th>users completed earn</th>
+<th>users completed spend</th>
+<th>users failed earn</th>
+<th>users failed spend</th>
+<th>total earn orders</th>
+<th>total spend orders</th>
+<th>failed earn orders</th>
+<th>failed spend orders</th>
 </tr>`;
 
 const ORDER_HEADERS = `<tr>
@@ -167,10 +175,14 @@ function appStatsToHtml(stats: AppStats) {
 <td>${stats.app_id}</td>
 <td>${stats.total_users}</td>
 <td>${stats.total_activated}</td>
-<td>${stats.earn}</td>
-<td>${stats.spend}</td>
-<td>${stats.failed_earn}</td>
-<td>${stats.failed_spend}</td>
+<td>${stats.users_completed_earn}</td>
+<td>${stats.users_completed_spend}</td>
+<td>${stats.users_failed_earn}</td>
+<td>${stats.users_failed_spend}</td>
+<td>${stats.earn_orders}</td>
+<td>${stats.spend_orders}</td>
+<td>${stats.failed_earn_orders}</td>
+<td>${stats.failed_spend_orders}</td>
 </tr>`;
 }
 

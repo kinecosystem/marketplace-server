@@ -122,18 +122,30 @@ order by type desc, abs(ordered.num - owned.num) desc, ordered.num desc`;
 
 function getApplicationStatsQuery(appId: string | "all") {
 	return `
-	select
+select
   users.app_id,
   count(DISTINCT users.id) as total_users,
   count(DISTINCT users.activated_date) as total_activated,
-  SUM(CASE WHEN orders.status = 'completed' and orders.type = 'earn' THEN 1 ELSE 0 END) as earn,
-  SUM(CASE WHEN orders.status = 'completed' and orders.type = 'spend' THEN 1 ELSE 0 END) as spend,
-  SUM(CASE WHEN orders.status in ('failed', 'pending') and orders.type = 'earn' THEN 1 ELSE 0 END) as failed_earn,
-  SUM(CASE WHEN orders.status in ('failed', 'pending') and orders.type = 'spend' THEN 1 ELSE 0 END) as failed_spend
-from orders
-  right join users on orders.user_id = users.id
+  count(DISTINCT earn.user_id) as users_completed_earn,
+  count(DISTINCT spend.user_id) as users_completed_spend,
+  count(DISTINCT failed_earn.user_id) as users_failed_earn,
+  count(DISTINCT failed_spend.user_id) as users_failed_spend,
+  SUM(earn.num) as earn_orders,
+  SUM(spend.num) as spend_orders,
+  SUM(failed_earn.num) as failed_earn_orders,
+  SUM(failed_spend.num) as failed_spend_orders
+from users
+  left join (select user_id, count(*) as num from orders where (status = 'completed' or ((status = 'pending' or status = 'opened') and expiration_date > now())) and type = 'earn' group by user_id) as earn
+on earn.user_id = users.id
+  left join (select user_id, count(*) as num from orders where (status = 'completed' or ((status = 'pending' or status = 'opened') and expiration_date > now())) and type = 'spend' group by user_id) as spend
+on spend.user_id = users.id
+  left join (select user_id, count(*) as num from orders where (status = 'failed' or (status = 'pending' and expiration_date < now())) and type = 'earn' group by user_id) as failed_earn
+on failed_earn.user_id = users.id
+    left join (select user_id, count(*) as num from orders where (status = 'failed' or (status = 'pending' and expiration_date < now())) and type = 'spend' group by user_id) as failed_spend
+on failed_spend.user_id = users.id
   where users.app_id = '${appId}' or '${appId}' = 'all'
-group by users.app_id`;
+group by users.app_id;
+	`;
 }
 
 function offerStatsToHtml(stats: OfferStats) {

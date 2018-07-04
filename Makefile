@@ -1,8 +1,8 @@
 all:
-	trap 'kill %1' SIGINT; make run & make run-internal
+	trap 'kill %1' SIGINT; make run-internal & bash -c 'sleep 1 && make run'
 
 split: 
-	tmux new-session 'make run' \; split-window 'make run-internal' \;
+	tmux new-session 'make run-internal' \; split-window 'sleep 1 && make run' \;
 
 install:
 	npm i

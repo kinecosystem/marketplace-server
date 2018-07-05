@@ -19,7 +19,12 @@ export async function createSpend(
 	couponImage: string, couponTitle: string, couponDescription: string,
 	couponConfirmImage: string, couponConfirmTitle: string, couponConfirmSubtitle: string,
 	orderContentImage: string, orderContentTitle: string, orderContentSubtitle: string, orderContentHyperLink: string,
-	couponCodes: string[]) {
+	couponCodes: string[]): Promise<Offer> {
+
+	const existingOffer = await Offer.findOne({ name: offerName });
+	if (existingOffer) {
+		return existingOffer;
+	}
 
 	const owner = await getOrCreateOwner(brand);
 
@@ -90,6 +95,11 @@ export async function createEarn(
 	capTotal: number, capPerUser: number,
 	orderTitle: string, orderDescription: string, contentType: ContentType,
 	poll: Quiz | Poll | Tutorial): Promise<Offer> {
+
+	const existingOffer = await Offer.findOne({ name: offerName });
+	if (existingOffer) {
+		return existingOffer;
+	}
 
 	const owner = await getOrCreateOwner(brand);
 

@@ -18,7 +18,12 @@ import "./models/users";
 
 const STELLAR_ADDRESS = process.env.STELLAR_ADDRESS;  // address to use instead of the ones defined in the data
 
-async function createApp(appId: string, name: string, keyNames: string[], apiKey?: string) {
+async function createApp(appId: string, name: string, keyNames: string[], apiKey?: string): Promise<Application> {
+	const existingApp = await Application.findOneById(appId);
+	if (existingApp) {
+		return existingApp;
+	}
+
 	const jwtPublicKeys: StringMap = {};
 
 	for (const keyName of keyNames) {
@@ -216,22 +221,14 @@ initModels().then(async () => {
 	const app2 = await createApp("kik", "Kik Messenger", ["1"]);
 	const app3 = await createApp("test", "Test App", ["es256_0", "rs512_0"]);
 
-	const apps = [app1, app2, app3];
-	const offers: Offer[] = await Offer.find(); // add all offers to both apps
-
-	// adding all offers to all apps
-	for (const app of apps) {
-		app.offers = offers;
-		await app.save();
-		console.log(`created application`, app.id);
-	}
-
 	// create offers from csv
 	const parseCsv = require("csv-parse/lib/sync");
 
-	for (let i = 1; i <= 4; i++) {
-		const spend = fs.readFileSync(`./data/${i}.csv`);
-		const parsed = parseCsv(spend);
+	const inputFiles = process.argv.slice(2);
+	for (const file of inputFiles) {
+		const offersCsv = fs.readFileSync(file);
+		const parsed = parseCsv(offersCsv);
+
 		const title = readTitle(parsed[0][0]);
 		const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
 		if (title === "Spend") {

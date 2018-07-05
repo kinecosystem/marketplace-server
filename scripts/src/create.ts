@@ -21,6 +21,7 @@ const STELLAR_ADDRESS = process.env.STELLAR_ADDRESS;  // address to use instead 
 async function createApp(appId: string, name: string, keyNames: string[], apiKey?: string): Promise<Application> {
 	const existingApp = await Application.findOneById(appId);
 	if (existingApp) {
+		console.log(`existing app: ${appId}`);
 		return existingApp;
 	}
 

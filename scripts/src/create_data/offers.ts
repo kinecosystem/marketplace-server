@@ -23,6 +23,7 @@ export async function createSpend(
 
 	const existingOffer = await Offer.findOne({ name: offerName });
 	if (existingOffer) {
+		console.log(`existing offer: ${offerName}`);
 		return existingOffer;
 	}
 
@@ -98,6 +99,7 @@ export async function createEarn(
 
 	const existingOffer = await Offer.findOne({ name: offerName });
 	if (existingOffer) {
+		console.log(`existing offer: ${offerName}`);
 		return existingOffer;
 	}
 

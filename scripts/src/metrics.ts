@@ -20,6 +20,10 @@ export function timeRequest(time: number, method: string, path: string) {
 	statsd.timing("request", time, undefined, { path: `${ method }: ${ path }` });
 }
 
+export function createOrder(orderType: "marketplace" | "external", offerType: "earn" | "spend", offerId: string) {
+	statsd.increment("create_order", 1, undefined, { order_type: orderType, offer_type: offerType, offer_id: offerId });
+}
+
 export function submitOrder(offerType: "earn" | "spend", offerId: string) {
 	statsd.increment("submit_order", 1, undefined, { offer_type: offerType, offer_id: offerId });
 }

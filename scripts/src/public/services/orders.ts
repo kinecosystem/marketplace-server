@@ -113,6 +113,8 @@ async function createOrder(offer: offerDb.Offer, user: User) {
 	});
 
 	await order.save();
+	metrics.createOrder("marketplace", offer.type, offer.id);
+
 	return order;
 }
 
@@ -186,7 +188,9 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 				recipient_address
 			}
 		});
+
 		await order.save();
+		metrics.createOrder("external", payload.sub, payload.offer.id);
 
 		logger.info("created new open external order", {
 			offerId: payload.offer.id,

@@ -97,8 +97,15 @@ export function generalErrorHandler(err: any, req: Request, res: Response, next:
 	}
 }
 
+const AUGMENT_CLIENT_ERROR_WITH_HEADERS = ["platform", "sdk_version", "device_type", "os_version"];
 function clientErrorHandler(error: MarketplaceError, req: express.Request, res: express.Response) {
 	const log = req.logger || logger;
+
+	AUGMENT_CLIENT_ERROR_WITH_HEADERS.forEach(name => {
+		if (req.headers[name]) {
+			error.setHeader(name, req.headers[name]!);
+		}
+	});
 
 	log.error(`client error (4xx)`, error);
 	metrics.reportClientError(error);

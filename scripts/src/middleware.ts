@@ -5,7 +5,7 @@ import { Request, Response } from "express-serve-static-core";
 
 import * as metrics from "./metrics";
 import { getConfig } from "./config";
-import { generateId } from "./utils";
+import { generateId, pick } from "./utils";
 import { MarketplaceError } from "./errors";
 import { getDefaultLogger } from "./logging";
 
@@ -101,7 +101,11 @@ function clientErrorHandler(error: MarketplaceError, req: express.Request, res: 
 	const log = req.logger || logger;
 
 	log.error(`client error (4xx)`, error);
-	metrics.reportClientError(error);
+	metrics.reportClientError(error, pick(req.headers as any,
+		"x-os",
+		"x-sdk-version",
+		"x-device-model",
+		"x-device-manufacturer"));
 	// set headers from the error if any
 	Object.keys(error.headers).forEach(key => res.setHeader(key, error.headers[key]));
 	res.status(error.status).send(error.toJson());

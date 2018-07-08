@@ -36,8 +36,9 @@ export function offersReturned(numOffers: number) {
 	statsd.histogram("offers_returned", numOffers);
 }
 
-export function reportClientError(error: MarketplaceError) {
-	statsd.increment("client_error", 1, undefined, { status: error.status.toString(), title: error.title });
+export function reportClientError(error: MarketplaceError, headers: { [name: string]: string }) {
+	const data = Object.assign({ status: error.status.toString(), title: error.title }, headers);
+	statsd.increment("client_error", 1, undefined, data);
 }
 
 export function reportServerError(method: string, path: string) {

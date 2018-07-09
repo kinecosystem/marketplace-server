@@ -3,7 +3,7 @@ import { Offer, PollAnswer } from "../models/offers";
 import { getManager } from "typeorm";
 import { User } from "../models/users";
 import { OpenOrderStatus, Order } from "../models/orders";
-import { IdPrefix } from "../utils";
+import { IdPrefix, isNothing } from "../utils";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getDefaultLogger } from "../logging";
 import { getOffers as getUserOffersService } from "../public/services/offers";
@@ -212,8 +212,8 @@ async function offerToHtml(offer: Offer): Promise<string> {
 <td>${offer.meta.title}</td>
 <td>${offer.meta.description}</td>
 <td><img src="${offer.meta.image}"/></td>
-<td><input type="text" id="offer-${offer.id}-cap-total" onchange="submitData('/offers/${offer.id}', {cap: {total: this.value}})" value="${offer.cap.total}"/></td>
-<td>${offer.cap.per_user}</td>
+<td><input type="text" onchange="submitData('/offers/${offer.id}', {cap: {total: this.value}})" value="${offer.cap.total}"/></td>
+<td><input type="text" onchange="submitData('/offers/${offer.id}', {cap: {per_user: this.value}})" value="${offer.cap.per_user}"/></td>
 <td>${offer.ownerId}</td>
 <td><a href="${BLOCKCHAIN.horizon_url}/accounts/${offer.blockchainData.recipient_address}">${offer.blockchainData.recipient_address}</a></td>
 <td><a href="${BLOCKCHAIN.horizon_url}/accounts/${offer.blockchainData.sender_address}">${offer.blockchainData.sender_address}</a></td>
@@ -528,10 +528,22 @@ export async function changeOffer(body: Partial<Offer>, params: { offer_id: stri
 	if (!offer) {
 		throw new Error("no such offer: " + params.offer_id);
 	}
-	if (!body || !body.cap || !body.cap.total || !parseInt(body.cap.total as any, 10) || parseInt(body.cap.total as any, 10) < 0) {
+
+	let didChange = false;
+	if (body && body.cap) {
+		if (body.cap.total && !isNothing(parseInt(body.cap.total as any, 10)) && parseInt(body.cap.total as any, 10) >= 0) {
+			offer.cap.total = parseInt(body.cap.total as any, 10);
+			didChange = true;
+		}
+		if (body.cap.per_user && !isNothing(parseInt(body.cap.per_user as any, 10)) && parseInt(body.cap.per_user as any, 10) >= 0) {
+			offer.cap.per_user = parseInt(body.cap.per_user as any, 10);
+			didChange = true;
+		}
+	}
+
+	if (!didChange) {
 		throw new Error("cap must be defined, a number and greater or equal to 0 - received: " + JSON.stringify(body));
 	}
-	offer.cap.total = parseInt(body.cap.total as any, 10);
 
 	await offer.save();
 	return { offer };

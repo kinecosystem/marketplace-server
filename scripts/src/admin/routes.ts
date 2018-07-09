@@ -70,6 +70,9 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 			color: purple;
 			font-weight: bold;
 		}
+		input {
+			width: 70px;
+		}
 		</style>
 		<style>
 		#toast {

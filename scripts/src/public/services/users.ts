@@ -6,7 +6,7 @@ import * as db from "../../models/users";
 import * as payment from "./payment";
 import { pick } from "../../utils";
 import * as metrics from "../../metrics";
-import { Application, NO_WALLET_LIMIT } from "../../models/applications";
+import { Application } from "../../models/applications";
 
 export type AuthToken = {
 	token: string;
@@ -49,7 +49,7 @@ export async function getOrCreateUserCredentials(
 		logger.info("found existing user", { appId, appUserId, userId: user.id });
 		if (user.walletAddress !== walletAddress) {
 			logger.warn(`existing user registered with new wallet ${user.walletAddress} !== ${walletAddress}`);
-			if (app.config.maxUserWallets === NO_WALLET_LIMIT || user.walletCount < app.config.maxUserWallets) {
+			if (app.allowsNewWallet(user.walletCount)) {
 				user.walletCount += 1;
 				user.walletAddress = walletAddress;
 				await user.save();

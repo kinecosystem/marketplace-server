@@ -1,7 +1,6 @@
 import { Request, Response, RequestHandler } from "express";
 
-import * as db from "../../models/users";
-import { UnknownSignInType } from "../../errors";
+import { NoSuchApp, UnknownSignInType } from "../../errors";
 
 import {
 	getOrCreateUserCredentials,
@@ -51,8 +50,11 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
 
-	const app: Application = await Application.findOneById(context.appId);
-	if (!app.config.loginTypes.includes(data.sign_in_type)) {
+	const app = await Application.findOneById(context.appId);
+	if (!app) {
+		throw NoSuchApp(context.appId);
+	}
+	if (!app.supportsSignInType(data.sign_in_type)) {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
 

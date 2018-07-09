@@ -4,6 +4,7 @@ import "source-map-support/register";
 import { path } from "./utils";
 
 import { LogTarget } from "./logging";
+import { SignInType } from "./models/applications";
 
 export interface Config {
 	port?: number;
@@ -21,6 +22,7 @@ export interface Config {
 	commit?: string;
 	timestamp?: string;
 	bi_service: string;
+	sign_in_types: SignInType[];
 }
 
 let config: Config;

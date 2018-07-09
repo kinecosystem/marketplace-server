@@ -1,0 +1,13 @@
+{
+  "api_key": "Akikikikik",
+  "jwt_public_keys": {
+    "1": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEQv8mribvXGMwDWJTjasn2EQsUxCV\nPtabrOcgAsBXp//sEYnTDj8WdY7OFoMcQ79aMyO630lHSBNBYWIvqO2+LQ==\n-----END PUBLIC KEY-----\n",
+    "test_key": "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE5ppEUgBzRQpccf9arl/txo8t6hDpGPnK\n1SxVTpadjrlCi4YmKM4xVEzyYSsOQHvWA6I70gT0DyVxSk64zsY0MA==\n-----END PUBLIC KEY-----"
+  },
+  "config": {
+    "max_user_wallets": -1,
+    "sign_in_types": ["jwt"]
+  },
+  "app_id": "kik",
+  "name": "Kik Messenger"
+}

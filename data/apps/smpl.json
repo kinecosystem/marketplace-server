@@ -1,0 +1,13 @@
+{
+  "api_key": "A28hNcn2wp77QyaM8kB2C",
+  "jwt_public_keys": {
+    "1": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDdlatRjRjogo3WojgGHFHYLugd\nUWAY9iR3fy4arWNA1KoS8kVw33cJibXr8bvwUAUparCwlvdbH6dvEOfou0/gCFQs\nHUfQrSDv+MuSUMAe8jzKE4qW+jK+xQU9a03GUnKHkkle+Q0pX/g6jXZ7r1/xAK5D\no2kQ+X5xK9cipRgEKwIDAQAB\n-----END PUBLIC KEY-----\n",
+    "default": "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEVi3rSAFNLSs4jUVRL6YjoVJ0XbgQnlpr\nEMr0XmzlPCImOzH8rC+5Mzfto1XXwn5NkMpd3RW0Qy3t9A0ZxijEkw==\n-----END PUBLIC KEY-----\n"
+  },
+  "config": {
+    "max_user_wallets": -1,
+    "sign_in_types": ["jwt", "whitelist"]
+  },
+  "app_id": "smpl",
+  "name": "Sample App"
+}

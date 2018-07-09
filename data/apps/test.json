@@ -1,0 +1,13 @@
+{
+  "api_key": "AyINT44OAKagkSav2vzMz",
+  "jwt_public_keys": {
+    "rs512_0": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCgOMeb0heN3k9NinbsWpRo3WEl\nwGnoP9UCpKsGLbZAzkgE64fP/thj4CH6xnoRsObl4LFdeh9cekXooS19/A+Q9M0k\nxlrURq8qvogJPSFERi6S7vzMM1LxGmOcgwLLSp4AGZ5A0GkjFXhiZU1hOfb2WmkK\neVTyx22Df6Ox6ulslwIDAQAB\n-----END PUBLIC KEY-----",
+    "es256_0": "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE5ppEUgBzRQpccf9arl/txo8t6hDpGPnK\n1SxVTpadjrlCi4YmKM4xVEzyYSsOQHvWA6I70gT0DyVxSk64zsY0MA==\n-----END PUBLIC KEY-----"
+  },
+  "config": {
+    "max_user_wallets": -1,
+    "sign_in_types": ["jwt", "whitelist"]
+  },
+  "app_id": "test",
+  "name": "Test App"
+}

@@ -45,24 +45,31 @@ export function reportServerError(method: string, path: string) {
 	statsd.increment("server_error", 1, undefined, { method, path });
 }
 
-export function orderFailed(order: Order, user?: User) {
+export function orderFailed(order: Order, relatedUser?: User) {
+	function safeString(str: string): string {
+		return str.replace(/\W/g, " ");
+	}
+
 	const unknownError = { error: "unknown_error", message: "unknown error", code: -1 };
 	const unknownUser = { id: "no_id", appId: "no_id", appUserId: "no_id", walletAddress: "no_wallet" };
+
+	const error = order.error || unknownError;
+	const user = relatedUser || unknownUser;
 
 	const message = `
 ## Order <${order.id}> transitioned to failed state:
 ID: <${order.id}> | Type: ${order.type} | Origin: ${order.origin}
-UserId: ${(user || unknownUser).id} | AppId: <${(user || unknownUser).appId}> | UserAppId: ${(user || unknownUser).appUserId}
-Wallet: ${(user || unknownUser).walletAddress}
-Error: ${(order.error || unknownError).message} | Code: ${(order.error || unknownError).code}
+UserId: ${user.id} | AppId: <${user.appId}> | UserAppId: ${user.appUserId}
+Wallet: ${user.walletAddress}
+Error: ${safeString(error.message)} | Code: ${error.code}
 CreatedDate: ${order.createdDate.toISOString()} | LastDate: ${(order.currentStatusDate || order.createdDate).toISOString()}
 `;
-	const title = (order.error || unknownError).message;
+	const title = safeString(error.message);
 	statsd.event(title, message,
 		{ alert_type: "warning" },
 		{
 			order_type: order.type,
-			app_id: (user || unknownUser).appId,
+			app_id: user.appId,
 			order_id: order.id,
 			order_origin: order.origin,
 			type: "failed_order" });

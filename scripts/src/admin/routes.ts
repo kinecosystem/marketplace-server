@@ -73,6 +73,10 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		input {
 			width: 70px;
 		}
+		#footer {
+			height: 70px;
+			width: 100%;
+		}
 		</style>
 		<style>
 		#toast {
@@ -132,6 +136,7 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		<h1><a href="/">Marketplace Admin</a></h1>
 		<div id="toast">MSG TOAST</div>
 		<div id="content">${content}</div>
+		<div id="footer"></div>
 	</body>
 </html>`;
 		res.status(200).send(html);

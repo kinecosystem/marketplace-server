@@ -212,7 +212,7 @@ async function offerToHtml(offer: Offer): Promise<string> {
 <td>${offer.meta.title}</td>
 <td>${offer.meta.description}</td>
 <td><img src="${offer.meta.image}"/></td>
-<td>${offer.cap.total}</td>
+<td><input type="text" id="offer-${offer.id}-cap-total" onchange="submitData('/offers/${offer.id}', {cap: {total: this.value}})" value="${offer.cap.total}"/></td>
 <td>${offer.cap.per_user}</td>
 <td>${offer.ownerId}</td>
 <td><a href="${BLOCKCHAIN.horizon_url}/accounts/${offer.blockchainData.recipient_address}">${offer.blockchainData.recipient_address}</a></td>
@@ -521,4 +521,19 @@ export async function getWallet(params: { wallet_address: string }, query: any):
 export async function getWalletPayments(params: { wallet_address: string }, query: any): Promise<string> {
 	const data = await payment.getPayments(params.wallet_address, getDefaultLogger());
 	return `<pre class="wide">${JSON.stringify(data, null, 2)}</pre>`;
+}
+
+export async function changeOffer(body: Partial<Offer>, params: { offer_id: string }, query: any): Promise<any> {
+	const offer = await Offer.findOneById(params.offer_id);
+	if (!offer) {
+		throw new Error("no such offer: " + params.offer_id);
+	}
+	if (!body || !body.cap || !body.cap.total || !parseInt(body.cap.total as any, 10) || parseInt(body.cap.total as any, 10) < 0) {
+		throw new Error("cap must be defined, a number and greater or equal to 0 - received: " + JSON.stringify(body));
+	}
+	offer.cap.total = parseInt(body.cap.total as any, 10);
+
+	await offer.save();
+	return { offer };
+
 }

@@ -11,7 +11,6 @@ import { createRoutes } from "./routes";
 import { initPaymentCallbacks } from "./services";
 import { init as initModels } from "../models/index";
 import { init as initCustomMiddleware, notFoundHandler, generalErrorHandler } from "./middleware";
-import { init as initRemoteConfig } from "../public/routes/config";
 
 function createApp() {
 	const app = express();

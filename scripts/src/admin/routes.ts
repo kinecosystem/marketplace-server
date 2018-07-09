@@ -8,10 +8,18 @@ import {
 	getApplicationUsers, getOfferStats,
 	getOrders, fuzzySearch, getWallet, getWalletPayments,
 	getApplicationOffers, getUserOffers,
-	retryOrder, retryUserWallet, getApplicationStats
+	retryOrder, retryUserWallet, getApplicationStats,
+	changeOffer
 } from "./services";
 
 import { statusHandler } from "../middleware";
+
+function jsonResponse(func: (body: any, params: any, query: any) => Promise<string>): RequestHandler {
+	return async function(req: Request, res: Response) {
+		const content = await func(req.body, req.params, req.query);
+		res.status(200).json(content);
+	} as any as RequestHandler;
+}
 
 function wrapService(func: (params: any, query: any) => Promise<string>): RequestHandler {
 	return async function(req: Request, res: Response) {
@@ -63,9 +71,63 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 			font-weight: bold;
 		}
 		</style>
+		<style>
+		#toast {
+		    visibility: hidden;
+		    min-width: 250px;
+		    margin-left: -125px;
+		    background-color: #0a2;
+		    font-weight: bold;
+		    color: #fff;
+		    text-align: center;
+		    border-radius: 2px;
+		    padding: 16px;
+		    position: fixed;
+		    z-index: 1;
+		    left: 50%;
+		    bottom: 30px;
+		    font-size: 17px;
+		}
+		#toast.show {
+		    visibility: visible;
+		    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+		    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+		}
+		@-webkit-keyframes fadein {
+		    from {bottom: 0; opacity: 0;}
+		    to {bottom: 30px; opacity: 1;}
+		}
+		@keyframes fadein {
+		    from {bottom: 0; opacity: 0;}
+		    to {bottom: 30px; opacity: 1;}
+		}
+		@-webkit-keyframes fadeout {
+		    from {bottom: 30px; opacity: 1;}
+		    to {bottom: 0; opacity: 0;}
+		}
+		@keyframes fadeout {
+		    from {bottom: 30px; opacity: 1;}
+		    to {bottom: 0; opacity: 0;}
+		}
+		</style>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+		<script>
+			function toast(msg) {
+			    var element = document.getElementById("toast");
+			    element.innerText = msg;
+			    element.className = "show";
+			    setTimeout(function(){ element.className = element.className.replace("show", ""); }, 3000);
+			}
+			function submitData(url, data) {
+				axios.post(url, data)
+					.then(res => toast("ok"))
+					.catch(err => alert("error: " + JSON.stringify(err)));
+			}
+		</script>
 	</head>
 	<body>
 		<h1><a href="/">Marketplace Admin</a></h1>
+		<div id="toast">MSG TOAST</div>
 		<div id="content">${content}</div>
 	</body>
 </html>`;
@@ -107,7 +169,10 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		.get("/", wrapService(index))
 		// retries
 		.get("/orders/:order_id/retry", wrapService(retryOrder))
-		.get("/users/:user_id/retry", wrapService(retryUserWallet));
+		.get("/users/:user_id/retry", wrapService(retryUserWallet))
+		// change data
+		.post("/offers/:offer_id", jsonResponse(changeOffer))
+	;
 
 	app.use("", router);
 	app.get("/status", statusHandler);

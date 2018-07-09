@@ -12,9 +12,15 @@ import { init as initModels } from "../models/index";
 import { notFoundHandler, generalErrorHandler, init as initMiddleware } from "../middleware";
 
 function createApp() {
-	initMiddleware();
 	const app = express();
 	app.set("port", getConfig().port);
+
+	const bodyParser = require("body-parser");
+	app.use(bodyParser.json());
+	app.use(bodyParser.urlencoded({ extended: false }));
+
+	initMiddleware();
+
 	return app;
 }
 

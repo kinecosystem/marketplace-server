@@ -26,7 +26,7 @@ test-system:
 
 db:
 	rm -f database.sqlite
-	npm run create-db
+	npm run create-db -- data/apps data/offers
 
 # docker targets
 revision := $(shell git rev-parse --short HEAD)

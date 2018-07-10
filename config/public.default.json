@@ -29,5 +29,6 @@
 	"ecosystem_service": "http://localhost:3000",
 	"environment_name": "local",
 	"bi_service": "https://kin-bi.appspot.com/eco_",
+	"sign_in_types": ["jwt", "whitelist"],
 	"max_daily_earn_offers": 4
 }

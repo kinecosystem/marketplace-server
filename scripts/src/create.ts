@@ -12,30 +12,28 @@ import { init as initModels, close as closeModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
 import { createEarn, createSpend } from "./create_data/offers";
 import { ContentType, Offer } from "./models/offers";
-import { StringMap, Application } from "./models/applications";
+import { StringMap, Application, ApplicationConfig } from "./models/applications";
 import "./models/orders";
 import "./models/users";
+import { join } from "path";
+import { path } from "./utils";
 
 const STELLAR_ADDRESS = process.env.STELLAR_ADDRESS;  // address to use instead of the ones defined in the data
+type AppDef = { app_id: string, name: string, api_key: string, jwt_public_keys: StringMap, config: ApplicationConfig };
 
-async function createApp(appId: string, name: string, keyNames: string[], apiKey?: string): Promise<Application> {
+async function createApp(appId: string, name: string, jwtPublicKeys: StringMap, apiKey: string, appConfig: ApplicationConfig): Promise<Application> {
 	const existingApp = await Application.findOneById(appId);
 	if (existingApp) {
 		console.log(`existing app: ${appId}`);
 		return existingApp;
 	}
 
-	const jwtPublicKeys: StringMap = {};
-
-	for (const keyName of keyNames) {
-		const keyValue = fs.readFileSync(`./examples/${appId}-${keyName}.pem`, "utf-8");
-		jwtPublicKeys[keyName] = keyValue;
-	}
 	const app = Application.new({
 		name,
 		jwtPublicKeys,
 		id: appId,
-		walletAddresses: getStellarAddresses()
+		walletAddresses: getStellarAddresses(),
+		config: appConfig
 	});
 	if (apiKey) {
 		app.apiKey = apiKey;  // when apiKey given, run-over generated value
@@ -217,17 +215,23 @@ function getStellarAddresses() {
 }
 
 initModels().then(async () => {
-	// create apps
-	const app1 = await createApp("smpl", "Sample Application", ["default", "1"], Application.SAMPLE_API_KEY);
-	const app2 = await createApp("kik", "Kik Messenger", ["1"]);
-	const app3 = await createApp("test", "Test App", ["es256_0", "rs512_0"]);
+
+	const appsDir = process.argv[2];
+	const offersDir = process.argv[3];
+
+	for (const filename of fs.readdirSync(path(appsDir))) {
+		if (!filename.endsWith(".json")) {
+			console.info(`skipping non json file ${filename}`);
+			continue;
+		}
+		const data: AppDef = JSON.parse(fs.readFileSync(path(join(appsDir, filename))).toString());
+		await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config);
+	}
 
 	// create offers from csv
 	const parseCsv = require("csv-parse/lib/sync");
-
-	const inputFiles = process.argv.slice(2);
-	for (const file of inputFiles) {
-		const offersCsv = fs.readFileSync(file);
+	for (const filename of fs.readdirSync(path(offersDir))) {
+		const offersCsv = fs.readFileSync(path(join(offersDir, filename)));
 		const parsed = parseCsv(offersCsv);
 
 		const title = readTitle(parsed[0][0]);

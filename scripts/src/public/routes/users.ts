@@ -1,7 +1,5 @@
 import { Request, Response, RequestHandler } from "express";
-
-import * as db from "../../models/users";
-import { UnknownSignInType } from "../../errors";
+import { NoSuchApp, UnknownSignInType } from "../../errors";
 
 import {
 	getOrCreateUserCredentials,
@@ -12,6 +10,8 @@ import {
 	validateRegisterJWT,
 	validateWhitelist
 } from "../services/applications";
+import { Application, SignInType } from "../../models/applications";
+import { getConfig } from "../config";
 
 type CommonSignInData = {
 	sign_in_type: "jwt" | "whitelist";
@@ -50,7 +50,16 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
 
+	const app = await Application.findOneById(context.appId);
+	if (!app) {
+		throw NoSuchApp(context.appId);
+	}
+	if (!app.supportsSignInType(data.sign_in_type, getConfig().sign_in_types as SignInType[])) {
+		throw UnknownSignInType((data as any).sign_in_type);
+	}
+
 	const authToken = await getOrCreateUserCredentials(
+		app,
 		context.appUserId,
 		context.appId,
 		data.wallet_address,

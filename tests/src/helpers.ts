@@ -174,7 +174,8 @@ export async function createApp(appId: string): Promise<Application> {
 		id: appId,
 		name: appId,
 		jwtPublicKeys: {},
-		walletAddresses: { recipient: address, sender: address }
+		walletAddresses: { recipient: address, sender: address },
+		config: { max_user_wallets: null, sign_in_types: ["jwt", "whitelist"] }
 	});
 	await app.save();
 	return app;

@@ -20,6 +20,9 @@ export class User extends CreationDateModel {
 	@Column({ name: "activated_date", nullable: true })
 	public activatedDate?: Date;
 
+	@Column({ name: "wallet_count", default: 1 })
+	public walletCount!: number;
+
 	public get activated(): boolean {
 		return !!this.activatedDate;
 	}

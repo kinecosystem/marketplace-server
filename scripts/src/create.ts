@@ -214,7 +214,7 @@ function getStellarAddresses() {
 	}
 }
 
-initModels().then(async () => {
+initModels(true).then(async () => {
 
 	const appsDir = process.argv[2];
 	const offersDir = process.argv[3];

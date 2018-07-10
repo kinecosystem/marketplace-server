@@ -5,7 +5,7 @@
     "es256_0": "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE5ppEUgBzRQpccf9arl/txo8t6hDpGPnK\n1SxVTpadjrlCi4YmKM4xVEzyYSsOQHvWA6I70gT0DyVxSk64zsY0MA==\n-----END PUBLIC KEY-----"
   },
   "config": {
-    "max_user_wallets": -1,
+    "max_user_wallets": null,
     "sign_in_types": ["jwt", "whitelist"]
   },
   "app_id": "test",

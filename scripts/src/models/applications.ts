@@ -2,13 +2,11 @@ import { generateId, IdPrefix } from "../utils";
 import { Column, Entity, Index, JoinTable, ManyToMany } from "typeorm";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
 import { Offer } from "./offers";
-import { getConfig } from "../config";
 
-const NO_WALLET_LIMIT = -1;
 export type StringMap = { [key: string]: string; };  // key => value pairs
 export type SignInType = "jwt" | "whitelist";
 export type ApplicationConfig = {
-	max_user_wallets: number;
+	max_user_wallets: number | null;
 	sign_in_types: SignInType[];
 };
 
@@ -38,12 +36,12 @@ export class Application extends CreationDateModel {
 	@JoinTable()
 	public offers: Offer[] = [];
 
-	public supportsSignInType(type: SignInType) {
-		return getConfig().sign_in_types.includes(type) && this.config.sign_in_types.includes(type);
+	public supportsSignInType(type: SignInType, globalSignInTypes: SignInType[]) {
+		return globalSignInTypes.includes(type) && this.config.sign_in_types.includes(type);
 	}
 
 	public allowsNewWallet(currentNumberOfWallets: number) {
-		return this.config.max_user_wallets === NO_WALLET_LIMIT || currentNumberOfWallets < this.config.max_user_wallets;
+		return this.config.max_user_wallets === null || currentNumberOfWallets < this.config.max_user_wallets;
 	}
 }
 

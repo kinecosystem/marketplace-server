@@ -5,7 +5,7 @@
     "default": "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEVi3rSAFNLSs4jUVRL6YjoVJ0XbgQnlpr\nEMr0XmzlPCImOzH8rC+5Mzfto1XXwn5NkMpd3RW0Qy3t9A0ZxijEkw==\n-----END PUBLIC KEY-----\n"
   },
   "config": {
-    "max_user_wallets": -1,
+    "max_user_wallets": null,
     "sign_in_types": ["jwt", "whitelist"]
   },
   "app_id": "smpl",

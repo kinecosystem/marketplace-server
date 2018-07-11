@@ -39,7 +39,7 @@ import { BlockchainConfig } from "./public/services/payment";
 
 const BASE = process.env.MARKETPLACE_BASE;
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
-const API_KEY = Application.SAMPLE_API_KEY;  // get this from JWT_SERVICE
+const API_KEY = process.env.API_KEY || Application.SAMPLE_API_KEY;  // get this from JWT_SERVICE
 class Stellar {
 	public static MEMO_VERSION = 1;
 

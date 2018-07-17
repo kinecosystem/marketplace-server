@@ -14,14 +14,12 @@ services:
       APP_HOST: '0.0.0.0'
       APP_NAME: 'payment-service'
       APP_REDIS: redis://redis:6379/0
-      STELLAR_CHANNEL_SEEDS: ${STELLAR_CHANNEL_SEEDS}
-      STELLAR_BASE_SEED: ${STELLAR_BASE_SEED}
-      STELLAR_ADDRESS: ${STELLAR_ADDRESS}
-      STELLAR_HORIZON_URL: 'https://horizon-kik.kininfrastructure.com'
-      STELLAR_NETWORK: 'private testnet'
-      STELLAR_KIN_ISSUER_ADDRESS: 'GBQ3DQOA7NF52FVV7ES3CR3ZMHUEY4LTHDAQKDTO6S546JCLFPEQGCPK'
-      STELLAR_KIN_TOKEN_NAME: 'KIN'
       STELLAR_INITIAL_XLM_AMOUNT: 2
+      STELLAR_BASE_SEED: ${STELLAR_BASE_SEED}
+      STELLAR_HORIZON_URL: 'http://horizon-playground.kininfrastructure.com'
+      STELLAR_NETWORK: 'Kin Playground Network ; June 2018'
+      STELLAR_KIN_ISSUER_ADDRESS: 'GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7'
+      STELLAR_KIN_TOKEN_NAME: 'KIN'
 
   payment-worker:
     image: kinecosystem/payment-service:9a56cb8

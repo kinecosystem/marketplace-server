@@ -1,11 +1,14 @@
-import * as axios from "axios";
+import axios, { AxiosPromise, AxiosRequestConfig } from "axios";
 import { AxiosResponse } from "axios";
 import * as uuid4 from "uuid4";
 import * as expect from "expect";
 import * as StellarSdk from "stellar-sdk";
+
+import { KinWallet, createWallet, KinNetwork } from "kin.js";
+
 import {
-	CollectionPage,
-	Memo,
+	CollectionPage, Keypair,
+	Memo, Networks,
 	Operation,
 	PaymentOperationRecord,
 	TransactionError,
@@ -37,10 +40,10 @@ import { CompletedPayment, JWTBodyPaymentConfirmation } from "./internal/service
 import { ConfigResponse } from "./public/routes/config";
 import { BlockchainConfig } from "./public/services/payment";
 
-const BASE = process.env.MARKETPLACE_BASE;
+const MARKETPLACE_BASE = process.env.MARKETPLACE_BASE;
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
 const API_KEY = Application.SAMPLE_API_KEY;  // get this from JWT_SERVICE
-class Stellar {
+/*class Stellar {
 	public static MEMO_VERSION = 1;
 
 	public static async get(networkName: "production" | "testnet" | "auto"): Promise<Stellar> {
@@ -87,13 +90,13 @@ class Stellar {
 		this.server = new StellarSdk.Server(horizonUrl);
 		this.kinAsset = new StellarSdk.Asset(kinAssetCode, kinAssetIssuer);
 	}
-}
+}*/
 
 class ClientError extends Error {
 	public response?: AxiosResponse;
 }
 
-let STELLAR: Stellar;
+// let STELLAR: Stellar;
 type JWTPayload = { jwt: string };
 type WhitelistSignInPayload = { apiKey: string, userId: string };
 type SignInPayload = WhitelistSignInPayload | JWTPayload;
@@ -104,32 +107,32 @@ function isJWT(obj: any): obj is { jwt: string } {
 
 class SampleAppClient {
 	public async getRegisterJWT(userId: string): Promise<string> {
-		const res = await axios.default.get<JWTPayload>(JWT_SERVICE_BASE + `/register/token?user_id=${ userId }`);
+		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + `/register/token?user_id=${ userId }`);
 		return res.data.jwt;
 	}
 
 	public async getSpendJWT(offerId: string): Promise<string> {
-		const res = await axios.default.get<JWTPayload>(JWT_SERVICE_BASE + `/spend/token?offer_id=${ offerId }`);
+		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + `/spend/token?offer_id=${ offerId }`);
 		return res.data.jwt;
 	}
 
 	public async getEarnJWT(userId: string, offerId: string): Promise<string> {
-		const res = await axios.default.get<JWTPayload>(JWT_SERVICE_BASE + `/earn/token?user_id=${ userId }&offer_id=${ offerId }`);
+		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + `/earn/token?user_id=${ userId }&offer_id=${ offerId }`);
 		return res.data.jwt;
 	}
 
 	public async getOffers(): Promise<ExternalOfferPayload[]> {
-		const res = await axios.default.get<{ offers: ExternalOfferPayload[] }>(JWT_SERVICE_BASE + "/offers");
+		const res = await axios.get<{ offers: ExternalOfferPayload[] }>(JWT_SERVICE_BASE + "/offers");
 		return res.data.offers;
 	}
 
 	public async isValidSignature(jwt: string): Promise<boolean> {
-		const res = await axios.default.get<{ is_valid: boolean }>(JWT_SERVICE_BASE + `/validate?jwt=${ jwt }`);
+		const res = await axios.get<{ is_valid: boolean }>(JWT_SERVICE_BASE + `/validate?jwt=${ jwt }`);
 		return res.data.is_valid;
 	}
 }
 
-class Client {
+/*class Client {
 	private static KinPaymentFromStellar(operation: PaymentOperationRecord, transaction: TransactionRecord): CompletedPayment | undefined {
 		try {
 			const [, appId, id] = transaction.memo.split("-", 3);
@@ -371,6 +374,193 @@ class Client {
 			}
 		}
 	}
+}*/
+
+type AxiosRequestNoDataMethod<T = any> = ((url: string, config?: AxiosRequestConfig) => AxiosPromise<T>);
+type AxiosRequestDataMethod<T = any> = ((url: string, data?: any, config?: AxiosRequestConfig) => AxiosPromise<T>);
+
+type AxiosRequestMethod<T = any> = AxiosRequestNoDataMethod<T> | AxiosRequestDataMethod<T>;
+
+class ClientRequests {
+	public static async create(data: { device_id: string; wallet_address: string; }) {
+		const res = await axios.post<AuthToken>("/v1/users", data);
+		return new ClientRequests(res.data);
+	}
+
+	private _authToken: AuthToken;
+
+	private constructor(authToken: AuthToken) {
+		this._authToken = authToken;
+	}
+
+	public get authToken() {
+		return this._authToken;
+	}
+
+	public async activate() {
+		const res = await this.request("/v1/users/me/activate").post<AuthToken>();
+		this._authToken = res.data;
+	}
+
+	public request(url: string, data?: any) {
+		const fn = async <T>(fn: AxiosRequestMethod<T>) => {
+			const config = this.getConfig();
+
+			try {
+				const promise = data ?
+					(fn as AxiosRequestDataMethod)(MARKETPLACE_BASE + url, data, config) :
+					(fn as AxiosRequestNoDataMethod)(MARKETPLACE_BASE + url, config);
+
+				return await promise;
+			} catch (e) {
+				const apiError: ApiError = e.response!.data;
+				const error = new ClientError(`server error ${ e.response!.status }(${ apiError.code }): ${ apiError.error }`);
+				error.response = e.response;
+
+				throw error;
+			}
+		};
+
+		return {
+			get<T = any>() {
+				return fn<T>(axios.get);
+			},
+			post<T = any>() {
+				return fn<T>(axios.post);
+			},
+			patch<T = any>() {
+				return fn<T>(axios.patch);
+			},
+			delete() {
+				return fn(axios.delete);
+			}
+		};
+	}
+
+	private getConfig() {
+		return {
+			headers: {
+				"x-request-id": uuid4(),
+				"Authorization": this.authToken ? `Bearer ${ this.authToken.token }` : "",
+			},
+		};
+	}
+}
+
+class Client {
+	public static MEMO_VERSION = "1";
+
+	public static createMemo(...items: string[]): string {
+		items.unshift(Client.MEMO_VERSION);
+		return items.join("-");
+	}
+
+	public static async create(signInPayload: SignInPayload, walletAddress?: string): Promise<Client> {
+		if (!Client.config) {
+			const res = await axios.get<ConfigResponse>(MARKETPLACE_BASE + "/v1/config");
+			Client.config = res.data.blockchain;
+		}
+
+		const network = KinNetwork.from(
+			Client.config.network_passphrase,
+			Client.config.asset_issuer,
+			Client.config.horizon_url);
+
+		const keys = !walletAddress ?
+			Keypair.random() :
+			(walletAddress.startsWith("S") ?
+				Keypair.fromSecret(walletAddress) :
+				Keypair.fromPublicKey(walletAddress));
+
+		const wallet = await createWallet(network, keys);
+		const data = {
+			device_id: "my_device",
+			wallet_address: keys.publicKey(),
+		};
+
+		if (isJWT(signInPayload)) {
+			Object.assign(data, { sign_in_type: "jwt", jwt: signInPayload.jwt });
+		} else {
+			Object.assign(data, { sign_in_type: "whitelist", user_id: signInPayload.userId, api_key: signInPayload.apiKey });
+		}
+
+		const requests = await ClientRequests.create(data);
+
+		return new Client(wallet, requests);
+	}
+
+	private static config: BlockchainConfig;
+
+	public readonly appId: string;
+
+	private readonly wallet: KinWallet;
+	private readonly requests: ClientRequests;
+
+	private constructor(wallet: KinWallet, requests: ClientRequests) {
+		this.wallet = wallet;
+		this.requests = requests;
+		this.appId = requests.authToken.app_id;
+	}
+
+	public get active(): boolean {
+		return this.requests.authToken.activated;
+	}
+
+	public async activate() {
+		await this.requests.activate();
+	}
+
+	public async pay(recipient: string, amount: number, orderId: string) {
+		const memo = Client.createMemo(this.appId, orderId);
+		return await this.wallet.pay(recipient, amount, memo);
+	}
+
+	public async getOffers(): Promise<OfferList> {
+		const res = await this.requests.request("/v1/offers").get<OfferList>();
+		return res.data;
+	}
+
+	public async getOrder(orderId: string): Promise<Order> {
+		const res = await this.requests.request(`/v1/orders/${orderId}`).get<Order>();
+		return res.data;
+	}
+
+	public async createOrder(offerId: string): Promise<OpenOrder> {
+		const res = await this.requests.request(`/v1/offers/${offerId}/orders`).post<OpenOrder>();
+		return res.data;
+	}
+
+	public async cancelOrder(orderId: string): Promise<void> {
+		const res = await this.requests.request(`/v1/orders/${orderId}`).delete();
+	}
+
+	public async changeOrder(orderId: string, data: Partial<Order>): Promise<Order> {
+		const res = await this.requests.request(`/v1/orders/${orderId}`, data).patch<Order>();
+		return res.data;
+	}
+
+	public async changeOrderToFailed(orderId: string, error: string, code: number, message: string): Promise<Order> {
+		return await this.changeOrder(orderId, { error: { error, code, message } });
+	}
+
+	public async getOrders(): Promise<OrderList> {
+		const res = await this.requests.request("/v1/orders").get<OrderList>();
+		return res.data;
+	}
+
+	public async submitOrder(orderId: string, content?: string): Promise<Order> {
+		const res = await this.requests.request(`/v1/orders/${orderId}`, { content }).post<Order>();
+		return res.data;
+	}
+
+	public async findKinPayment(orderId: string): Promise<CompletedPayment | undefined> {
+		const payments = await this.wallet.
+		for (const payment of payments) {
+			if (payment.id === orderId) {
+				return payment;
+			}
+		}
+	}
 }
 
 /**
@@ -395,10 +585,11 @@ async function getOffer(client: Client, offerType: OfferType, contentType?: Cont
 
 async function didNotApproveTOS() {
 	console.log("=====================================didNotApproveTOS=====================================");
-	const client = new Client();
 
-	await client.register({ apiKey: API_KEY, userId: "new_user_123" },
-		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const client = await Client.create({
+			apiKey: API_KEY,
+			userId: "new_user_123" },  "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+
 	const offers = await client.getOffers();
 	try {
 		await client.createOrder(offers.offers[0].id);
@@ -410,11 +601,11 @@ async function didNotApproveTOS() {
 
 async function spendFlow() {
 	console.log("=====================================spend=====================================");
-	const client = new Client();
-	// this address is prefunded with test kin
 
-	await client.register({ apiKey: API_KEY, userId: "rich_user2" },
-		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	const client = await Client.create({
+			apiKey: API_KEY,
+			userId: "rich_user2" }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+
 	await client.activate();
 	const selectedOffer = await getOffer(client, "spend");
 	const couponInfo: CouponInfo = JSON.parse(selectedOffer.content);
@@ -462,9 +653,11 @@ async function earnPollFlow() {
 	}
 
 	console.log("===================================== earn poll =====================================");
-	const client = new Client();
-	await client.register({ apiKey: API_KEY, userId: "earn:" + generateId() },
-		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+
+	const client = await Client.create({
+			apiKey: API_KEY,
+			userId: "earn:" + generateId() }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+
 	await client.activate();
 
 	const selectedOffer = await getOffer(client, "earn", "poll");

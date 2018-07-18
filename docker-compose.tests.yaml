@@ -52,7 +52,7 @@ services:
       OUTPUT_DIR: /secrets
       KIN_FAUCET: 'http://faucet-playground.kininfrastructure.com'
       XLM_FAUCET: 'http://friendbot-playground.kininfrastructure.com'
-      STELLAR_HORIZON_URL: 'http://horizon-playground.kininfrastructure.com'
+      STELLAR_HORIZON_URL: 'https://horizon-playground.kininfrastructure.com'
       STELLAR_NETWORK: 'Kin Playground Network ; June 2018'
       STELLAR_KIN_ISSUER_ADDRESS: 'GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7'
       STELLAR_KIN_TOKEN_NAME: 'KIN'

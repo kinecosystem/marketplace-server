@@ -71,6 +71,7 @@ class Stellar {
 				throw new Error(`${networkName} not supported`);
 		}
 
+		console.log(`network: ${network.networkPassphrase()}. horizon: ${horizonUrl}. assetIssuer: ${kinAssetIssuer}`);
 		return new Stellar(network, kinAssetCode, kinAssetIssuer, horizonUrl);
 	}
 
@@ -210,11 +211,20 @@ class Client {
 	}
 
 	public async getKinPayments(): Promise<CompletedPayment[]> {
+
+		// .transaction(stellarPayment as any).transaction_hash)
+		// 		.call();
+
 		const payments = await this.getPayments();
 		return (await Promise.all(
 			payments.records
 				.map(async stellarPayment => {
-					const transaction = await stellarPayment.transaction();
+					const tx = (stellarPayment as any).transaction_hash;
+					const transaction = (await STELLAR.server
+						.transactions()
+						.transaction(tx)
+						.call()) as any as TransactionRecord;
+
 					return Client.KinPaymentFromStellar(stellarPayment, transaction);
 				})
 		)).filter(kinPayment => !!kinPayment) as CompletedPayment[];

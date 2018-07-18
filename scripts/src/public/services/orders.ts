@@ -337,8 +337,9 @@ function orderDbToApi(order: db.Order): Order {
 	return apiOrder;
 }
 
-export async function setFailedOrder(order: db.Order, error: MarketplaceError): Promise<db.Order> {
+export async function setFailedOrder(order: db.Order, error: MarketplaceError, failureDate?: Date): Promise<db.Order> {
 	order.setStatus("failed");
+	order.currentStatusDate = failureDate || order.currentStatusDate;
 	order.error = error.toJson();
 	const user = await User.findOneById(order.userId);
 	metrics.orderFailed(order, user);
@@ -348,7 +349,7 @@ export async function setFailedOrder(order: db.Order, error: MarketplaceError): 
 function checkIfTimedOut(order: db.Order): Promise<void> {
 	// TODO This should be done in a cron that runs every 10 minutes and closes these orders
 	if (order.status === "pending" && order.isExpired()) {
-		return setFailedOrder(order, TransactionTimeout()) as any;
+		return setFailedOrder(order, TransactionTimeout(), order.expirationDate) as any;
 	}
 
 	return Promise.resolve();

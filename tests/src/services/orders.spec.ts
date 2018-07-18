@@ -13,13 +13,15 @@ import {
 	createMarketplaceOrder,
 	submitOrder,
 	getOrder,
-	changeOrder
+	changeOrder,
+	setFailedOrder
 } from "../../../scripts/bin/public/services/orders";
 import { JWTContent } from "../../../scripts/bin/public/jwt";
 
 import * as helpers from "../helpers";
 import * as jsonwebtoken from "jsonwebtoken";
 import * as expect from "expect";
+import { TransactionTimeout } from "../../../scripts/bin/errors";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
@@ -191,6 +193,31 @@ describe("test orders", async () => {
 		const order = await getOrder(openOrder.id, getDefaultLogger());
 		expect(order.status).toBe("failed");
 		expect(order.error).toEqual(error);
+	});
+
+	test("order setFailure date", async () => {
+		const user: User = await helpers.createUser();
+		const offers = await getOffers(user.id, user.appId, { type: "spend" }, getDefaultLogger());
+		// not passing failureDate
+		{
+			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
+			await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
+			const dbOrder = await Order.findOneById(openOrder.id);
+			const expDate = dbOrder.expirationDate;
+			await setFailedOrder(dbOrder, TransactionTimeout());
+			const dbOrder2 = await Order.findOneById(openOrder.id);
+			expect(expDate.getTime()).toBeGreaterThan(dbOrder2.currentStatusDate.getTime());
+		}
+		// passing expDate as failureDate
+		{
+			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
+			await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
+			const dbOrder = await Order.findOneById(openOrder.id);
+			const expDate = dbOrder.expirationDate;
+			await setFailedOrder(dbOrder, TransactionTimeout(), expDate);
+			const dbOrder2 = await Order.findOneById(openOrder.id);
+			expect(expDate.getTime()).toEqual(dbOrder2.currentStatusDate.getTime());
+		}
 	});
 
 	test("only app offers should return", async () => {

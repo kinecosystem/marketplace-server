@@ -236,7 +236,7 @@ async function orderToHtml(order: Order): Promise<string> {
 <td>${order.meta.description}</td>
 <td><pre>${order.meta.content}</pre></td>
 <td><a href="/offers/${order.offerId}">${order.offerId}</a></td>
-<td><a href="${BLOCKCHAIN.horizon_url}/operations/${transactionId}">${transactionId}</a></td>
+<td><a href="${BLOCKCHAIN.horizon_url}/transactions/${transactionId}">${transactionId}</a></td>
 <td>${(order.currentStatusDate || order.createdDate).toISOString()}</td>
 <td><pre><a href="https://jwt.io?token=${payJwt}">${payJwt}</a></pre></td>
 </tr>`;

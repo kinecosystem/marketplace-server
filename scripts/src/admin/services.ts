@@ -225,7 +225,7 @@ async function orderToHtml(order: Order): Promise<string> {
 	const transactionId = order.blockchainData ? order.blockchainData.transaction_id : null;
 	const payJwt = order.value && order.value.type === "payment_confirmation" ? order.value.jwt : null;
 	return `<tr>
-<td>${order.id}</td>
+<td><a href="/orders/${order.id}">${order.id}</a></td>
 <td class="status_${order.status}"><a href="/orders?status=${order.status}">${order.status}</a></td>
 <td><pre>${JSON.stringify(order.error)}</pre></td>
 <td>${order.origin}</td>
@@ -463,11 +463,19 @@ window.setTimeout(function(){
 }
 
 export async function getOrder(params: { order_id: string }, query: any): Promise<string> {
-	const order: Order | undefined = await Order.findOneById(params.order_id);
-	if (!order) {
+	Order.createQueryBuilder("order").where("LOWER(order.id) = LOWER(:orderId)", { orderId: params.order_id });
+	const orders: Order[] = await Order.createQueryBuilder("order")
+		.where("LOWER(order.id) = LOWER(:orderId)", { orderId: params.order_id })
+		.getMany();
+	if (orders.length === 0) {
 		throw new Error("order not found: " + params.order_id);
 	}
-	return `<table>${ORDER_HEADERS}${await orderToHtml(order)}</table>`;
+	let ret = `<table>${ORDER_HEADERS}`;
+	for (const order of orders) {
+		ret += await orderToHtml(order);
+	}
+	ret += "</table>";
+	return ret;
 }
 
 export async function getPollResults(params: { offer_id: string }, query: any): Promise<string> {

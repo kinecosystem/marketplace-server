@@ -10,7 +10,8 @@ import { getConfig } from "../config";
 
 const config = getConfig();
 const webhook = `${config.internal_service}/v1/internal/webhook`;
-const client = axios.create({ timeout: 1000 });
+const DEFAULT_TIMEOUT = 1000;
+const client = axios.create({ timeout: DEFAULT_TIMEOUT });
 axiosRetry(client, { retries: 3 }); // retries on 5xx errors
 
 interface PaymentRequest {
@@ -79,13 +80,15 @@ export async function createWallet(walletAddress: string, appId: string, id: str
 	logger.info("wallet creation took " + (performance.now() - t) + "ms");
 }
 
-export async function getWalletData(walletAddress: string, logger: LoggerInstance): Promise<Wallet> {
-	const res = await client.get(`${config.payment_service}/wallets/${walletAddress}`);
+export async function getWalletData(walletAddress: string, logger: LoggerInstance, options?: { timeout?: number }): Promise<Wallet> {
+	options = options || {};
+	const res = await client.get(`${config.payment_service}/wallets/${walletAddress}`, { timeout: options.timeout || DEFAULT_TIMEOUT });
 	return res.data;
 }
 
-export async function getPayments(walletAddress: string, logger: LoggerInstance): Promise<{ payments: Payment[] }> {
-	const res = await client.get(`${config.payment_service}/wallets/${walletAddress}/payments`);
+export async function getPayments(walletAddress: string, logger: LoggerInstance, options?: { timeout?: number }): Promise<{ payments: Payment[] }> {
+	options = options || {};
+	const res = await client.get(`${config.payment_service}/wallets/${walletAddress}/payments`, { timeout: options.timeout || DEFAULT_TIMEOUT });
 	return res.data;
 }
 

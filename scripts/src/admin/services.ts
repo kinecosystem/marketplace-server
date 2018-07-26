@@ -517,7 +517,7 @@ export async function fuzzySearch(params: { some_id: string }, query: any): Prom
 }
 
 export async function getWallet(params: { wallet_address: string }, query: any): Promise<string> {
-	const data = await payment.getWalletData(params.wallet_address, getDefaultLogger());
+	const data = await payment.getWalletData(params.wallet_address, getDefaultLogger(), { timeout: 5000 });
 	let ret = `<pre class="wide">${JSON.stringify(data, null, 2)}</pre>`;
 
 	if (data.kin_balance === null) {
@@ -527,7 +527,7 @@ export async function getWallet(params: { wallet_address: string }, query: any):
 }
 
 export async function getWalletPayments(params: { wallet_address: string }, query: any): Promise<string> {
-	const data = await payment.getPayments(params.wallet_address, getDefaultLogger());
+	const data = await payment.getPayments(params.wallet_address, getDefaultLogger(), { timeout: 5000 });
 	return `<pre class="wide">${JSON.stringify(data, null, 2)}</pre>`;
 }
 

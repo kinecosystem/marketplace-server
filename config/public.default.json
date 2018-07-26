@@ -30,5 +30,5 @@
 	"environment_name": "local",
 	"bi_service": "https://kin-bi.appspot.com/eco_",
 	"sign_in_types": ["jwt", "whitelist"],
-	"max_daily_earn_offers": 4
+	"max_daily_earn_offers": null
 }

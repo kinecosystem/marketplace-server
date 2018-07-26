@@ -137,7 +137,7 @@ class Client {
 			return {
 				id,
 				app_id: appId,
-				transaction_id: operation.id,
+				transaction_id: transaction.hash,
 				recipient_address: operation.to,
 				sender_address: operation.from,
 				amount: parseInt(operation.amount, 10),

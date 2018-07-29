@@ -45,6 +45,10 @@ export function reportServerError(method: string, path: string) {
 	statsd.increment("server_error", 1, undefined, { method, path });
 }
 
+export function reportProcessAbort() {
+	statsd.increment("process_abort", 1, undefined, { system: "exit" });
+}
+
 export function orderFailed(order: Order, relatedUser?: User) {
 	function safeString(str: string): string {
 		return str.replace(/\W/g, " ");

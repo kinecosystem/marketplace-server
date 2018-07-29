@@ -4,6 +4,7 @@ services:
 
   marketplace-server:
     image: kinecosystem/marketplace-server:1bb2838
+    restart: on-failure
     ports:
       - 3000
     links:

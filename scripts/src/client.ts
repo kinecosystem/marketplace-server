@@ -1,6 +1,6 @@
 import * as uuid4 from "uuid4";
-import { Keypair } from "stellar-sdk";
-import { KinWallet, createWallet, KinNetwork, Transaction } from "kin.js";
+// import { Keypair } from "stellar-sdk";
+import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "kin.js";
 import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse } from "axios";
 
 import { ApiError } from "./errors";
@@ -38,18 +38,18 @@ function breakMemo(memo: string): string[] {
 	return items;
 }
 
-function paymentFromTransaction(transaction: Transaction): CompletedPayment | undefined {
+function paymentFromTransaction(payment: Payment): CompletedPayment | undefined {
 	try {
-		const [app_id, id] = breakMemo(transaction.memo!);
+		const [app_id, id] = breakMemo(payment.memo!);
 
 		return {
 			id,
 			app_id,
-			amount: transaction.amount,
-			transaction_id: transaction.id,
-			timestamp: transaction.timestamp,
-			sender_address: transaction.sender,
-			recipient_address: transaction.recipient
+			amount: payment.amount,
+			transaction_id: payment.id,
+			timestamp: payment.timestamp,
+			sender_address: payment.sender,
+			recipient_address: payment.recipient
 		};
 	} catch (e) {
 		return;
@@ -62,33 +62,34 @@ export class ClientError extends Error {
 
 class ClientRequests {
 	public static async create(data: { device_id: string; wallet_address: string; }) {
-			const res = await axios.post<AuthToken>("/v1/users", data);
+			const res = await axios.post<AuthToken>(MARKETPLACE_BASE + "/v1/users", data);
 			return new ClientRequests(res.data);
 		}
 
-	private _authToken: AuthToken;
+	private authToken: AuthToken;
 
 	private constructor(authToken: AuthToken) {
-			this._authToken = authToken;
+			this.authToken = authToken;
 		}
 
-	public get authToken() {
-			return this._authToken;
+	public get auth() {
+			return this.authToken;
 		}
 
 	public async activate() {
 			const res = await this.request("/v1/users/me/activate").post<AuthToken>();
-			this._authToken = res.data;
+			this.authToken = res.data;
 		}
 
 	public request(url: string, data?: any) {
-			const fn = async <T>(fn: AxiosRequestMethod<T>) => {
+			const req = async <T>(fn: AxiosRequestMethod<T>, sendData: boolean) => {
 				const config = this.getConfig();
+				url = MARKETPLACE_BASE + url;
 
 				try {
-					const promise = data ?
-						(fn as AxiosRequestDataMethod)(MARKETPLACE_BASE + url, data, config) :
-						(fn as AxiosRequestNoDataMethod)(MARKETPLACE_BASE + url, config);
+					const promise = sendData ?
+						(fn as AxiosRequestDataMethod)(url, data, config) :
+						(fn as AxiosRequestNoDataMethod)(url, config);
 
 					return await promise;
 				} catch (e) {
@@ -102,16 +103,16 @@ class ClientRequests {
 
 			return {
 				get<T = any>() {
-					return fn<T>(axios.get);
+					return req<T>(axios.get, false);
 				},
 				post<T = any>() {
-					return fn<T>(axios.post);
+					return req<T>(axios.post, true);
 				},
 				patch<T = any>() {
-					return fn<T>(axios.patch);
+					return req<T>(axios.patch, true);
 				},
 				delete() {
-					return fn(axios.delete);
+					return req(axios.delete, false);
 				}
 			};
 		}
@@ -120,7 +121,7 @@ class ClientRequests {
 			return {
 				headers: {
 					"x-request-id": uuid4(),
-					"Authorization": this.authToken ? `Bearer ${ this.authToken.token }` : "",
+					"Authorization": this.auth ? `Bearer ${ this.auth.token }` : "",
 				},
 			};
 		}
@@ -128,15 +129,15 @@ class ClientRequests {
 
 export class Client {
 	public static async create(signInPayload: SignInPayload, walletAddress?: string): Promise<Client> {
-		if (!Client.config) {
+		if (!this.config) {
 			const res = await axios.get<ConfigResponse>(MARKETPLACE_BASE + "/v1/config");
-			Client.config = res.data.blockchain;
+			this.config = res.data.blockchain;
 		}
 
 		const network = KinNetwork.from(
-			Client.config.network_passphrase,
-			Client.config.asset_issuer,
-			Client.config.horizon_url);
+			this.config.network_passphrase,
+			this.config.asset_issuer,
+			this.config.horizon_url);
 
 		const keys = !walletAddress ?
 			Keypair.random() :
@@ -144,7 +145,6 @@ export class Client {
 				Keypair.fromSecret(walletAddress) :
 				Keypair.fromPublicKey(walletAddress));
 
-		const wallet = await createWallet(network, keys);
 		const data = {
 			device_id: "my_device",
 			wallet_address: keys.publicKey(),
@@ -157,6 +157,7 @@ export class Client {
 		}
 
 		const requests = await ClientRequests.create(data);
+		const wallet = await createWallet(network, keys);
 
 		return new Client(wallet, requests);
 	}
@@ -171,11 +172,11 @@ export class Client {
 	private constructor(wallet: KinWallet, requests: ClientRequests) {
 		this.wallet = wallet;
 		this.requests = requests;
-		this.appId = requests.authToken.app_id;
+		this.appId = requests.auth.app_id;
 	}
 
 	public get active(): boolean {
-		return this.requests.authToken.activated;
+		return this.requests.auth.activated;
 	}
 
 	public async activate() {

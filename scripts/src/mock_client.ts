@@ -270,14 +270,14 @@ async function testRegisterNewUser() {
 		userId: "new_user:" + generateId() });
 }
 
-async function justPay() {
+/*async function justPay() {
 	console.log("===================================== justPay =====================================");
 	const client = await MarketplaceClient.create({
 		apiKey: API_KEY,
 		userId: generateId() });
 	await client.pay("GCZ72HXIUSDXEEL2RVZR6PXHGYU7S3RMQQ4O6UVIXWOU4OUVNIQKQR2X", 1, "SOME_ORDER");
 
-}
+}*/
 
 async function registerJWT() {
 	console.log("===================================== registerJWT =====================================");
@@ -424,28 +424,17 @@ async function nativeEarnFlow() {
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 }
 
-// TODO: this needs to be part of the kin.js sdk, probably other tests here
-/*async function createTrust() {
-	console.log("===================================== createTrust =====================================");
-
-	// this address is prefunded with test kin
-	const client = await MarketplaceClient.create({ apiKey: API_KEY, userId: "rich_user2" },
-		"SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
-	const record = await client.establishTrustLine();
-	console.log("established trust", record.hash);
-}*/
-
 async function main() {
-	// await earnTutorial();
+	// checked:
+	// await registerJWT();
 	// await earnPollFlow();
+	await earnTutorial();
+	// await spendFlow();
 	// await earnQuizFlow();
+	// await nativeEarnFlow();
+	// await nativeSpendFlow();
 	// await didNotApproveTOS();
 	// await testRegisterNewUser();
-	// await spendFlow();
-	// await justPay();
-	await registerJWT();
-	await nativeEarnFlow();
-	await nativeSpendFlow();
 	await tryToNativeSpendTwice();
 }
 

@@ -28,12 +28,14 @@ export function submitOrder(offerType: "earn" | "spend", offerId: string) {
 	statsd.increment("submit_order", 1, undefined, { offer_type: offerType, offer_id: offerId });
 }
 
-export function completeOrder(offerType: "earn" | "spend", offerId: string) {
+export function completeOrder(offerType: "earn" | "spend", offerId: string, prevStatus: string, time: number) {
 	statsd.increment("complete_order", 1, undefined, { offer_type: offerType, offer_id: offerId });
+	// time from last status
+	statsd.timing("complete_order_time", time, undefined, { offer_type: offerType, prev_status: prevStatus });
 }
 
 export function offersReturned(numOffers: number, appId: string) {
-  statsd.histogram("offers_returned", numOffers, undefined, { app_id: appId });
+	statsd.histogram("offers_returned", numOffers, undefined, { app_id: appId });
 }
 
 export function reportClientError(error: MarketplaceError, headers: { [name: string]: string }) {

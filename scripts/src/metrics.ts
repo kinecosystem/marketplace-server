@@ -32,8 +32,8 @@ export function completeOrder(offerType: "earn" | "spend", offerId: string) {
 	statsd.increment("complete_order", 1, undefined, { offer_type: offerType, offer_id: offerId });
 }
 
-export function offersReturned(numOffers: number) {
-	statsd.histogram("offers_returned", numOffers);
+export function offersReturned(numOffers: number, appId: string) {
+  statsd.histogram("offers_returned", numOffers, undefined, { app_id: appId });
 }
 
 export function reportClientError(error: MarketplaceError, headers: { [name: string]: string }) {

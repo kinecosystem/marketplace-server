@@ -56,8 +56,8 @@ export async function getOrCreateUserCredentials(
 				await user.save();
 				await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
 			} else {
-				metrics.maxWalletsExceeded()
-				throw MaxWalletsExceeded()
+				metrics.maxWalletsExceeded();
+				throw MaxWalletsExceeded();
 			}
 		}
 		logger.info(`returning existing user ${user.id}`);

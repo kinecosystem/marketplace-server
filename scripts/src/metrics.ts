@@ -8,12 +8,16 @@ import { User } from "./models/users";
 // XXX can add general tags to the metrics (i.e. - public/ internal, machine name etc)
 const statsd = new StatsD(Object.assign({ prefix: "marketplace_" }, getConfig().statsd));
 
-export function userRegister(newUser: boolean, walletCreated: boolean) {
-	statsd.increment("user_register", 1, undefined, { new_user: newUser.toString() });
+export function userRegister(newUser: boolean, walletCount: number) {
+	statsd.increment("user_register", 1, undefined, { new_user: newUser.toString(), wallet_count: walletCount.toString() });
 }
 
 export function userActivate(newUser: boolean) {
 	statsd.increment("user_activate", 1, undefined, { new_user: "true" });
+}
+
+export function maxWalletsExceeded() {
+	statsd.increment("max_wallets_exceeded", 1, undefined);
 }
 
 export function timeRequest(time: number, method: string, path: string) {

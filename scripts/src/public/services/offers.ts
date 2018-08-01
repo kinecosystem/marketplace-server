@@ -112,6 +112,6 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 		);
 	}
 
-	metrics.offersReturned(offers.length);
+	metrics.offersReturned(offers.length, appId);
 	return { offers, paging: { cursors: {} } };
 }

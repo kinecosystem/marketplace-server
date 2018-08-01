@@ -2,8 +2,11 @@
 scripts/bin
 node_modules
 tests/src/**/*.js
+scripts/src/**/*.js
 database.sqlite
 .tags
 .DS_Store
 examples/kik*
 .secrets*
+jwt/**/*.pem
+examples/*.pem

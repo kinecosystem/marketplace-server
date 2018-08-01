@@ -23,7 +23,7 @@ import {
 } from "./public/services/offer_contents";
 
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
-const API_KEY = Application.SAMPLE_API_KEY;  // get this from JWT_SERVICE
+const API_KEY = process.env.API_KEY || Application.SAMPLE_API_KEY;  // get this from JWT_SERVICE
 
 // TODO: should this be moved to the client?
 class SampleAppClient {
@@ -86,6 +86,7 @@ async function didNotApproveTOS() {
 	} catch (error) {
 		return; // ok!
 	}
+
 	throw Error("expected to throw have to complete TOS");
 }
 
@@ -203,6 +204,7 @@ async function earnQuizFlow() {
 	const client = await MarketplaceClient.create({
 		apiKey: API_KEY,
 		userId: "quiz_user:" + generateId() }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+
 	await client.activate();
 
 	const selectedOffer = await getOffer(client, "earn", "quiz");
@@ -244,6 +246,7 @@ async function earnTutorial() {
 	const client = await MarketplaceClient.create({
 		apiKey: API_KEY,
 		userId: "tutorial:" + generateId() }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+
 	await client.activate();
 
 	const selectedOffer = await getOffer(client, "earn", "tutorial");
@@ -252,7 +255,6 @@ async function earnTutorial() {
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got order ${openOrder.id}`);
 
-	const poll: Tutorial = JSON.parse(selectedOffer.content);
 	const content = JSON.stringify({});
 
 	await client.submitOrder(openOrder.id, content);
@@ -275,6 +277,7 @@ async function testRegisterNewUser() {
 	const client = await MarketplaceClient.create({
 		apiKey: API_KEY,
 		userId: generateId() });
+
 	await client.pay("GCZ72HXIUSDXEEL2RVZR6PXHGYU7S3RMQQ4O6UVIXWOU4OUVNIQKQR2X", 1, "SOME_ORDER");
 
 }*/
@@ -292,7 +295,7 @@ async function nativeSpendFlow() {
 	console.log("===================================== nativeSpendFlow =====================================");
 
 	// this address is prefunded with test kin
-	const userId = "rich_user:" + generateId();
+	const userId = "test:rich_user:" + generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 
@@ -381,7 +384,7 @@ async function nativeEarnFlow() {
 	console.log("===================================== nativeEarnFlow =====================================");
 
 	// this address is prefunded with test kin
-	const userId = generateId();
+	const userId = "test:" + generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 
@@ -425,16 +428,15 @@ async function nativeEarnFlow() {
 }
 
 async function main() {
-	// checked:
-	// await registerJWT();
-	// await earnPollFlow();
+	await registerJWT();
+	await earnPollFlow();
 	await earnTutorial();
-	// await spendFlow();
-	// await earnQuizFlow();
-	// await nativeEarnFlow();
-	// await nativeSpendFlow();
-	// await didNotApproveTOS();
-	// await testRegisterNewUser();
+	await spendFlow();
+	await earnQuizFlow();
+	await nativeEarnFlow();
+	await nativeSpendFlow();
+	await didNotApproveTOS();
+	await testRegisterNewUser();
 	await tryToNativeSpendTwice();
 }
 

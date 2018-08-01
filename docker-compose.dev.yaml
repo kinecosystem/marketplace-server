@@ -16,3 +16,11 @@ services:
       - .:/opt/app
     ports:
       - 3001:3000
+
+  marketplace-admin:
+    image: kinecosystem/marketplace-server:latest
+    command: ./tests/wait-for marketplace-server:3000 -- npm run start-admin
+    volumes:
+      - .:/opt/app
+    ports:
+      - 3002:3000

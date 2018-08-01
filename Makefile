@@ -16,6 +16,9 @@ run:
 run-internal:
 	npm run start-internal
 
+run-admin:
+	npm run start-admin
+
 test:
 	npm run transpile
 	npm run transpile-tests

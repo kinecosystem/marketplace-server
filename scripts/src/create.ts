@@ -7,7 +7,7 @@ getConfig();
 
 import * as fs from "fs";
 // import * as StellarSdk from "stellar-sdk";
-import { Keypair } from "kin.js";
+import { Keypair } from "@kinecosystem/kin.js";
 
 import { init as initModels, close as closeModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";

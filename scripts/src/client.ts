@@ -1,7 +1,6 @@
 import * as uuid4 from "uuid4";
-// import { Keypair } from "stellar-sdk";
-import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "@kinecosystem/kin.js";
 import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse } from "axios";
+import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "@kinecosystem/kin.js";
 
 import { ApiError } from "./errors";
 import { AuthToken } from "./public/services/users";
@@ -62,69 +61,69 @@ export class ClientError extends Error {
 
 class ClientRequests {
 	public static async create(data: { device_id: string; wallet_address: string; }) {
-			const res = await axios.post<AuthToken>(MARKETPLACE_BASE + "/v1/users", data);
-			return new ClientRequests(res.data);
-		}
+		const res = await axios.post<AuthToken>(MARKETPLACE_BASE + "/v1/users", data);
+		return new ClientRequests(res.data);
+	}
 
 	private authToken: AuthToken;
 
 	private constructor(authToken: AuthToken) {
-			this.authToken = authToken;
-		}
+		this.authToken = authToken;
+	}
 
 	public get auth() {
-			return this.authToken;
-		}
+		return this.authToken;
+	}
 
 	public async activate() {
-			const res = await this.request("/v1/users/me/activate").post<AuthToken>();
-			this.authToken = res.data;
-		}
+		const res = await this.request("/v1/users/me/activate").post<AuthToken>();
+		this.authToken = res.data;
+	}
 
 	public request(url: string, data?: any) {
-			const req = async <T>(fn: AxiosRequestMethod<T>, sendData: boolean) => {
-				const config = this.getConfig();
-				url = MARKETPLACE_BASE + url;
+		const req = async <T>(fn: AxiosRequestMethod<T>, sendData: boolean) => {
+			const config = this.getConfig();
+			url = MARKETPLACE_BASE + url;
 
-				try {
-					const promise = sendData ?
-						(fn as AxiosRequestDataMethod)(url, data, config) :
-						(fn as AxiosRequestNoDataMethod)(url, config);
+			try {
+				const promise = sendData ?
+					(fn as AxiosRequestDataMethod)(url, data, config) :
+					(fn as AxiosRequestNoDataMethod)(url, config);
 
-					return await promise;
-				} catch (e) {
-					const apiError: ApiError = e.response!.data;
-					const error = new ClientError(`server error ${ e.response!.status }(${ apiError.code }): ${ apiError.error }`);
-					error.response = e.response;
+				return await promise;
+			} catch (e) {
+				const apiError: ApiError = e.response!.data;
+				const error = new ClientError(`server error ${ e.response!.status }(${ apiError.code }): ${ apiError.error }`);
+				error.response = e.response;
 
-					throw error;
-				}
-			};
+				throw error;
+			}
+		};
 
-			return {
-				get<T = any>() {
-					return req<T>(axios.get, false);
-				},
-				post<T = any>() {
-					return req<T>(axios.post, true);
-				},
-				patch<T = any>() {
-					return req<T>(axios.patch, true);
-				},
-				delete() {
-					return req(axios.delete, false);
-				}
-			};
-		}
+		return {
+			get<T = any>() {
+				return req<T>(axios.get, false);
+			},
+			post<T = any>() {
+				return req<T>(axios.post, true);
+			},
+			patch<T = any>() {
+				return req<T>(axios.patch, true);
+			},
+			delete() {
+				return req(axios.delete, false);
+			}
+		};
+	}
 
 	private getConfig() {
-			return {
-				headers: {
-					"x-request-id": uuid4(),
-					"Authorization": this.auth ? `Bearer ${ this.auth.token }` : "",
-				},
-			};
-		}
+		return {
+			headers: {
+				"x-request-id": uuid4(),
+				"Authorization": this.auth ? `Bearer ${ this.auth.token }` : "",
+			},
+		};
+	}
 }
 
 export class Client {

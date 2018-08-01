@@ -168,10 +168,12 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		order.error = null;
 	}
 
+	const prevStatus = order.status;
+	const prevStatusDate = order.currentStatusDate;
 	order.setStatus("completed");
 	await order.save();
 
-	metrics.completeOrder(order.type, order.offerId);
+	metrics.completeOrder(order.type, order.offerId, prevStatus, (order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000);
 	logger.info(`completed order with payment <${ payment.id }, ${ payment.transaction_id }>`);
 }
 

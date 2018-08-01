@@ -1,6 +1,6 @@
 import * as uuid4 from "uuid4";
 // import { Keypair } from "stellar-sdk";
-import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "kin.js";
+import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "@kinecosystem/kin.js";
 import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse } from "axios";
 
 import { ApiError } from "./errors";

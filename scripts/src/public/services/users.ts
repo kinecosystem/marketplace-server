@@ -7,6 +7,7 @@ import * as payment from "./payment";
 import { pick } from "../../utils";
 import * as metrics from "../../metrics";
 import { Application } from "../../models/applications";
+import { MaxWalletsExceeded } from "../../errors";
 
 export type AuthToken = {
 	token: string;
@@ -44,7 +45,7 @@ export async function getOrCreateUserCredentials(
 		await user.save();
 		logger.info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
 		await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
-		metrics.userRegister(true, true);
+		metrics.userRegister(true, 1);
 	} else {
 		logger.info("found existing user", { appId, appUserId, userId: user.id });
 		if (user.walletAddress !== walletAddress) {
@@ -54,10 +55,13 @@ export async function getOrCreateUserCredentials(
 				user.walletAddress = walletAddress;
 				await user.save();
 				await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
-			} // else // TODO should we raise an error or expect the user to fund itself?
+			} else {
+				metrics.maxWalletsExceeded();
+				throw MaxWalletsExceeded();
+			}
 		}
 		logger.info(`returning existing user ${user.id}`);
-		metrics.userRegister(false, false);
+		metrics.userRegister(false, user.walletCount);
 	}
 
 	// XXX should be a scope object

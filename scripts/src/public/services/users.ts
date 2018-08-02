@@ -45,23 +45,24 @@ export async function getOrCreateUserCredentials(
 		await user.save();
 		logger.info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
 		await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
-		metrics.userRegister(true, 1);
+		metrics.userRegister(true, true);
 	} else {
 		logger.info("found existing user", { appId, appUserId, userId: user.id });
 		if (user.walletAddress !== walletAddress) {
 			logger.warn(`existing user registered with new wallet ${user.walletAddress} !== ${walletAddress}`);
-			if (app.allowsNewWallet(user.walletCount)) {
-				user.walletCount += 1;
-				user.walletAddress = walletAddress;
-				await user.save();
-				await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
-			} else {
+			if (!app.allowsNewWallet(user.walletCount)) {
 				metrics.maxWalletsExceeded();
 				throw MaxWalletsExceeded();
 			}
+			user.walletCount += 1;
+			user.walletAddress = walletAddress;
+			await user.save();
+			await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
+			metrics.userRegister(false, true);
+		} else {
+			metrics.userRegister(false, false);
 		}
 		logger.info(`returning existing user ${user.id}`);
-		metrics.userRegister(false, user.walletCount);
 	}
 
 	// XXX should be a scope object

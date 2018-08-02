@@ -43,7 +43,7 @@ export function offersReturned(numOffers: number, appId: string) {
 }
 
 export function reportClientError(error: MarketplaceError, headers: { [name: string]: string }) {
-	const data = Object.assign({ status: error.status.toString(), title: error.title }, headers);
+	const data = Object.assign({ status: error.status.toString(), title: error.title, code: error.code }, headers);
 	statsd.increment("client_error", 1, undefined, data);
 }
 

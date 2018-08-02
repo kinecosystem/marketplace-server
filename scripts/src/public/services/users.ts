@@ -87,7 +87,7 @@ export async function activateUser(
 		});
 
 		// XXX should implement some sort of authtoken scoping that will be encoded into the token:
-		// authToken.scope = {tos: true}
+		// token.scope = {tos: true}
 		logger.info(`new  activated user ${user.id}`);
 		metrics.userActivate(true);
 	} else {

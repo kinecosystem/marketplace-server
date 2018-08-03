@@ -67,11 +67,11 @@ export class Offer extends CreationDateModel {
 	}
 
 	public async didExceedCap(userId: string): Promise<boolean> {
-		const total = await Order.countByOffer(this.id);
+		// const total = await Order.countByOffer(this.id);
 
-		if (total >= this.cap.total) {
-			return true;
-		}
+		// if (total >= this.cap.total) {
+		// 	return true;
+		// }
 
 		const forUser = await Order.countByOffer(this.id, userId);
 		if (forUser >= this.cap.per_user) {
@@ -109,7 +109,7 @@ export class Asset extends CreationDateModel {
 	public offerId!: string;
 
 	@Column({ name: "owner_id", nullable: true })
-	public ownerId?: string;  // User.id
+	public ownerId?: string;	// User.id
 
 	@Column("simple-json")
 	public value!: AssetValue;

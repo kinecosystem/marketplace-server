@@ -1,9 +1,7 @@
 import * as moment from "moment";
 import { DeepPartial } from "typeorm/common/DeepPartial";
-import { BaseEntity, Brackets, Column, Entity, getManager, SelectQueryBuilder } from "typeorm";
-
+import { BaseEntity, Brackets, Column, Entity, getManager, Index, SelectQueryBuilder } from "typeorm";
 import { generateId, IdPrefix } from "../utils";
-
 import { CreationDateModel, initializer as Initializer, register as Register } from "./index";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
 import { ApiError } from "../errors";
@@ -201,9 +199,11 @@ export class Order extends CreationDateModel {
 	@Column("simple-json", { name: "blockchain_data", nullable: true })
 	public blockchainData!: BlockchainData;
 
+	@Index()
 	@Column({ name: "user_id" })
 	public userId!: string;
 
+	@Index()
 	@Column({ name: "offer_id" })
 	public offerId!: string;
 

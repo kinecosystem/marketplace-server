@@ -63,7 +63,8 @@ export type JWTBodyPaymentConfirmation = {
 };
 
 async function getPaymentJWT(order: db.Order, appId: string): Promise<OrderValue> {
-	const user: User = (await User.findOneById(order.userId))!;
+	const userId = order.sender!.id;
+	const user: User = (await User.findOneById(userId))!;
 	const payload: JWTBodyPaymentConfirmation = {
 		offer_id: order.offerId,
 		payment: {
@@ -85,17 +86,16 @@ async function getPaymentJWT(order: db.Order, appId: string): Promise<OrderValue
 }
 
 export async function paymentComplete(payment: CompletedPayment, logger: LoggerInstance) {
-	const order = await db.Order.findOneById(payment.id);
+	const order = await db.Order.getOne(payment.id);
 	if (!order) {
 		logger.error(`received payment for unknown order id ${ payment.id }`);
 		return;
 	}
 
 	if (order.type === "earn") {
-		createEarnTransactionBroadcastToBlockchainSucceeded(order.userId, payment.transaction_id, order.offerId, order.id).report();
+		createEarnTransactionBroadcastToBlockchainSucceeded(order.recipient!.appUserId, payment.transaction_id, order.offerId, order.id).report();
 	} else {
-		// both spend and p2p
-		createSpendOrderPaymentConfirmed(order.userId, payment.transaction_id, order.offerId, order.id, order.isExternalOrder(), order.origin).report();
+		createSpendOrderPaymentConfirmed(order.sender!.appUserId, payment.transaction_id, order.offerId, order.id, order.isExternalOrder(), order.origin).report();
 	}
 
 	if (order.status === "completed") {
@@ -132,9 +132,12 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	// XXX hack - missing app_id on blockchain
 	if (!payment.app_id) {
 		logger.error(`payment is missing the app_id <${ payment.id }, ${ payment.transaction_id }> - setting the one from the DB`);
-		const user: User | undefined = await User.findOneById(order.userId);
+
+		const userId = order.type === "earn" ? order.recipient!.id : order.sender!.id;
+		const user: User | undefined = await User.findOneById(userId);
+
 		if (!user) {
-			logger.error(`failed to fix missing app_id on payment - cant find user ${order.userId}`);
+			logger.error(`failed to fix missing app_id on payment - cant find user ${ userId }`);
 			await setFailedOrder(order, BlockchainError("failed app_id hack"));
 			return;
 		}
@@ -152,7 +155,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 				return;
 			} else {
 				order.value = asset.asOrderValue();
-				asset.ownerId = order.userId;
+				asset.ownerId = order.sender!.id;
 				await asset.save();  // XXX should be in a transaction with order.save
 			}
 		}
@@ -184,7 +187,8 @@ export async function paymentFailed(payment: FailedPayment, logger: LoggerInstan
 		return;
 	}
 
-	createEarnTransactionBroadcastToBlockchainFailed(order.userId, payment.reason, order.offerId, order.id).report();
+	// TODO: which user id to use here?
+	// createEarnTransactionBroadcastToBlockchainFailed(order.user.id, payment.reason, order.offerId, order.id).report();
 	await setFailedOrder(order, BlockchainError(payment.reason));
 	logger.info(`failed order with payment <${payment.id}>`);
 }

@@ -32,6 +32,7 @@ import { ExternalEarnOrderJWT, ExternalSpendOrderJWT } from "./native_offers";
 import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
+import { OrderMeta } from "../../models/orders";
 
 export interface OrderList {
 	orders: Order[];
@@ -62,7 +63,7 @@ export interface Order extends BaseOrder {
 	origin: db.OrderOrigin;
 }
 
-export async function getOrder(orderId: string, logger: LoggerInstance): Promise<Order> {
+export async function getOrder(orderId: string, userId: string, logger: LoggerInstance): Promise<Order> {
 	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
@@ -71,11 +72,11 @@ export async function getOrder(orderId: string, logger: LoggerInstance): Promise
 
 	checkIfTimedOut(order); // no need to wait for the promise
 
-	logger.debug("getOne returning", { orderId, status: order.status, offerId: order.offerId, userId: order.userId });
-	return orderDbToApi(order);
+	logger.debug("getOne returning", { orderId, status: order.status, offerId: order.offerId, contexts: order.contexts });
+	return orderDbToApi(order, userId);
 }
 
-export async function changeOrder(orderId: string, change: Partial<Order>, logger: LoggerInstance): Promise<Order> {
+export async function changeOrder(orderId: string, userId: string, change: Partial<Order>, logger: LoggerInstance): Promise<Order> {
 	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
@@ -84,12 +85,13 @@ export async function changeOrder(orderId: string, change: Partial<Order>, logge
 	if (order.status === "completed") {
 		throw CompletedOrderCantTransitionToFailed();
 	}
+
 	order.error = change.error;
 	order.status = "failed";
 	await order.save();
 
-	logger.debug("order patched with error", { orderId, userId: order.userId, error: change.error });
-	return orderDbToApi(order);
+	logger.debug("order patched with error", { orderId, contexts: order.contexts, error: change.error });
+	return orderDbToApi(order, userId);
 }
 
 async function createOrder(offer: offerDb.Offer, user: User) {
@@ -98,21 +100,30 @@ async function createOrder(offer: offerDb.Offer, user: User) {
 	}
 
 	const order = db.MarketplaceOrder.new({
-		userId: user.id,
 		type: offer.type,
 		status: "opened",
 		offerId: offer.id,
 		amount: offer.amount,
-		// TODO if order meta content is a template:
-		// replaceTemplateVars(offer, offer.meta.order_meta.content!)
-		meta: offer.meta.order_meta,
 		blockchainData: {
 			sender_address: offer.type === "spend" ? user.walletAddress : offer.blockchainData.sender_address,
 			recipient_address: offer.type === "spend" ? offer.blockchainData.recipient_address : user.walletAddress
 		}
 	});
-
 	await order.save();
+
+	const context = db.OrderContext.new({
+		user, order,
+		orderId: order.id,
+		userId: user.id,
+		// TODO if order meta content is a template:
+		// replaceTemplateVars(offer, offer.meta.order_meta.content!)
+		meta: offer.meta.order_meta,
+		role: offer.type === "spend" ? "sender" : "recipient"
+	});
+	await context.save();
+
+	order.contexts.push(context);
+
 	metrics.createOrder("marketplace", offer.type, offer.id);
 
 	return order;
@@ -120,6 +131,7 @@ async function createOrder(offer: offerDb.Offer, user: User) {
 
 export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	logger.info("creating marketplace order for", { offerId, userId: user.id });
+
 	const offer = await offerDb.Offer.findOneById(offerId);
 	if (!offer) {
 		throw NoSuchOffer(offerId);
@@ -136,19 +148,15 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 
 	logger.info("created new open marketplace order", order);
 
-	return openOrderDbToApi(order);
+	return openOrderDbToApi(order, user.id);
 }
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	const payload = await validateExternalOrderJWT(jwt, user.appUserId, logger);
 
-	let order = await db.Order.findOne({ userId: user.id, offerId: payload.offer.id });
+	let order = await db.Order.findBy(payload.offer.id, user.id);
 
-	if (!order || order.status !== "opened") {
-		if (order && (order.status === "completed" || order.status === "pending")) {
-			throw ExternalOrderAlreadyCompleted(order.id);
-		} // else order.status === "failed" - act as if order didn't exist
-
+	if (!order || order.status === "failed") {
 		const app = await Application.findOneById(user.appId);
 		if (!app) {
 			throw NoSuchApp(user.appId);
@@ -174,22 +182,30 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 		}
 
 		order = db.ExternalOrder.new({
-			userId: user.id,
 			offerId: payload.offer.id,
 			amount: payload.offer.amount,
 			type: payload.sub,
 			status: "opened",
-			meta: {
-				title,
-				description
-			},
 			blockchainData: {
 				sender_address,
 				recipient_address
 			}
 		});
-
 		await order.save();
+
+		const context = db.OrderContext.new({
+			user, order,
+			orderId: order.id,
+			userId: user.id,
+			meta: {
+				title,
+				description
+			},
+			role: payload.sub === "spend" ? "recipient" : "sender"
+		});
+
+		await context.save();
+		order.contexts.push(context);
 		metrics.createOrder("external", payload.sub, payload.offer.id);
 
 		logger.info("created new open external order", {
@@ -197,20 +213,28 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 			userId: user.id,
 			orderId: order.id
 		});
+	} else if (order.status === "pending" || order.status === "completed") {
+		throw ExternalOrderAlreadyCompleted(order.id);
 	}
 
-	return openOrderDbToApi(order);
+	return openOrderDbToApi(order, user.id);
 }
 
 export async function submitOrder(
-	orderId: string, form: string | undefined, walletAddress: string, appId: string, logger: LoggerInstance): Promise<Order> {
+	orderId: string,
+	userId: string,
+	form: string | undefined,
+	walletAddress: string,
+	appId: string,
+	logger: LoggerInstance): Promise<Order> {
 
-	const order = await db.Order.findOne({ id: orderId }) as db.MarketplaceOrder | db.ExternalOrder;
+	const order = await db.Order.getOne(orderId) as db.MarketplaceOrder | db.ExternalOrder;
+	// const order = await db.Order.findOneById(orderId, { relations: ["contexts"] }) as db.MarketplaceOrder | db.ExternalOrder;
 	if (!order) {
 		throw NoSuchOrder(orderId);
 	}
 	if (order.status !== "opened") {
-		return orderDbToApi(order);
+		return orderDbToApi(order, userId);
 	}
 	if (order.isExpired()) {
 		throw OpenOrderExpired(orderId);
@@ -231,7 +255,7 @@ export async function submitOrder(
 					if (!offerContents.isValid(offerContent, form)) {
 						throw InvalidPollAnswers();
 					}
-					await offerContents.savePollAnswers(order.userId, order.offerId, orderId, form); // TODO should we also save quiz results?
+					await offerContents.savePollAnswers(order.recipient!.id, order.offerId, orderId, form); // TODO should we also save quiz results?
 					break;
 				case "quiz":
 					order.amount = offerContents.sumCorrectQuizAnswers(offerContent, form) || 1; // TODO remove || 1 - don't give idiots kin
@@ -243,9 +267,7 @@ export async function submitOrder(
 				default:
 					logger.warn(`unexpected content type ${offerContent.contentType}`);
 			}
-
 		}
-
 	}
 
 	order.setStatus("pending");
@@ -254,11 +276,11 @@ export async function submitOrder(
 
 	if (order.type === "earn") {
 		await payment.payTo(walletAddress, appId, order.amount, order.id, logger);
-		createEarnTransactionBroadcastToBlockchainSubmitted(order.userId, order.offerId, order.id).report();
+		createEarnTransactionBroadcastToBlockchainSubmitted(order.recipient!.id, order.offerId, order.id).report();
 	}
 
 	metrics.submitOrder(order.type, order.offerId);
-	return orderDbToApi(order);
+	return orderDbToApi(order, userId);
 }
 
 export async function cancelOrder(orderId: string, logger: LoggerInstance): Promise<void> {
@@ -289,7 +311,7 @@ export async function getOrderHistory(
 	return {
 		orders: orders.map(order => {
 			checkIfTimedOut(order); // no need to wait for the promise
-			return orderDbToApi(order);
+			return orderDbToApi(order, userId);
 		}),
 		paging: {
 			cursors: {
@@ -302,37 +324,50 @@ export async function getOrderHistory(
 	};
 }
 
-function openOrderDbToApi(order: db.Order): OpenOrder {
+function getMeta(order: db.NormalOrder | db.P2POrder, userId: string) {
+	if (order.isNormal()) {
+		return order.meta;
+	} else if (order.isP2P() && order.sender.id === userId) {
+		return order.senderMeta;
+	} else {
+		return order.recipientMeta;
+	}
+}
+
+function openOrderDbToApi(order: db.Order, userId: string): OpenOrder {
 	if (order.status !== "opened") {
 		throw OpenedOrdersOnly();
 	}
+
+	const meta = getMeta(order as db.P2POrder | db.NormalOrder, userId);
 	return {
 		id: order.id,
 		offer_id: order.offerId,
 		offer_type: order.type,
 		amount: order.amount,
-		title: order.meta.title,
-		description: order.meta.description,
+		title: meta.title,
+		description: meta.description,
 		blockchain_data: order.blockchainData,
 		expiration_date: order.expirationDate!.toISOString()
 	};
 }
 
-function orderDbToApi(order: db.Order): Order {
+function orderDbToApi(order: db.Order, userId: string): Order {
 	if (order.status === "opened") {
 		throw OpenedOrdersUnreturnable();
 	}
+
+	const meta = getMeta(order as db.P2POrder | db.NormalOrder, userId);
 
 	const apiOrder = Object.assign(
 		pick(order, "id", "origin", "status", "amount"), {
 			result: order.value,
 			offer_type: order.type,
 			offer_id: order.offerId,
-			title: order.meta.title,
 			error: order.error as ApiError,
 			blockchain_data: order.blockchainData,
 			completion_date: (order.currentStatusDate || order.createdDate).toISOString()
-		}, pick(order.meta, "title", "description", "content", "call_to_action")) as Order;
+		}, pick(meta, "title", "description", "content", "call_to_action")) as Order;
 
 	return apiOrder;
 }
@@ -341,8 +376,15 @@ export async function setFailedOrder(order: db.Order, error: MarketplaceError, f
 	order.setStatus("failed");
 	order.currentStatusDate = failureDate || order.currentStatusDate;
 	order.error = error.toJson();
-	const user = await User.findOneById(order.userId);
-	metrics.orderFailed(order, user);
+
+	if (order.origin === "p2p") {
+		// TODO: which user to send? maybe both?
+	} else if (order.type === "earn") {
+		metrics.orderFailed(order, await User.findOneById(order.recipient!.id));
+	} else {
+		metrics.orderFailed(order, await User.findOneById(order.sender!.id));
+	}
+
 	return await order.save();
 }
 

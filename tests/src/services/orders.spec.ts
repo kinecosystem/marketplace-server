@@ -1,13 +1,13 @@
 import * as moment from "moment";
 
 import { random } from "../../../scripts/bin/utils";
+import { Event } from "../../../scripts/bin/analytics";
 import { User } from "../../../scripts/bin/models/users";
 import { Offer, JWTValue } from "../../../scripts/bin/models/offers";
 import * as payment from "../../../scripts/bin/public/services/payment";
 import { getOffers } from "../../../scripts/bin/public/services/offers";
-import { Order, ExternalOrder } from "../../../scripts/bin/models/orders";
 import { getDefaultLogger, initLogger } from "../../../scripts/bin/logging";
-import { Event } from "../../../scripts/bin/analytics";
+import { Order, ExternalOrder, OrderContext } from "../../../scripts/bin/models/orders";
 import { init as initModels, close as closeModels } from "../../../scripts/bin/models/index";
 import {
 	createMarketplaceOrder,
@@ -25,6 +25,7 @@ import { TransactionTimeout } from "../../../scripts/bin/errors";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
+
 	beforeEach(async done => {
 		initLogger();
 		await initModels();
@@ -70,13 +71,16 @@ describe("test orders", async () => {
 		const user = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		const offer = offers.offers.find(x => x.offer_type === "earn");
+
 		if (!offer) {
 			throw Error("failed to find earn order");
 		}
+
 		const order = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
 
 		const offers2 = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		const foundOffer = offers2.offers.find(x => x.id === offer.id);
+
 		expect(foundOffer).toBeTruthy();
 	});
 
@@ -90,15 +94,17 @@ describe("test orders", async () => {
 	});
 
 	test("countToday counts todays completed orders", async () => {
-		const user: User = await helpers.createUser();
+		const user = await helpers.createUser();
 		expect(await Order.countToday(user.id, "earn")).toEqual(0);
+
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		const offer = offers.offers.find(x => x.offer_type === "earn");
 		if (!offer) {
 			throw Error("failed to find earn order");
 		}
+
 		const openOrder = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
-		const order = await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
+		const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
 		await helpers.completePayment(order.id);
 
 		expect(await Order.countToday(user.id, "earn")).toEqual(1);
@@ -109,19 +115,20 @@ describe("test orders", async () => {
 		}
 
 		const spendopenOrder = await createMarketplaceOrder(spendOffer.id, user, getDefaultLogger());
-		const spendOrder = await submitOrder(spendopenOrder.id, null, user.walletAddress, user.appId, getDefaultLogger());
+		const spendOrder = await submitOrder(spendopenOrder.id, user.id, null, user.walletAddress, user.appId, getDefaultLogger());
 		await helpers.completePayment(spendOrder.id);
 
 		expect(await Order.countToday(user.id, "earn")).toEqual(1);
 	});
 
 	test("return getOrder reduces cap", async () => {
-		const user: User = await helpers.createUser();
+		const user = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		const offer = await Offer.findOneById(offers.offers[0].id);
+
 		for (let i = 0; i < offer.cap.per_user && i < offer.cap.total; i++) {
 			const openOrder = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
-			const order = await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
+			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
 			await helpers.completePayment(order.id);
 		}
 
@@ -131,20 +138,30 @@ describe("test orders", async () => {
 
 	test("payment jwt for kik is es256", async () => {
 		async function getPaymentJWT(appId: string) {
-			const user: User = await helpers.createUser(appId);
+			const user = await helpers.createUser(appId);
 			const order = ExternalOrder.new({
-				userId: user.id,
 				offerId: "offer",
 				amount: 1,
 				type: "spend",
 				status: "opened",
-				meta: {},
 				blockchainData: {
 					sender_address: "sender",
 					recipient_address: "recipient"
 				}
 			});
 			await order.save();
+
+			const context = OrderContext.new({
+				user,
+				order,
+				meta: {},
+				userId: user.id,
+				orderId: order.id,
+				role: order.type === "spend" ? "sender" : "recipient"
+			});
+			await context.save();
+			order.contexts.push(context);
+
 			await helpers.completePayment(order.id);
 
 			const completedOrder = await Order.getOne(order.id);
@@ -173,10 +190,10 @@ describe("test orders", async () => {
 	});
 
 	test("changeOrder adds error and changes to fail", async () => {
-		const user: User = await helpers.createUser();
+		const user = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, { type: "spend" }, getDefaultLogger());
 		const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
-		await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
+		await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
 		// failed to pay to blockchain
 		const error = {
 			message: "failed to submit to blockchain",
@@ -185,37 +202,40 @@ describe("test orders", async () => {
 		};
 		const changedOrder = await changeOrder(
 			openOrder.id,
+			user.id,
 			{
 				error
 			},
 			getDefaultLogger());
 		expect(changedOrder.status).toBe("failed");
-		const order = await getOrder(openOrder.id, getDefaultLogger());
+		const order = await getOrder(openOrder.id, user.id, getDefaultLogger());
 		expect(order.status).toBe("failed");
 		expect(order.error).toEqual(error);
 	});
 
 	test("order setFailure date", async () => {
-		const user: User = await helpers.createUser();
+		const user = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, { type: "spend" }, getDefaultLogger());
+
 		// not passing failureDate
 		{
 			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
-			await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
-			const dbOrder = await Order.findOneById(openOrder.id);
+			await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
+			const dbOrder = await Order.getOne(openOrder.id);
 			const expDate = dbOrder.expirationDate;
 			await setFailedOrder(dbOrder, TransactionTimeout());
-			const dbOrder2 = await Order.findOneById(openOrder.id);
+			const dbOrder2 = await Order.getOne(openOrder.id);
 			expect(expDate.getTime()).toBeGreaterThan(dbOrder2.currentStatusDate.getTime());
 		}
+
 		// passing expDate as failureDate
 		{
 			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
-			await submitOrder(openOrder.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
-			const dbOrder = await Order.findOneById(openOrder.id);
+			await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
+			const dbOrder = await Order.getOne(openOrder.id);
 			const expDate = dbOrder.expirationDate;
 			await setFailedOrder(dbOrder, TransactionTimeout(), expDate);
-			const dbOrder2 = await Order.findOneById(openOrder.id);
+			const dbOrder2 = await Order.getOne(openOrder.id);
 			expect(expDate.getTime()).toEqual(dbOrder2.currentStatusDate.getTime());
 		}
 	});
@@ -243,5 +263,4 @@ describe("test orders", async () => {
 
 		expect(offersIds.sort()).toEqual(apiOffersIds.sort());
 	});
-
 });

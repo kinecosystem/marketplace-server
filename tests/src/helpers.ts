@@ -1,15 +1,15 @@
 import { getManager } from "typeorm";
 import * as StellarSdk from "stellar-sdk";
 
-import { User, AuthToken } from "../../scripts/bin/models/users";
-import { Asset, Offer } from "../../scripts/bin/models/offers";
-import { Poll, PageType } from "../../scripts/bin/public/services/offer_contents";
-import { MarketplaceOrder, ExternalOrder, Order } from "../../scripts/bin/models/orders";
-import { createEarn, createSpend } from "../../scripts/bin/create_data/offers";
 import { generateId } from "../../scripts/bin/utils";
-import { CompletedPayment, paymentComplete } from "../../scripts/bin/internal/services";
 import { getDefaultLogger } from "../../scripts/bin/logging";
+import { Asset, Offer } from "../../scripts/bin/models/offers";
+import { User, AuthToken } from "../../scripts/bin/models/users";
 import { Application } from "../../scripts/bin/models/applications";
+import { createEarn, createSpend } from "../../scripts/bin/create_data/offers";
+import { Poll, PageType } from "../../scripts/bin/public/services/offer_contents";
+import { CompletedPayment, paymentComplete } from "../../scripts/bin/internal/services";
+import { MarketplaceOrder, ExternalOrder, Order, OrderContext } from "../../scripts/bin/models/orders";
 
 const animalPoll: Poll = {
 	pages: [{
@@ -39,52 +39,64 @@ export async function createUser(appId?: string): Promise<User> {
 	return user;
 }
 
-function orderFromOffer(offer: Offer, userId: string): MarketplaceOrder {
+async function orderFromOffer(offer: Offer, userId: string): Promise<MarketplaceOrder> {
+	const user = await User.findOneById(userId);
 	const order = MarketplaceOrder.new({
-		userId,
 		offerId: offer.id,
 		amount: offer.amount,
 		type: offer.type,
 		status: "pending",
-		meta: offer.meta.order_meta,
 		blockchainData: {
 			transaction_id: "A123123123123123",
 			recipient_address: "G123123123123",
 			sender_address: "G123123123123"
 		}
 	});
+	await order.save();
 
-	return order;
+	const context = OrderContext.new({
+		userId,
+		user,
+		order,
+		orderId: order.id,
+		role: "recipient",
+		meta: offer.meta.order_meta
+	});
+
+	await context.save();
+	order.contexts.push(context);
+
+	return await Order.getOne(order.id);
 }
 
 export async function createOrders(userId: string): Promise<number> {
 	let offers = await Offer.find({ where: { type: "spend" }, take: 3 });
-	let order = orderFromOffer(offers[0], userId);
+	let order = await orderFromOffer(offers[0], userId);
 	order.status = "completed";
 	const asset: Asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
 	order.value = asset.asOrderValue(); // {coupon_code: 'xxxxxx', type: 'coupon'}
 	await order.save();
 
-	order = orderFromOffer(offers[1], userId);
+	order = await orderFromOffer(offers[1], userId);
 	order.status = "failed";
 	order.error = { message: "transaction timed out", error: "timeout", code: 4081 };
 	await order.save();
 
-	order = orderFromOffer(offers[2], userId);
+	order = await orderFromOffer(offers[2], userId);
 	order.status = "pending";
 	await order.save();
 
 	offers = await Offer.find({ where: { type: "earn" }, take: 3 });
-	order = orderFromOffer(offers[0], userId);
+	order = await orderFromOffer(offers[0], userId);
 	order.status = "completed";
 	await order.save();
 
-	order = orderFromOffer(offers[1], userId);
+	order = await orderFromOffer(offers[1], userId);
 	order.status = "failed";
 	order.error = { message: "transaction timed out", error: "timeout", code: 4081 };
 	await order.save();
 
-	order = orderFromOffer(offers[2], userId);
+	order = await orderFromOffer(offers[2], userId);
 	order.status = "pending";
 	await order.save();
 
@@ -92,16 +104,12 @@ export async function createOrders(userId: string): Promise<number> {
 }
 
 export async function createExternalOrders(userId: string): Promise<number> {
+	const user = await User.findOneById(userId);
 	const order = ExternalOrder.new({
-		userId,
 		amount: 65,
 		type: "earn",
 		status: "pending",
 		offerId: "external1",
-		meta: {
-			title: "external order #1",
-			description: "first external order"
-		},
 		blockchainData: {
 			transaction_id: "A123123123123123",
 			recipient_address: "G123123123123",
@@ -109,6 +117,20 @@ export async function createExternalOrders(userId: string): Promise<number> {
 		}
 	});
 	await order.save();
+
+	const context = OrderContext.new({
+		user,
+		userId,
+		order,
+		orderId: order.id,
+		role: "recipient",
+		meta: {
+			title: "external order #1",
+			description: "first external order"
+		}
+	});
+	await context.save();
+	order.contexts.push(context);
 
 	return 1;
 }
@@ -145,7 +167,7 @@ export async function createOffers() {
 
 export async function completePayment(orderId: string) {
 	const order = await Order.getOne(orderId);
-	const user = await User.findOneById(order.userId);
+	const user = await User.findOneById(order.type === "earn" ? order.recipient.id : order.sender.id);
 	const payment: CompletedPayment = {
 		id: order.id,
 		app_id: user.appId,
@@ -158,9 +180,10 @@ export async function completePayment(orderId: string) {
 	await paymentComplete(payment, getDefaultLogger());
 }
 
+const TABLES = ["applications_offers_offers", "orders_contexts", "orders", "offers", "users", "assets", "auth_tokens"];
 export async function clearDatabase() {
 	try { // TODO: get this list dynamically
-		for (const tableName of ["applications_offers_offers", "orders", "offers", "users", "assets", "auth_tokens"]) {
+		for (const tableName of TABLES) {
 			await getManager().query(`DELETE FROM ${tableName};`);
 		}
 	} catch (error) {

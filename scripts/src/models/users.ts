@@ -1,8 +1,10 @@
 import * as moment from "moment";
-import { Column, Entity } from "typeorm";
+import { Column, Entity, OneToMany } from "typeorm";
 
-import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
 import { generateId, IdPrefix } from "../utils";
+
+import { OrderContext } from "./orders";
+import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
 
 @Entity({ name: "users" })
 @Register
@@ -19,6 +21,9 @@ export class User extends CreationDateModel {
 
 	@Column({ name: "activated_date", nullable: true })
 	public activatedDate?: Date;
+
+	@OneToMany(type => OrderContext, context => context.user)
+	public contexts!: OrderContext[];
 
 	@Column({ name: "wallet_count", default: 1 })
 	public walletCount!: number;

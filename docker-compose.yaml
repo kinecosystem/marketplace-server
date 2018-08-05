@@ -29,6 +29,20 @@ services:
       APP_DB_HOST: postgres
       APP_DB_DATABASE: ecosystem
 
+  marketplace-admin:
+    image: kinecosystem/marketplace-server:d39adef
+    command: npm run start-admin
+    ports:
+      - 3000
+    links:
+      - redis
+      - payment-service
+      - postgres
+      - marketplace-server # so I can wait for it
+    environment:
+      <<: *app_env_vars
+      APP_NAME: 'marketplace-internal'
+
   marketplace-internal:
     image: kinecosystem/marketplace-server:1bb2838
     command: npm run start-internal

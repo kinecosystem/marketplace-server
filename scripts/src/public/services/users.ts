@@ -7,6 +7,7 @@ import * as payment from "./payment";
 import { pick } from "../../utils";
 import * as metrics from "../../metrics";
 import { Application } from "../../models/applications";
+import { MaxWalletsExceeded } from "../../errors";
 
 export type AuthToken = {
 	token: string;
@@ -49,15 +50,19 @@ export async function getOrCreateUserCredentials(
 		logger.info("found existing user", { appId, appUserId, userId: user.id });
 		if (user.walletAddress !== walletAddress) {
 			logger.warn(`existing user registered with new wallet ${user.walletAddress} !== ${walletAddress}`);
-			if (app.allowsNewWallet(user.walletCount)) {
-				user.walletCount += 1;
-				user.walletAddress = walletAddress;
-				await user.save();
-				await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
-			} // else // TODO should we raise an error or expect the user to fund itself?
+			if (!app.allowsNewWallet(user.walletCount)) {
+				metrics.maxWalletsExceeded();
+				throw MaxWalletsExceeded();
+			}
+			user.walletCount += 1;
+			user.walletAddress = walletAddress;
+			await user.save();
+			await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
+			metrics.userRegister(false, true);
+		} else {
+			metrics.userRegister(false, false);
 		}
 		logger.info(`returning existing user ${user.id}`);
-		metrics.userRegister(false, false);
 	}
 
 	// XXX should be a scope object
@@ -82,7 +87,7 @@ export async function activateUser(
 		});
 
 		// XXX should implement some sort of authtoken scoping that will be encoded into the token:
-		// authToken.scope = {tos: true}
+		// token.scope = {tos: true}
 		logger.info(`new  activated user ${user.id}`);
 		metrics.userActivate(true);
 	} else {

@@ -203,8 +203,8 @@ export class Order extends CreationDateModel {
 	@Column()
 	public status!: OpenOrderStatus;
 
-	@Column({ name: "current_status_date", nullable: true })
-	public currentStatusDate?: Date;
+	@Column({ name: "current_status_date" })
+	public currentStatusDate!: Date;
 
 	@Column("simple-json", { nullable: true })
 	public value?: OrderValue;

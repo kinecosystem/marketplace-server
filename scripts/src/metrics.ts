@@ -8,12 +8,16 @@ import { User } from "./models/users";
 // XXX can add general tags to the metrics (i.e. - public/ internal, machine name etc)
 const statsd = new StatsD(Object.assign({ prefix: "marketplace_" }, getConfig().statsd));
 
-export function userRegister(newUser: boolean, walletCreated: boolean) {
-	statsd.increment("user_register", 1, undefined, { new_user: newUser.toString() });
+export function userRegister(newUser: boolean, newWallet: boolean) {
+	statsd.increment("user_register", 1, undefined, { new_user: newUser.toString(), new_wallet: newWallet.toString() });
 }
 
 export function userActivate(newUser: boolean) {
 	statsd.increment("user_activate", 1, undefined, { new_user: "true" });
+}
+
+export function maxWalletsExceeded() {
+	statsd.increment("max_wallets_exceeded", 1, undefined);
 }
 
 export function timeRequest(time: number, method: string, path: string) {
@@ -28,16 +32,18 @@ export function submitOrder(offerType: "earn" | "spend", offerId: string) {
 	statsd.increment("submit_order", 1, undefined, { offer_type: offerType, offer_id: offerId });
 }
 
-export function completeOrder(offerType: "earn" | "spend", offerId: string) {
+export function completeOrder(offerType: "earn" | "spend", offerId: string, prevStatus: string, time: number) {
 	statsd.increment("complete_order", 1, undefined, { offer_type: offerType, offer_id: offerId });
+	// time from last status
+	statsd.timing("complete_order_time", time, undefined, { offer_type: offerType, prev_status: prevStatus });
 }
 
-export function offersReturned(numOffers: number) {
-	statsd.histogram("offers_returned", numOffers);
+export function offersReturned(numOffers: number, appId: string) {
+	statsd.histogram("offers_returned", numOffers, undefined, { app_id: appId });
 }
 
 export function reportClientError(error: MarketplaceError, headers: { [name: string]: string }) {
-	const data = Object.assign({ status: error.status.toString(), title: error.title }, headers);
+	const data = Object.assign({ status: error.status.toString(), title: error.title, code: error.code }, headers);
 	statsd.increment("client_error", 1, undefined, data);
 }
 

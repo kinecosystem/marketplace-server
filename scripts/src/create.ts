@@ -6,7 +6,8 @@ import { getConfig } from "./public/config"; // must be the first import
 getConfig();
 
 import * as fs from "fs";
-import * as StellarSdk from "stellar-sdk";
+// import * as StellarSdk from "stellar-sdk";
+import { Keypair } from "@kinecosystem/kin.js";
 
 import { init as initModels, close as closeModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
@@ -209,7 +210,7 @@ function getStellarAddresses() {
 	if (STELLAR_ADDRESS) {
 		return { recipient: STELLAR_ADDRESS, sender: STELLAR_ADDRESS };
 	} else {
-		const address = StellarSdk.Keypair.random().publicKey();
+		const address = Keypair.random().publicKey();
 		return { recipient: address, sender: address };
 	}
 }

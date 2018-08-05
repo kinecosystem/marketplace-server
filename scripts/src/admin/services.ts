@@ -224,22 +224,28 @@ async function offerToHtml(offer: Offer): Promise<string> {
 async function orderToHtml(order: Order): Promise<string> {
 	const transactionId = order.blockchainData ? order.blockchainData.transaction_id : null;
 	const payJwt = order.value && order.value.type === "payment_confirmation" ? order.value.jwt : null;
-	return `<tr>
-<td><a href="/orders/${order.id}">${order.id}</a></td>
-<td class="status_${order.status}"><a href="/orders?status=${order.status}">${order.status}</a></td>
-<td><pre>${JSON.stringify(order.error)}</pre></td>
-<td>${order.origin}</td>
-<td>${order.type}</td>
-<td><a href="/users/${order.userId}">${order.userId}</a></td>
-<td>${order.amount}</td>
-<td>${order.meta.title}</td>
-<td>${order.meta.description}</td>
-<td><pre>${order.meta.content}</pre></td>
-<td><a href="/offers/${order.offerId}">${order.offerId}</a></td>
-<td><a href="${BLOCKCHAIN.horizon_url}/transactions/${transactionId}">${transactionId}</a></td>
+	let html = "";
+
+	for (const context of order.contexts) {
+		html += `<tr>
+<td><a href="/orders/$ {order.id }">${ order.id }</a></td>
+<td class="status_${ order.status }"><a href="/orders?status=${ order.status }">${ order.status }</a></td>
+<td><pre>${ JSON.stringify(order.error) }</pre></td>
+<td>${ order.origin }</td>
+<td>${ order.type }</td>
+<td><a href="/users/${ context.user.id }">${ context.user.id }</a></td>
+<td>${ order.amount }</td>
+<td>${ context.meta.title }</td>
+<td>${ context.meta.description }</td>
+<td><pre>${ context.meta.content }</pre></td>
+<td><a href="/offers/${ order.offerId }">${ order.offerId }</a></td>
+<td><a href="${ BLOCKCHAIN.horizon_url }/transactions/${ transactionId }">${ transactionId }</a></td>
 <td>${(order.currentStatusDate || order.createdDate).toISOString()}</td>
-<td><pre><a href="https://jwt.io?token=${payJwt}">${payJwt}</a></pre></td>
+<td><pre><a href="https://jwt.io?token=${ payJwt }">${ payJwt }</a></pre></td>
 </tr>`;
+	}
+
+	return html;
 }
 
 async function userToHtml(user: User): Promise<string> {
@@ -422,18 +428,23 @@ export async function getOrders(params: any, query: Paging & { status?: OpenOrde
 }
 
 export async function retryOrder(params: { order_id: string }, query: any): Promise<string> {
-	const order: Order | undefined = await Order.findOneById(params.order_id);
+	const order: Order | undefined = await Order.getOne(params.order_id);
+
 	if (!order) {
 		throw new Error("order not found: " + params.order_id);
 	}
 	if (order.status !== "failed" || order.type !== "earn") {
 		throw new Error("cant retry non earn or non failed orders");
 	}
-	const user = await User.findOneById(order.userId);
+
+	// TODO: what is this for?
+	/*const user = await User.findOneById(order.userId);
 	if (!user) {
 		throw new Error("user not found: " + order.userId);
-	}
-	await payment.payTo(order.blockchainData.recipient_address!, user.appId, order.amount, order.id, getDefaultLogger());
+	}*/
+
+	await payment.payTo(order.blockchainData.recipient_address!, order.sender!.appId, order.amount, order.id, getDefaultLogger());
+
 	return `<h3>Retrying...</h3>
 <div><a href="/orders/${order.id}">Go Back</a>
 <script>

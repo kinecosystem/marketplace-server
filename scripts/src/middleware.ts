@@ -1,4 +1,5 @@
 import * as express from "express";
+import * as moment from "moment";
 import { performance } from "perf_hooks";
 import { LoggerInstance } from "winston";
 import { Request, Response } from "express-serve-static-core";
@@ -12,7 +13,7 @@ import { abort as restartServer } from "./server";
 
 const START_TIME = (new Date()).toISOString();
 
-const RESTART_ERROR_COUNT = 5;  // Amount io errors to occur in time frame to trigger restart
+const RESTART_ERROR_COUNT = 5;  // Amount of errors to occur in time frame to trigger restart
 const RESTART_MAX_TIMEFRAME = 20;  // In seconds
 let serverErrorTimeStamps: number[] = [];
 
@@ -121,7 +122,7 @@ function serverErrorHandler(error: any, req: express.Request, res: express.Respo
 	const log = req.logger || logger;
 	metrics.reportServerError(req.method, req.url);
 
-	const timestamp = Math.floor(Date.now() / 1000);
+	const timestamp = moment().unix();
 	serverErrorTimeStamps.push(timestamp);
 	serverErrorTimeStamps = serverErrorTimeStamps.slice(-RESTART_ERROR_COUNT);
 
@@ -140,7 +141,7 @@ function serverErrorHandler(error: any, req: express.Request, res: express.Respo
 
 	if (serverErrorTimeStamps.length === RESTART_ERROR_COUNT) {
 		if (timestamp - serverErrorTimeStamps[0] < RESTART_MAX_TIMEFRAME) {
-			restartServer();
+			restartServer("too many internal errors");
 		}
 	}
 

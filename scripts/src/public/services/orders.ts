@@ -166,6 +166,7 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 		let description: string;
 		let sender_address: string;
 		let recipient_address: string;
+
 		if (payload.sub === "earn") {
 			title = (payload as ExternalEarnOrderJWT).recipient.title;
 			description = (payload as ExternalEarnOrderJWT).recipient.description;
@@ -201,11 +202,12 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 				title,
 				description
 			},
-			role: payload.sub === "spend" ? "recipient" : "sender"
+			role: payload.sub === "spend" ? "sender" : "recipient"
 		});
 
 		await context.save();
 		order.contexts.push(context);
+
 		metrics.createOrder("external", payload.sub, payload.offer.id);
 
 		logger.info("created new open external order", {

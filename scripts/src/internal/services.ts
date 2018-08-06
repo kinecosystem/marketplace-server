@@ -62,9 +62,8 @@ export type JWTBodyPaymentConfirmation = {
 	}
 };
 
-async function getPaymentJWT(order: db.Order, appId: string): Promise<OrderValue> {
-	const userId = order.sender!.id;
-	const user: User = (await User.findOneById(userId))!;
+async function getPaymentJWT(order: db.Order, appId: string, userId: string): Promise<OrderValue> {
+	const user = (await User.findOneById(userId))!;
 	const payload: JWTBodyPaymentConfirmation = {
 		offer_id: order.offerId,
 		payment: {
@@ -162,7 +161,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	} else if (order.isExternalOrder()) {
 		// XXX for p2p don't put the JWT in the recipient order's value
 		// XXX for p2p create a completed order for the recipient too
-		order.value = await getPaymentJWT(order, payment.app_id);
+		order.value = await getPaymentJWT(order, payment.app_id, order.type === "spend" ? order.sender!.id : order.recipient!.id);
 	}
 
 	if (order.status !== "pending") {

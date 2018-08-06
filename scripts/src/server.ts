@@ -1,5 +1,6 @@
 import { Server } from "http";
 
+import * as metrics from "./metrics";
 import { getConfig } from "./config";
 import { ServerError } from "./utils";
 import { getDefaultLogger } from "./logging";
@@ -49,4 +50,12 @@ export function onListening(server: Server) {
 		process.on("SIGTERM", handler);
 		logger.debug(`Listening on ${ addr.port }`);
 	};
+}
+
+/**
+ *
+ */
+export function abort(reason?: string) {
+	metrics.reportProcessAbort(reason);
+	process.exit(1);  // process manager should restart the process
 }

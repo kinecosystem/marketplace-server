@@ -5,6 +5,7 @@ services:
   marketplace-server:
     image: kinecosystem/marketplace-server:latest
     command: ./tests/wait-for marketplace-internal:3000 -- npm run start
+    restart: "no"
     volumes:
       - .:/opt/app
     ports:

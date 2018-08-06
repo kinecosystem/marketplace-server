@@ -1,4 +1,5 @@
 import * as express from "express";
+import * as moment from "moment";
 import { performance } from "perf_hooks";
 import { LoggerInstance } from "winston";
 import { Request, Response } from "express-serve-static-core";
@@ -8,8 +9,14 @@ import { getConfig } from "./config";
 import { generateId, pick } from "./utils";
 import { MarketplaceError } from "./errors";
 import { getDefaultLogger } from "./logging";
+import { abort as restartServer } from "./server";
 
 const START_TIME = (new Date()).toISOString();
+
+const RESTART_ERROR_COUNT = 5;  // Amount of errors to occur in time frame to trigger restart
+const RESTART_MAX_TIMEFRAME = 20;  // In seconds
+let serverErrorTimeStamps: number[] = [];
+
 let logger: LoggerInstance;
 
 export function init() {
@@ -113,8 +120,11 @@ function clientErrorHandler(error: MarketplaceError, req: express.Request, res: 
 
 function serverErrorHandler(error: any, req: express.Request, res: express.Response) {
 	const log = req.logger || logger;
-
 	metrics.reportServerError(req.method, req.url);
+
+	const timestamp = moment().unix();
+	serverErrorTimeStamps.push(timestamp);
+	serverErrorTimeStamps = serverErrorTimeStamps.slice(-RESTART_ERROR_COUNT);
 
 	let message = `Error
 	method: ${ req.method }
@@ -127,6 +137,12 @@ function serverErrorHandler(error: any, req: express.Request, res: express.Respo
 	stack: ${ error.stack }`;
 	} else {
 		message += `message: ${ error.toString() }`;
+	}
+
+	if (serverErrorTimeStamps.length === RESTART_ERROR_COUNT) {
+		if (timestamp - serverErrorTimeStamps[0] < RESTART_MAX_TIMEFRAME) {
+			restartServer("too many internal errors");
+		}
 	}
 
 	log.error(`server error (5xx)`, message);

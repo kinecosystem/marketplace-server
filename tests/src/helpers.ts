@@ -51,7 +51,6 @@ async function orderFromOffer(offer: Offer, userId: string): Promise<Marketplace
 			sender_address: "G123123123123"
 		}
 	}, {
-		userId,
 		user,
 		type: offer.type,
 		meta: offer.meta.order_meta
@@ -108,7 +107,6 @@ export async function createExternalOrders(userId: string): Promise<number> {
 		}
 	}, {
 		user,
-		userId,
 		type: "earn",
 		meta: {
 			title: "external order #1",

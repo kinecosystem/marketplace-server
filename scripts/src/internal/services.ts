@@ -191,8 +191,12 @@ export async function paymentFailed(payment: FailedPayment, logger: LoggerInstan
 		return;
 	}
 
-	// TODO: which user id to use here?
-	// createEarnTransactionBroadcastToBlockchainFailed(order.user.id, payment.reason, order.offerId, order.id).report();
+	if (order.isP2P()) {
+		createEarnTransactionBroadcastToBlockchainFailed(order.recipient.id, payment.reason, order.offerId, order.id).report();
+	} else if (order.isNormal() && order.type === "earn") {
+		createEarnTransactionBroadcastToBlockchainFailed(order.user.id, payment.reason, order.offerId, order.id).report();
+	}
+
 	await setFailedOrder(order, BlockchainError(payment.reason));
 	logger.info(`failed order with payment <${payment.id}>`);
 }

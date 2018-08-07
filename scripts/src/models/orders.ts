@@ -156,7 +156,6 @@ export const Order = {
 			}));
 
 		return query.getCount();
-
 	},
 
 	async getOpenOrder<T extends Order>(offerId: string, userId: string): Promise<T | undefined> {

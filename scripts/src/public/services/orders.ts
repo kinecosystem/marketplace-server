@@ -357,31 +357,19 @@ export async function getOrderHistory(
 	};
 }
 
-function getMeta(order: db.NormalOrder | db.P2POrder, userId: string) {
-	if (order.isNormal()) {
-		return order.meta;
-	} else if (order.isP2P() && order.sender.id === userId) {
-		return order.senderMeta;
-	} else {
-		return order.recipientMeta;
-	}
-}
-
 function openOrderDbToApi(order: db.Order, userId: string): OpenOrder {
 	if (order.status !== "opened") {
 		throw OpenedOrdersOnly();
 	}
 
 	const context = order.contextFor(userId)!;
-	const meta = getMeta(order as db.P2POrder | db.NormalOrder, userId);
-
 	return {
 		id: order.id,
 		offer_id: order.offerId,
 		offer_type: context.type,
 		amount: order.amount,
-		title: meta.title,
-		description: meta.description,
+		title: context.meta.title,
+		description: context.meta.description,
 		blockchain_data: order.blockchainData,
 		expiration_date: order.expirationDate!.toISOString()
 	};
@@ -393,8 +381,6 @@ function orderDbToApi(order: db.Order, userId: string): Order {
 	}
 
 	const context = order.contextFor(userId)!;
-	const meta = getMeta(order as db.P2POrder | db.NormalOrder, userId);
-
 	const apiOrder = Object.assign(
 		pick(order, "id", "origin", "status", "amount"), {
 			result: order.value,
@@ -403,7 +389,7 @@ function orderDbToApi(order: db.Order, userId: string): Order {
 			error: order.error as ApiError,
 			blockchain_data: order.blockchainData,
 			completion_date: (order.currentStatusDate || order.createdDate).toISOString()
-		}, pick(meta, "title", "description", "content", "call_to_action")) as Order;
+		}, pick(context.meta, "title", "description", "content", "call_to_action")) as Order;
 
 	return apiOrder;
 }

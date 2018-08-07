@@ -44,33 +44,25 @@ async function orderFromOffer(offer: Offer, userId: string): Promise<Marketplace
 	const order = MarketplaceOrder.new({
 		offerId: offer.id,
 		amount: offer.amount,
-		type: offer.type,
 		status: "pending",
 		blockchainData: {
 			transaction_id: "A123123123123123",
 			recipient_address: "G123123123123",
 			sender_address: "G123123123123"
 		}
-	});
-	await order.save();
-
-	const context = OrderContext.new({
+	}, {
 		userId,
 		user,
-		order,
-		orderId: order.id,
-		role: "recipient",
+		type: offer.type,
 		meta: offer.meta.order_meta
-	});
+	}) as MarketplaceOrder;
 
-	await context.save();
-	order.contexts.push(context);
-
-	return await Order.getOne(order.id);
+	return order;
 }
 
 export async function createOrders(userId: string): Promise<number> {
 	let offers = await Offer.find({ where: { type: "spend" }, take: 3 });
+
 	let order = await orderFromOffer(offers[0], userId);
 	order.status = "completed";
 	const asset: Asset = (await Asset.find({ where: { offerId: order.offerId, ownerId: null }, take: 1 }))[0];
@@ -107,7 +99,6 @@ export async function createExternalOrders(userId: string): Promise<number> {
 	const user = await User.findOneById(userId);
 	const order = ExternalOrder.new({
 		amount: 65,
-		type: "earn",
 		status: "pending",
 		offerId: "external1",
 		blockchainData: {
@@ -115,22 +106,16 @@ export async function createExternalOrders(userId: string): Promise<number> {
 			recipient_address: "G123123123123",
 			sender_address: "G123123123123"
 		}
-	});
-	await order.save();
-
-	const context = OrderContext.new({
+	}, {
 		user,
 		userId,
-		order,
-		orderId: order.id,
-		role: "recipient",
+		type: "earn",
 		meta: {
 			title: "external order #1",
 			description: "first external order"
 		}
 	});
-	await context.save();
-	order.contexts.push(context);
+	await order.save();
 
 	return 1;
 }
@@ -167,7 +152,7 @@ export async function createOffers() {
 
 export async function completePayment(orderId: string) {
 	const order = await Order.getOne(orderId);
-	const user = await User.findOneById(order.type === "earn" ? order.recipient.id : order.sender.id);
+	const user = order.contexts[0].user;
 	const payment: CompletedPayment = {
 		id: order.id,
 		app_id: user.appId,

@@ -9,7 +9,7 @@ import {
 	ObjectType,
 	BaseEntity,
 	PrimaryColumn,
-	SelectQueryBuilder, JoinColumn
+	SelectQueryBuilder, JoinColumn, Transaction, TransactionManager, EntityManager, PrimaryGeneratedColumn
 } from "typeorm";
 
 import { ApiError } from "../errors";
@@ -47,15 +47,18 @@ function updateQueryWithStatus(query: SelectQueryBuilder<any>, status?: OrderSta
 	}
 }
 
-function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, value?: string | null) {
+function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, value?: string | null, alias?: string) {
 	if (!value) {
 		return;
 	}
 
+	// in case the query is using table alias names, use it with status
+	const fieldName = alias ? `${ alias }.${ name }` : name;
+
 	if (value.startsWith("!")) {
-		query.andWhere(`${ name } != :value`, { value: value.substring(1) });
+		query.andWhere(`${ fieldName } != :value`, { value: value.substring(1) });
 	} else {
-		query.andWhere(`${ name } = :value`, { value });
+		query.andWhere(`${ fieldName } = :value`, { value });
 	}
 }
 
@@ -116,7 +119,7 @@ export const Order = {
 		if (userId) {
 			query
 				.innerJoin("ordr.contexts", "context")
-				.where("context.userId = :userId", { userId })
+				.where("context.user_id = :userId", { userId })
 				.andWhere("ordr.offer_id = :offerId", { offerId });
 		} else {
 			query.where("ordr.offer_id = :offerId", { offerId });
@@ -140,7 +143,7 @@ export const Order = {
 		const query = OrderImpl.createQueryBuilder("ordr")
 			.leftJoinAndSelect("ordr.contexts", "context")
 			.andWhere("context.user_id = :userId", { userId })
-			.andWhere("ordr.type = :type", { type })
+			.andWhere("context.type = :type", { type })
 			.andWhere("ordr.current_status_date > :midnight", { midnight })
 			.andWhere(new Brackets(qb => {
 				qb.where("ordr.status = :completed", { completed: "completed" })
@@ -225,14 +228,14 @@ export const Order = {
 		const query = OrderImpl.createQueryBuilder("ordr") // don't use 'order', it messed things up
 			.leftJoinAndSelect("ordr.contexts", "context")
 			.leftJoinAndSelect("context.user", "user")
-			.where("context.userId = :userId", { userId: filters.userId })
+			.where("context.user_id = :userId", filters)
 			.orderBy("ordr.current_status_date", "DESC")
 			.addOrderBy("ordr.id", "DESC");
 
 		// updateQueryWithStatus(query, filters.status);
-		updateQueryWithFilter(query, "status", filters.status);
-		updateQueryWithFilter(query, "origin", filters.origin);
-		updateQueryWithFilter(query, "offer_id", filters.offerId);
+		updateQueryWithFilter(query, "status", filters.status, "ordr");
+		updateQueryWithFilter(query, "origin", filters.origin, "ordr");
+		updateQueryWithFilter(query, "offer_id", filters.offerId, "ordr");
 
 		/**
 		 * In case `filters` doesn't contain the `origin`, include the origin of the extending class.
@@ -249,7 +252,7 @@ export const Order = {
 		 * No origin is added
 		 */
 		if (!filters.origin && origin) {
-			query.andWhere("origin = :origin", { origin });
+			query.andWhere("ordr.origin = :origin", { origin });
 		}
 
 		if (limit) {
@@ -337,7 +340,9 @@ class OrderImpl extends CreationDateModel implements Order {
 	@Column("simple-json", { name: "blockchain_data", nullable: true })
 	public blockchainData!: BlockchainData;
 
-	@OneToMany(type => OrderContext, context => context.order)
+	@OneToMany(type => OrderContext, context => context.order, {
+		cascadeInsert: true
+	})
 	public contexts!: OrderContext[];
 
 	@Column({ name: "offer_id" })
@@ -361,14 +366,8 @@ class OrderImpl extends CreationDateModel implements Order {
 	@Column({ name: "expiration_date", nullable: true })
 	public expirationDate?: Date;
 
-	public async save() {
-		await super.save();
-		await Promise.all(this.contexts.map(context => {
-			(context as any).order = this;
-			(context as any).orderId = this.id;
-			return context.save();
-		}));
-		return this;
+	public async save(): Promise<this> {
+		return this.saveWithContexts() as Promise<this>;
 	}
 
 	public setStatus(status: OpenOrderStatus) {
@@ -411,7 +410,7 @@ class OrderImpl extends CreationDateModel implements Order {
 
 	public contextFor(userId: string): OrderContext | null {
 		for (const context of this.contexts) {
-			if (context.userId === userId) {
+			if (context.user.id === userId) {
 				return context;
 			}
 		}
@@ -486,6 +485,21 @@ class OrderImpl extends CreationDateModel implements Order {
 
 		return this.contexts[0].type;
 	}
+
+	@Transaction()
+	private async saveWithContexts(@TransactionManager() manager?: EntityManager) {
+		if (!manager) {
+			return;
+		}
+
+		for (const context of this.contexts) {
+			(context as any).order = this;
+			(context as any).orderId = this.id;
+			(context as any).user_id = context.user.id;
+		}
+
+		return manager.save(this);
+	}
 }
 
 @Entity({ name: "orders_contexts" })
@@ -494,12 +508,6 @@ export class OrderContext extends BaseEntity {
 	public static new(this: ObjectType<OrderContext>, data?: DeepPartial<OrderContext>): OrderContext {
 		return (this as typeof BaseEntity).create(data!) as OrderContext;
 	}
-
-	@PrimaryColumn({ name: "order_id" })
-	public readonly orderId!: string;
-
-	@PrimaryColumn({ name: "user_id" })
-	public readonly userId!: string;
 
 	@ManyToOne(type => OrderImpl, order => order.contexts)
 	@JoinColumn({ name: "order_id" })
@@ -514,4 +522,10 @@ export class OrderContext extends BaseEntity {
 
 	@Column("simple-json")
 	public readonly meta!: OrderMeta;
+
+	@PrimaryColumn({ name: "order_id" })
+	private readonly orderId!: string;
+
+	@PrimaryColumn({ name: "user_id" })
+	private readonly userId!: string;
 }

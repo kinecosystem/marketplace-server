@@ -108,7 +108,7 @@ async function createOrder(offer: offerDb.Offer, user: User) {
 		}
 	}, {
 		user,
-		userId: user.id,
+		// userId: user.id,
 		type: offer.type,
 		// TODO if order meta content is a template:
 		// replaceTemplateVars(offer, offer.meta.order_meta.content!)
@@ -161,12 +161,12 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 	}, {
 		type: "earn",
 		user: recipient,
-		userId: recipient.id,
+		// userId: recipient.id,
 		meta: pick(jwt.recipient, "title", "description")
 	}, {
 		type: "spend",
 		user: sender,
-		userId: sender.id,
+		// userId: sender.id,
 		meta: pick(jwt.sender, "title", "description")
 	});
 }
@@ -189,7 +189,7 @@ async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnO
 	}, {
 		type: "earn",
 		user: recipient,
-		userId: recipient.id,
+		// userId: recipient.id,
 		meta: pick(jwt.recipient, "title", "description")
 	});
 }
@@ -212,7 +212,7 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 	}, {
 		type: "spend",
 		user: sender,
-		userId: sender.id,
+		// userId: sender.id,
 		meta: pick(jwt.sender, "title", "description")
 	});
 }

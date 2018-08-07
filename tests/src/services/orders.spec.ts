@@ -142,26 +142,17 @@ describe("test orders", async () => {
 			const order = ExternalOrder.new({
 				offerId: "offer",
 				amount: 1,
-				type: "spend",
 				status: "opened",
 				blockchainData: {
 					sender_address: "sender",
 					recipient_address: "recipient"
 				}
+			}, {
+				user,
+				meta: {},
+				type: "spend"
 			});
 			await order.save();
-
-			const context = OrderContext.new({
-				user,
-				order,
-				meta: {},
-				userId: user.id,
-				orderId: order.id,
-				role: order.type === "spend" ? "sender" : "recipient"
-			});
-			await context.save();
-			order.contexts.push(context);
-
 			await helpers.completePayment(order.id);
 
 			const completedOrder = await Order.getOne(order.id);

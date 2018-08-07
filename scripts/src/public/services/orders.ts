@@ -8,7 +8,7 @@ import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
 import { Application } from "../../models/applications";
-import { validateExternalOrderJWT } from "../services/native_offers";
+import { isExternalEarn, isPayToUser, validateExternalOrderJWT } from "../services/native_offers";
 import {
 	ApiError,
 	NoSuchApp,
@@ -28,11 +28,10 @@ import { Paging } from "./index";
 import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
-import { ExternalEarnOrderJWT, ExternalSpendOrderJWT } from "./native_offers";
+import { ExternalEarnOrderJWT, ExternalPayToUserOrderJwt, ExternalSpendOrderJWT } from "./native_offers";
 import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
-import { OrderMeta } from "../../models/orders";
 
 export interface OrderList {
 	orders: Order[];
@@ -100,7 +99,6 @@ async function createOrder(offer: offerDb.Offer, user: User) {
 	}
 
 	const order = db.MarketplaceOrder.new({
-		type: offer.type,
 		status: "opened",
 		offerId: offer.id,
 		amount: offer.amount,
@@ -108,21 +106,15 @@ async function createOrder(offer: offerDb.Offer, user: User) {
 			sender_address: offer.type === "spend" ? user.walletAddress : offer.blockchainData.sender_address,
 			recipient_address: offer.type === "spend" ? offer.blockchainData.recipient_address : user.walletAddress
 		}
-	});
-	await order.save();
-
-	const context = db.OrderContext.new({
-		user, order,
-		orderId: order.id,
+	}, {
+		user,
 		userId: user.id,
+		type: offer.type,
 		// TODO if order meta content is a template:
 		// replaceTemplateVars(offer, offer.meta.order_meta.content!)
-		meta: offer.meta.order_meta,
-		role: offer.type === "spend" ? "sender" : "recipient"
+		meta: offer.meta.order_meta
 	});
-	await context.save();
-
-	order.contexts.push(context);
+	await order.save();
 
 	metrics.createOrder("marketplace", offer.type, offer.id);
 
@@ -151,64 +143,99 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 	return openOrderDbToApi(order, user.id);
 }
 
+async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJwt): Promise<db.ExternalOrder> {
+	const recipient = await User.findOneById(jwt.recipient.user_id);
+
+	if (!recipient) {
+		throw new Error(`couldn't find user with id "${ jwt.recipient.user_id }"`);
+	}
+
+	return db.ExternalOrder.new({
+		offerId: jwt.offer.id,
+		amount: jwt.offer.amount,
+		status: "opened",
+		blockchainData: {
+			sender_address: sender.walletAddress,
+			recipient_address: recipient.walletAddress
+		}
+	}, {
+		type: "earn",
+		user: recipient,
+		userId: recipient.id,
+		meta: pick(jwt.recipient, "title", "description")
+	}, {
+		type: "spend",
+		user: sender,
+		userId: sender.id,
+		meta: pick(jwt.sender, "title", "description")
+	});
+}
+
+async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
+	const app = await Application.findOneById(recipient.appId);
+
+	if (!app) {
+		throw NoSuchApp(recipient.appId);
+	}
+
+	return db.ExternalOrder.new({
+		offerId: jwt.offer.id,
+		amount: jwt.offer.amount,
+		status: "opened",
+		blockchainData: {
+			sender_address: app.walletAddresses.sender,
+			recipient_address: recipient.walletAddress
+		}
+	}, {
+		type: "earn",
+		user: recipient,
+		userId: recipient.id,
+		meta: pick(jwt.recipient, "title", "description")
+	});
+}
+
+async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOrderJWT) {
+	const app = await Application.findOneById(sender.appId);
+
+	if (!app) {
+		throw NoSuchApp(sender.appId);
+	}
+
+	return db.ExternalOrder.new({
+		offerId: jwt.offer.id,
+		amount: jwt.offer.amount,
+		status: "opened",
+		blockchainData: {
+			sender_address: sender.walletAddress,
+			recipient_address: app.walletAddresses.recipient
+		}
+	}, {
+		type: "spend",
+		user: sender,
+		userId: sender.id,
+		meta: pick(jwt.sender, "title", "description")
+	});
+}
+
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	const payload = await validateExternalOrderJWT(jwt, user.appUserId, logger);
 
 	let order = await db.Order.findBy(payload.offer.id, user.id);
 
 	if (!order || order.status === "failed") {
-		const app = await Application.findOneById(user.appId);
-		if (!app) {
-			throw NoSuchApp(user.appId);
-		}
-
-		let title: string;
-		let description: string;
-		let sender_address: string;
-		let recipient_address: string;
-
-		if (payload.sub === "earn") {
-			title = (payload as ExternalEarnOrderJWT).recipient.title;
-			description = (payload as ExternalEarnOrderJWT).recipient.description;
-			sender_address = app.walletAddresses.sender;
-			recipient_address = user.walletAddress;
+		if (isPayToUser(payload)) {
+			order = await createP2PExternalOrder(user, payload);
+		} else if (isExternalEarn(payload)) {
+			order = await createNormalEarnExternalOrder(user, payload);
 		} else {
-			// spend or pay_to_user
-			await addWatcherEndpoint([app.walletAddresses.recipient]);  // XXX how can we avoid this and only do this for the first ever time we see this address?
-			title = (payload as ExternalSpendOrderJWT).sender.title;
-			description = (payload as ExternalSpendOrderJWT).sender.description;
-			sender_address = user.walletAddress;
-			// TODO in case of pay_to_user, needs another lookup for the recipient_user_wallet
-			recipient_address = app.walletAddresses.recipient;
+			order = await createNormalSpendExternalOrder(user, payload);
 		}
 
-		order = db.ExternalOrder.new({
-			offerId: payload.offer.id,
-			amount: payload.offer.amount,
-			type: payload.sub,
-			status: "opened",
-			blockchainData: {
-				sender_address,
-				recipient_address
-			}
-		});
 		await order.save();
 
-		const context = db.OrderContext.new({
-			user, order,
-			orderId: order.id,
-			userId: user.id,
-			meta: {
-				title,
-				description
-			},
-			role: payload.sub === "spend" ? "sender" : "recipient"
+		order.contexts.forEach(context => {
+			metrics.createOrder("external", context.type, payload.offer.id);
 		});
-
-		await context.save();
-		order.contexts.push(context);
-
-		metrics.createOrder("external", payload.sub, payload.offer.id);
 
 		logger.info("created new open external order", {
 			offerId: payload.offer.id,
@@ -231,7 +258,7 @@ export async function submitOrder(
 	logger: LoggerInstance): Promise<Order> {
 
 	const order = await db.Order.getOne(orderId) as db.MarketplaceOrder | db.ExternalOrder;
-	// const order = await db.Order.findOneById(orderId, { relations: ["contexts"] }) as db.MarketplaceOrder | db.ExternalOrder;
+
 	if (!order) {
 		throw NoSuchOrder(orderId);
 	}
@@ -250,6 +277,7 @@ export async function submitOrder(
 
 		if (order.type === "earn") {
 			const offerContent = (await offerContents.getOfferContent(order.offerId, logger))!;
+
 			switch (offerContent.contentType) {
 				// TODO this switch-case should be inside the offerContents module
 				case "poll":
@@ -257,7 +285,7 @@ export async function submitOrder(
 					if (!offerContents.isValid(offerContent, form)) {
 						throw InvalidPollAnswers();
 					}
-					await offerContents.savePollAnswers(order.recipient!.id, order.offerId, orderId, form); // TODO should we also save quiz results?
+					await offerContents.savePollAnswers(order.user.id, order.offerId, orderId, form); // TODO should we also save quiz results?
 					break;
 				case "quiz":
 					order.amount = offerContents.sumCorrectQuizAnswers(offerContent, form) || 1; // TODO remove || 1 - don't give idiots kin
@@ -276,12 +304,15 @@ export async function submitOrder(
 	await order.save();
 	logger.info("order changed to pending", { orderId });
 
-	if (order.type === "earn") {
+	const earnContext = order.contexts.find(context => context.type === "earn");
+	if (earnContext) {
 		await payment.payTo(walletAddress, appId, order.amount, order.id, logger);
-		createEarnTransactionBroadcastToBlockchainSubmitted(order.recipient!.id, order.offerId, order.id).report();
+		createEarnTransactionBroadcastToBlockchainSubmitted(earnContext.user!.id, order.offerId, order.id).report();
 	}
 
-	metrics.submitOrder(order.type, order.offerId);
+	order.contexts.forEach(context => {
+		metrics.submitOrder(context.type, order.offerId);
+	});
 	return orderDbToApi(order, userId);
 }
 
@@ -341,11 +372,13 @@ function openOrderDbToApi(order: db.Order, userId: string): OpenOrder {
 		throw OpenedOrdersOnly();
 	}
 
+	const context = order.contextFor(userId)!;
 	const meta = getMeta(order as db.P2POrder | db.NormalOrder, userId);
+
 	return {
 		id: order.id,
 		offer_id: order.offerId,
-		offer_type: order.type,
+		offer_type: context.type,
 		amount: order.amount,
 		title: meta.title,
 		description: meta.description,
@@ -359,12 +392,13 @@ function orderDbToApi(order: db.Order, userId: string): Order {
 		throw OpenedOrdersUnreturnable();
 	}
 
+	const context = order.contextFor(userId)!;
 	const meta = getMeta(order as db.P2POrder | db.NormalOrder, userId);
 
 	const apiOrder = Object.assign(
 		pick(order, "id", "origin", "status", "amount"), {
 			result: order.value,
-			offer_type: order.type,
+			offer_type: context.type,
 			offer_id: order.offerId,
 			error: order.error as ApiError,
 			blockchain_data: order.blockchainData,
@@ -379,13 +413,9 @@ export async function setFailedOrder(order: db.Order, error: MarketplaceError, f
 	order.currentStatusDate = failureDate || order.currentStatusDate;
 	order.error = error.toJson();
 
-	if (order.origin === "p2p") {
-		// TODO: which user to send? maybe both?
-	} else if (order.type === "earn") {
-		metrics.orderFailed(order, await User.findOneById(order.recipient!.id));
-	} else {
-		metrics.orderFailed(order, await User.findOneById(order.sender!.id));
-	}
+	order.contexts.forEach(context => {
+		metrics.orderFailed(order);
+	});
 
 	return await order.save();
 }

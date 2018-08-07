@@ -427,6 +427,11 @@ async function nativeEarnFlow() {
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 }
 
+async function p2p() {
+	const senderId = "test:rich_user:" + generateId();
+	const appClient = new SampleAppClient();
+}
+
 async function main() {
 	await registerJWT();
 	await earnPollFlow();

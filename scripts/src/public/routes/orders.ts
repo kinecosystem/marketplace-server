@@ -33,7 +33,6 @@ export type CreateExternalOrderRequest = Request & {
  * create an order for a native offer
  */
 export const createExternalOrder = async function(req: CreateExternalOrderRequest, res: Response) {
-	console.log("createExternalOrder");
 	const order = await createExternalOrderService(req.body.jwt, req.context.user!, req.logger);
 	res.status(201).send(order);
 } as any as RequestHandler;

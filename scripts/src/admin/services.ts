@@ -232,7 +232,7 @@ async function orderToHtml(order: Order): Promise<string> {
 <td class="status_${ order.status }"><a href="/orders?status=${ order.status }">${ order.status }</a></td>
 <td><pre>${ JSON.stringify(order.error) }</pre></td>
 <td>${ order.origin }</td>
-<td>${ order.type }</td>
+<td>${ context.type }</td>
 <td><a href="/users/${ context.user.id }">${ context.user.id }</a></td>
 <td>${ order.amount }</td>
 <td>${ context.meta.title }</td>
@@ -428,22 +428,16 @@ export async function getOrders(params: any, query: Paging & { status?: OpenOrde
 }
 
 export async function retryOrder(params: { order_id: string }, query: any): Promise<string> {
-	const order: Order | undefined = await Order.getOne(params.order_id);
+	const order = await Order.getOne(params.order_id);
 
 	if (!order) {
 		throw new Error("order not found: " + params.order_id);
 	}
-	if (order.status !== "failed" || order.type !== "earn") {
+	if (order.status !== "failed" || order.isP2P() || order.contexts[0].type !== "earn") {
 		throw new Error("cant retry non earn or non failed orders");
 	}
 
-	// TODO: what is this for?
-	/*const user = await User.findOneById(order.userId);
-	if (!user) {
-		throw new Error("user not found: " + order.userId);
-	}*/
-
-	await payment.payTo(order.blockchainData.recipient_address!, order.sender!.appId, order.amount, order.id, getDefaultLogger());
+	await payment.payTo(order.blockchainData.recipient_address!, order.contexts[0].user.appId, order.amount, order.id, getDefaultLogger());
 
 	return `<h3>Retrying...</h3>
 <div><a href="/orders/${order.id}">Go Back</a>
@@ -474,8 +468,7 @@ window.setTimeout(function(){
 }
 
 export async function getOrder(params: { order_id: string }, query: any): Promise<string> {
-	Order.createQueryBuilder("order").where("LOWER(order.id) = LOWER(:orderId)", { orderId: params.order_id });
-	const orders: Order[] = await Order.createQueryBuilder("order")
+	const orders: Order[] = await Order.queryBuilder("order")
 		.where("LOWER(order.id) = LOWER(:orderId)", { orderId: params.order_id })
 		.getMany();
 	if (orders.length === 0) {
@@ -566,5 +559,4 @@ export async function changeOffer(body: Partial<Offer>, params: { offer_id: stri
 
 	await offer.save();
 	return { offer };
-
 }

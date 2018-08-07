@@ -71,7 +71,8 @@ async function getPaymentJWT(order: db.Order, appId: string, userId: string): Pr
 			transaction_id: order.blockchainData.transaction_id!
 		}
 	};
-	if (order.type === "earn") {
+
+	if (order.contextFor(userId)!.type === "earn") {
 		payload.recipient_user_id = user.appUserId;
 	} else {
 		payload.sender_user_id = user.appUserId;
@@ -91,11 +92,13 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		return;
 	}
 
-	if (order.type === "earn") {
-		createEarnTransactionBroadcastToBlockchainSucceeded(order.recipient!.appUserId, payment.transaction_id, order.offerId, order.id).report();
-	} else {
-		createSpendOrderPaymentConfirmed(order.sender!.appUserId, payment.transaction_id, order.offerId, order.id, order.isExternalOrder(), order.origin).report();
-	}
+	order.forEachContext(context => {
+		if (context.type === "earn") {
+			createEarnTransactionBroadcastToBlockchainSucceeded(context.user.id, payment.transaction_id, order.offerId, order.id).report();
+		} else {
+			createSpendOrderPaymentConfirmed(context.user.id, payment.transaction_id, order.offerId, order.id, order.isExternalOrder(), order.origin).report();
+		}
+	});
 
 	if (order.status === "completed") {
 		logger.warn(`received payment callback for already completed order ${ payment.id }`);
@@ -132,11 +135,10 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	if (!payment.app_id) {
 		logger.error(`payment is missing the app_id <${ payment.id }, ${ payment.transaction_id }> - setting the one from the DB`);
 
-		const userId = order.type === "earn" ? order.recipient!.id : order.sender!.id;
-		const user: User | undefined = await User.findOneById(userId);
+		const user = order.contexts[0].user;
 
 		if (!user) {
-			logger.error(`failed to fix missing app_id on payment - cant find user ${ userId }`);
+			logger.error(`failed to fix missing app_id on payment - cant find user ${ order.contexts[0].user.id }`);
 			await setFailedOrder(order, BlockchainError("failed app_id hack"));
 			return;
 		}
@@ -154,14 +156,14 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 				return;
 			} else {
 				order.value = asset.asOrderValue();
-				asset.ownerId = order.sender!.id;
+				asset.ownerId = order.user.id;
 				await asset.save();  // XXX should be in a transaction with order.save
 			}
 		}
-	} else if (order.isExternalOrder()) {
-		// XXX for p2p don't put the JWT in the recipient order's value
-		// XXX for p2p create a completed order for the recipient too
-		order.value = await getPaymentJWT(order, payment.app_id, order.type === "spend" ? order.sender!.id : order.recipient!.id);
+	} else if (order.isP2P()) {
+		order.value = await getPaymentJWT(order, payment.app_id, order.sender.id);
+	} else if (order.isNormal()) {
+		order.value = await getPaymentJWT(order, payment.app_id, order.user.id);
 	}
 
 	if (order.status !== "pending") {
@@ -175,12 +177,15 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	order.setStatus("completed");
 	await order.save();
 
-	metrics.completeOrder(order.type, order.offerId, prevStatus, (order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000);
+	order.forEachContext(context => {
+		metrics.completeOrder(context.type, order.offerId, prevStatus, (order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000);
+	});
+
 	logger.info(`completed order with payment <${ payment.id }, ${ payment.transaction_id }>`);
 }
 
 export async function paymentFailed(payment: FailedPayment, logger: LoggerInstance) {
-	const order = await db.Order.findOneById(payment.id);
+	const order = await db.Order.getOne(payment.id);
 	if (!order) {
 		logger.error(`received payment for unknown order id ${ payment.id }`);
 		return;

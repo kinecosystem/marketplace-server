@@ -21,7 +21,7 @@ export function maxWalletsExceeded() {
 }
 
 export function timeRequest(time: number, method: string, path: string) {
-	statsd.timing("request", time, undefined, { path: `${ method }: ${ path }` });
+	statsd.timing("request", time, undefined, { method, path });
 }
 
 export function createOrder(orderType: "marketplace" | "external", offerType: "earn" | "spend", offerId: string) {

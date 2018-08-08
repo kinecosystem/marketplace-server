@@ -83,35 +83,21 @@ function Router(): ExtendedRouter {
 }
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
-	app.use(createPath("config", pathPrefix),
-		Router()
-			.get("/", getConfigHandler));
+	app.use(Router().get(createPath("config/", pathPrefix), getConfigHandler));
 
-	app.use(createPath("offers", pathPrefix),
-		Router()
-			.authenticated() // no TOS scope
-			.get("/", getOffers));
+	app.use(Router().authenticated(/* no TOS scope */).get(createPath("offers/", pathPrefix), getOffers));
 
-	app.use(createPath("offers", pathPrefix),
-		Router()
-			.authenticated(AuthScopes.TOS)
-			.post("/external/orders", createExternalOrder)
-			.post("/:offer_id/orders", createMarketplaceOrder));
+	app.use(Router().authenticated(AuthScopes.TOS).post(createPath("offers/external/orders", pathPrefix), createExternalOrder));
+	app.use(Router().authenticated(AuthScopes.TOS).post(createPath("offers/:offer_id/orders", pathPrefix), createMarketplaceOrder));
 
-	app.use(createPath("orders", pathPrefix),
-		Router()
-			.authenticated(AuthScopes.TOS)
-			.get("/", getOrderHistory)
-			.get("/:order_id", getOrder)
-			.post("/:order_id", submitOrder)
-			.delete("/:order_id", cancelOrder)
-			.patch("/:order_id", changeOrder));
+	app.use(Router().authenticated(AuthScopes.TOS).get(createPath("orders/", pathPrefix), getOrderHistory));
+	app.use(Router().authenticated(AuthScopes.TOS).get(createPath("orders/:order_id", pathPrefix), getOrder));
+	app.use(Router().authenticated(AuthScopes.TOS).post(createPath("orders/:order_id", pathPrefix), submitOrder));
+	app.use(Router().authenticated(AuthScopes.TOS).delete(createPath("orders/:order_id", pathPrefix), cancelOrder));
+	app.use(Router().authenticated(AuthScopes.TOS).patch(createPath("orders/:order_id", pathPrefix), changeOrder));
 
-	app.use(createPath("users", pathPrefix),
-		Router()
-			.post("/", signInUser)
-			.authenticated() // no TOS scope
-			.post("/me/activate", activateUser));
+	app.use(Router().post(createPath("users/", pathPrefix), signInUser));
+	app.use(Router().authenticated(/* no TOS scope */).post(createPath("users/me/activate", pathPrefix), activateUser));
 
 	app.get("/status", statusHandler);
 }
@@ -120,6 +106,5 @@ function createPath(path: string, prefix?: string): string {
 	if (!prefix) {
 		return path;
 	}
-
 	return `${ prefix }/${ path }`;
 }

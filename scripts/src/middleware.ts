@@ -75,7 +75,7 @@ export const reportMetrics = function(req: express.Request, res: express.Respons
 	const t = performance.now();
 
 	res.on("finish", () => {
-		const path = req.route ? req.route.path : (req.url || "unknown");
+		const path = req.route ? req.route.path : "unknown";
 		metrics.timeRequest(performance.now() - t, req.method, path);
 	});
 

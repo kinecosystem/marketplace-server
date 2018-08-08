@@ -63,7 +63,8 @@ export type JWTBodyPaymentConfirmation = {
 };
 
 async function getPaymentJWT(order: db.Order, appId: string, userId: string): Promise<OrderValue> {
-	const user = (await User.findOneById(userId))!;
+	// const user = (await User.findOneById(userId))!;
+	const loggedInContext = order.contextFor(userId)!;
 	const payload: JWTBodyPaymentConfirmation = {
 		offer_id: order.offerId,
 		payment: {
@@ -72,12 +73,14 @@ async function getPaymentJWT(order: db.Order, appId: string, userId: string): Pr
 		}
 	};
 
-	if (order.contextFor(userId)!.type === "earn") {
-		payload.recipient_user_id = user.appUserId;
+	if (order.isP2P()) {
+		payload.sender_user_id = order.sender.appUserId;
+		payload.recipient_user_id = order.recipient.appUserId;
+	} else if (loggedInContext.type === "earn") {
+		payload.recipient_user_id = loggedInContext.user.appUserId;
 	} else {
-		payload.sender_user_id = user.appUserId;
+		payload.sender_user_id = loggedInContext.user.appUserId;
 	}
-	// XXX if it's p2p, add both recipient and sender user_ids
 
 	return {
 		type: "payment_confirmation",

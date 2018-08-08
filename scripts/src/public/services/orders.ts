@@ -12,6 +12,7 @@ import { isExternalEarn, isPayToUser, validateExternalOrderJWT } from "../servic
 import {
 	ApiError,
 	NoSuchApp,
+	NoSuchUser,
 	CompletedOrderCantTransitionToFailed,
 	ExternalOrderAlreadyCompleted,
 	InvalidPollAnswers, MarketplaceError,
@@ -144,12 +145,13 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 }
 
 async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJwt): Promise<db.ExternalOrder> {
-	const recipient = await User.findOneById(jwt.recipient.user_id);
+	const recipient = await User.findOne({ appId: sender.appId, appUserId: jwt.recipient.user_id });
 
 	if (!recipient) {
-		throw new Error(`couldn't find user with id "${ jwt.recipient.user_id }"`);
+		throw NoSuchUser(jwt.recipient.user_id);
 	}
 
+	await addWatcherEndpoint([recipient.walletAddress]);
 	return db.ExternalOrder.new({
 		offerId: jwt.offer.id,
 		amount: jwt.offer.amount,
@@ -200,6 +202,8 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 	if (!app) {
 		throw NoSuchApp(sender.appId);
 	}
+
+	await addWatcherEndpoint([app.walletAddresses.recipient]);
 
 	return db.ExternalOrder.new({
 		offerId: jwt.offer.id,

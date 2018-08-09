@@ -6,7 +6,8 @@ WORKDIR /opt/app
 COPY package*.json ./
 
 # install build tools
-RUN apk add -qU --no-cache -t .fetch-deps git make \
+RUN apk add -qU --no-cache -t .fetch-deps git make python g++ \
+    && npm install -g npm@latest \
     && npm i \
     && apk del -q .fetch-deps
 

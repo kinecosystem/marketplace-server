@@ -63,7 +63,6 @@ export type JWTBodyPaymentConfirmation = {
 };
 
 async function getPaymentJWT(order: db.Order, appId: string, userId: string): Promise<OrderValue> {
-	// const user = (await User.findOneById(userId))!;
 	const loggedInContext = order.contextFor(userId)!;
 	const payload: JWTBodyPaymentConfirmation = {
 		offer_id: order.offerId,

@@ -9,7 +9,7 @@ import {
 	ObjectType,
 	BaseEntity,
 	PrimaryColumn,
-	SelectQueryBuilder, JoinColumn, Transaction, TransactionManager, EntityManager, PrimaryGeneratedColumn
+	SelectQueryBuilder, JoinColumn, getManager
 } from "typeorm";
 
 import { ApiError } from "../errors";
@@ -366,7 +366,17 @@ class OrderImpl extends CreationDateModel implements Order {
 	public expirationDate?: Date;
 
 	public async save(): Promise<this> {
-		return this.saveWithContexts() as Promise<this>;
+		await getManager().transaction(async mgr => {
+			for (const context of this.contexts) {
+				(context as any).order = this;
+				(context as any).orderId = this.id;
+				(context as any).user_id = context.user.id;
+			}
+
+			await mgr.save(this);
+		});
+
+		return this;
 	}
 
 	public setStatus(status: OpenOrderStatus) {
@@ -483,21 +493,6 @@ class OrderImpl extends CreationDateModel implements Order {
 		}
 
 		return this.contexts[0].type;
-	}
-
-	@Transaction()
-	private async saveWithContexts(@TransactionManager() manager?: EntityManager) {
-		if (!manager) {
-			return;
-		}
-
-		for (const context of this.contexts) {
-			(context as any).order = this;
-			(context as any).orderId = this.id;
-			(context as any).user_id = context.user.id;
-		}
-
-		return manager.save(this);
 	}
 }
 

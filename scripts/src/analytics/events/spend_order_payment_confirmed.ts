@@ -18,10 +18,10 @@ export interface SpendOrderPaymentConfirmed extends EventData {
 	offer_id: string;
 	order_id: string;
 	is_native: boolean;
-	origin: "marketplace" | "external" | "p2p";
+	origin: "marketplace" | "external";
 }
 
-export function create(user_id: string, transaction_id: string, offer_id: string, order_id: string, is_native: boolean, origin: "marketplace" | "external" | "p2p"): Event<SpendOrderPaymentConfirmed> {
+export function create(user_id: string, transaction_id: string, offer_id: string, order_id: string, is_native: boolean, origin: "marketplace" | "external"): Event<SpendOrderPaymentConfirmed> {
 	return new Event<SpendOrderPaymentConfirmed>({
 		event_name: "spend_order_payment_confirmed",
 		event_type: "log",

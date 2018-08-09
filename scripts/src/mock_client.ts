@@ -442,7 +442,7 @@ async function nativeEarnFlow() {
 
 async function p2p() {
 	const offer = {
-		id: "ofer-id",
+		id: "offer-id",
 		amount: 2,
 	};
 	const appClient = new SampleAppClient();
@@ -511,7 +511,7 @@ async function main() {
 	await didNotApproveTOS();
 	await testRegisterNewUser();
 	await tryToNativeSpendTwice();
-	p2p();
+	await p2p();
 }
 
 main()

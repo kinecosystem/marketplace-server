@@ -124,7 +124,7 @@ left join (select offer_id, count(*) as num from assets where owner_id is null g
 on unowned.offer_id = a.id
 left join (select offer_id, count(*) as num from assets where owner_id is not null group by offer_id) owned
 on owned.offer_id = a.id
-where a.id = '${offerId}' or '${offerId}' = 'all'
+where a.id = '${ offerId }' or '${ offerId }' = 'all'
 order by type desc, abs(ordered.num - owned.num) desc, ordered.num desc`;
 }
 
@@ -151,73 +151,73 @@ on spend.user_id = users.id
 on failed_earn.user_id = users.id
     left join (select user_id, count(*) as num from orders where (status = 'failed' or (status = 'pending' and expiration_date < now())) and type = 'spend' group by user_id) as failed_spend
 on failed_spend.user_id = users.id
-  where users.app_id = '${appId}' or '${appId}' = 'all'
+  where users.app_id = '${ appId }' or '${ appId }' = 'all'
 group by users.app_id;
 	`;
 }
 
 function offerStatsToHtml(stats: OfferStats) {
 	return `<tr>
-<td>${stats.id}</td>
-<td>${stats.name}</td>
-<td>${stats.type}</td>
-<td>${stats.total_cap}</td>
-<td>${stats.orders}</td>
-<td>${stats.failed_orders}</td>
-<td>${stats.assets_owned}</td>
-<td>${stats.assets_left}</td>
-<td>${stats.orders_missing_asset}</td>
+<td>${ stats.id }</td>
+<td>${ stats.name }</td>
+<td>${ stats.type }</td>
+<td>${ stats.total_cap }</td>
+<td>${ stats.orders }</td>
+<td>${ stats.failed_orders }</td>
+<td>${ stats.assets_owned }</td>
+<td>${ stats.assets_left }</td>
+<td>${ stats.orders_missing_asset }</td>
 </tr>`;
 }
 
 function appStatsToHtml(stats: AppStats) {
 	return `<tr>
-<td>${stats.app_id}</td>
-<td>${stats.total_users}</td>
-<td>${stats.total_activated}</td>
-<td>${stats.users_completed_earn}</td>
-<td>${stats.users_completed_spend}</td>
-<td>${stats.users_failed_earn}</td>
-<td>${stats.users_failed_spend}</td>
-<td>${stats.earn_orders}</td>
-<td>${stats.spend_orders}</td>
-<td>${stats.failed_earn_orders}</td>
-<td>${stats.failed_spend_orders}</td>
+<td>${ stats.app_id }</td>
+<td>${ stats.total_users }</td>
+<td>${ stats.total_activated }</td>
+<td>${ stats.users_completed_earn }</td>
+<td>${ stats.users_completed_spend }</td>
+<td>${ stats.users_failed_earn }</td>
+<td>${ stats.users_failed_spend }</td>
+<td>${ stats.earn_orders }</td>
+<td>${ stats.spend_orders }</td>
+<td>${ stats.failed_earn_orders }</td>
+<td>${ stats.failed_spend_orders }</td>
 </tr>`;
 }
 
 async function appToHtml(app: Application): Promise<string> {
 	return `<tr>
-<td>${app.id}</td>
-<td>${app.name}</td>
-<td>${app.apiKey}</td>
-<td><a href="/applications/${app.id}/users">users</a></td>
-<td><a href="/applications/${app.id}/offers">offers</a></td>
-<td><a href="/applications/${app.id}/stats">stats</a></td>
-<td><a href="${BLOCKCHAIN.horizon_url}/accounts/${app.walletAddresses.sender}">sender wallet (earn)</a></td>
-<td><a href="${BLOCKCHAIN.horizon_url}/accounts/${app.walletAddresses.recipient}">recipient wallet (spend)</a></td>
-<td><pre class="wide">${JSON.stringify(app.jwtPublicKeys, null, 2)}</pre></td>
+<td>${ app.id }</td>
+<td>${ app.name }</td>
+<td>${ app.apiKey }</td>
+<td><a href="/applications/${ app.id }/users">users</a></td>
+<td><a href="/applications/${ app.id }/offers">offers</a></td>
+<td><a href="/applications/${ app.id }/stats">stats</a></td>
+<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.sender }">sender wallet (earn)</a></td>
+<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.recipient }">recipient wallet (spend)</a></td>
+<td><pre class="wide">${ JSON.stringify(app.jwtPublicKeys, null, 2) }</pre></td>
 </tr>`;
 }
 
 async function offerToHtml(offer: Offer): Promise<string> {
 	return `<tr>
-<td>${offer.id}</td>
-<td><a href="/offers/${offer.id}/stats">stats</a></td>
-<td><a href="/orders?offer_id=${offer.id}">orders</a></td>
-<td><a href="/polls/${offer.id}">polls</a></td>
-<td>${offer.name}</td>
-<td>${offer.type}</td>
-<td>${offer.amount}</td>
-<td>${offer.meta.title}</td>
-<td>${offer.meta.description}</td>
+<td>${ offer.id }</td>
+<td><a href="/offers/${ offer.id }/stats">stats</a></td>
+<td><a href="/orders?offer_id=${ offer.id }">orders</a></td>
+<td><a href="/polls/${ offer.id }">polls</a></td>
+<td>${ offer.name }</td>
+<td>${ offer.type }</td>
+<td>${ offer.amount }</td>
+<td>${ offer.meta.title }</td>
+<td>${ offer.meta.description }</td>
 <td><img src="${offer.meta.image}"/></td>
-<td><input type="text" onchange="submitData('/offers/${offer.id}', {cap: {total: this.value}})" value="${offer.cap.total}"/></td>
-<td><input type="text" onchange="submitData('/offers/${offer.id}', {cap: {per_user: this.value}})" value="${offer.cap.per_user}"/></td>
-<td>${offer.ownerId}</td>
-<td><a href="${BLOCKCHAIN.horizon_url}/accounts/${offer.blockchainData.recipient_address}">${offer.blockchainData.recipient_address}</a></td>
-<td><a href="${BLOCKCHAIN.horizon_url}/accounts/${offer.blockchainData.sender_address}">${offer.blockchainData.sender_address}</a></td>
-<td>${offer.createdDate.toISOString()}</td>
+<td><input type="text" onchange="submitData('/offers/${ offer.id }', { cap: { total: this.value } })" value="${ offer.cap.total }"/></td>
+<td><input type="text" onchange="submitData('/offers/${ offer.id }', { cap: { per_user: this.value } })" value="${ offer.cap.per_user }"/></td>
+<td>${ offer.ownerId }</td>
+<td><a href="${ BLOCKCHAIN.horizon_url}/accounts/${ offer.blockchainData.recipient_address }">${ offer.blockchainData.recipient_address }</a></td>
+<td><a href="${ BLOCKCHAIN.horizon_url}/accounts/${ offer.blockchainData.sender_address }">${ offer.blockchainData.sender_address }</a></td>
+<td>${ offer.createdDate.toISOString() }</td>
 </tr>`;
 }
 
@@ -228,7 +228,7 @@ async function orderToHtml(order: Order): Promise<string> {
 
 	for (const context of order.contexts) {
 		html += `<tr>
-<td><a href="/orders/$ {order.id }">${ order.id }</a></td>
+<td><a href="/orders/${ order.id }">${ order.id }</a></td>
 <td class="status_${ order.status }"><a href="/orders?status=${ order.status }">${ order.status }</a></td>
 <td><pre>${ JSON.stringify(order.error) }</pre></td>
 <td>${ order.origin }</td>
@@ -240,7 +240,7 @@ async function orderToHtml(order: Order): Promise<string> {
 <td><pre>${ context.meta.content }</pre></td>
 <td><a href="/offers/${ order.offerId }">${ order.offerId }</a></td>
 <td><a href="${ BLOCKCHAIN.horizon_url }/transactions/${ transactionId }">${ transactionId }</a></td>
-<td>${(order.currentStatusDate || order.createdDate).toISOString()}</td>
+<td>${ (order.currentStatusDate || order.createdDate).toISOString() }</td>
 <td><pre><a href="https://jwt.io?token=${ payJwt }">${ payJwt }</a></pre></td>
 </tr>`;
 	}
@@ -251,18 +251,18 @@ async function orderToHtml(order: Order): Promise<string> {
 async function userToHtml(user: User): Promise<string> {
 	return `
 <ul>
-<li>ecosystem id: <a href="/users/${user.id}">${user.id}</a></li>
-<li>appId: ${user.appId}</li>
-<li>appUserId: ${user.appUserId}</li>
+<li>ecosystem id: <a href="/users/${ user.id }">${ user.id }</a></li>
+<li>appId: ${ user.appId }</li>
+<li>appUserId: ${ user.appUserId }</li>
 <li>stellar account:
-<a href="${BLOCKCHAIN.horizon_url}/accounts/${user.walletAddress}">${user.walletAddress}</a>
-<a href="/wallets/${user.walletAddress}">balance</a>
-<a href="/wallets/${user.walletAddress}/payments">kin transactions</a>
+<a href="${ BLOCKCHAIN.horizon_url}/accounts/${ user.walletAddress }">${ user.walletAddress }</a>
+<a href="/wallets/${ user.walletAddress }">balance</a>
+<a href="/wallets/${ user.walletAddress }/payments">kin transactions</a>
 </li>
-<li>created: ${user.createdDate}</li>
-<li>activated: ${user.activatedDate}</li>
-<li><a href="/orders?user_id=${user.id}">orders</a></li>
-<li><a href="/users/${user.id}/offers">offers</a></li>
+<li>created: ${ user.createdDate }</li>
+<li>activated: ${ user.activatedDate} </li>
+<li><a href="/orders?user_id=${ user.id }">orders</a></li>
+<li><a href="/users/${ user.id }/offers">offers</a></li>
 </ul>`;
 }
 
@@ -293,7 +293,7 @@ export async function getApplication(params: { app_id: string }, query: any): Pr
 	if (!app) {
 		throw new Error("no such app: " + params.app_id);
 	}
-	return `<table>${await appToHtml(app)}</table>`;
+	return `<table>${ await appToHtml(app) }</table>`;
 }
 
 export async function getApplicationUsers(params: { app_id: string }, query: Paging): Promise<string> {
@@ -347,12 +347,12 @@ export async function getOffer(params: { offer_id: string }, query: any): Promis
 	if (!offer) {
 		throw new Error("no such offer: " + params.offer_id);
 	}
-	return `<table>${OFFER_HEADERS}${await offerToHtml(offer)}</table>`;
+	return `<table>${ OFFER_HEADERS }${ await offerToHtml(offer) }</table>`;
 }
 
 export async function getOfferStats(params: { offer_id: string }, query: any): Promise<string> {
 	const stats: OfferStats[] = await getManager().query(getOfferStatsQuery(params.offer_id));
-	let ret = `<table>${OFFER_STATS_HEADERS}`;
+	let ret = `<table>${ OFFER_STATS_HEADERS }`;
 	for (const stat of stats) {
 		ret += offerStatsToHtml(stat);
 	}
@@ -363,7 +363,7 @@ export async function getOfferStats(params: { offer_id: string }, query: any): P
 export async function getAllOfferStats(params: any, query: any): Promise<string> {
 	const stats: OfferStats[] = await getManager().query(getOfferStatsQuery("all"));
 
-	let ret = `<table>${OFFER_STATS_HEADERS}`;
+	let ret = `<table>${ OFFER_STATS_HEADERS }`;
 	for (const stat of stats) {
 		ret += offerStatsToHtml(stat);
 	}
@@ -372,12 +372,13 @@ export async function getAllOfferStats(params: any, query: any): Promise<string>
 }
 
 export async function getUserOffers(params: { user_id: string }, query: any): Promise<string> {
-	const user: User | undefined = await User.findOneById(params.user_id);
+	const user = await User.findOneById(params.user_id);
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
+
 	const offers = (await getUserOffersService(user.id, user.appId, {}, getDefaultLogger())).offers;
-	let ret = `<table>${OFFER_HEADERS}`;
+	let ret = `<table>${ OFFER_HEADERS }`;
 	for (const offer of offers) {
 		const dbOffer = (await Offer.findOneById(offer.id))!;
 		ret += await offerToHtml(dbOffer);
@@ -387,7 +388,7 @@ export async function getUserOffers(params: { user_id: string }, query: any): Pr
 }
 
 export async function getUserData(params: { user_id: string }, query: any): Promise<string> {
-	const user: User | undefined = await User.findOneById(params.user_id);
+	const user = await User.findOneById(params.user_id);
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
@@ -395,7 +396,7 @@ export async function getUserData(params: { user_id: string }, query: any): Prom
 }
 
 export async function getApplicationUserData(params: { app_user_id: string, app_id: string }, query: any): Promise<string> {
-	const user: User | undefined = await User.findOne({ appUserId: params.app_user_id, appId: params.app_id });
+	const user = await User.findOne({ appUserId: params.app_user_id, appId: params.app_id });
 	if (!user) {
 		throw new Error("user not found: " + params.app_user_id);
 	}
@@ -419,7 +420,8 @@ export async function getOrders(params: any, query: Paging & { status?: OpenOrde
 		take: take(query),
 		skip: skip(query)
 	});
-	let ret = `<table>${ORDER_HEADERS}`;
+
+	let ret = `<table>${ ORDER_HEADERS }`;
 	for (const order of orders) {
 		ret += await orderToHtml(order);
 	}
@@ -440,11 +442,11 @@ export async function retryOrder(params: { order_id: string }, query: any): Prom
 	await payment.payTo(order.blockchainData.recipient_address!, order.contexts[0].user.appId, order.amount, order.id, getDefaultLogger());
 
 	return `<h3>Retrying...</h3>
-<div><a href="/orders/${order.id}">Go Back</a>
+<div><a href="/orders/${ order.id }">Go Back</a>
 <script>
 window.setTimeout(function(){
         // Move to a new location or you can do something else
-        window.location.href = "/orders/${order.id}";
+        window.location.href = "/orders/${ order.id }";
     }, 5000);
 </script>
 </div>`;
@@ -457,24 +459,24 @@ export async function retryUserWallet(params: { user_id: string }, query: any): 
 	}
 	await payment.createWallet(user.walletAddress, user.appId, user.id, getDefaultLogger());
 	return `<h3>Retrying...</h3>
-<div><a href="/users/${user.id}">Go Back</a>
+<div><a href="/users/${ user.id }">Go Back</a>
 <script>
 window.setTimeout(function(){
         // Move to a new location or you can do something else
-        window.location.href = "/users/${user.id}";
+        window.location.href = "/users/${ user.id }";
     }, 5000);
 </script>
 </div>`;
 }
 
 export async function getOrder(params: { order_id: string }, query: any): Promise<string> {
-	const orders: Order[] = await Order.queryBuilder("order")
+	const orders = await Order.queryBuilder("order")
 		.where("LOWER(order.id) = LOWER(:orderId)", { orderId: params.order_id })
 		.getMany();
 	if (orders.length === 0) {
 		throw new Error("order not found: " + params.order_id);
 	}
-	let ret = `<table>${ORDER_HEADERS}`;
+	let ret = `<table>${ ORDER_HEADERS }`;
 	for (const order of orders) {
 		ret += await orderToHtml(order);
 	}
@@ -483,13 +485,13 @@ export async function getOrder(params: { order_id: string }, query: any): Promis
 }
 
 export async function getPollResults(params: { offer_id: string }, query: any): Promise<string> {
-	const answers: PollAnswer[] = await PollAnswer.find({
+	const answers = await PollAnswer.find({
 		where: { offerId: params.offer_id },
 		order: { createdDate: "DESC" }, take: take(query), skip: skip(query)
 	});
 	let ret = `<table>`;
 	for (const answer of answers) {
-		ret += `<tr><td><pre class="wide">${answer.content}</pre></td></tr>`;
+		ret += `<tr><td><pre class="wide">${ answer.content }</pre></td></tr>`;
 	}
 	ret += "</table>";
 	return ret;
@@ -497,7 +499,7 @@ export async function getPollResults(params: { offer_id: string }, query: any): 
 
 export async function getApplicationStats(params: { app_id: string }, query: any): Promise<string> {
 	const stats: AppStats[] = await getManager().query(getApplicationStatsQuery(params.app_id));
-	let ret = `<table>${APP_STATS_HEADERS}`;
+	let ret = `<table>${ APP_STATS_HEADERS }`;
 	for (const stat of stats) {
 		ret += appStatsToHtml(stat);
 	}
@@ -532,7 +534,7 @@ export async function getWallet(params: { wallet_address: string }, query: any):
 
 export async function getWalletPayments(params: { wallet_address: string }, query: any): Promise<string> {
 	const data = await payment.getPayments(params.wallet_address, getDefaultLogger(), { timeout: 5000 });
-	return `<pre class="wide">${JSON.stringify(data, null, 2)}</pre>`;
+	return `<pre class="wide">${ JSON.stringify(data, null, 2) }</pre>`;
 }
 
 export async function changeOffer(body: Partial<Offer>, params: { offer_id: string }, query: any): Promise<any> {

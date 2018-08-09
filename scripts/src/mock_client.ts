@@ -441,6 +441,8 @@ async function nativeEarnFlow() {
 }
 
 async function p2p() {
+	console.log("===================================== P2P =====================================");
+
 	const offer = {
 		id: "offer-id",
 		amount: 2,

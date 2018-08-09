@@ -27,7 +27,7 @@ export interface OrderMeta {
 	content?: string;
 }
 
-export type OrderOrigin = "marketplace" | "external"; // | "p2p";
+export type OrderOrigin = "marketplace" | "external";
 export type OrderStatus = "completed" | "failed" | "pending";
 export type OpenOrderStatus = OrderStatus | "opened";
 export type OrderStatusAndNegation = OpenOrderStatus | "!opened" | "!completed" | "!failed" | "!pending";

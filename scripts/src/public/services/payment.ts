@@ -10,9 +10,9 @@ import { getConfig } from "../config";
 
 const config = getConfig();
 const webhook = `${config.internal_service}/v1/internal/webhook`;
-const DEFAULT_TIMEOUT = 1000;
+const DEFAULT_TIMEOUT = 300;
 const client = axios.create({ timeout: DEFAULT_TIMEOUT });
-axiosRetry(client, { retries: 3 }); // retries on 5xx errors
+axiosRetry(client, { retries: 6, retryCondition: () => true, shouldResetTimeout: true });
 
 interface PaymentRequest {
 	amount: number;

@@ -14,7 +14,6 @@ const DEFAULT_TIMEOUT = 300;
 const client = axios.create({ timeout: DEFAULT_TIMEOUT });
 axiosRetry(client, { retries: 6, retryCondition: () => true, shouldResetTimeout: true });
 
-
 interface PaymentRequest {
 	amount: number;
 	app_id: string;

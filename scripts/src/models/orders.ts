@@ -1,6 +1,6 @@
 import * as moment from "moment";
 import { DeepPartial } from "typeorm/common/DeepPartial";
-import { BaseEntity, Brackets, Column, Entity, SelectQueryBuilder } from "typeorm";
+import { BaseEntity, Brackets, Column, Entity, getManager, SelectQueryBuilder } from "typeorm";
 
 import { generateId, IdPrefix } from "../utils";
 
@@ -85,6 +85,20 @@ export class Order extends CreationDateModel {
 			query.andWhere("user_id = :userId", { userId });
 		}
 		return query.getCount();
+	}
+
+	public static async countAllByOffer(userId: string): Promise<Map<string, number>> {
+		const results: Array<{ offer_id: string, cnt: number }> = await getManager().query(
+			`SELECT offer_id, COUNT(DISTINCT("Order"."id")) as "cnt"
+		FROM "orders" "Order"
+		WHERE (status = $1 OR (status IN ($2) AND expiration_date > $3))
+		AND user_id = ($4)
+		group by offer_id`, ["completed", ["pending"], new Date(), userId]);
+		const map = new Map<string, number>();
+		for (const res of results) {
+			map.set(res.offer_id, res.cnt);
+		}
+		return map;
 	}
 
 	public static countToday(userId: string, type: OfferType): Promise<number> {

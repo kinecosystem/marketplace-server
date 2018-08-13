@@ -451,12 +451,14 @@ async function p2p() {
 	const senderId = "test:rich_user:" + generateId();
 	let jwt = await appClient.getRegisterJWT(senderId);
 
-	const senderClient = await MarketplaceClient.create({ jwt }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	const senderPrivateKey = "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR";
+	const senderWalletAddress = "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ";
+	const senderClient = await MarketplaceClient.create({ jwt }, senderPrivateKey);
 	await senderClient.activate();
 
 	const recipientId = "test:" + generateId();
 	jwt = await appClient.getRegisterJWT(recipientId);
-	const recipientClient = await MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const recipientClient = await MarketplaceClient.create({ jwt });
 	await recipientClient.activate();
 
 	jwt = await appClient.getP2PJWT({
@@ -471,6 +473,7 @@ async function p2p() {
 
 	const openOrder = await senderClient.createExternalOrder(jwt);
 	expect(openOrder.offer_type).toBe("spend");
+	expect(openOrder.blockchain_data.sender_address).toEqual(senderWalletAddress);
 
 	// pay for the offer
 	const res = await senderClient.pay(openOrder.blockchain_data.recipient_address!, offer.amount, openOrder.id);
@@ -485,6 +488,7 @@ async function p2p() {
 	const payment = (await retry(() => senderClient.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
 	expect(payment).toBeDefined();
 
+	console.log("order.blockchain_data: ", order.blockchain_data);
 	console.log(`payment on blockchain:`, payment);
 	expect(isValidPayment(order, senderClient.appId, payment)).toBeTruthy();
 	console.log(`got order after submit`, order);
@@ -503,7 +507,7 @@ async function p2p() {
 }
 
 async function main() {
-	await registerJWT();
+	/*await registerJWT();
 	await earnPollFlow();
 	await earnTutorial();
 	await spendFlow();
@@ -512,7 +516,7 @@ async function main() {
 	await nativeSpendFlow();
 	await didNotApproveTOS();
 	await testRegisterNewUser();
-	await tryToNativeSpendTwice();
+	await tryToNativeSpendTwice();*/
 	await p2p();
 }
 

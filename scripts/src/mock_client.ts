@@ -371,6 +371,7 @@ async function tryToNativeSpendTwice() {
 	const offerJwt = await appClient.getSpendJWT(selectedOffer.id);
 	const openOrder = await client.createExternalOrder(offerJwt);
 	console.log(`created order`, openOrder.id, `for offer`, selectedOffer.id);
+
 	// pay for the offer
 	const res = await client.pay(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
 	console.log("pay result hash: " + res.hash);
@@ -508,7 +509,7 @@ async function p2p() {
 }
 
 async function main() {
-	/*await registerJWT();
+	await registerJWT();
 	await earnPollFlow();
 	await earnTutorial();
 	await spendFlow();
@@ -517,7 +518,7 @@ async function main() {
 	await nativeSpendFlow();
 	await didNotApproveTOS();
 	await testRegisterNewUser();
-	await tryToNativeSpendTwice();*/
+	await tryToNativeSpendTwice();
 	await p2p();
 }
 

@@ -487,6 +487,7 @@ async function p2p() {
 	// find payment on blockchain
 	const payment = (await retry(() => senderClient.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
 	expect(payment).toBeDefined();
+	expect(payment.sender_address).toEqual(senderWalletAddress);
 
 	console.log("order.blockchain_data: ", order.blockchain_data);
 	console.log(`payment on blockchain:`, payment);

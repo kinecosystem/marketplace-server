@@ -303,10 +303,9 @@ export async function submitOrder(
 	await order.save();
 	logger.info("order changed to pending", { orderId });
 
-	const earnContext = order.contexts.find(context => context.type === "earn");
-	if (earnContext) {
+	if (order.isEarn()) {
 		await payment.payTo(walletAddress, appId, order.amount, order.id, logger);
-		createEarnTransactionBroadcastToBlockchainSubmitted(earnContext.user!.id, order.offerId, order.id).report();
+		createEarnTransactionBroadcastToBlockchainSubmitted(order.contexts[0].user.id, order.offerId, order.id).report();
 	}
 
 	order.contexts.forEach(context => {

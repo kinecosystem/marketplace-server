@@ -92,6 +92,8 @@ export interface Order {
 	isExternalOrder(): this is ExternalOrder;
 	isMarketplaceOrder(): this is MarketplaceOrder;
 	isP2P(): this is P2POrder;
+	isSpend(): boolean;
+	isEarn(): boolean;
 	isNormal(): this is NormalOrder;
 	save(): Promise<this>;
 	remove(): Promise<this>;
@@ -413,7 +415,15 @@ class OrderImpl extends CreationDateModel implements Order {
 		return this.contexts.length === 2;
 	}
 
-	public isNormal(): this is NormalOrder {
+	public isSpend(): boolean {
+		return this.contexts.length === 1 && this.contexts[0].type === "spend";
+	}
+
+	public isEarn(): boolean {
+		return this.contexts.length === 1 && this.contexts[0].type === "earn";
+	}
+
+	public isNormal(): this is NormalOrder {  // XXX i'd remove this concept completely
 		return !this.isP2P();
 	}
 

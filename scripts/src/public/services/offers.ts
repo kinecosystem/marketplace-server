@@ -67,7 +67,7 @@ async function filterOffers(userId: string, app: Application | undefined, logger
 	return (await Promise.all(
 		app.offers
 			.map(async offer => {
-				if ((offerCounts.get(offer.id) || 0) >= await offer.cap.per_user) {
+				if ((offerCounts.get(offer.id) || 0) >= offer.cap.per_user) {
 					return null;
 				}
 

@@ -88,7 +88,7 @@ export class Order extends CreationDateModel {
 	}
 
 	public static async countAllByOffer(userId: string): Promise<Map<string, number>> {
-		const results: Array<{ offerId: string, cnt: number }> = await getManager().query(
+		const results: Array<{ offer_id: string, cnt: number }> = await getManager().query(
 			`SELECT
 					offer_id, COUNT(DISTINCT(id)) as cnt
 				FROM orders
@@ -98,7 +98,7 @@ export class Order extends CreationDateModel {
 				GROUP BY offer_id`, ["completed", ["pending"], new Date(), userId]);
 		const map = new Map<string, number>();
 		for (const res of results) {
-			map.set(res.offerId, res.cnt);
+			map.set(res.offer_id, res.cnt);
 		}
 		return map;
 	}

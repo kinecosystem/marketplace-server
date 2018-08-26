@@ -9,6 +9,7 @@ import * as offerContents from "./offer_contents";
 import { Application } from "../../models/applications";
 import { ContentType, OfferType } from "../../models/offers";
 import { getConfig } from "../config";
+import { Order } from "../../models/orders";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -47,6 +48,9 @@ function offerDbToApi(offer: db.Offer, content: db.OfferContent) {
 	};
 }
 
+/**
+ * return the sublist of offers from this app that the user can complete
+ */
 async function filterOffers(userId: string, app: Application | undefined, logger: LoggerInstance): Promise<Offer[]> {
 	// TODO: this should be a temp fix!
 	// the app should not be undefined as we used left join, figure it out
@@ -54,14 +58,20 @@ async function filterOffers(userId: string, app: Application | undefined, logger
 		return [];
 	}
 
+	if (app.offers.length === 0) {
+		return [];
+	}
+	const offerCounts = await Order.countAllByOffer(userId);
+	const contents = await offerContents.getAllContents();
+
 	return (await Promise.all(
 		app.offers
 			.map(async offer => {
-				if (await offer.didExceedCap(userId)) {
+				if ((offerCounts.get(offer.id) || 0) >= offer.cap.per_user) {
 					return null;
 				}
 
-				const content = await offerContents.getOfferContent(offer.id, logger);
+				const content = contents.get(offer.id);
 
 				if (!content) {
 					return null;

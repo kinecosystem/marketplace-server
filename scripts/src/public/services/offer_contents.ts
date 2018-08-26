@@ -99,6 +99,15 @@ export async function getOfferContent(offerId: string, logger: LoggerInstance): 
 	return await db.OfferContent.findOne({ offerId });
 }
 
+export async function getAllContents(): Promise<Map<string, db.OfferContent>> {
+	const results = await db.OfferContent.find();
+	const map = new Map<string, db.OfferContent>();
+	for (const res of results) {
+		map.set(res.offerId, res);
+	}
+	return map;
+}
+
 export function isValid(offerContent: db.OfferContent, form: string | undefined): form is string {
 	if (isNothing(form)) {
 		return false;

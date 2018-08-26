@@ -132,6 +132,8 @@ describe("test orders", async () => {
 			await helpers.completePayment(order.id);
 		}
 
+		const counts = await Order.countAllByOffer(user.id);
+		expect(counts.get(offer.id)).toEqual(1);
 		const offers2 = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		expect(offers2.offers.length).toBeLessThan(offers.offers.length);
 	});

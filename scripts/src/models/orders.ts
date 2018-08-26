@@ -1,6 +1,7 @@
 import * as moment from "moment";
 import { DeepPartial } from "typeorm/common/DeepPartial";
 import {
+	Index,
 	Column,
 	Entity,
 	Brackets,
@@ -138,6 +139,24 @@ export const Order = {
 		}));
 
 		return query.getCount();
+	},
+
+	async countAllByOffer(userId: string): Promise<Map<string, number>> {
+		const results: Array<{ offer_id: string, cnt: number }> = await getManager().query(
+			`SELECT
+					orders.offer_id, COUNT(DISTINCT(orders.id)) as cnt
+				FROM orders
+				LEFT JOIN orders_contexts
+				ON orders.id = orders_contexts.order_id
+				WHERE
+					(status = $1 OR (status IN ($2) AND expiration_date > $3))
+					AND orders_contexts.user_id = ($4)
+				GROUP BY offer_id`, ["completed", ["pending"], new Date(), userId]);
+		const map = new Map<string, number>();
+		for (const res of results) {
+			map.set(res.offer_id, res.cnt);
+		}
+		return map;
 	},
 
 	countToday(userId: string, type: OfferType): Promise<number> {
@@ -333,6 +352,8 @@ export type P2POrder = Order & {
 @Initializer("contexts", () => [])
 @Initializer("expirationDate", () => moment().add(10, "minutes").toDate()) // opened expiration
 @Initializer("currentStatusDate", () => moment().toDate())
+@Index(["offerId", "status"])
+@Index(["offerId", "userId"])
 @Register
 class OrderImpl extends CreationDateModel implements Order {
 	@Column()
@@ -346,6 +367,7 @@ class OrderImpl extends CreationDateModel implements Order {
 	})
 	public contexts!: OrderContext[];
 
+	@Index()
 	@Column({ name: "offer_id" })
 	public offerId!: string;
 

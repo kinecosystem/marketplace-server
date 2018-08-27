@@ -1,10 +1,21 @@
 import * as moment from "moment";
 import { DeepPartial } from "typeorm/common/DeepPartial";
-import { BaseEntity, Brackets, Column, Entity, getManager, Index, SelectQueryBuilder } from "typeorm";
-import { generateId, IdPrefix } from "../utils";
-import { CreationDateModel, initializer as Initializer, register as Register } from "./index";
-import { BlockchainData, OfferType, OrderValue } from "./offers";
+import {
+	Index,
+	Column,
+	Entity,
+	Brackets,
+	BaseEntity,
+	getManager,
+	PrimaryColumn,
+	SelectQueryBuilder
+} from "typeorm";
+
 import { ApiError } from "../errors";
+import { generateId, IdPrefix } from "../utils";
+
+import { BlockchainData, OfferType, OrderValue } from "./offers";
+import { CreationDateModel, initializer as Initializer, register as Register } from "./index";
 
 export interface OrderMeta {
 	title: string;
@@ -195,21 +206,21 @@ export class Order extends CreationDateModel {
 	@Column()
 	public readonly origin!: OrderOrigin;
 
-	@Column()
+	@Column({ nullable: true })
 	public type!: OfferType;
 
 	@Column("simple-json", { name: "blockchain_data", nullable: true })
 	public blockchainData!: BlockchainData;
 
 	@Index()
-	@Column({ name: "user_id" })
+	@Column({ name: "user_id", nullable: true })
 	public userId!: string;
 
 	@Index()
 	@Column({ name: "offer_id" })
 	public offerId!: string;
 
-	@Column("simple-json")
+	@Column("simple-json", { nullable: true })
 	public meta!: OrderMeta;
 
 	@Column("simple-json", { nullable: true })
@@ -259,6 +270,25 @@ export class Order extends CreationDateModel {
 	public isMarketplaceOrder() {
 		return this.origin === "marketplace";
 	}
+
+	public save() {
+		const content = OrderContext.create({
+			type: this.type,
+			meta: this.meta,
+			orderId: this.id,
+			userId: this.userId
+		});
+
+		return Promise.all([super.save(), content.save()]).then(_ => this);
+	}
+
+	public remove() {
+		return Promise.all([
+			super.remove(),
+			OrderContext.findOne({ orderId: this.id, userId: this.userId }).then(context => {
+				return (context ? context.remove() : Promise.resolve()) as any;
+			})]).then(_ => this);
+	}
 }
 
 export type MarketplaceOrder = Order;
@@ -283,3 +313,19 @@ export const ExternalOrder = {
 		return instance;
 	}
 };
+
+@Entity({ name: "orders_contexts" })
+@Register
+export class OrderContext extends BaseEntity {
+	@Column()
+	public type!: OfferType;
+
+	@Column("simple-json")
+	public readonly meta!: OrderMeta;
+
+	@PrimaryColumn({ name: "order_id" })
+	public readonly orderId!: string;
+
+	@PrimaryColumn({ name: "user_id" })
+	public readonly userId!: string;
+}

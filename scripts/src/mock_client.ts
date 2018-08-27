@@ -98,6 +98,7 @@ async function didNotApproveTOS() {
 	try {
 		await client.createOrder(offers.offers[0].id);
 	} catch (error) {
+		console.log("OK.\n");
 		return; // ok!
 	}
 
@@ -134,6 +135,8 @@ async function spendFlow() {
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 
 	const couponOrderContent: CouponOrderContent = JSON.parse(order.content!);
+
+	console.log("OK.\n");
 }
 
 function isValidPayment(order: Order, appId: string, payment: CompletedPayment): boolean {
@@ -195,6 +198,8 @@ async function earnPollFlow() {
 	if (!isValidPayment(order, client.appId, payment)) {
 		throw new Error("payment is not valid - different than order");
 	}
+
+	console.log("OK.\n");
 }
 
 async function earnQuizFlow() {
@@ -253,6 +258,8 @@ async function earnQuizFlow() {
 	if (!isValidPayment(order, client.appId, payment)) {
 		throw new Error("payment is not valid - different than order");
 	}
+
+	console.log("OK.\n");
 }
 
 async function earnTutorial() {
@@ -277,6 +284,8 @@ async function earnTutorial() {
 	console.log(`completion date: ${order.completion_date}`);
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+
+	console.log("OK.\n");
 }
 
 async function testRegisterNewUser() {
@@ -284,6 +293,8 @@ async function testRegisterNewUser() {
 	const client = await MarketplaceClient.create({
 		apiKey: API_KEY,
 		userId: "new_user:" + generateId() });
+
+	console.log("OK.\n");
 }
 
 /*async function justPay() {
@@ -303,6 +314,8 @@ async function registerJWT() {
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 	const client = await MarketplaceClient.create({ jwt });
+
+	console.log("OK.\n");
 }
 
 async function nativeSpendFlow() {
@@ -355,6 +368,8 @@ async function nativeSpendFlow() {
 	expect(jwtPayload.payload.iss).toEqual("kin");
 	// verify using kin public key
 	expect(await appClient.isValidSignature(paymentJwt)).toBeTruthy();
+
+	console.log("OK.\n");
 }
 
 async function tryToNativeSpendTwice() {
@@ -392,6 +407,8 @@ async function tryToNativeSpendTwice() {
 		expect(err.response!.headers.location).toEqual(`/v1/orders/${order.id}`);
 		// ok
 	}
+
+	console.log("OK.\n");
 }
 
 async function nativeEarnFlow() {
@@ -439,6 +456,8 @@ async function nativeEarnFlow() {
 
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+
+	console.log("OK.\n");
 }
 
 async function p2p() {
@@ -506,6 +525,8 @@ async function p2p() {
 	expect(jwtPayload.header.kid).toBeDefined();
 	expect(jwtPayload.payload.iss).toEqual("kin");
 	expect(await appClient.isValidSignature(paymentJwt)).toBeTruthy();
+
+	console.log("OK.\n");
 }
 
 async function main() {

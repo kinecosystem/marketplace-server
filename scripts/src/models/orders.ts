@@ -1,5 +1,6 @@
 import * as moment from "moment";
 import { DeepPartial } from "typeorm/common/DeepPartial";
+import { FindManyOptions } from "typeorm/find-options/FindManyOptions";
 import {
 	Index,
 	Column,
@@ -18,8 +19,7 @@ import { generateId, IdPrefix } from "../utils";
 
 import { User } from "./users";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
-import { CreationDateModel, initializer as Initializer, register as Register, Model } from "./index";
-import { FindManyOptions } from "typeorm/find-options/FindManyOptions";
+import { CreationDateModel, initializers as Initializers, register as Register } from "./index";
 
 export interface OrderMeta {
 	title: string;
@@ -348,12 +348,13 @@ export type P2POrder = Order & {
 };
 
 @Entity({ name: "orders" })
-@Initializer("id", () => generateId(IdPrefix.Transaction))
-@Initializer("contexts", () => [])
-@Initializer("expirationDate", () => moment().add(10, "minutes").toDate()) // opened expiration
-@Initializer("currentStatusDate", () => moment().toDate())
+@Initializers({
+	contexts: () => [],
+	id: () => generateId(IdPrefix.Transaction),
+	currentStatusDate: () => moment().toDate(),
+	expirationDate: () => moment().add(10, "minutes").toDate() // opened expiration
+})
 @Index(["offerId", "status"])
-@Index(["offerId", "userId"])
 @Register
 class OrderImpl extends CreationDateModel implements Order {
 	@Column()
@@ -363,7 +364,8 @@ class OrderImpl extends CreationDateModel implements Order {
 	public blockchainData!: BlockchainData;
 
 	@OneToMany(type => OrderContext, context => context.order, {
-		cascadeInsert: true
+		cascadeInsert: true,
+		cascadeUpdate: true
 	})
 	public contexts!: OrderContext[];
 

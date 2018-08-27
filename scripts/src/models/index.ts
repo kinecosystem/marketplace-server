@@ -87,7 +87,7 @@ export function init(createDb?: boolean): Promise<string> {
 			return createOnConnectedString(connection.options);
 		})
 		.catch(error => {
-			return normalizeError(error);
+			throw error;
 		});
 
 	return initPromise;

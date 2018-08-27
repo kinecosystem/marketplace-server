@@ -11,8 +11,8 @@ export type ApplicationConfig = {
 };
 
 @Entity({ name: "applications" })
-@Register
 @Initializer("apiKey", () => generateId(IdPrefix.App))
+@Register
 export class Application extends CreationDateModel {
 	// XXX testing purposes
 	public static SAMPLE_API_KEY = "A28hNcn2wp77QyaM8kB2C";

@@ -30,7 +30,7 @@ export class Event<T extends EventData = EventData> {
 
 		try {
 			return client.post(getConfig().bi_service, data)
-				.catch(e => getDefaultLogger().warn(`failed to report to bi ${ normalizeError(e) }`, e)) as any;
+				.catch(e => getDefaultLogger().warn(`failed to report to bi ${ normalizeError(e) }`)) as any;
 		} catch (e) {
 			// nothing to do
 			getDefaultLogger().warn(`failed to report to bi: ${ normalizeError(e) }`, e);

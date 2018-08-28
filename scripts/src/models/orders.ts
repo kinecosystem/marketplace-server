@@ -272,22 +272,27 @@ export class Order extends CreationDateModel {
 	}
 
 	public save() {
-		const content = OrderContext.create({
+		const context = OrderContext.create({
 			type: this.type,
 			meta: this.meta,
 			orderId: this.id,
 			userId: this.userId
 		});
 
-		return Promise.all([super.save(), content.save()]).then(_ => this);
+		return getManager().transaction(async manager => {
+			await manager.save(this);
+			await manager.save(context);
+		}).then(() => this);
 	}
 
 	public remove() {
-		return Promise.all([
-			super.remove(),
-			OrderContext.findOne({ orderId: this.id, userId: this.userId }).then(context => {
-				return (context ? context.remove() : Promise.resolve()) as any;
-			})]).then(_ => this);
+		return getManager().transaction(async manager => {
+			await manager.remove(this);
+			const context = await OrderContext.findOne({ orderId: this.id, userId: this.userId });
+			if (context) {
+				await manager.remove(context);
+			}
+		}).then(() => this);
 	}
 }
 

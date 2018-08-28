@@ -20,9 +20,17 @@ export class Event<T extends EventData = EventData> {
 	}
 
 	public report(): Promise<void> {
+		let data: string;
+
 		try {
-			return client.post(getConfig().bi_service, this.data)
-				.catch(e => getDefaultLogger().warn(`failed to report to bi ${ normalizeError(e) }`, e, CircularJSON.stringify(this.data))) as any;
+			data = JSON.stringify(this.data);
+		} catch (e) {
+			data = CircularJSON.stringify(this.data);
+		}
+
+		try {
+			return client.post(getConfig().bi_service, data)
+				.catch(e => getDefaultLogger().warn(`failed to report to bi ${ normalizeError(e) }`, e)) as any;
 		} catch (e) {
 			// nothing to do
 			getDefaultLogger().warn(`failed to report to bi: ${ normalizeError(e) }`, e);

@@ -1,5 +1,6 @@
 import axios from "axios";
 const axiosRetry = require("axios-retry");
+const CircularJSON = require("circular-json");
 
 import { getConfig } from "../config";
 import { normalizeError } from "../utils";
@@ -21,7 +22,7 @@ export class Event<T extends EventData = EventData> {
 	public report(): Promise<void> {
 		try {
 			return client.post(getConfig().bi_service, this.data)
-				.catch(e => getDefaultLogger().warn(`failed to report to bi ${ normalizeError(e) }`, e)) as any;
+				.catch(e => getDefaultLogger().warn(`failed to report to bi ${ normalizeError(e) }`, e, CircularJSON.stringify(this.data))) as any;
 		} catch (e) {
 			// nothing to do
 			getDefaultLogger().warn(`failed to report to bi: ${ normalizeError(e) }`, e);

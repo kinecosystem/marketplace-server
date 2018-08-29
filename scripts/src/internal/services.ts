@@ -133,20 +133,6 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		return;
 	}
 
-	// XXX hack - missing app_id on blockchain
-	if (!payment.app_id) {
-		logger.error(`payment is missing the app_id <${ payment.id }, ${ payment.transaction_id }> - setting the one from the DB`);
-
-		const user = order.contexts[0].user;
-
-		if (!user) {
-			logger.error(`failed to fix missing app_id on payment - cant find user ${ order.contexts[0].user.id }`);
-			await setFailedOrder(order, BlockchainError("failed app_id hack"));
-			return;
-		}
-		payment.app_id = user.appId;
-	}
-
 	order.blockchainData = pick(payment, "transaction_id", "sender_address", "recipient_address");
 
 	if (order.isMarketplaceOrder()) {

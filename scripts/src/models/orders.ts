@@ -530,13 +530,6 @@ class OrderImpl extends CreationDateModel implements Order {
 
 		return this.contexts[0].type;
 	}
-
-	public remove() {
-		return getManager().transaction(async manager => {
-			await Promise.all((await OrderContext.find({ order: this })).map(context => manager.remove(context)));
-			return manager.remove(this);
-		});
-	}
 }
 
 @Entity({ name: "orders_contexts" })

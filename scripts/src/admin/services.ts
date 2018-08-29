@@ -287,7 +287,7 @@ async function orderToHtml(order: Order): Promise<string> {
 	const defaultContext = {
 		meta: { title: "", description: "", content: "" },
 		type: "",
-		user: { id: "" }
+		userId: ""
 	};
 
 	const contexts = order.contexts || [defaultContext];
@@ -302,7 +302,7 @@ async function orderToHtml(order: Order): Promise<string> {
 <td><pre>${ JSON.stringify(order.error) }</pre></td>
 <td>${ order.origin }</td>
 <td>${ context.type }</td>
-<td><a href="/users/${ context.user.id }">${ context.user.id }</a></td>
+<td><a href="/users/${ context.userId }">${ context.userId }</a></td>
 <td>${ order.amount }</td>
 <td>${ context.meta.title }</td>
 <td>${ context.meta.description }</td>

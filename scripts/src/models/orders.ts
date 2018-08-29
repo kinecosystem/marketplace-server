@@ -8,10 +8,12 @@ import {
 	Brackets,
 	OneToMany,
 	ManyToOne,
+	getManager,
 	ObjectType,
 	BaseEntity,
+	JoinColumn,
 	PrimaryColumn,
-	SelectQueryBuilder, JoinColumn, getManager
+	SelectQueryBuilder
 } from "typeorm";
 
 import { ApiError } from "../errors";

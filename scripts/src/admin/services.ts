@@ -2,7 +2,7 @@ import { Application } from "../models/applications";
 import { Offer, PollAnswer } from "../models/offers";
 import { getManager } from "typeorm";
 import { User } from "../models/users";
-import { OpenOrderStatus, Order } from "../models/orders";
+import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
 import { IdPrefix, isNothing } from "../utils";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getDefaultLogger } from "../logging";
@@ -284,7 +284,13 @@ async function offerToHtml(offer: Offer): Promise<string> {
 }
 
 async function orderToHtml(order: Order): Promise<string> {
-	const contexts = order.contexts || [];
+	const defaultContext = {
+		meta: { title: "", description: "", content: "" },
+		type: "",
+		user: { id: "" }
+	};
+
+	const contexts = order.contexts || [defaultContext];
 	const transactionId = order.blockchainData ? order.blockchainData.transaction_id : null;
 	const payJwt = order.value && order.value.type === "payment_confirmation" ? order.value.jwt : null;
 	let html = "";
@@ -541,6 +547,7 @@ export async function getOrder(params: { order_id: string }, query: any): Promis
 	}
 	let ret = `<table>${ ORDER_HEADERS }`;
 	for (const order of orders) {
+		order.contexts = await OrderContext.find({ order });
 		ret += await orderToHtml(order);
 	}
 	ret += "</table>";

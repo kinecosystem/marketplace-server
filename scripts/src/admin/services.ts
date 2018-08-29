@@ -547,7 +547,7 @@ export async function getOrder(params: { order_id: string }, query: any): Promis
 	}
 	let ret = `<table>${ ORDER_HEADERS }`;
 	for (const order of orders) {
-		order.contexts = await OrderContext.find({ order });
+		order.contexts = await OrderContext.find({ orderId: order.id });
 		ret += await orderToHtml(order);
 	}
 	ret += "</table>";

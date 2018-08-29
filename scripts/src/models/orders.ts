@@ -561,8 +561,8 @@ export class OrderContext extends BaseEntity {
 	public readonly meta!: OrderMeta;
 
 	@PrimaryColumn({ name: "order_id" })
-	private readonly orderId!: string;
+	public readonly orderId!: string;
 
 	@PrimaryColumn({ name: "user_id" })
-	private readonly userId!: string;
+	public readonly userId!: string;
 }

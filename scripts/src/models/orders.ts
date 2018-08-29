@@ -1,10 +1,25 @@
 import * as moment from "moment";
 import { DeepPartial } from "typeorm/common/DeepPartial";
-import { BaseEntity, Brackets, Column, Entity, getManager, Index, SelectQueryBuilder } from "typeorm";
-import { generateId, IdPrefix } from "../utils";
-import { CreationDateModel, initializer as Initializer, register as Register } from "./index";
-import { BlockchainData, OfferType, OrderValue } from "./offers";
+import { FindManyOptions } from "typeorm/find-options/FindManyOptions";
+import {
+	Index,
+	Column,
+	Entity,
+	Brackets,
+	OneToMany,
+	ManyToOne,
+	ObjectType,
+	BaseEntity,
+	PrimaryColumn,
+	SelectQueryBuilder, JoinColumn, getManager
+} from "typeorm";
+
 import { ApiError } from "../errors";
+import { generateId, IdPrefix } from "../utils";
+
+import { User } from "./users";
+import { BlockchainData, OfferType, OrderValue } from "./offers";
+import { CreationDateModel, initializers as Initializers, register as Register } from "./index";
 
 export interface OrderMeta {
 	title: string;
@@ -18,36 +33,35 @@ export type OrderStatus = "completed" | "failed" | "pending";
 export type OpenOrderStatus = OrderStatus | "opened";
 export type OrderStatusAndNegation = OpenOrderStatus | "!opened" | "!completed" | "!failed" | "!pending";
 
-function updateQueryWithStatus(query: SelectQueryBuilder<any>, status?: OrderStatusAndNegation | null) {
+function updateQueryWithStatus(query: SelectQueryBuilder<any>, status?: OrderStatusAndNegation | null, alias?: string) {
 	if (!status) {
 		return;
 	}
 
+	// in case the query is using table alias names, use it with status
+	const fieldName = alias ? `${ alias }.status` : "status";
+
 	if (status.startsWith("!")) {
-		query.andWhere("status != :status", { status: status.substring(1) });
+		query.andWhere(`${ fieldName } != :status`, { status: status.substring(1) });
 	} else {
-		query.andWhere("status = :status", { status });
+		query.andWhere(`${ fieldName } = :status`, { status });
 	}
 }
 
-function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, value?: string | null) {
+function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, value?: string | null, alias?: string) {
 	if (!value) {
 		return;
 	}
 
+	// in case the query is using table alias names, use it with status
+	const fieldName = alias ? `${ alias }.${ name }` : name;
+
 	if (value.startsWith("!")) {
-		query.andWhere(`${ name } != :value`, { value: value.substring(1) });
+		query.andWhere(`${ fieldName } != :value`, { value: value.substring(1) });
 	} else {
-		query.andWhere(`${ name } = :value`, { value });
+		query.andWhere(`${ fieldName } = :value`, { value });
 	}
 }
-
-export type OrderStatic<T extends Order = Order> = {
-	CLASS_ORIGIN: OrderOrigin | null;
-
-	new(): T;
-	createQueryBuilder(): SelectQueryBuilder<BaseEntity>;
-};
 
 export type GetOrderFilters = {
 	userId: string;
@@ -56,84 +70,156 @@ export type GetOrderFilters = {
 	status?: OrderStatusAndNegation;
 };
 
-@Entity({ name: "orders" })
-@Initializer("id", () => generateId(IdPrefix.Transaction))
-@Initializer("expirationDate", () => moment().add(10, "minutes").toDate()) // opened expiration
-@Initializer("currentStatusDate", () => moment().toDate())
-@Index(["offerId", "status"])
-@Index(["offerId", "userId"])
-@Register
-export class Order extends CreationDateModel {
+export interface Order {
+	readonly id: string;
+	readonly createdDate: Date;
+	readonly origin: OrderOrigin;
+
+	blockchainData: BlockchainData;
+	contexts: OrderContext[];
+	offerId: string;
+	amount: number;
+	status: OpenOrderStatus;
+	currentStatusDate: Date;
+
+	value?: OrderValue;
+	expirationDate?: Date;
+	error?: ApiError | null;
+
+	forEachContext(fn: (context: OrderContext) => void): void;
+	contextFor(userId: string): OrderContext | null;
+	setStatus(status: OpenOrderStatus): void;
+	isExpired(): boolean;
+	isExternalOrder(): this is ExternalOrder;
+	isMarketplaceOrder(): this is MarketplaceOrder;
+	isP2P(): this is P2POrder;
+	isSpend(): boolean;
+	isEarn(): boolean;
+	isNormal(): this is NormalOrder;
+	save(): Promise<this>;
+	remove(): Promise<this>;
+}
+
+function createOrder(data?: DeepPartial<Order>, contexts?: Array<DeepPartial<OrderContext>>): Order {
+	const order = OrderImpl.new(data);
+	if (contexts) {
+		contexts.forEach(context => {
+			order.contexts.push(OrderContext.new(context));
+		});
+	}
+
+	return order;
+}
+
+export const Order = {
 	/**
 	 * count all offers that are completed, pending but not expired, opened but not expired - i.e. not failed and not expired
 	 */
-	public static countByOffer(offerId: string, userId?: string): Promise<number> {
+	countByOffer(offerId: string, userId?: string): Promise<number> {
 		const statuses = userId ? ["pending"] : ["opened", "pending"];
 
-		const query = Order.createQueryBuilder()
-			.where("offer_id = :offerId", { offerId })
-			.andWhere(new Brackets(qb => {
-				qb.where("status = :status", { status: "completed" })
-					.orWhere(
-						new Brackets(qb2 => {
-							qb2.where("status IN (:statuses)", { statuses })
-								.andWhere("expiration_date > :date", { date: new Date() });
-						})
-					);
-			}));
+		const query = OrderImpl.createQueryBuilder("ordr"); // don't use 'order', it messed things up
 		if (userId) {
-			query.andWhere("user_id = :userId", { userId });
+			query
+				.innerJoin("ordr.contexts", "context")
+				.where("context.user_id = :userId", { userId })
+				.andWhere("ordr.offer_id = :offerId", { offerId });
+		} else {
+			query.where("ordr.offer_id = :offerId", { offerId });
 		}
-		return query.getCount();
-	}
 
-	public static async countAllByOffer(userId: string): Promise<Map<string, number>> {
+		query.andWhere(new Brackets(qb => {
+			qb.where("ordr.status = :status", { status: "completed" })
+				.orWhere(
+					new Brackets(qb2 => {
+						qb2.where("ordr.status IN (:statuses)", { statuses })
+							.andWhere("ordr.expiration_date > :date", { date: new Date() });
+					})
+				);
+		}));
+
+		return query.getCount();
+	},
+
+	async countAllByOffer(userId: string): Promise<Map<string, number>> {
 		const results: Array<{ offer_id: string, cnt: number }> = await getManager().query(
 			`SELECT
-					offer_id, COUNT(DISTINCT(id)) as cnt
+					orders.offer_id, COUNT(DISTINCT(orders.id)) as cnt
 				FROM orders
+				LEFT JOIN orders_contexts
+				ON orders.id = orders_contexts.order_id
 				WHERE
 					(status = $1 OR (status IN ($2) AND expiration_date > $3))
-					AND user_id = ($4)
+					AND orders_contexts.user_id = ($4)
 				GROUP BY offer_id`, ["completed", ["pending"], new Date(), userId]);
 		const map = new Map<string, number>();
 		for (const res of results) {
 			map.set(res.offer_id, res.cnt);
 		}
 		return map;
-	}
+	},
 
-	public static countToday(userId: string, type: OfferType): Promise<number> {
+	countToday(userId: string, type: OfferType): Promise<number> {
 		const midnight = new Date((new Date()).setUTCHours(0, 0, 0, 0));
-		const query = Order.createQueryBuilder()
-			.where("user_id = :userId", { userId })
-			.andWhere("type = :type", { type })
-			.andWhere("current_status_date > :midnight", { midnight })
+		const query = OrderImpl.createQueryBuilder("ordr")
+			.leftJoinAndSelect("ordr.contexts", "context")
+			.andWhere("context.user_id = :userId", { userId })
+			.andWhere("context.type = :type", { type })
+			.andWhere("ordr.current_status_date > :midnight", { midnight })
 			.andWhere(new Brackets(qb => {
-				qb.where("status = :completed", { completed: "completed" })
+				qb.where("ordr.status = :completed", { completed: "completed" })
 					.orWhere(
 						new Brackets(qb2 => {
-							qb2.where("status = :pending", { pending: "pending" })
-								.andWhere("expiration_date > :expiration_date", { expiration_date: new Date() });
+							qb2.where("ordr.status = :pending", { pending: "pending" })
+								.andWhere("ordr.expiration_date > :expiration_date", { expiration_date: new Date() });
 						})
 					);
 			}));
+
 		return query.getCount();
+	},
 
-	}
-
-	public static getOpenOrder<T extends Order>(offerId: string, userId: string): Promise<T | undefined> {
+	async getOpenOrder<T extends Order>(offerId: string, userId: string): Promise<T | undefined> {
 		// has at least 2 minutes to complete before expiration
 		const latestExpiration = moment().add(2, "minutes").toDate();
-		const query = Order.createQueryBuilder()
-			.where("offer_id = :offerId", { offerId })
-			.andWhere("status = :status", { status: "opened" })
-			.andWhere("user_id = :userId", { userId })
-			.andWhere("expiration_date > :date", { date: latestExpiration })
-			.orderBy("expiration_date", "DESC"); // if there are a few, get the one with the most time left
+
+		const query = OrderImpl.createQueryBuilder("ordr") // don't use 'order', it messed things up
+			.leftJoinAndSelect("ordr.contexts", "context")
+			.leftJoinAndSelect("context.user", "user")
+			.where("ordr.offer_id = :offerId", { offerId })
+			.andWhere("ordr.status = :status", { status: "opened" })
+			.andWhere("context.user_id = :userId", { userId })
+			.andWhere("ordr.expiration_date > :date", { date: latestExpiration })
+			.orderBy("ordr.expiration_date", "DESC"); // if there are a few, get the one with the most time left
+
+		const order = await (query.getOne() as Promise<T | undefined>);
+
+		if (order && !order.contexts) {
+			order.contexts = [];
+		}
+
+		return order;
+	},
+
+	/**
+	 * Returns one order which matches the passed user and offer id
+	 *
+	 * @param orderId
+	 * @param userId
+	 */
+	findBy<T extends Order>(offerId: string, userId: string, origin?: OrderOrigin): Promise<T | undefined> {
+		const query = OrderImpl.createQueryBuilder("ordr")
+			.innerJoinAndSelect("ordr.contexts", "context")
+			.leftJoinAndSelect("context.user", "user")
+			.where("ordr.offer_id = :offerId", { offerId })
+			.andWhere("context.user_id = :userId", { userId });
+
+		if (origin) {
+			query.andWhere("ordr.origin = :origin", { origin });
+		}
 
 		return query.getOne() as Promise<T | undefined>;
-	}
+	},
 
 	/**
 	 * Returns one order with the id which was passed.
@@ -143,29 +229,33 @@ export class Order extends CreationDateModel {
 	 * get open order with id "id1": getOne("id1", "opened")
 	 * get NOT open order: getOne("id1", "!opened")
 	 */
-	public static getOne<T extends Order>(this: OrderStatic<T> | Function, orderId: string, status?: OrderStatusAndNegation): Promise<T | undefined> {
-		const query = (this as OrderStatic<T>).createQueryBuilder()
-			.where("id = :orderId", { orderId });
+	getOne<T extends Order>(orderId: string, status?: OrderStatusAndNegation, origin?: OrderOrigin): Promise<T | undefined> {
+		const query = OrderImpl.createQueryBuilder("ordr")
+			.innerJoinAndSelect("ordr.contexts", "context")
+			.leftJoinAndSelect("context.user", "user")
+			.where("ordr.id = :orderId", { orderId });
 
-		updateQueryWithStatus(query, status);
+		updateQueryWithStatus(query, status, "ordr");
 
-		if ((this as OrderStatic<T>).CLASS_ORIGIN) {
-			query.andWhere("origin = :origin", { origin: (this as OrderStatic<T>).CLASS_ORIGIN });
+		if (origin) {
+			query.andWhere("ordr.origin = :origin", { origin });
 		}
 
 		return query.getOne() as Promise<T | undefined>;
-	}
+	},
 
-	public static getAll<T extends Order>(this: OrderStatic<T> | Function, filters: GetOrderFilters, limit?: number): Promise<T[]> {
-		const query = (this as OrderStatic<T>).createQueryBuilder()
-			.where("user_id = :userId", { userId: filters.userId })
-			.orderBy("current_status_date", "DESC")
-			.addOrderBy("id", "DESC");
+	getAll<T extends Order>(filters: GetOrderFilters, limit?: number, origin?: OrderOrigin): Promise<T[]> {
+		const query = OrderImpl.createQueryBuilder("ordr") // don't use 'order', it messed things up
+			.leftJoinAndSelect("ordr.contexts", "context")
+			.leftJoinAndSelect("context.user", "user")
+			.where("context.user_id = :userId", filters)
+			.orderBy("ordr.current_status_date", "DESC")
+			.addOrderBy("ordr.id", "DESC");
 
 		// updateQueryWithStatus(query, filters.status);
-		updateQueryWithFilter(query, "status", filters.status);
-		updateQueryWithFilter(query, "origin", filters.origin);
-		updateQueryWithFilter(query, "offer_id", filters.offerId);
+		updateQueryWithFilter(query, "status", filters.status, "ordr");
+		updateQueryWithFilter(query, "origin", filters.origin, "ordr");
+		updateQueryWithFilter(query, "offer_id", filters.offerId, "ordr");
 
 		/**
 		 * In case `filters` doesn't contain the `origin`, include the origin of the extending class.
@@ -181,36 +271,107 @@ export class Order extends CreationDateModel {
 		 *  Order.getAll({ userId: "..."})
 		 * No origin is added
 		 */
-		if (!filters.origin && (this as OrderStatic<T>).CLASS_ORIGIN) {
-			query.andWhere("origin = :origin", { origin: (this as OrderStatic<T>).CLASS_ORIGIN });
+		if (!filters.origin && origin) {
+			query.andWhere("ordr.origin = :origin", { origin });
 		}
 
 		if (limit) {
 			query.limit(limit);
 		}
 
-		return query.getMany() as Promise<T[]>;
-	}
+		return query.getMany() as any;
+	},
 
+	find(options?: FindManyOptions<Order>): Promise<Order[]> {
+		return OrderImpl.find(options as FindManyOptions<OrderImpl> | undefined);
+	},
+
+	queryBuilder(alias?: string): SelectQueryBuilder<Order> {
+		return OrderImpl.createQueryBuilder(alias);
+	}
+};
+
+export type OrderFactory = {
+	"new"(): Order;
+};
+
+export type MarketplaceOrderFactory = OrderFactory & {
+	"new"(data: DeepPartial<Order>, context: DeepPartial<OrderContext>): Order;
+};
+
+export type ExternalOrderFactory = OrderFactory & {
+	"new"(data: DeepPartial<Order>, context1: DeepPartial<OrderContext>, context2?: DeepPartial<OrderContext>): Order;
+};
+
+function extendedOrder(origin: OrderOrigin): (typeof Order) & OrderFactory {
+	return Object.assign({}, Order, {
+		"new"(data?: DeepPartial<Order>, ...context: Array<DeepPartial<OrderContext>>): Order {
+			data = Object.assign({}, data, { origin });
+			return createOrder(data, context!);
+		},
+
+		findBy<T extends Order>(offerId: string, userId: string): Promise<T | undefined> {
+			return Order.findBy(offerId, userId, origin);
+		},
+
+		getOne<T extends Order>(orderId: string, status?: OrderStatusAndNegation): Promise<T | undefined> {
+			return Order.getOne(orderId, status, origin);
+		},
+
+		getAll<T extends Order>(filters: GetOrderFilters, limit?: number): Promise<T[]> {
+			return Order.getAll(filters, limit, origin);
+		}
+	});
+}
+
+export type MarketplaceOrder = NormalOrder;
+
+export const MarketplaceOrder = extendedOrder("marketplace") as (typeof Order) & MarketplaceOrderFactory;
+
+export type ExternalOrder = Order;
+
+export const ExternalOrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
+
+export type NormalOrder = Order & {
+	user: User;
+	meta: OrderMeta;
+	contexts: [OrderContext];
+	readonly type: OfferType;
+};
+
+export type P2POrder = Order & {
+	sender: User;
+	recipient: User;
+	senderMeta: OrderMeta;
+	recipientMeta: OrderMeta;
+	contexts: [OrderContext, OrderContext];
+};
+
+@Entity({ name: "orders" })
+@Initializers({
+	contexts: () => [],
+	id: () => generateId(IdPrefix.Transaction),
+	currentStatusDate: () => moment().toDate(),
+	expirationDate: () => moment().add(10, "minutes").toDate() // opened expiration
+})
+@Index(["offerId", "status"])
+@Register
+class OrderImpl extends CreationDateModel implements Order {
 	@Column()
 	public readonly origin!: OrderOrigin;
-
-	@Column()
-	public type!: OfferType;
 
 	@Column("simple-json", { name: "blockchain_data", nullable: true })
 	public blockchainData!: BlockchainData;
 
-	@Index()
-	@Column({ name: "user_id" })
-	public userId!: string;
+	@OneToMany(type => OrderContext, context => context.order, {
+		cascadeInsert: true,
+		cascadeUpdate: true
+	})
+	public contexts!: OrderContext[];
 
 	@Index()
 	@Column({ name: "offer_id" })
 	public offerId!: string;
-
-	@Column("simple-json")
-	public meta!: OrderMeta;
 
 	@Column("simple-json", { nullable: true })
 	public error?: ApiError | null;
@@ -229,6 +390,20 @@ export class Order extends CreationDateModel {
 
 	@Column({ name: "expiration_date", nullable: true })
 	public expirationDate?: Date;
+
+	public async save(): Promise<this> {
+		await getManager().transaction(async mgr => {
+			for (const context of this.contexts) {
+				(context as any).order = this;
+				(context as any).orderId = this.id;
+				(context as any).user_id = context.user.id;
+			}
+
+			await mgr.save(this);
+		});
+
+		return this;
+	}
 
 	public setStatus(status: OpenOrderStatus) {
 		this.status = status;
@@ -252,34 +427,133 @@ export class Order extends CreationDateModel {
 		return false;
 	}
 
-	public isExternalOrder() {
+	public isExternalOrder(): boolean {
 		return this.origin === "external";
 	}
 
-	public isMarketplaceOrder() {
+	public isMarketplaceOrder(): boolean {
 		return this.origin === "marketplace";
+	}
+
+	public isP2P(): this is P2POrder {
+		return this.contexts.length === 2;
+	}
+
+	public isSpend(): boolean {
+		return this.contexts.length === 1 && this.contexts[0].type === "spend";
+	}
+
+	public isEarn(): boolean {
+		return this.contexts.length === 1 && this.contexts[0].type === "earn";
+	}
+
+	public isNormal(): this is NormalOrder {  // XXX i'd remove this concept completely
+		return !this.isP2P();
+	}
+
+	public contextFor(userId: string): OrderContext | null {
+		for (const context of this.contexts) {
+			if (context.user.id === userId) {
+				return context;
+			}
+		}
+
+		return null;
+	}
+
+	public forEachContext(fn: (context: OrderContext) => void) {
+		this.contexts.forEach(fn);
+	}
+
+	public get sender(): User | null {
+		for (const context of this.contexts) {
+			if (context.type === "spend") {
+				return context.user;
+			}
+		}
+
+		return null;
+	}
+
+	public get senderMeta(): OrderMeta | null {
+		for (const context of this.contexts) {
+			if (context.type === "spend") {
+				return context.meta;
+			}
+		}
+
+		return null;
+	}
+
+	public get recipient(): User | null {
+		for (const context of this.contexts) {
+			if (context.type === "earn") {
+				return context.user;
+			}
+		}
+
+		return null;
+	}
+
+	public get recipientMeta(): OrderMeta | null {
+		for (const context of this.contexts) {
+			if (context.type === "earn") {
+				return context.meta;
+			}
+		}
+
+		return null;
+	}
+
+	public get user(): User | null {
+		if (this.isP2P()) {
+			throw new Error("Order.user isn't supported when origin is 'p2p'");
+		}
+
+		return this.contexts[0].user;
+	}
+
+	public get meta(): OrderMeta | null {
+		if (this.isP2P()) {
+			throw new Error("Order.meta isn't supported when origin is 'p2p'");
+		}
+
+		return this.contexts[0].meta;
+	}
+
+	public get type(): OfferType {
+		if (this.isP2P()) {
+			throw new Error("Order.type isn't supported when origin is 'p2p'");
+		}
+
+		return this.contexts[0].type;
 	}
 }
 
-export type MarketplaceOrder = Order;
-
-export const MarketplaceOrder = {
-	ORIGIN: "marketplace",
-	"new"(data?: DeepPartial<Order>): MarketplaceOrder {
-		const instance = Order.new(data) as MarketplaceOrder;
-		(instance as any).origin = MarketplaceOrder.ORIGIN;
-		return instance;
+@Entity({ name: "orders_contexts" })
+@Register
+export class OrderContext extends BaseEntity {
+	public static new(this: ObjectType<OrderContext>, data?: DeepPartial<OrderContext>): OrderContext {
+		return (this as typeof BaseEntity).create(data!) as OrderContext;
 	}
-};
 
-export type ExternalOrder = Order;
+	@ManyToOne(type => OrderImpl, order => order.contexts)
+	@JoinColumn({ name: "order_id" })
+	public readonly order!: Order;
 
-export const ExternalOrder = {
-	ORIGIN: "external",
-	"new"(data?: DeepPartial<Order>): ExternalOrder {
-		const instance = Order.new(data) as ExternalOrder;
-		(instance as any).origin = ExternalOrder.ORIGIN;
+	@ManyToOne(type => User, user => user.contexts)
+	@JoinColumn({ name: "user_id" })
+	public readonly user!: User;
 
-		return instance;
-	}
-};
+	@Column()
+	public type!: OfferType;
+
+	@Column("simple-json")
+	public readonly meta!: OrderMeta;
+
+	@PrimaryColumn({ name: "order_id" })
+	private readonly orderId!: string;
+
+	@PrimaryColumn({ name: "user_id" })
+	private readonly userId!: string;
+}

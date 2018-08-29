@@ -2,6 +2,7 @@
 scripts/bin
 node_modules
 tests/src/**/*.js
+tests/src/**/*.js.map
 scripts/src/**/*.js
 database.sqlite
 .tags

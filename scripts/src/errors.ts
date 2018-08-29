@@ -22,6 +22,7 @@ const CODES = {
 		Order: 3,
 		PublicKey: 4,
 		OfferCapReached: 5,
+		User: 6
 	},
 	RequestTimeout: {
 		OpenOrderExpired: 1,
@@ -111,6 +112,10 @@ function NotFoundError(index: number, message: string) {
 
 export function NoSuchApp(id: string) {
 	return NotFoundError(CODES.NotFound.App, `No such app: ${ id }`);
+}
+
+export function NoSuchUser(id: string) {
+	return NotFoundError(CODES.NotFound.User, `No such user: ${ id }`);
 }
 
 export function NoSuchOffer(id: string) {

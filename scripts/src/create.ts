@@ -6,7 +6,7 @@ import { getConfig } from "./public/config"; // must be the first import
 getConfig();
 
 import * as fs from "fs";
-// import * as StellarSdk from "stellar-sdk";
+import { join } from "path";
 import { Keypair } from "@kinecosystem/kin.js";
 
 import { init as initModels, close as closeModels } from "./models";
@@ -14,10 +14,10 @@ import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents
 import { createEarn, createSpend } from "./create_data/offers";
 import { ContentType, Offer } from "./models/offers";
 import { StringMap, Application, ApplicationConfig } from "./models/applications";
+import { path } from "./utils";
+
 import "./models/orders";
 import "./models/users";
-import { join } from "path";
-import { path } from "./utils";
 
 const STELLAR_ADDRESS = process.env.STELLAR_ADDRESS;  // address to use instead of the ones defined in the data
 type AppDef = { app_id: string, name: string, api_key: string, jwt_public_keys: StringMap, config: ApplicationConfig };
@@ -216,7 +216,6 @@ function getStellarAddresses() {
 }
 
 initModels(true).then(async () => {
-
 	const appsDir = process.argv[2];
 	const offersDir = process.argv[3];
 

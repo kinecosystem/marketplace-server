@@ -3,7 +3,7 @@ version: "3"
 services:
 
   marketplace-server:
-    image: kinecosystem/marketplace-server:1bb2838
+    image: kinecosystem/marketplace-server:c534d5d
     restart: on-failure
     ports:
       - 3000
@@ -30,7 +30,7 @@ services:
       APP_DB_DATABASE: ecosystem
 
   marketplace-admin:
-    image: kinecosystem/marketplace-server:d39adef
+    image: kinecosystem/marketplace-server:c534d5d
     command: npm run start-admin
     ports:
       - 3000
@@ -44,7 +44,7 @@ services:
       APP_NAME: 'marketplace-internal'
 
   marketplace-internal:
-    image: kinecosystem/marketplace-server:1bb2838
+    image: kinecosystem/marketplace-server:c534d5d
     command: npm run start-internal
     ports:
       - 3000

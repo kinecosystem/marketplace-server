@@ -62,8 +62,8 @@ export type JWTBodyPaymentConfirmation = {
 	}
 };
 
-async function getPaymentJWT(order: db.Order, appId: string): Promise<OrderValue> {
-	const user: User = (await User.findOneById(order.userId))!;
+async function getPaymentJWT(order: db.Order, appId: string, userId: string): Promise<OrderValue> {
+	const loggedInContext = order.contextFor(userId)!;
 	const payload: JWTBodyPaymentConfirmation = {
 		offer_id: order.offerId,
 		payment: {
@@ -71,12 +71,15 @@ async function getPaymentJWT(order: db.Order, appId: string): Promise<OrderValue
 			transaction_id: order.blockchainData.transaction_id!
 		}
 	};
-	if (order.type === "earn") {
-		payload.recipient_user_id = user.appUserId;
+
+	if (order.isP2P()) {
+		payload.sender_user_id = order.sender.appUserId;
+		payload.recipient_user_id = order.recipient.appUserId;
+	} else if (loggedInContext.type === "earn") {
+		payload.recipient_user_id = loggedInContext.user.appUserId;
 	} else {
-		payload.sender_user_id = user.appUserId;
+		payload.sender_user_id = loggedInContext.user.appUserId;
 	}
-	// XXX if it's p2p, add both recipient and sender user_ids
 
 	return {
 		type: "payment_confirmation",
@@ -85,18 +88,19 @@ async function getPaymentJWT(order: db.Order, appId: string): Promise<OrderValue
 }
 
 export async function paymentComplete(payment: CompletedPayment, logger: LoggerInstance) {
-	const order = await db.Order.findOneById(payment.id);
+	const order = await db.Order.getOne(payment.id);
 	if (!order) {
 		logger.error(`received payment for unknown order id ${ payment.id }`);
 		return;
 	}
 
-	if (order.type === "earn") {
-		createEarnTransactionBroadcastToBlockchainSucceeded(order.userId, payment.transaction_id, order.offerId, order.id).report();
-	} else {
-		// both spend and p2p
-		createSpendOrderPaymentConfirmed(order.userId, payment.transaction_id, order.offerId, order.id, order.isExternalOrder(), order.origin).report();
-	}
+	order.forEachContext(context => {
+		if (context.type === "earn") {
+			createEarnTransactionBroadcastToBlockchainSucceeded(context.user.id, payment.transaction_id, order.offerId, order.id).report();
+		} else {
+			createSpendOrderPaymentConfirmed(context.user.id, payment.transaction_id, order.offerId, order.id, order.isExternalOrder(), order.origin).report();
+		}
+	});
 
 	if (order.status === "completed") {
 		logger.warn(`received payment callback for already completed order ${ payment.id }`);
@@ -140,14 +144,14 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 				return;
 			} else {
 				order.value = asset.asOrderValue();
-				asset.ownerId = order.userId;
+				asset.ownerId = order.user.id;
 				await asset.save();  // XXX should be in a transaction with order.save
 			}
 		}
-	} else if (order.isExternalOrder()) {
-		// XXX for p2p don't put the JWT in the recipient order's value
-		// XXX for p2p create a completed order for the recipient too
-		order.value = await getPaymentJWT(order, payment.app_id);
+	} else if (order.isP2P()) {
+		order.value = await getPaymentJWT(order, payment.app_id, order.sender.id);
+	} else if (order.isNormal()) {
+		order.value = await getPaymentJWT(order, payment.app_id, order.user.id);
 	}
 
 	if (order.status !== "pending") {
@@ -161,18 +165,26 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	order.setStatus("completed");
 	await order.save();
 
-	metrics.completeOrder(order.type, order.offerId, prevStatus, (order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000);
+	order.forEachContext(context => {
+		metrics.completeOrder(context.type, order.offerId, prevStatus, (order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000);
+	});
+
 	logger.info(`completed order with payment <${ payment.id }, ${ payment.transaction_id }>`);
 }
 
 export async function paymentFailed(payment: FailedPayment, logger: LoggerInstance) {
-	const order = await db.Order.findOneById(payment.id);
+	const order = await db.Order.getOne(payment.id);
 	if (!order) {
 		logger.error(`received payment for unknown order id ${ payment.id }`);
 		return;
 	}
 
-	createEarnTransactionBroadcastToBlockchainFailed(order.userId, payment.reason, order.offerId, order.id).report();
+	if (order.isP2P()) {
+		createEarnTransactionBroadcastToBlockchainFailed(order.recipient.id, payment.reason, order.offerId, order.id).report();
+	} else if (order.isNormal() && order.type === "earn") {
+		createEarnTransactionBroadcastToBlockchainFailed(order.user.id, payment.reason, order.offerId, order.id).report();
+	}
+
 	await setFailedOrder(order, BlockchainError(payment.reason));
 	logger.info(`failed order with payment <${payment.id}>`);
 }

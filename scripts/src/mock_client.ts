@@ -42,6 +42,20 @@ class SampleAppClient {
 		return res.data.jwt;
 	}
 
+	public async getP2PJWT(data: {
+		offer_id: string;
+		amount: number;
+		sender_title: string;
+		sender_description: string;
+		recipient_id: string;
+		recipient_title: string;
+		recipient_description: string; }) {
+
+		const datastr = Object.keys(data).map(key => `${ key }=${ data[key as keyof typeof data] }`).join("&");
+		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/p2p/token?" + datastr);
+		return res.data.jwt;
+	}
+
 	public async getOffers(): Promise<ExternalOfferPayload[]> {
 		const res = await axios.get<{ offers: ExternalOfferPayload[] }>(JWT_SERVICE_BASE + "/offers");
 		return res.data.offers;
@@ -84,6 +98,7 @@ async function didNotApproveTOS() {
 	try {
 		await client.createOrder(offers.offers[0].id);
 	} catch (error) {
+		console.log("OK.\n");
 		return; // ok!
 	}
 
@@ -120,6 +135,8 @@ async function spendFlow() {
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 
 	const couponOrderContent: CouponOrderContent = JSON.parse(order.content!);
+
+	console.log("OK.\n");
 }
 
 function isValidPayment(order: Order, appId: string, payment: CompletedPayment): boolean {
@@ -181,6 +198,8 @@ async function earnPollFlow() {
 	if (!isValidPayment(order, client.appId, payment)) {
 		throw new Error("payment is not valid - different than order");
 	}
+
+	console.log("OK.\n");
 }
 
 async function earnQuizFlow() {
@@ -239,6 +258,8 @@ async function earnQuizFlow() {
 	if (!isValidPayment(order, client.appId, payment)) {
 		throw new Error("payment is not valid - different than order");
 	}
+
+	console.log("OK.\n");
 }
 
 async function earnTutorial() {
@@ -263,6 +284,8 @@ async function earnTutorial() {
 	console.log(`completion date: ${order.completion_date}`);
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+
+	console.log("OK.\n");
 }
 
 async function testRegisterNewUser() {
@@ -270,6 +293,8 @@ async function testRegisterNewUser() {
 	const client = await MarketplaceClient.create({
 		apiKey: API_KEY,
 		userId: "new_user:" + generateId() });
+
+	console.log("OK.\n");
 }
 
 /*async function justPay() {
@@ -289,6 +314,8 @@ async function registerJWT() {
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 	const client = await MarketplaceClient.create({ jwt });
+
+	console.log("OK.\n");
 }
 
 async function nativeSpendFlow() {
@@ -325,7 +352,6 @@ async function nativeSpendFlow() {
 
 	// find payment on blockchain
 	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
-
 	expect(payment).toBeDefined();
 
 	console.log(`payment on blockchain:`, payment);
@@ -342,6 +368,8 @@ async function nativeSpendFlow() {
 	expect(jwtPayload.payload.iss).toEqual("kin");
 	// verify using kin public key
 	expect(await appClient.isValidSignature(paymentJwt)).toBeTruthy();
+
+	console.log("OK.\n");
 }
 
 async function tryToNativeSpendTwice() {
@@ -358,6 +386,7 @@ async function tryToNativeSpendTwice() {
 	const offerJwt = await appClient.getSpendJWT(selectedOffer.id);
 	const openOrder = await client.createExternalOrder(offerJwt);
 	console.log(`created order`, openOrder.id, `for offer`, selectedOffer.id);
+
 	// pay for the offer
 	const res = await client.pay(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
 	console.log("pay result hash: " + res.hash);
@@ -378,6 +407,8 @@ async function tryToNativeSpendTwice() {
 		expect(err.response!.headers.location).toEqual(`/v1/orders/${order.id}`);
 		// ok
 	}
+
+	console.log("OK.\n");
 }
 
 async function nativeEarnFlow() {
@@ -425,6 +456,77 @@ async function nativeEarnFlow() {
 
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+
+	console.log("OK.\n");
+}
+
+async function p2p() {
+	console.log("===================================== P2P =====================================");
+
+	const offer = {
+		id: "offer-id",
+		amount: 2,
+	};
+	const appClient = new SampleAppClient();
+	const senderId = "test:rich_user:" + generateId();
+	let jwt = await appClient.getRegisterJWT(senderId);
+
+	const senderPrivateKey = "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR";
+	const senderWalletAddress = "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ";
+	const senderClient = await MarketplaceClient.create({ jwt }, senderPrivateKey);
+	await senderClient.activate();
+
+	const recipientId = "test:" + generateId();
+	jwt = await appClient.getRegisterJWT(recipientId);
+	const recipientClient = await MarketplaceClient.create({ jwt });
+	await recipientClient.activate();
+
+	jwt = await appClient.getP2PJWT({
+		offer_id: offer.id,
+		amount: offer.amount,
+		sender_title: "sent moneys",
+		sender_description: "money sent to test p2p",
+		recipient_id: recipientId,
+		recipient_title: "get moneys",
+		recipient_description: "money received from p2p testing"
+	});
+
+	const openOrder = await senderClient.createExternalOrder(jwt);
+	expect(openOrder.offer_type).toBe("spend");
+	expect(openOrder.blockchain_data.sender_address).toEqual(senderWalletAddress);
+
+	// pay for the offer
+	const res = await senderClient.pay(openOrder.blockchain_data.recipient_address!, offer.amount, openOrder.id);
+	console.log("pay result hash: " + res.hash);
+	await senderClient.submitOrder(openOrder.id);
+
+	// poll on order payment
+	const order = await retry(() => senderClient.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	console.log(`completion date: ${order.completion_date}`);
+
+	// find payment on blockchain
+	const payment = (await retry(() => senderClient.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+	expect(payment).toBeDefined();
+	expect(payment.sender_address).toEqual(senderWalletAddress);
+
+	console.log("order.blockchain_data: ", order.blockchain_data);
+	console.log(`payment on blockchain:`, payment);
+	expect(isValidPayment(order, senderClient.appId, payment)).toBeTruthy();
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await senderClient.getOrders()).orders.slice(0, 2));
+
+	expect(order.result!.type).toBe("payment_confirmation");
+	const paymentJwt = (order.result! as JWTValue).jwt;
+	const jwtPayload = jsonwebtoken.decode(paymentJwt, { complete: true }) as JWTContent<JWTBodyPaymentConfirmation, "payment_confirmation">;
+
+	expect(jwtPayload.payload.offer_id).toBe(order.offer_id);
+	expect(jwtPayload.payload.sender_user_id).toBe(senderId);
+	expect(jwtPayload.payload.recipient_user_id).toBe(recipientId);
+	expect(jwtPayload.header.kid).toBeDefined();
+	expect(jwtPayload.payload.iss).toEqual("kin");
+	expect(await appClient.isValidSignature(paymentJwt)).toBeTruthy();
+
+	console.log("OK.\n");
 }
 
 async function main() {
@@ -438,6 +540,7 @@ async function main() {
 	await didNotApproveTOS();
 	await testRegisterNewUser();
 	await tryToNativeSpendTwice();
+	await p2p();
 }
 
 main()

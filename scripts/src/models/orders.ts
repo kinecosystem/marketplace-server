@@ -533,7 +533,7 @@ class OrderImpl extends CreationDateModel implements Order {
 
 	public remove() {
 		return getManager().transaction(async manager => {
-			await Promise.all((await OrderContext.find({ orderId: this.id })).map(context => manager.remove(context)));
+			await manager.query("DELETE FROM orders_contexts WHERE order_id=$1", [this.id]);
 			return manager.remove(this);
 		});
 	}

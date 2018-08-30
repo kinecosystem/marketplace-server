@@ -222,11 +222,12 @@ async function offerToHtml(offer: Offer): Promise<string> {
 }
 
 async function orderToHtml(order: Order): Promise<string> {
+	const contexts = order.contexts || [];
 	const transactionId = order.blockchainData ? order.blockchainData.transaction_id : null;
 	const payJwt = order.value && order.value.type === "payment_confirmation" ? order.value.jwt : null;
 	let html = "";
 
-	for (const context of order.contexts) {
+	for (const context of contexts) {
 		html += `<tr>
 <td><a href="/orders/${ order.id }">${ order.id }</a></td>
 <td class="status_${ order.status }"><a href="/orders?status=${ order.status }">${ order.status }</a></td>

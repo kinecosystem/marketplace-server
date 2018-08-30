@@ -533,7 +533,7 @@ class OrderImpl extends CreationDateModel implements Order {
 
 	public remove() {
 		return getManager().transaction(async manager => {
-			await Promise.all((await OrderContext.find({ order: this })).map(context => manager.remove(context)));
+			await Promise.all((await OrderContext.find({ orderId: this.id })).map(context => manager.remove(context)));
 			return manager.remove(this);
 		});
 	}
@@ -561,8 +561,8 @@ export class OrderContext extends BaseEntity {
 	public readonly meta!: OrderMeta;
 
 	@PrimaryColumn({ name: "order_id" })
-	private readonly orderId!: string;
+	public readonly orderId!: string;
 
 	@PrimaryColumn({ name: "user_id" })
-	private readonly userId!: string;
+	public readonly userId!: string;
 }

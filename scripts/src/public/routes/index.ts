@@ -2,9 +2,13 @@ import * as express from "express";
 
 import * as db from "../../models/users";
 import { TOSMissingOrOldToken } from "../../errors";
+
 import { authenticate } from "../auth";
+import { statusHandler } from "../middleware";
+
 import { getOffers } from "./offers";
-import { signInUser, activateUser } from "./users";
+import { getConfigHandler } from "./config";
+import { signInUser, userExists, activateUser } from "./users";
 import {
 	getOrder,
 	cancelOrder,
@@ -14,12 +18,10 @@ import {
 	createMarketplaceOrder,
 	createExternalOrder
 } from "./orders";
-import { getConfigHandler } from "./config";
-import { statusHandler } from "../middleware";
 
 export type Context = {
-	token: db.AuthToken | undefined;
 	user: db.User | undefined;
+	token: db.AuthToken | undefined;
 };
 
 // augment the express request object
@@ -65,6 +67,7 @@ function Router(): ExtendedRouter {
 							if (scopes.includes(AuthScopes.TOS) && (!user || !user.activated || token.createdDate < user.activatedDate!)) {
 								throw TOSMissingOrOldToken();
 							}
+
 							req.context = { user, token };
 
 							return handler(req, res, next);
@@ -97,6 +100,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.use(Router().authenticated(AuthScopes.TOS).patch(createPath("orders/:order_id", pathPrefix), changeOrder));
 
 	app.use(Router().post(createPath("users/", pathPrefix), signInUser));
+	app.use(Router().authenticated(AuthScopes.TOS).get(createPath("users/exists", pathPrefix), userExists));
 	app.use(Router().authenticated(/* no TOS scope */).post(createPath("users/me/activate", pathPrefix), activateUser));
 
 	app.get("/status", statusHandler);

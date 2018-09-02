@@ -97,3 +97,8 @@ export async function activateUser(
 
 	return AuthTokenDbToApi(authToken, user, logger);
 }
+
+export async function userExists(appId: string, appUserId: string): Promise<boolean> {
+	const user = await db.User.findOne({ appId, appUserId });
+	return user !== undefined;
+}

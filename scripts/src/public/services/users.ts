@@ -98,7 +98,8 @@ export async function activateUser(
 	return AuthTokenDbToApi(authToken, user, logger);
 }
 
-export async function userExists(appId: string, appUserId: string): Promise<boolean> {
+export async function userExists(appId: string, appUserId: string, logger: LoggerInstance): Promise<boolean> {
 	const user = await db.User.findOne({ appId, appUserId });
+	logger.debug(`userExists service appId: ${ appId }, appUserId: ${ appUserId }, user: `, user);
 	return user !== undefined && user.activated;
 }

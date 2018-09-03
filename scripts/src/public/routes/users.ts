@@ -70,11 +70,11 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	res.status(200).send(authToken);
 } as any as RequestHandler;
 
-export type UserExistsRequest = Request & { query: { userId: string; } };
+export type UserExistsRequest = Request & { query: { user_id: string; } };
 
 export const userExists = async function(req: UserExistsRequest, res: Response) {
 	const appId = req.context.user!.appId;
-	const userFound = await userExistsService(appId, req.query.userId);
+	const userFound = await userExistsService(appId, req.query.user_id);
 	res.status(200).send(userFound);
 } as any as RequestHandler;
 

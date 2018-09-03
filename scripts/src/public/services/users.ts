@@ -100,5 +100,5 @@ export async function activateUser(
 
 export async function userExists(appId: string, appUserId: string): Promise<boolean> {
 	const user = await db.User.findOne({ appId, appUserId });
-	return user !== undefined;
+	return user !== undefined && user.activated;
 }

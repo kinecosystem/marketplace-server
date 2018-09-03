@@ -140,7 +140,7 @@ describe("test orders", async () => {
 
 	test("payment jwt for kik is es256", async () => {
 		async function getPaymentJWT(appId: string) {
-			const user = await helpers.createUser(appId);
+			const user = await helpers.createUser({ appId });
 			const order = ExternalOrder.new({
 				offerId: "offer",
 				amount: 1,
@@ -235,7 +235,7 @@ describe("test orders", async () => {
 
 	test("only app offers should return", async () => {
 		const app = await helpers.createApp("app1");
-		const user = await helpers.createUser(app.id);
+		const user = await helpers.createUser({ appId: app.id });
 		const offers = await Offer.find();
 		const offersIds: string[] = [];
 

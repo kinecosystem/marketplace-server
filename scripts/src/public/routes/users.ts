@@ -3,6 +3,7 @@ import { NoSuchApp, UnknownSignInType } from "../../errors";
 
 import {
 	getOrCreateUserCredentials,
+	userExists as userExistsService,
 	activateUser as activateUserService
 } from "../services/users";
 import {
@@ -13,24 +14,24 @@ import {
 import { Application, SignInType } from "../../models/applications";
 import { getConfig } from "../config";
 
-type CommonSignInData = {
+export type CommonSignInData = {
 	sign_in_type: "jwt" | "whitelist";
 	device_id: string;
 	wallet_address: string;
 };
 
-type JwtSignInData = CommonSignInData & {
+export type JwtSignInData = CommonSignInData & {
 	sign_in_type: "jwt";
 	jwt: string;
 };
 
-type WhitelistSignInData = CommonSignInData & {
+export type WhitelistSignInData = CommonSignInData & {
 	sign_in_type: "whitelist";
 	user_id: string;
 	api_key: string;
 };
 
-type RegisterRequest = Request & { body: WhitelistSignInData | JwtSignInData };
+export type RegisterRequest = Request & { body: WhitelistSignInData | JwtSignInData };
 
 /**
  * sign in a user,
@@ -67,6 +68,16 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		req.logger);
 
 	res.status(200).send(authToken);
+} as any as RequestHandler;
+
+export type UserExistsRequest = Request & { query: { user_id: string; } };
+
+export const userExists = async function(req: UserExistsRequest, res: Response) {
+	const appId = req.context.user!.appId;
+	req.logger.debug(`userExists appId: ${ appId }`);
+
+	const userFound = await userExistsService(appId, req.query.user_id, req.logger);
+	res.status(200).send(userFound);
 } as any as RequestHandler;
 
 /**

@@ -8,7 +8,6 @@ import { init as initModels, close as closeModels } from "../../../scripts/bin/m
 
 import * as helpers from "../helpers";
 
-
 describe("api tests for /users", async () => {
 	beforeAll(async done => {
 		await initModels();

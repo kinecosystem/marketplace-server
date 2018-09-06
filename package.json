@@ -22,6 +22,7 @@
     "body-parser": "^1.18.2",
     "cookie-parser": "^1.4.3",
     "csv-parse": "^2.0.4",
+    "export-to-csv": "^0.1.2",
     "express": "^4.16.2",
     "express-async-errors": "^2.1.2",
     "express-bearer-token": "^2.1.1",

@@ -4,7 +4,7 @@
     "outDir": "bin",
     "rootDir": "src",
     "module": "commonjs",
-    "lib": ["dom","es2017"],
+    "lib": ["dom","es2017", "es2017.object"],
 
     "strict": true,
     "sourceMap": true,

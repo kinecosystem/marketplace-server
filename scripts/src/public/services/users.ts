@@ -37,27 +37,26 @@ export async function getOrCreateUserCredentials(
 	walletAddress: string,
 	deviceId: string, logger: LoggerInstance): Promise<AuthToken> {
 
-	let user = await db.User.findOne({ appId, appUserId });
-
-	async function handleExistingUser(user: User) {
-		logger.info("found existing user", { appId, appUserId, userId: user.id });
-		if (user.walletAddress !== walletAddress) {
-			logger.warn(`existing user registered with new wallet ${user.walletAddress} !== ${walletAddress}`);
-			if (!app.allowsNewWallet(user.walletCount)) {
+	async function handleExistingUser(existingUser: User) {
+		logger.info("found existing user", { appId, appUserId, userId: existingUser.id });
+		if (existingUser.walletAddress !== walletAddress) {
+			logger.warn(`existing user registered with new wallet ${existingUser.walletAddress} !== ${walletAddress}`);
+			if (!app.allowsNewWallet(existingUser.walletCount)) {
 				metrics.maxWalletsExceeded();
 				throw MaxWalletsExceeded();
 			}
-			user.walletCount += 1;
-			user.walletAddress = walletAddress;
-			await user.save();
-			await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
+			existingUser.walletCount += 1;
+			existingUser.walletAddress = walletAddress;
+			await existingUser.save();
+			await payment.createWallet(existingUser.walletAddress, existingUser.appId, existingUser.id, logger);
 			metrics.userRegister(false, true);
 		} else {
 			metrics.userRegister(false, false);
 		}
-		logger.info(`returning existing user ${user.id}`);
+		logger.info(`returning existing user ${existingUser.id}`);
 	}
 
+	let user = await db.User.findOne({ appId, appUserId });
 	if (!user) {
 		try {
 			logger.info("creating a new user", { appId, appUserId });

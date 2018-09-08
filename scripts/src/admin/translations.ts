@@ -1,11 +1,13 @@
 import { ExportToCsv, Options as ExportCsvOptions } from "export-to-csv";
 
 import { ContentType, Offer, OfferContent } from "../models/offers";
+import { FindManyOptions } from "typeorm";
 
 type CsvRow = {
 	Key: string;
 	Default: string;
-	Translation: null;
+	Translation: "";
+	"Character limit": number;
 };
 
 type OfferContentContent = {  // I know, but I didn't have a better name for the 'content' field in the OfferContent table
@@ -17,14 +19,41 @@ type OfferContentContent = {  // I know, but I didn't have a better name for the
 	}
 };
 
-//  const EXCLUDED_CONTENT_PAGE_ATTRIBUTE = ["amount", "type", "rightAnswer"];
+const CHARACTER_LIMITS: { [path: string]: number } = {
+	"poll:offer:title": 14,
+	"poll:offer:description": 18,
+	"poll:offer:orderTitle": 8,
+	"poll:offer:orderDescription": 24,
+	"poll:offer_contents:content:pages.title": 38,
+	"poll:offer_contents:content:pages.description": 24,
+	"poll:offer_contents:content:pages.question.answers": 22,
+	"quiz:offer:title": 14,
+	"quiz:offer:description": 18,
+	"quiz:offer:orderTitle": 8,
+	"quiz:offer:orderDescription": 24,
+	"quiz:offer_contents:content:pages.description": 66,
+	"quiz:offer_contents:content:pages.question.answers": 22,
+};
+
+const KEY_TO_PATH_REGEX = /\b([\w_]+:)\w+:|\[\d\]/g;
+
+const EXCLUDED = [
+	"tutorial",
+	"quiz:offer_contents:content:pages.question.id",
+	"poll:offer_contents:content:pages.question.id",
+];
 
 function constructRow(contentType: ContentType, key: string, str: string) {
+	const path = `${contentType}:${key.replace(KEY_TO_PATH_REGEX, "$1")}`;
+	if (EXCLUDED.includes(path) || EXCLUDED.includes(contentType)) {
+		return;
+	}
 	return {
 		Type: contentType,
 		Key: key,
 		Default: str,
-		Translation: null
+		Translation: "",
+		"Character Limit": CHARACTER_LIMITS[path],
 	};
 }
 
@@ -32,16 +61,18 @@ function constructRowsFromArray(keyBase: string, arr: any[], rowConstructor: (ke
 	let result: CsvRow[] = [];
 	arr.forEach((item: any, index: number) => {
 		const key = `${keyBase}[${index}]`;
-		if (typeof item === "string") {
+		if (typeof item === "string" && item !== "") {
 			result.push(rowConstructor(key, item));
 			return;
 		}
 		if (Array.isArray(item)) {
 			result = result.concat(constructRowsFromArray(key, item, rowConstructor));
+			return;
 		}
 
 		if (typeof item === "object") {
 			result = result.concat(constructRowsFromObj(key, item, rowConstructor));
+			return;
 		}
 	});
 	return result;
@@ -52,16 +83,18 @@ function constructRowsFromObj(keyBase: string, obj: { [key: string]: any }, rowC
 	Object.keys(obj).forEach((itemKey: any) => {
 		const item = obj[itemKey];
 		const key = `${keyBase}.${itemKey}`;
-		if (typeof item === "string") {
+		if (typeof item === "string" && item !== "") {
 			result.push(rowConstructor(key, item));
 			return;
 		}
 		if (Array.isArray(item)) {
 			result = result.concat(constructRowsFromArray(key, item, rowConstructor));
+			return;
 		}
 
 		if (typeof item === "object") {
 			result = result.concat(constructRowsFromObj(key, item, rowConstructor));
+			return;
 		}
 	});
 	return result;
@@ -69,23 +102,26 @@ function constructRowsFromObj(keyBase: string, obj: { [key: string]: any }, rowC
 
 async function getCsvRowData() {
 	const allOffers = await Offer.find();
-	const allContent = await OfferContent.find({ select: ["offerId", "content", "contentType"] });
+	const allContent = await OfferContent.find({ select: ["offerId", "content", "contentType"] } as FindManyOptions<OfferContent>);
 	let rows: CsvRow[] = [];
 	const csvContent: any = allOffers.map(offer => {
+		if (offer.type === "spend") {
+			return;
+		}
 		const offerId = offer.id;
-		const keyBase = `offer:${offerId}`;
 		const offerContent: OfferContent = allContent.filter(obj => obj.offerId === offerId)[0];
-		const regex = /:\s(\${[\w\.-_]+})/g;
-		const escapedOfferContent = offerContent.content.replace(regex, ": \"$1\"");  // quote unquoted template values
+		// quote unquoted template values
+		const escapedOfferContent = offerContent.content.replace(/:\s(\${[\w\.-_]+})/g, ": \"$1\"");
 		const offerContentContent: OfferContentContent = JSON.parse(escapedOfferContent);
-		const offerType = offerContent.contentType;
-		const boundConstructRow = constructRow.bind({}, offerType);
+		const boundConstructRow = constructRow.bind({}, offerContent.contentType);
+		let keyBase = `offer:${offerId}`;
 		rows = rows.concat([
-			// boundConstructRow(`${keyBase}:title`, offer.title),
-			// boundConstructRow(`${keyBase}:description`, offer.description),
-			boundConstructRow(`${keyBase}:order_title`, offer.meta.title),
-			boundConstructRow(`${keyBase}:order_description`, offer.meta.description),
+			boundConstructRow(`${keyBase}:title`, offer.meta.title),
+			boundConstructRow(`${keyBase}:description`, offer.meta.description),
+			boundConstructRow(`${keyBase}:orderTitle`, offer.meta.order_meta.title),
+			boundConstructRow(`${keyBase}:orderDescription`, offer.meta.order_meta.description),
 		]);
+		keyBase = `offer_contents:${offerId}`;
 		if (offerContentContent.pages) {
 			rows = rows.concat(constructRowsFromArray(`${keyBase}:content:pages`, offerContentContent.pages, boundConstructRow));
 		}
@@ -93,10 +129,10 @@ async function getCsvRowData() {
 			rows = rows.concat(constructRowsFromObj(`${keyBase}:content:confirmation`, offerContentContent.confirmation, boundConstructRow));
 		}
 	});
-	return rows;
+	return rows.filter(x => x);  // remove empty items
 }
 
-export async function getCsvTemplate() {
+export async function getCsvTemplateData() {
 	const options: ExportCsvOptions = {
 		fieldSeparator: ",",
 		quoteStrings: "'",
@@ -112,3 +148,12 @@ export async function getCsvTemplate() {
 	const csvExporter = new ExportToCsv(options);
 	return csvExporter.generateCsv(await getCsvRowData(), true);
 }
+
+export async function writeCsvTemplateToFile(fileName: string = "translation_template.csv") {
+	fs.writeFile('translation_template.csv', await getCsvTemplateData(), (err: string) => {
+		if (err) {
+			console.log("Error:", err);
+		}
+		console.log("CSV saved as", fileName);
+	});
+};

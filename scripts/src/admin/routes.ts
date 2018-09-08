@@ -13,6 +13,7 @@ import {
 } from "./services";
 
 import { statusHandler } from "../middleware";
+import { getCsvTemplate } from "./translations";
 
 function jsonResponse(func: (body: any, params: any, query: any) => Promise<string>): RequestHandler {
 	return async function(req: Request, res: Response) {
@@ -178,6 +179,8 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		// retries
 		.get("/orders/:order_id/retry", wrapService(retryOrder))
 		.get("/users/:user_id/retry", wrapService(retryUserWallet))
+		//  get translation CSV
+		// .get("/translations", async (req, res) => res.send(new Buffer(await getCsvTemplate()))
 		// change data
 		.post("/offers/:offer_id", jsonResponse(changeOffer))
 	;

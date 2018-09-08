@@ -61,6 +61,9 @@ function constructRow(contentType: ContentType, key: string, str: string) {
 }
 
 function constructRowsFromArray(keyBase: string, arr: any[], rowConstructor: (key: string, str: string) => CsvRow) {
+	if (!arr) {
+		return [];
+	}
 	let result: CsvRow[] = [];
 	arr.forEach((item: any, index: number) => {
 		const key = `${keyBase}[${index}]`;
@@ -82,6 +85,9 @@ function constructRowsFromArray(keyBase: string, arr: any[], rowConstructor: (ke
 }
 
 function constructRowsFromObj(keyBase: string, obj: { [key: string]: any }, rowConstructor: (key: string, str: string) => CsvRow) {
+	if (!obj) {
+		return [];
+	}
 	let result: CsvRow[] = [];
 	Object.keys(obj).forEach((itemKey: any) => {
 		const item = obj[itemKey];

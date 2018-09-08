@@ -1,7 +1,7 @@
 import { ExportToCsv, Options as ExportCsvOptions } from "export-to-csv";
 import { FindManyOptions } from "typeorm";
 
-import "fs";
+import * as fs from "fs";
 
 import { ContentType, Offer, OfferContent } from "../models/offers";
 

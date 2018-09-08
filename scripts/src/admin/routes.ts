@@ -13,7 +13,6 @@ import {
 } from "./services";
 
 import { statusHandler } from "../middleware";
-import { getCsvTemplate } from "./translations";
 
 function jsonResponse(func: (body: any, params: any, query: any) => Promise<string>): RequestHandler {
 	return async function(req: Request, res: Response) {

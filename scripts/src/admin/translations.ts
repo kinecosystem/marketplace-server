@@ -1,7 +1,7 @@
 import { ExportToCsv, Options as ExportCsvOptions } from "export-to-csv";
 import { FindManyOptions } from "typeorm";
 
-import * as fs from "fs";
+import { writeFile } from "fs";
 
 import { ContentType, Offer, OfferContent } from "../models/offers";
 
@@ -153,7 +153,7 @@ export async function getCsvTemplateData() {
 }
 
 export async function writeCsvTemplateToFile(fileName: string = "translation_template.csv") {
-	fs.writeFile("translation_template.csv", await getCsvTemplateData(), err => {
+	writeFile(fileName, await getCsvTemplateData(), (err: NodeJS.ErrnoException) => {
 		if (err) {
 			console.log("Error:", err);
 		}

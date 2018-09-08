@@ -1,9 +1,12 @@
 import { ExportToCsv, Options as ExportCsvOptions } from "export-to-csv";
-
-import { ContentType, Offer, OfferContent } from "../models/offers";
 import { FindManyOptions } from "typeorm";
 
+import "fs";
+
+import { ContentType, Offer, OfferContent } from "../models/offers";
+
 type CsvRow = {
+	Type: string;
 	Key: string;
 	Default: string;
 	Translation: "";
@@ -104,7 +107,7 @@ async function getCsvRowData() {
 	const allOffers = await Offer.find();
 	const allContent = await OfferContent.find({ select: ["offerId", "content", "contentType"] } as FindManyOptions<OfferContent>);
 	let rows: CsvRow[] = [];
-	const csvContent: any = allOffers.map(offer => {
+	allOffers.forEach(offer => {
 		if (offer.type === "spend") {
 			return;
 		}
@@ -150,10 +153,10 @@ export async function getCsvTemplateData() {
 }
 
 export async function writeCsvTemplateToFile(fileName: string = "translation_template.csv") {
-	fs.writeFile('translation_template.csv', await getCsvTemplateData(), (err: string) => {
+	fs.writeFile("translation_template.csv", await getCsvTemplateData(), err => {
 		if (err) {
 			console.log("Error:", err);
 		}
 		console.log("CSV saved as", fileName);
 	});
-};
+}

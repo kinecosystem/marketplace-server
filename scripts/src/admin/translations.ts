@@ -60,31 +60,36 @@ function constructRow(contentType: ContentType, key: string, str: string) {
 	};
 }
 
-function constructRowsFromArray(keyBase: string, arr: any[], rowConstructor: (key: string, str: string) => CsvRow) {
+type RowConstructor = (key: string, str: string) => CsvRow;
+
+function handleIterableItem(key: string, item: any, rowConstructor: RowConstructor) {
+	if (typeof item === "string" && item !== "") {
+		return [rowConstructor(key, item)];
+	}
+	if (Array.isArray(item)) {
+		return constructRowsFromArray(key, item, rowConstructor);
+	}
+
+	if (typeof item === "object") {
+		return constructRowsFromObj(key, item, rowConstructor);
+	}
+	return [];
+}
+
+function constructRowsFromArray(keyBase: string, arr: any[], rowConstructor: RowConstructor) {
 	if (!arr) {
 		return [];
 	}
 	let result: CsvRow[] = [];
 	arr.forEach((item: any, index: number) => {
 		const key = `${keyBase}[${index}]`;
-		if (typeof item === "string" && item !== "") {
-			result.push(rowConstructor(key, item));
-			return;
-		}
-		if (Array.isArray(item)) {
-			result = result.concat(constructRowsFromArray(key, item, rowConstructor));
-			return;
-		}
-
-		if (typeof item === "object") {
-			result = result.concat(constructRowsFromObj(key, item, rowConstructor));
-			return;
-		}
+		const f = handleIterableItem(key, item, rowConstructor);
+		result = result.concat(f);
 	});
 	return result;
 }
 
-function constructRowsFromObj(keyBase: string, obj: { [key: string]: any }, rowConstructor: (key: string, str: string) => CsvRow) {
+function constructRowsFromObj(keyBase: string, obj: { [key: string]: any }, rowConstructor: RowConstructor) {
 	if (!obj) {
 		return [];
 	}
@@ -92,19 +97,7 @@ function constructRowsFromObj(keyBase: string, obj: { [key: string]: any }, rowC
 	Object.keys(obj).forEach((itemKey: any) => {
 		const item = obj[itemKey];
 		const key = `${keyBase}.${itemKey}`;
-		if (typeof item === "string" && item !== "") {
-			result.push(rowConstructor(key, item));
-			return;
-		}
-		if (Array.isArray(item)) {
-			result = result.concat(constructRowsFromArray(key, item, rowConstructor));
-			return;
-		}
-
-		if (typeof item === "object") {
-			result = result.concat(constructRowsFromObj(key, item, rowConstructor));
-			return;
-		}
+		result = result.concat(handleIterableItem(key, item, rowConstructor));
 	});
 	return result;
 }
@@ -120,7 +113,7 @@ async function getCsvRowData() {
 		const offerId = offer.id;
 		const offerContent: OfferContent = allContent.filter(obj => obj.offerId === offerId)[0];
 		// quote unquoted template values
-		const escapedOfferContent = offerContent.content.replace(/:\s(\${[\w\.-_]+})/g, ": \"$1\"");
+		const escapedOfferContent = offerContent.content.replace(/:\s(\${[\w\.-_]+})/g, ": \"$1\"");  //  Content must be escape as it isn't a valid JSON
 		const offerContentContent: OfferContentContent = JSON.parse(escapedOfferContent);
 		const boundConstructRow = constructRow.bind({}, offerContent.contentType);
 		let keyBase = `offer:${offerId}`;
@@ -144,7 +137,7 @@ async function getCsvRowData() {
 export async function getCsvTemplateData() {
 	const options: ExportCsvOptions = {
 		fieldSeparator: ",",
-		quoteStrings: "'",
+		quoteStrings: "\"",
 		decimalseparator: ".",
 		showLabels: true,
 		showTitle: true,

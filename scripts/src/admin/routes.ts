@@ -178,8 +178,6 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		// retries
 		.get("/orders/:order_id/retry", wrapService(retryOrder))
 		.get("/users/:user_id/retry", wrapService(retryUserWallet))
-		//  get translation CSV
-		// .get("/translations", async (req, res) => res.send(new Buffer(await getCsvTemplate()))
 		// change data
 		.post("/offers/:offer_id", jsonResponse(changeOffer))
 	;

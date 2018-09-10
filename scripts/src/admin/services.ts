@@ -485,6 +485,8 @@ export async function getOrders(params: any, query: Paging & { status?: OpenOrde
 		const contexts = await OrderContext.find({ userId: query.user_id });
 		if (contexts.length > 0) {
 			q.andWhere("id in (:ids)", { ids: contexts.map(c => c.orderId) });
+		} else {
+			q.andWhere("id = 'no-such-id' ");
 		}
 	}
 	const orders = await q.orderBy("current_status_date", "DESC").skip(skip(query)).take(take(query)).getMany();

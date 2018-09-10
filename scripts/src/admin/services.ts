@@ -274,8 +274,8 @@ async function offerToHtml(offer: Offer): Promise<string> {
 <td>${ offer.meta.title }</td>
 <td>${ offer.meta.description }</td>
 <td><img src="${offer.meta.image}"/></td>
-<td><input type="text" onchange="submitData('/offers/${ offer.id }', { cap: { total: this.value } })" value="${ offer.cap.total }"/></td>
-<td><input type="text" onchange="submitData('/offers/${ offer.id }', { cap: { per_user: this.value } })" value="${ offer.cap.per_user }"/></td>
+<td><input type="text" onchange="submitData('/offers/${ offer.id }', { cap: { total: parseInt(this.value, 10) } })" value="${ offer.cap.total }"/></td>
+<td><input type="text" onchange="submitData('/offers/${ offer.id }', { cap: { per_user: parseInt(this.value, 10) } })" value="${ offer.cap.per_user }"/></td>
 <td>${ offer.ownerId }</td>
 <td><a href="${ BLOCKCHAIN.horizon_url}/accounts/${ offer.blockchainData.recipient_address }">${ offer.blockchainData.recipient_address }</a></td>
 <td><a href="${ BLOCKCHAIN.horizon_url}/accounts/${ offer.blockchainData.sender_address }">${ offer.blockchainData.sender_address }</a></td>
@@ -473,15 +473,16 @@ export async function getApplicationUserData(params: { app_user_id: string, app_
 }
 
 export async function getOrders(params: any, query: Paging & { status?: OpenOrderStatus, user_id?: string, offer_id?: string }): Promise<string> {
-	const queryBy: { offerId?: string, userId?: string, status?: OpenOrderStatus } = {};
+	const queryBy: { offerId?: string, orderId?: string[], status?: OpenOrderStatus } = {};
 	if (query.offer_id) {
 		queryBy.offerId = query.offer_id;
 	}
-	if (query.user_id) {
-		queryBy.userId = query.user_id;
-	}
 	if (query.status) {
 		queryBy.status = query.status;
+	}
+	if (query.user_id) {
+		const contexts = await OrderContext.find({ userId: query.user_id });
+		queryBy.orderId = contexts.map(c => c.orderId);
 	}
 	const orders = await Order.find({
 		where: queryBy,
@@ -615,12 +616,12 @@ export async function changeOffer(body: Partial<Offer>, params: { offer_id: stri
 
 	let didChange = false;
 	if (body && body.cap) {
-		if (body.cap.total && !isNothing(parseInt(body.cap.total as any, 10)) && parseInt(body.cap.total as any, 10) >= 0) {
-			offer.cap.total = parseInt(body.cap.total as any, 10);
+		if (body.cap.total  && body.cap.total >= 0) {
+			offer.cap.total = body.cap.total;
 			didChange = true;
 		}
-		if (body.cap.per_user && !isNothing(parseInt(body.cap.per_user as any, 10)) && parseInt(body.cap.per_user as any, 10) >= 0) {
-			offer.cap.per_user = parseInt(body.cap.per_user as any, 10);
+		if (body.cap.per_user && body.cap.per_user >= 0) {
+			offer.cap.per_user = body.cap.per_user;
 			didChange = true;
 		}
 	}

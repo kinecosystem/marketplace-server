@@ -473,23 +473,19 @@ export async function getApplicationUserData(params: { app_user_id: string, app_
 }
 
 export async function getOrders(params: any, query: Paging & { status?: OpenOrderStatus, user_id?: string, offer_id?: string }): Promise<string> {
-	const queryBy: { offerId?: string, orderId?: string[], status?: OpenOrderStatus } = {};
+	const q = await Order.queryBuilder("order");
+
 	if (query.offer_id) {
-		queryBy.offerId = query.offer_id;
+		q.andWhere("offer_id = :offer_id", { offer_id: query.offer_id });
 	}
 	if (query.status) {
-		queryBy.status = query.status;
+		q.andWhere("status = :status", { status: query.status });
 	}
 	if (query.user_id) {
 		const contexts = await OrderContext.find({ userId: query.user_id });
-		queryBy.orderId = contexts.map(c => c.orderId);
+		q.andWhere("id in (:ids)", { ids: contexts.map(c => c.orderId) });
 	}
-	const orders = await Order.find({
-		where: queryBy,
-		order: { currentStatusDate: "DESC" },
-		take: take(query),
-		skip: skip(query)
-	});
+	const orders = await q.orderBy("current_status_date", "DESC").limit(skip(query)).offset(take(query)).getMany();
 
 	let ret = `<table>${ ORDER_HEADERS }`;
 	for (const order of orders) {

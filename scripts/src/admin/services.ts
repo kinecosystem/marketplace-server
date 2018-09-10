@@ -616,11 +616,11 @@ export async function changeOffer(body: Partial<Offer>, params: { offer_id: stri
 
 	let didChange = false;
 	if (body && body.cap) {
-		if (body.cap.total  && body.cap.total >= 0) {
+		if (!isNothing(body.cap.total)  && body.cap.total >= 0) {
 			offer.cap.total = body.cap.total;
 			didChange = true;
 		}
-		if (body.cap.per_user && body.cap.per_user >= 0) {
+		if (!isNothing(body.cap.per_user) && body.cap.per_user >= 0) {
 			offer.cap.per_user = body.cap.per_user;
 			didChange = true;
 		}

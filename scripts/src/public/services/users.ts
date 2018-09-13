@@ -1,4 +1,4 @@
-import { getManager } from "typeorm";
+import { Brackets, getManager } from "typeorm";
 import { LoggerInstance } from "winston";
 
 import * as db from "../../models/users";
@@ -30,15 +30,37 @@ function AuthTokenDbToApi(authToken: db.AuthToken, user: db.User, logger: Logger
 	};
 }
 
+async function getUser(appId: string, appUserId: string, appUserJid: string | null) {
+	// TEMP:JID_MIGRATION
+	if (appId === "kik" && appUserJid) {
+		return db.User.createQueryBuilder()
+			.where(new Brackets(query => {
+				query
+					.where("app_user_jid IS NULL")
+					.andWhere("app_user_id = :appUserJid", { appUserJid });
+			}))
+			.orWhere(new Brackets(query => {
+				query
+					.where("app_user_id = :appUserId", { appUserId })
+					.andWhere("app_user_jid = :appUserJid", { appUserJid });
+			}))
+			.getOne();
+	} else {
+		return await db.User.findOne({ appId, appUserId });
+	}
+}
+
 export async function getOrCreateUserCredentials(
 	app: Application,
 	appUserId: string,
-	appId: string,
+	appUserJid: string | null,
 	walletAddress: string,
 	deviceId: string, logger: LoggerInstance): Promise<AuthToken> {
 
+	const appId = app.id;
+
 	async function handleExistingUser(existingUser: User) {
-		logger.info("found existing user", { appId, appUserId, userId: existingUser.id });
+		logger.info("found existing user", { app, appUserId, userId: existingUser.id });
 		if (existingUser.walletAddress !== walletAddress) {
 			logger.warn(`existing user registered with new wallet ${existingUser.walletAddress} !== ${walletAddress}`);
 			if (!app.allowsNewWallet(existingUser.walletCount)) {
@@ -56,18 +78,26 @@ export async function getOrCreateUserCredentials(
 		logger.info(`returning existing user ${existingUser.id}`);
 	}
 
-	let user = await db.User.findOne({ appId, appUserId });
+	let user = await getUser(appId, appUserId, appUserJid);
 	if (!user) {
 		try {
 			logger.info("creating a new user", { appId, appUserId });
-			user = db.User.new({ appUserId, appId, walletAddress });
+
+			// TEMP:JID_MIGRATION
+			if (appId === "kik" && appUserJid) {
+				user = db.User.new({ appUserId, appUserJid, appId, walletAddress });
+			} else {
+				user = db.User.new({ appUserId, appId, walletAddress });
+			}
+
 			await user.save();
 			logger.info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
 			await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
 			metrics.userRegister(true, true);
 		} catch (e) {
 			// maybe caught a "violates unique constraint" error, check by finding the user again
-			user = await db.User.findOne({ appId, appUserId });
+			user = await getUser(appId, appUserId, appUserJid);
+
 			if (user) {
 				logger.warn("solved user registration race condition");
 				await handleExistingUser(user);

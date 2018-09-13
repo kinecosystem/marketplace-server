@@ -1,6 +1,9 @@
-import { JWTClaims, verify as verifyJWT } from "../jwt";
-import { ExternalEarnOfferByDifferentUser, InvalidExternalOrderJwt } from "../../errors";
 import { LoggerInstance } from "winston";
+
+import { ExternalEarnOfferByDifferentUser, InvalidExternalOrderJwt } from "../../errors";
+
+import { JWTClaims, verify as verifyJWT } from "../jwt";
+import { User } from "../../models/users";
 
 export type ExternalOfferPayload = {
 	id: string;
@@ -8,6 +11,10 @@ export type ExternalOfferPayload = {
 };
 export type ExternalSenderPayload = {
 	user_id?: string;
+
+	// TEMP:JID_MIGRATION
+	user_jid?: string;
+
 	title: string;
 	description: string;
 };
@@ -40,22 +47,36 @@ export function isPayToUser(jwt: ExternalOrderJWT): jwt is ExternalPayToUserOrde
 	return jwt.sub === "pay_to_user";
 }
 
-export async function validateExternalOrderJWT(jwt: string, appUserId: string, logger: LoggerInstance): Promise<ExternalOrderJWT> {
+export async function validateExternalOrderJWT(jwt: string, user: User, logger: LoggerInstance): Promise<ExternalOrderJWT> {
 	const decoded = await verifyJWT<PayToUserPayload, "spend" | "earn" | "pay_to_user">(jwt, logger);
 
 	if (decoded.payload.sub !== "earn" && decoded.payload.sub !== "spend" && decoded.payload.sub !== "pay_to_user") {
 		throw InvalidExternalOrderJwt();
 	}
 
-	if ((decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user") &&
-		!!decoded.payload.sender.user_id && decoded.payload.sender.user_id !== appUserId) {
+	// TEMP:JID_MIGRATION
+	if (decoded.payload.iss === "kik") {
+		const userAppId = user.appUserJid ? user.appUserId : null;
+		const userAppJid = user.appUserJid ? user.appUserJid : user.appUserId;
+		const decodedUserAppId = decoded.payload.sender.user_jid ? decoded.payload.sender.user_id : null;
+		const decodedUserAppJid = decoded.payload.sender.user_jid ? decoded.payload.sender.user_jid : decoded.payload.sender.user_id;
+
+		if ((decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user")) {
+			if (!!userAppId && userAppId !== decodedUserAppId) {
+				throw ExternalEarnOfferByDifferentUser(userAppId, decodedUserAppId!);
+			} else if (!userAppId || userAppJid !== decodedUserAppJid) {
+				throw ExternalEarnOfferByDifferentUser(userAppJid, decodedUserAppJid!);
+			}
+		}
+	} else if ((decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user") &&
+		!!decoded.payload.sender.user_id && decoded.payload.sender.user_id !== user.appUserId) {
 		// if sender.user_id is defined and is different than current user, raise error
-		throw ExternalEarnOfferByDifferentUser(appUserId, decoded.payload.sender.user_id);
+		throw ExternalEarnOfferByDifferentUser(user.appUserId, decoded.payload.sender.user_id);
 	}
 
-	if (decoded.payload.sub === "earn" && decoded.payload.recipient.user_id !== appUserId) {
+	if (decoded.payload.sub === "earn" && decoded.payload.recipient.user_id !== user.appUserId) {
 		// check that user_id is defined for earn and is the same as current user
-		throw ExternalEarnOfferByDifferentUser(appUserId, decoded.payload.recipient.user_id);
+		throw ExternalEarnOfferByDifferentUser(user.appUserId, decoded.payload.recipient.user_id);
 
 	}
 

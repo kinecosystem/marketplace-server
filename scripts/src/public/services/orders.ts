@@ -217,7 +217,7 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 }
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
-	const payload = await validateExternalOrderJWT(jwt, user.appUserId, logger);
+	const payload = await validateExternalOrderJWT(jwt, user, logger);
 
 	let order = await db.Order.findBy(payload.offer.id, user.id);
 

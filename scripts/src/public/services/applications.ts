@@ -7,10 +7,16 @@ import { Application, AppWhitelists } from "../../models/applications";
 export type RegisterPayload = {
 	user_id: string;
 	api_key: string;
+
+	// TEMP:JID_MIGRATION
+	user_jid?: string;
 };
 export type SignInContext = {
 	appId: string;
 	appUserId: string;
+
+	// TEMP:JID_MIGRATION
+	appUserJid: string | null;
 };
 
 export async function validateRegisterJWT(jwt: string, logger: LoggerInstance): Promise<SignInContext> {
@@ -18,7 +24,10 @@ export async function validateRegisterJWT(jwt: string, logger: LoggerInstance): 
 	const appId = decoded.payload.iss;
 	const appUserId = decoded.payload.user_id;
 
-	return { appUserId, appId };
+	// TEMP:JID_MIGRATION
+	const appUserJid = decoded.payload.user_jid || null;
+
+	return { appUserId, appId, appUserJid };
 }
 
 export async function validateWhitelist(
@@ -33,10 +42,11 @@ export async function validateWhitelist(
 	logger.info(`checking if ${ appUserId } is whitelisted for ${ app.id }`);
 	const result = await AppWhitelists.findOne({ appUserId, appId: app.id });
 	if (result) {
-		return { appUserId, appId: app.id };
+		return { appUserId, appId: app.id, appUserJid: null };
 	}
+
 	// XXX raise an exception
 	logger.warn(`user ${appUserId} not found in whitelist for app ${ app.id }`);
 
-	return { appUserId, appId: app.id };
+	return { appUserId, appId: app.id, appUserJid: null };
 }

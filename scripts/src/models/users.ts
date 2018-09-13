@@ -17,6 +17,10 @@ export class User extends CreationDateModel {
 	@Column({ name: "app_user_id" })
 	public appUserId!: string;
 
+	// TEMP:JID_MIGRATION
+	@Column({ name: "app_user_jid", nullable: true })
+	public appUserJid?: string;
+
 	@Column({ name: "wallet_address" })
 	public walletAddress!: string;
 

@@ -83,8 +83,7 @@ function constructRowsFromArray(keyBase: string, arr: any[], rowConstructor: Row
 	let result: CsvRow[] = [];
 	arr.forEach((item: any, index: number) => {
 		const key = `${keyBase}[${index}]`;
-		const f = handleIterableItem(key, item, rowConstructor);
-		result = result.concat(f);
+		result = result.concat(handleIterableItem(key, item, rowConstructor));
 	});
 	return result;
 }
@@ -103,13 +102,10 @@ function constructRowsFromObj(keyBase: string, obj: { [key: string]: any }, rowC
 }
 
 async function getCsvRowData() {
-	const allOffers = await Offer.find();
+	const allOffers = await Offer.find({ type: "earn" });
 	const allContent = await OfferContent.find({ select: ["offerId", "content", "contentType"] } as FindManyOptions<OfferContent>);
 	let rows: CsvRow[] = [];
 	allOffers.forEach(offer => {
-		if (offer.type === "spend") {
-			return;
-		}
 		const offerId = offer.id;
 		const offerContent: OfferContent = allContent.filter(obj => obj.offerId === offerId)[0];
 		// quote unquoted template values

@@ -99,11 +99,11 @@ export function InvalidToken(token: string) {
 }
 
 export function InvalidApiKey(apiKey: string) {
-	return UnauthorizedError(CODES.Unauthorized.InvalidApiKey, `invalid api key: ${ apiKey }`);
+	return UnauthorizedError(CODES.Unauthorized.InvalidApiKey, `Invalid api key: ${ apiKey }`);
 }
 
 export function TOSMissingOrOldToken() {
-	return UnauthorizedError(CODES.Unauthorized.TOSMissingOrOldToken, "user did not approve TOS or using a pre activated token");
+	return UnauthorizedError(CODES.Unauthorized.TOSMissingOrOldToken, "User did not approve TOS or using a pre activated token");
 }
 
 function NotFoundError(index: number, message: string) {
@@ -154,7 +154,7 @@ export function ExternalEarnOfferByDifferentUser(loggedInUser: string, payToUser
 }
 
 export function CompletedOrderCantTransitionToFailed() {
-	const message = `cant set an error message to a completed order`;
+	const message = "cant set an error message to a completed order";
 	return ConflictError(CODES.Conflict.CompletedOrderCantTransitionToFailed, message);
 }
 
@@ -183,19 +183,19 @@ export function UnknownSignInType(type: string) {
 }
 
 export function WrongJwtAlgorithm(type: string) {
-	return BadRequestError(CODES.BadRequest.UnknownSignInType, `algorithm type ("${ type }") not supported`);
+	return BadRequestError(CODES.BadRequest.UnknownSignInType, `Algorithm type ("${ type }") not supported`);
 }
 
 export function InvalidJwtSignature() {
-	return BadRequestError(CODES.BadRequest.InvalidJwtSignature, `the JWT failed to verify`);
+	return BadRequestError(CODES.BadRequest.InvalidJwtSignature, "The JWT failed to verify");
 }
 
 export function InvalidPollAnswers() {
-	return BadRequestError(CODES.BadRequest.InvalidPollAnswers, "submitted form is invalid");
+	return BadRequestError(CODES.BadRequest.InvalidPollAnswers, "Submitted form is invalid");
 }
 
 export function InvalidExternalOrderJwt() {
-	return BadRequestError(CODES.BadRequest.InvalidExternalOrderJwt, `subject can be either "earn" or "spend"`);
+	return BadRequestError(CODES.BadRequest.InvalidExternalOrderJwt, `Subject can be either "earn" or "spend"`);
 }
 
 export function JwtKidMissing() {
@@ -203,7 +203,7 @@ export function JwtKidMissing() {
 }
 
 export function MaxWalletsExceeded() {
-	return BadRequestError(CODES.BadRequest.MaxWalletsExceeded, "no more wallet creations allowed");
+	return BadRequestError(CODES.BadRequest.MaxWalletsExceeded, "No more wallet creations allowed");
 }
 
 function TransactionFailed(index: number, message: string) {
@@ -211,26 +211,26 @@ function TransactionFailed(index: number, message: string) {
 }
 
 export function WrongSender() {
-	return TransactionFailed(CODES.TransactionFailed.WrongSender, "wrong_sender");
+	return TransactionFailed(CODES.TransactionFailed.WrongSender, "Wrong Sender");
 }
 
 export function WrongRecipient() {
-	return TransactionFailed(CODES.TransactionFailed.WrongRecipient, "wrong_recipient");
+	return TransactionFailed(CODES.TransactionFailed.WrongRecipient, "Wrong Recipient");
 }
 
 export function WrongAmount() {
-	return TransactionFailed(CODES.TransactionFailed.WrongAmount, "wrong_amount");
+	return TransactionFailed(CODES.TransactionFailed.WrongAmount, "Wrong Amount");
 }
 
 export function AssetUnavailable() {
-	return TransactionFailed(CODES.TransactionFailed.AssetUnavailable, "unavailable_asset");
+	return TransactionFailed(CODES.TransactionFailed.AssetUnavailable, "Unavailable Asset");
 }
 
 export function BlockchainError(message?: string) {
 	message = message ? (": " + message) : "";
-	return TransactionFailed(CODES.TransactionFailed.BlockchainError, "blockchain_error" + message);
+	return TransactionFailed(CODES.TransactionFailed.BlockchainError, "Blockchain Error: " + message);
 }
 
 export function TransactionTimeout() {
-	return TransactionFailed(CODES.TransactionFailed.TransactionTimeout, "transaction_timeout");
+	return TransactionFailed(CODES.TransactionFailed.TransactionTimeout, "Transaction Timeout");
 }

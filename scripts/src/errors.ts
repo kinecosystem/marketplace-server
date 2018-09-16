@@ -195,7 +195,7 @@ export function InvalidPollAnswers() {
 }
 
 export function InvalidExternalOrderJwt() {
-	return BadRequestError(CODES.BadRequest.InvalidExternalOrderJwt, "Subject can be either \"earn\" or \"spend\"");
+	return BadRequestError(CODES.BadRequest.InvalidExternalOrderJwt, `Subject can be either "earn" or "spend"`);
 }
 
 export function JwtKidMissing() {

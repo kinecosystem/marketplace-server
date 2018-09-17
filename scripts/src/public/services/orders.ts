@@ -147,7 +147,7 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 	const recipient = await User.findOne({ appId: sender.appId, appUserId: jwt.recipient.user_id });
 
 	if (!recipient) {
-		throw NoSuchUser(jwt.recipient.user_id);
+		throw Object.assign(NoSuchUser(jwt.recipient.user_id), { jwt });
 	}
 
 	await addWatcherEndpoint([recipient.walletAddress]);

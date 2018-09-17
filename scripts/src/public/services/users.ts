@@ -60,7 +60,8 @@ export async function getOrCreateUserCredentials(
 	const appId = app.id;
 
 	async function handleExistingUser(existingUser: User) {
-		logger.info("found existing user", { app, appUserId, userId: existingUser.id });
+		logger.info("found existing user", { appId: app.id, appUserId, userId: existingUser.id });
+
 		if (existingUser.walletAddress !== walletAddress) {
 			logger.warn(`existing user registered with new wallet ${existingUser.walletAddress} !== ${walletAddress}`);
 			if (!app.allowsNewWallet(existingUser.walletCount)) {

@@ -17,6 +17,7 @@ import { AssetUnavailable, BlockchainError, WrongAmount, WrongRecipient, WrongSe
 import { setFailedOrder } from "../public/services/orders";
 
 const BLOCKCHAIN = "stellar-testnet";
+const RS512_APPS = ["test", "smpl"];
 
 export type WalletCreationSuccessData = {
 	id: string; // user id
@@ -83,7 +84,7 @@ async function getPaymentJWT(order: db.Order, appId: string, userId: string): Pr
 
 	return {
 		type: "payment_confirmation",
-		jwt: signJWT("payment_confirmation", payload, appId !== "kik" ? "rs512" : "es256") // TODO all apps should run with es256 keys
+		jwt: signJWT("payment_confirmation", payload, RS512_APPS.includes(appId) ? "rs512" : "es256") // TODO all apps should run with es256 keys
 	};
 }
 

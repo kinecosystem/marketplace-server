@@ -138,7 +138,7 @@ describe("test orders", async () => {
 		expect(offers2.offers.length).toBeLessThan(offers.offers.length);
 	});
 
-	test("payment jwt for kik is es256", async () => {
+	test("payment jwt for non test apps is es256", async () => {
 		async function getPaymentJWT(appId: string) {
 			const user = await helpers.createUser({ appId });
 			const order = ExternalOrder.new({
@@ -169,6 +169,14 @@ describe("test orders", async () => {
 		expect(kikJWT.header.kid).toBe("es256_0");
 
 		const smplJWT = await getPaymentJWT("smpl");
+		expect(smplJWT.header.alg.toLowerCase()).not.toBe("es256");
+		expect(smplJWT.header.kid).not.toBe("es256_0");
+
+		const otherAppJWT = await getPaymentJWT("othr");
+		expect(otherAppJWT.header.alg.toLowerCase()).toBe("es256");
+		expect(otherAppJWT.header.kid).toBe("es256_0");
+
+		const testJWT = await getPaymentJWT("test");
 		expect(smplJWT.header.alg.toLowerCase()).not.toBe("es256");
 		expect(smplJWT.header.kid).not.toBe("es256_0");
 	});

@@ -60,7 +60,9 @@ export async function getOrCreateUserCredentials(
 	const appId = app.id;
 
 	// TEMP:JID_MIGRATION
-	logger.info(`[JID_MIGRATION] getOrCreateUserCredentials(${ appId }, ${ appUserId }, ${ appUserJid }, ${ walletAddress }, ${ deviceId })`);
+	if (appId === "kik") {
+		logger.info(`[JID_MIGRATION] getOrCreateUserCredentials(${ appId }, ${ appUserId }, ${ appUserJid }, ${ walletAddress }, ${ deviceId })`);
+	}
 
 	async function handleExistingUser(existingUser: User) {
 		logger.info("found existing user", { appId: app.id, appUserId, userId: existingUser.id });

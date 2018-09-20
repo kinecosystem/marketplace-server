@@ -52,7 +52,9 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	}
 
 	// TEMP:JID_MIGRATION
-	req.logger.info("[JID_MIGRATION] sign in user context (JWT): ", context);
+	if (context.appId === "kik") {
+		req.logger.info("[JID_MIGRATION] sign in user context (JWT): ", context);
+	}
 
 	const app = await Application.findOneById(context.appId);
 	if (!app) {

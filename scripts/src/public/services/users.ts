@@ -63,7 +63,7 @@ export async function getOrCreateUserCredentials(
 	if (appId === "kik") {
 		logger.info(`[JID_MIGRATION] getOrCreateUserCredentials(${ appId }, ${ appUserId }, ${ appUserJid }, ${ walletAddress }, ${ deviceId })`);
 	} else {
-		logger.info(`[JID_MIGRATION] not kik`);
+		logger.info(`[JID_MIGRATION] not kik (${ appId })`);
 	}
 
 	async function handleExistingUser(existingUser: User) {

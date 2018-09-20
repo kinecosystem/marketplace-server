@@ -55,7 +55,7 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	if (context.appId === "kik") {
 		req.logger.info("[JID_MIGRATION] sign in user context (JWT): ", context);
 	} else {
-		req.logger.info("[JID_MIGRATION] not kik");
+		req.logger.info(`[JID_MIGRATION] not kik (${ context.appId })`);
 	}
 
 	const app = await Application.findOneById(context.appId);

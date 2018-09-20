@@ -52,11 +52,12 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	}
 
 	// TEMP:JID_MIGRATION
-	if (context.appId === "kik") {
+	/*if (context.appId === "kik") {
 		req.logger.info("[JID_MIGRATION] sign in user context (JWT): ", context);
 	} else {
 		req.logger.info(`[JID_MIGRATION] not kik (${ context.appId })`);
-	}
+	}*/
+	req.logger.info("[JID_MIGRATION] sign in user context (JWT): ", context, (data as any).jwt);
 
 	const app = await Application.findOneById(context.appId);
 	if (!app) {

@@ -59,8 +59,18 @@ export async function getOrCreateUserCredentials(
 
 	const appId = app.id;
 
+	// TEMP:JID_MIGRATION
+	logger.info(`[JID_MIGRATION] getOrCreateUserCredentials(${ appId }, ${ appUserId }, ${ appUserJid }, ${ walletAddress }, ${ deviceId })`);
+
 	async function handleExistingUser(existingUser: User) {
 		logger.info("found existing user", { appId: app.id, appUserId, userId: existingUser.id });
+
+		// TEMP:JID_MIGRATION
+		if (appId === "kik" && appUserJid && existingUser.appUserJid !== appUserJid) {
+			existingUser.appUserId = appUserId;
+			existingUser.appUserJid = appUserJid;
+			await existingUser.save();
+		}
 
 		if (existingUser.walletAddress !== walletAddress) {
 			logger.warn(`existing user registered with new wallet ${existingUser.walletAddress} !== ${walletAddress}`);

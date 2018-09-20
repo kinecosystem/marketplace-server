@@ -51,6 +51,9 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
 
+	// TEMP:JID_MIGRATION
+	req.logger.info("[JID_MIGRATION] sign in user context (JWT): ", context);
+
 	const app = await Application.findOneById(context.appId);
 	if (!app) {
 		throw NoSuchApp(context.appId);

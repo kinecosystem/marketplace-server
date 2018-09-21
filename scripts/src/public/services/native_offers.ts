@@ -61,20 +61,30 @@ export async function validateExternalOrderJWT(jwt: string, user: User, logger: 
 		const decodedUserAppId = decoded.payload.sender.user_jid ? decoded.payload.sender.user_id : null;
 		const decodedUserAppJid = decoded.payload.sender.user_jid ? decoded.payload.sender.user_jid : decoded.payload.sender.user_id;
 
+		logger.info(`[JID_MIGRATION] validateExternalOrderJWT\n\t\tuserAppId:${userAppId}\n\t\tuserAppJid:${userAppJid}\n\t\tdecodedUserAppId:${decodedUserAppId}\n\t\tdecodedUserAppJid:${decodedUserAppJid}`);
+
 		if ((decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user")) {
 			if (!!userAppId && userAppId !== decodedUserAppId) {
+				logger.info("[JID_MIGRATION] validateExternalOrderJWT throw 1");
 				throw ExternalEarnOfferByDifferentUser(userAppId, decodedUserAppId!);
 			} else if (!userAppId || userAppJid !== decodedUserAppJid) {
+				logger.info("[JID_MIGRATION] validateExternalOrderJWT throw 2");
 				throw ExternalEarnOfferByDifferentUser(userAppJid, decodedUserAppJid!);
 			}
 		}
 	} else if ((decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user") &&
 		!!decoded.payload.sender.user_id && decoded.payload.sender.user_id !== user.appUserId) {
+		// TEMP:JID_MIGRATION
+		logger.info("[JID_MIGRATION] validateExternalOrderJWT throw 3");
+
 		// if sender.user_id is defined and is different than current user, raise error
 		throw ExternalEarnOfferByDifferentUser(user.appUserId, decoded.payload.sender.user_id);
 	}
 
 	if (decoded.payload.sub === "earn" && decoded.payload.recipient.user_id !== user.appUserId) {
+		// TEMP:JID_MIGRATION
+		logger.info("[JID_MIGRATION] validateExternalOrderJWT throw 4");
+
 		// check that user_id is defined for earn and is the same as current user
 		throw ExternalEarnOfferByDifferentUser(user.appUserId, decoded.payload.recipient.user_id);
 

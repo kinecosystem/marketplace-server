@@ -61,13 +61,13 @@ export async function validateExternalOrderJWT(jwt: string, user: User, logger: 
 		const decodedUserAppId = decoded.payload.sender.user_jid ? decoded.payload.sender.user_id : null;
 		const decodedUserAppJid = decoded.payload.sender.user_jid ? decoded.payload.sender.user_jid : decoded.payload.sender.user_id;
 
-		logger.info(`[JID_MIGRATION] validateExternalOrderJWT\n\t\tuserAppId:${userAppId}\n\t\tuserAppJid:${userAppJid}\n\t\tdecodedUserAppId:${decodedUserAppId}\n\t\tdecodedUserAppJid:${decodedUserAppJid}`);
+		logger.info("[JID_MIGRATION] validateExternalOrderJWT\n\t\tuserAppId:" + userAppId + "\n\t\tuserAppJid: " + userAppJid + "\n\t\tdecodedUserAppId: " + decodedUserAppId + "\n\t\tdecodedUserAppJid: " + decodedUserAppJid);
 
 		if ((decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user")) {
 			if (!!userAppId && !!decodedUserAppId && userAppId !== decodedUserAppId) {
 				logger.info("[JID_MIGRATION] validateExternalOrderJWT throw 1");
 				throw ExternalEarnOfferByDifferentUser(userAppId, decodedUserAppId!);
-			} else if (!userAppId || userAppJid !== decodedUserAppJid) {
+			} else if (!userAppId || (!!decodedUserAppJid && userAppJid !== decodedUserAppJid)) {
 				logger.info("[JID_MIGRATION] validateExternalOrderJWT throw 2");
 				throw ExternalEarnOfferByDifferentUser(userAppJid, decodedUserAppJid!);
 			}

@@ -64,7 +64,7 @@ export async function validateExternalOrderJWT(jwt: string, user: User, logger: 
 		logger.info(`[JID_MIGRATION] validateExternalOrderJWT\n\t\tuserAppId:${userAppId}\n\t\tuserAppJid:${userAppJid}\n\t\tdecodedUserAppId:${decodedUserAppId}\n\t\tdecodedUserAppJid:${decodedUserAppJid}`);
 
 		if ((decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user")) {
-			if (!!userAppId && userAppId !== decodedUserAppId) {
+			if (!!userAppId && !!decodedUserAppId && userAppId !== decodedUserAppId) {
 				logger.info("[JID_MIGRATION] validateExternalOrderJWT throw 1");
 				throw ExternalEarnOfferByDifferentUser(userAppId, decodedUserAppId!);
 			} else if (!userAppId || userAppJid !== decodedUserAppJid) {

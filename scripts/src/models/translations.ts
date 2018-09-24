@@ -6,9 +6,9 @@ import { Order } from "./orders";
 
 @Entity({ name: "offer_content_translations" })
 @Register
-export class OfferTranslations extends BaseEntity {
-	public static new(this: ObjectType<OfferTranslations>, data?: DeepPartial<OfferTranslations>): OfferTranslations {
-		return (this as typeof BaseEntity).create(data!) as OfferTranslations;
+export class OfferTranslation extends BaseEntity {
+	public static new(this: ObjectType<OfferTranslation>, data?: DeepPartial<OfferTranslation>): OfferTranslation {
+		return (this as typeof BaseEntity).create(data!) as OfferTranslation;
 	}
 
 	@ManyToOne(type => Offer, offer => offer.id)
@@ -28,5 +28,5 @@ export class OfferTranslations extends BaseEntity {
 	public readonly translation!: string;
 
 	@PrimaryColumn({ name: "offer_id" })
-	private readonly offerId!: string;
+	private readonly offerId?: string;
 }

@@ -1,10 +1,20 @@
 import { ExportToCsv, Options as ExportCsvOptions } from "export-to-csv";
 import { FindManyOptions } from "typeorm";
+import csvParse = require("csv-parse/lib/sync");
+import { Options } from "csv-parse";
 
-import { writeFile } from "fs";
+import { writeFile, readFileSync } from "fs";
 
 import { ContentType, Offer, OfferContent } from "../models/offers";
+import { OfferTranslation } from "../models/translations";
+import { path } from "../utils";
 
+function parseContent(content: string) {
+	const validContent = content.replace(/:\s(\${[\w\.-_]+})/g, ": \"$1\"");  //  Content must be escape as it isn't a valid JSON
+	return JSON.parse(validContent);
+}
+
+/**** Export CSV Template ****/
 type CsvRow = {
 	Type: string;
 	Key: string;
@@ -109,8 +119,7 @@ async function getCsvRowData() {
 		const offerId = offer.id;
 		const offerContent: OfferContent = allContent.filter(obj => obj.offerId === offerId)[0];
 		// quote unquoted template values
-		const escapedOfferContent = offerContent.content.replace(/:\s(\${[\w\.-_]+})/g, ": \"$1\"");  //  Content must be escape as it isn't a valid JSON
-		const offerContentContent: OfferContentContent = JSON.parse(escapedOfferContent);
+		const offerContentContent: OfferContentContent = parseContent(offerContent.content);
 		const boundConstructRow = constructRow.bind({}, offerContent.contentType);
 		let keyBase = `offer:${offerId}`;
 		rows = rows.concat([
@@ -136,8 +145,7 @@ export async function getCsvTemplateData() {
 		quoteStrings: "\"",
 		decimalseparator: ".",
 		showLabels: true,
-		showTitle: true,
-		title: "Translation CSV Template",
+		showTitle: false,
 		useBom: true,
 		useKeysAsHeaders: true,
 		// headers: ['Column 1', 'Column 2', etc...] <-- Won't work with useKeysAsHeaders present!
@@ -150,8 +158,118 @@ export async function getCsvTemplateData() {
 export async function writeCsvTemplateToFile(fileName: string = "translation_template.csv") {
 	writeFile(fileName, await getCsvTemplateData(), (err: NodeJS.ErrnoException) => {
 		if (err) {
-			console.log("Error:", err);
+			console.error("Error:", err);
 		}
 		console.log("CSV saved as", fileName);
 	});
+}
+
+/**** Import CSV ****/
+
+export type CsvParse = ((input: Buffer, options?: Options) => any) & typeof csvParse;
+
+type TranslationDataRow = [string, string, string, string, number];
+type TranslationData = TranslationDataRow[];
+type OfferTranslationData = {
+	title: string,
+	description: string,
+	orderDescription: string,
+	orderTitle: string,
+	content: any /* It's suppose to be offerContent: { content } but that drives TS crazy */
+};
+type Column = "title" | "description" | "orderDescription" | "orderTitle" | "content";
+type Table = "offer" | "offerContent";
+type OffersTranslation = { [index: string]: OfferTranslationData };
+type OffersTranslationRow = {
+	offer: Offer;
+	offerId: string;
+	context: "offer" | "offer_content";
+	path: string;
+	language: string;
+	translation: string;
+};
+
+function getCsvKeyElements(key: string): [Table, string, Column, string] {
+	return key.split(":") as [Table, string, Column, string];
+}
+
+function getOfferContentFromJson(offerContent?: OfferContent) {
+	if (!offerContent) {
+		return {};
+	}
+	return parseContent(offerContent.content);
+}
+
+async function insertIntoDb(data: OffersTranslation, language: string) {
+	const allOffers = await Offer.find({ type: "earn" });
+	const dbReadyData: OffersTranslationRow[] = [];
+	Object.entries(data).forEach(offerData => {
+		const [offerId, offerTranslations] = offerData;
+		const offer = allOffers.find(offer => offer.id === offerId);
+		if (!offer) {
+			console.warn("DB missing offer, offer ID:", offerId);
+			return;
+		}
+		Object.entries(offerTranslations).forEach(offerTranslationData => {
+			const [column, translation] = offerTranslationData as [string, string];
+			if (column === "content") {
+				dbReadyData.push({
+					context: "offer_content",
+					translation: JSON.stringify(translation),
+					offer,
+					path: column,
+					language,
+					offerId: offer.id,
+				});
+			} else {
+				dbReadyData.push({
+					context: "offer",
+					translation,
+					offer,
+					path: column,
+					language,
+					offerId: offer.id,
+				});
+			}
+		});
+	});
+	OfferTranslation.createQueryBuilder().insert().values(dbReadyData).execute();
+}
+
+//  TODO: add validation
+async function processTranslationData(csvData: TranslationData) {
+	const allOfferContents = await OfferContent.find({ select: ["offerId", "content"] } as FindManyOptions<OfferContent>);
+	const allContentTranslations: OffersTranslation = {};
+	csvData.forEach(row => {
+		const [__, csvKey, ___, translation] = row;
+		const [table, offerId, column, jsonPath] = getCsvKeyElements(csvKey);
+		const offerTranslations = (offerId in allContentTranslations) ?
+			allContentTranslations[offerId] :
+			{ content: getOfferContentFromJson(allOfferContents.find(content => content.offerId === offerId)) } as OfferTranslationData;
+		if (table === "offer") {
+			offerTranslations[column] = translation;
+		} else {
+			const evalString = `offerTranslations.content.${jsonPath}=\`${translation}\``;
+			try {
+				/* tslint:disable-next-line:no-eval */
+				eval(evalString);
+			} catch (e) {
+			}
+		}
+		allContentTranslations[offerId] = offerTranslations;
+	});
+	return allContentTranslations;
+}
+
+//  rowOffset is a 0 base index of the row to start with
+export async function processFile(filename: string, languageCode: string, rowOffset = 3) {
+	if (!filename || !languageCode) {
+		console.error("Both filename and language code are required");
+		return;
+	}
+	const csv = readFileSync(path(filename));
+	const parsedCsv = (csvParse as CsvParse)(csv);
+	parsedCsv.splice(0, rowOffset);
+	const data = await processTranslationData(parsedCsv);
+	insertIntoDb(data, languageCode);
 }

@@ -3,7 +3,7 @@ import { Column, Entity, Index, OneToMany, PrimaryColumn } from "typeorm";
 import { CreationDateModel, Model, register as Register, initializer as Initializer } from "./index";
 import { generateId, IdPrefix } from "../utils";
 import { OrderMeta, Order, OrderContext } from "./orders";
-import { OfferTranslations } from "./translations";
+import { OfferTranslation } from "./translations";
 
 export type BlockchainData = {
 	transaction_id?: string;
@@ -62,11 +62,11 @@ export class Offer extends CreationDateModel {
 	@Column({ name: "owner_id" })
 	public ownerId!: string;
 
-	@OneToMany(type => OfferTranslations, translation => translation.offer, {
+	@OneToMany(type => OfferTranslation, translation => translation.offer, {
 		cascadeInsert: true,
 		cascadeUpdate: true
 	})
-	public translations!: OfferTranslations[];
+	public translations!: OfferTranslation[];
 
 	// @ManyToOne(type => OfferOwner, owner => owner.offers) // XXX requires a generated value
 	public get owner(): Promise<OfferOwner | undefined> {

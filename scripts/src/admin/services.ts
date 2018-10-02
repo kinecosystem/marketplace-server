@@ -130,30 +130,92 @@ order by type desc, abs(ordered.num - owned.num) desc, ordered.num desc`;
 
 function getApplicationStatsQuery(appId: string | "all") {
 	return `
-select
-  users.app_id,
-  count(DISTINCT users.id) as total_users,
-  count(DISTINCT users.activated_date) as total_activated,
-  count(DISTINCT earn.user_id) as users_completed_earn,
-  count(DISTINCT spend.user_id) as users_completed_spend,
-  count(DISTINCT failed_earn.user_id) as users_failed_earn,
-  count(DISTINCT failed_spend.user_id) as users_failed_spend,
-  SUM(earn.num) as earn_orders,
-  SUM(spend.num) as spend_orders,
-  SUM(failed_earn.num) as failed_earn_orders,
-  SUM(failed_spend.num) as failed_spend_orders
-from users
-  left join (select user_id, count(*) as num from orders where (status = 'completed' or ((status = 'pending' or status = 'opened') and expiration_date > now())) and type = 'earn' group by user_id) as earn
-on earn.user_id = users.id
-  left join (select user_id, count(*) as num from orders where (status = 'completed' or ((status = 'pending' or status = 'opened') and expiration_date > now())) and type = 'spend' group by user_id) as spend
-on spend.user_id = users.id
-  left join (select user_id, count(*) as num from orders where (status = 'failed' or (status = 'pending' and expiration_date < now())) and type = 'earn' group by user_id) as failed_earn
-on failed_earn.user_id = users.id
-    left join (select user_id, count(*) as num from orders where (status = 'failed' or (status = 'pending' and expiration_date < now())) and type = 'spend' group by user_id) as failed_spend
-on failed_spend.user_id = users.id
-  where users.app_id = '${ appId }' or '${ appId }' = 'all'
-group by users.app_id;
-	`;
+SELECT
+	users.app_id,
+	COUNT(DISTINCT users.id) AS total_users,
+	COUNT(DISTINCT users.activated_date) AS total_activated,
+	COUNT(DISTINCT earn.user_id) AS users_completed_earn,
+	COUNT(DISTINCT spend.user_id) AS users_completed_spend,
+	COUNT(DISTINCT failed_earn.user_id) AS users_failed_earn,
+	COUNT(DISTINCT failed_spend.user_id) AS users_failed_spend,
+	SUM(earn.num) AS earn_orders,
+	SUM(spend.num) AS spend_orders,
+	SUM(failed_earn.num) AS failed_earn_orders,
+	SUM(failed_spend.num) AS failed_spend_orders
+FROM
+	users
+	LEFT JOIN
+		(
+			SELECT orders_contexts.user_id, COUNT(*) AS num
+			FROM
+				orders
+				LEFT JOIN orders_contexts
+    				ON orders.id = orders_contexts.order_id
+			WHERE
+				(
+					orders.status = 'completed'
+					OR (
+						(orders.status = 'pending' OR orders.status = 'opened')
+						AND orders.expiration_date > NOW()
+					)
+				)
+				AND orders_contexts.type = 'earn'
+			GROUP BY orders_contexts.user_id
+		) AS earn
+	ON earn.user_id = users.id
+	LEFT JOIN
+		(
+			SELECT orders_contexts.user_id, COUNT(*) AS num
+			FROM
+				orders
+				LEFT JOIN orders_contexts
+					ON orders.id = orders_contexts.order_id
+			WHERE
+				(
+					orders.status = 'completed'
+					OR (
+						(orders.status = 'pending' OR orders.status = 'opened')
+						AND orders.expiration_date > NOW()
+					)
+				)
+				AND orders_contexts.type = 'spend'
+			GROUP BY orders_contexts.user_id
+		) AS spend
+	ON spend.user_id = users.id
+	LEFT JOIN
+		(
+			SELECT orders_contexts.user_id, COUNT(*) AS num
+			FROM
+				orders
+				LEFT JOIN orders_contexts
+					ON orders.id = orders_contexts.order_id
+			WHERE
+				(
+					orders.status = 'failed'
+					OR (orders.status = 'pending' AND orders.expiration_date < NOW())
+				)
+				AND orders_contexts.type = 'earn'
+			GROUP BY orders_contexts.user_id
+		) AS failed_earn
+	ON failed_earn.user_id = users.id
+	LEFT JOIN
+		(
+			SELECT orders_contexts.user_id, COUNT(*) AS num
+			FROM
+				orders
+				LEFT JOIN orders_contexts
+					ON orders.id = orders_contexts.order_id
+			WHERE
+				(
+					orders.status = 'failed'
+					OR (orders.status = 'pending' AND orders.expiration_date < NOW())
+				)
+				AND orders_contexts.type = 'spend'
+			GROUP BY orders_contexts.user_id
+		) AS failed_spend
+	ON failed_spend.user_id = users.id
+WHERE users.app_id = '${ appId }' OR '${ appId }' = 'all'
+GROUP BY users.app_id;`;
 }
 
 function offerStatsToHtml(stats: OfferStats) {

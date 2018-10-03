@@ -9,7 +9,7 @@ import { ContentType, Offer, OfferContent } from "../models/offers";
 import { OfferTranslation } from "../models/translations";
 import { path } from "../utils";
 
-function parseContent(content: string) {
+function parseContent(content: string): OfferContentContent {
 	const validContent = content.replace(/:\s(\${[\w\.-_]+})/g, ": \"$1\"");  //  Content must be escape as it isn't a valid JSON
 	return JSON.parse(validContent);
 }
@@ -183,7 +183,6 @@ poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[1],D
 poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[2],Petunia,Petúnia,22
 poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[3],Daisy,Margarida,22
  ***/
-
 
 export type CsvParse = ((input: Buffer, options?: Options) => any) & typeof csvParse;
 

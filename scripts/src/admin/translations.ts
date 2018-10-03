@@ -166,6 +166,25 @@ export async function writeCsvTemplateToFile(fileName: string = "translation_tem
 
 /**** Import CSV ****/
 
+/*** Example CSV:
+Type,Key,Default,Translation,Character Limit
+poll,offer:OKKmC7OHkK2GztnaD3VF3:title,Favorites,Favoritos,14
+poll,offer:OKKmC7OHkK2GztnaD3VF3:description,Let us know!,Avise-nos!,18
+poll,offer:OKKmC7OHkK2GztnaD3VF3:orderTitle,Poll,Enquete,8
+poll,offer:OKKmC7OHkK2GztnaD3VF3:orderDescription,Completed,Concluído,24
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].title,Choose your favorite city,Escolha sua cidade preferida,38
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[0],San Francisco,São Francisco,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[1],New York City,Cidade de Nova York,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[2],Miami,Miami,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[3],Austin,Austin,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].title,Choose your favorite flower,Escolha sua flor preferida,38
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[0],Rose,Rosa,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[1],Daffodil,Narciso,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[2],Petunia,Petúnia,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[3],Daisy,Margarida,22
+ ***/
+
+
 export type CsvParse = ((input: Buffer, options?: Options) => any) & typeof csvParse;
 
 type TranslationDataRow = [string, string, string, string, number];
@@ -262,7 +281,7 @@ async function processTranslationData(csvData: TranslationData) {
 }
 
 //  rowOffset is a 0 base index of the row to start with
-export async function processFile(filename: string, languageCode: string, rowOffset = 3) {
+export async function processFile(filename: string, languageCode: string, rowOffset = 1) {
 	if (!filename || !languageCode) {
 		console.error("Both filename and language code are required");
 		return;

@@ -2,7 +2,6 @@ import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, ObjectType, OneToMan
 import { register as Register } from "./index";
 import { DeepPartial } from "typeorm/common/DeepPartial";
 import { Offer } from "./offers";
-import { Order } from "./orders";
 
 @Entity({ name: "offer_content_translations" })
 @Register
@@ -21,12 +20,12 @@ export class OfferTranslation extends BaseEntity {
 	@PrimaryColumn()
 	public readonly path!: string;
 
-	@Column()
+	@PrimaryColumn()
 	public readonly language!: string;
 
 	@Column()
 	public readonly translation!: string;
 
 	@PrimaryColumn({ name: "offer_id" })
-	private readonly offerId?: string;
+	public readonly offerId?: string;
 }

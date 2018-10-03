@@ -192,7 +192,7 @@ export type CsvParse = ((input: Buffer, options?: Options) => any) & typeof csvP
 
 type TranslationDataRow = [string, string, string, string, number];
 type TranslationData = TranslationDataRow[];
-type OfferTranslationData = {
+export type OfferTranslationData = {
 	title: string;
 	description: string;
 	orderDescription: string;

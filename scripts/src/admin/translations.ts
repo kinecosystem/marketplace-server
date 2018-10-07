@@ -207,7 +207,7 @@ type OffersTranslationRow = {
 	translation: string;
 };
 
-type CsvKeyElementsArray = [Table, string, Column] | [Table, string, Column, string];
+type CsvKeyElementsArray = [Table, string, Column, string | undefined];
 
 function getCsvKeyElements(key: string): CsvKeyElementsArray {
 	return key.split(":") as CsvKeyElementsArray;
@@ -260,10 +260,11 @@ async function processTranslationData(csvDataRows: TranslationData) {
 	const allContentTranslations: OffersTranslation = {};
 	csvDataRows.forEach(([__, csvKey, ___, translation]) => {
 		const [table, offerId, column, jsonPath] = getCsvKeyElements(csvKey);
+		let offerTranslations;
 		if (offerId in allContentTranslations) {
-			const offerTranslations = allContentTranslations[offerId];
+			offerTranslations = allContentTranslations[offerId];
 		} else {
-			const offerTranslations = { content: getOfferContentFromJson(allOfferContents.find(content => content.offerId === offerId)) } as OfferTranslationData;
+			offerTranslations = { content: getOfferContentFromJson(allOfferContents.find(content => content.offerId === offerId)) } as OfferTranslationData;
 		}
 		if (table === "offer") {
 			offerTranslations[column] = translation;

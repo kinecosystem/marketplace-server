@@ -119,7 +119,7 @@ async function getCsvRowData() {
 		const offerId = offer.id;
 		const offerContent: OfferContent = allContent.filter(obj => obj.offerId === offerId)[0];
 		// quote unquoted template values
-		const offerContentContent: OfferContentContent = parseContent(offerContent.content);
+		const offerContentContent = parseContent(offerContent.content);
 		const boundConstructRow = constructRow.bind({}, offerContent.contentType);
 		let keyBase = `offer:${offerId}`;
 		rows = rows.concat([
@@ -167,21 +167,21 @@ export async function writeCsvTemplateToFile(fileName: string = "translation_tem
 /**** Import CSV ****/
 
 /*** Example CSV:
-Type,Key,Default,Translation,Character Limit
-poll,offer:OKKmC7OHkK2GztnaD3VF3:title,Favorites,Favoritos,14
-poll,offer:OKKmC7OHkK2GztnaD3VF3:description,Let us know!,Avise-nos!,18
-poll,offer:OKKmC7OHkK2GztnaD3VF3:orderTitle,Poll,Enquete,8
-poll,offer:OKKmC7OHkK2GztnaD3VF3:orderDescription,Completed,Concluído,24
-poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].title,Choose your favorite city,Escolha sua cidade preferida,38
-poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[0],San Francisco,São Francisco,22
-poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[1],New York City,Cidade de Nova York,22
-poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[2],Miami,Miami,22
-poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[3],Austin,Austin,22
-poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].title,Choose your favorite flower,Escolha sua flor preferida,38
-poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[0],Rose,Rosa,22
-poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[1],Daffodil,Narciso,22
-poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[2],Petunia,Petúnia,22
-poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[3],Daisy,Margarida,22
+ Type,Key,Default,Translation,Character Limit
+ poll,offer:OKKmC7OHkK2GztnaD3VF3:title,Favorites,Favoritos,14
+ poll,offer:OKKmC7OHkK2GztnaD3VF3:description,Let us know!,Avise-nos!,18
+ poll,offer:OKKmC7OHkK2GztnaD3VF3:orderTitle,Poll,Enquete,8
+ poll,offer:OKKmC7OHkK2GztnaD3VF3:orderDescription,Completed,Concluído,24
+ poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].title,Choose your favorite city,Escolha sua cidade preferida,38
+ poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[0],San Francisco,São Francisco,22
+ poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[1],New York City,Cidade de Nova York,22
+ poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[2],Miami,Miami,22
+ poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[3],Austin,Austin,22
+ poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].title,Choose your favorite flower,Escolha sua flor preferida,38
+ poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[0],Rose,Rosa,22
+ poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[1],Daffodil,Narciso,22
+ poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[2],Petunia,Petúnia,22
+ poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[3],Daisy,Margarida,22
  ***/
 
 export type CsvParse = ((input: Buffer, options?: Options) => any) & typeof csvParse;
@@ -189,11 +189,11 @@ export type CsvParse = ((input: Buffer, options?: Options) => any) & typeof csvP
 type TranslationDataRow = [string, string, string, string, number];
 type TranslationData = TranslationDataRow[];
 type OfferTranslationData = {
-	title: string,
-	description: string,
-	orderDescription: string,
-	orderTitle: string,
-	content: any /* It's suppose to be offerContent: { content } but that drives TS crazy */
+	title: string;
+	description: string;
+	orderDescription: string;
+	orderTitle: string;
+	content: any;
 };
 type Column = "title" | "description" | "orderDescription" | "orderTitle" | "content";
 type Table = "offer" | "offerContent";
@@ -201,14 +201,16 @@ type OffersTranslation = { [index: string]: OfferTranslationData };
 type OffersTranslationRow = {
 	offer: Offer;
 	offerId: string;
-	context: "offer" | "offer_content";
+	context: Table;
 	path: string;
 	language: string;
 	translation: string;
 };
 
-function getCsvKeyElements(key: string): [Table, string, Column, string] {
-	return key.split(":") as [Table, string, Column, string];
+type CsvKeyElementsArray = [Table, string, Column] | [Table, string, Column, string];
+
+function getCsvKeyElements(key: string): CsvKeyElementsArray {
+	return key.split(":") as CsvKeyElementsArray;
 }
 
 function getOfferContentFromJson(offerContent?: OfferContent) {
@@ -221,18 +223,16 @@ function getOfferContentFromJson(offerContent?: OfferContent) {
 async function insertIntoDb(data: OffersTranslation, language: string) {
 	const allOffers = await Offer.find({ type: "earn" });
 	const dbReadyData: OffersTranslationRow[] = [];
-	Object.entries(data).forEach(offerData => {
-		const [offerId, offerTranslations] = offerData;
+	Object.entries(data).forEach(([offerId, offerTranslations]) => {
 		const offer = allOffers.find(offer => offer.id === offerId);
 		if (!offer) {
 			console.warn("DB missing offer, offer ID:", offerId);
 			return;
 		}
-		Object.entries(offerTranslations).forEach(offerTranslationData => {
-			const [column, translation] = offerTranslationData as [string, string];
+		Object.entries(offerTranslations).forEach(([column, translation]) => {
 			if (column === "content") {
 				dbReadyData.push({
-					context: "offer_content",
+					context: "offerContent",
 					translation: JSON.stringify(translation),
 					offer,
 					path: column,
@@ -255,15 +255,16 @@ async function insertIntoDb(data: OffersTranslation, language: string) {
 }
 
 //  TODO: add validation
-async function processTranslationData(csvData: TranslationData) {
+async function processTranslationData(csvDataRows: TranslationData) {
 	const allOfferContents = await OfferContent.find({ select: ["offerId", "content"] } as FindManyOptions<OfferContent>);
 	const allContentTranslations: OffersTranslation = {};
-	csvData.forEach(row => {
-		const [__, csvKey, ___, translation] = row;
+	csvDataRows.forEach(([__, csvKey, ___, translation]) => {
 		const [table, offerId, column, jsonPath] = getCsvKeyElements(csvKey);
-		const offerTranslations = (offerId in allContentTranslations) ?
-			allContentTranslations[offerId] :
-			{ content: getOfferContentFromJson(allOfferContents.find(content => content.offerId === offerId)) } as OfferTranslationData;
+		if (offerId in allContentTranslations) {
+			const offerTranslations = allContentTranslations[offerId];
+		} else {
+			const offerTranslations = { content: getOfferContentFromJson(allOfferContents.find(content => content.offerId === offerId)) } as OfferTranslationData;
+		}
 		if (table === "offer") {
 			offerTranslations[column] = translation;
 		} else {

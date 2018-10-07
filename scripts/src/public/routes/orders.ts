@@ -20,6 +20,7 @@ export type CreateMarketplaceOrderRequest = Request & {
  * create an order for an offer
  */
 export const createMarketplaceOrder = async function(req: CreateMarketplaceOrderRequest, res: Response) {
+
 	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!, req.logger);
 	res.status(201).send(order);
 } as any as RequestHandler;
@@ -72,7 +73,8 @@ export const submitOrder = async function(req: submitOrderRequest, res: Response
 		req.body.content,
 		req.context.user!.walletAddress,
 		req.context.user!.appId,
-		req.logger);
+		req.logger,
+		req.acceptsLanguages.bind(req));
 	res.status(200).send(order);
 } as any as RequestHandler;
 

@@ -199,6 +199,8 @@ export type OfferTranslationData = {
 	orderTitle: string;
 	content: any;
 };
+export type Path = keyof OfferTranslationData;
+
 type Column = "title" | "description" | "orderDescription" | "orderTitle" | "content";
 type Table = "offer" | "offerContent";
 type OffersTranslation = { [index: string]: OfferTranslationData };

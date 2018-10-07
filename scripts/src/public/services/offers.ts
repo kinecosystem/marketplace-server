@@ -1,4 +1,5 @@
 import { LoggerInstance } from "winston";
+import { Request as ExpressRequest } from "express-serve-static-core";
 
 import * as metrics from "../../metrics";
 import * as db from "../../models/offers";
@@ -11,7 +12,6 @@ import { ContentType, OfferType } from "../../models/offers";
 import { getConfig } from "../config";
 import { Order } from "../../models/orders";
 import { OfferTranslation } from "../../models/translations";
-import { normalizeLanguageString } from "../../admin/translations";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -74,7 +74,7 @@ function getOfferTranslations(language: string | null, offerId: string, availabl
 /**
  * return the sublist of offers from this app that the user can complete
  */
-async function filterOffers(userId: string, app: Application | undefined, logger: LoggerInstance, acceptsLanguagesFunc?: any): Promise<Offer[]> {
+async function filterOffers(userId: string, app: Application | undefined, logger: LoggerInstance, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Offer[]> {
 	// TODO: this should be a temp fix!
 	// the app should not be undefined as we used left join, figure it out
 	if (!app || !app.offers.length) {
@@ -83,14 +83,11 @@ async function filterOffers(userId: string, app: Application | undefined, logger
 	const offerCounts = await Order.countAllByOffer(userId);
 	const contents = await offerContents.getAllContents();
 	let availableTranslations: OfferTranslation[] = [];
-	let language: string | null = null;
+	let language: string | false = false;
 	if (acceptsLanguagesFunc) {
-		availableTranslations = await OfferTranslation.createQueryBuilder("translations")
-			.where("translations.language IN (:languages)", { languages: acceptsLanguagesFunc() })
-			.getMany();
-		const availableLanguages = new Set(availableTranslations.map(translation => translation.language));
-		// The acceptsLanguagesFunc returns an array of all client accepted languages if no params are passed. If an array of languages is passed the when most suitable for the client will be returned.
-		language = acceptsLanguagesFunc(Array.from(availableLanguages)); // get the most suitable language for the client
+		let availableLanguages;
+		[availableLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({ languages: acceptsLanguagesFunc() });
+		language = acceptsLanguagesFunc(availableLanguages); // get the most suitable language for the client
 	}
 	return (await Promise.all(
 		app.offers
@@ -108,7 +105,7 @@ async function filterOffers(userId: string, app: Application | undefined, logger
 	)).filter(offer => offer !== null) as Offer[];
 }
 
-export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance, acceptsLanguagesFunc?: any): Promise<OfferList> {
+export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<OfferList> {
 	let offers = [] as Offer[];
 
 	const query = Application.createQueryBuilder("app")

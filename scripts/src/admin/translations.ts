@@ -301,5 +301,5 @@ export async function processFile(filename: string, languageCode: string, rowOff
 	const parsedCsv = (csvParse as CsvParse)(csv);
 	parsedCsv.splice(0, rowOffset);
 	const data = await processTranslationData(parsedCsv);
-	insertIntoDb(data, normalizeLanguageString(languageCode));
+	insertIntoDb(data, languageCode);
 }

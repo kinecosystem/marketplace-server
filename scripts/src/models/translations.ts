@@ -2,12 +2,11 @@ import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, ObjectType, OneToMan
 import { register as Register } from "./index";
 import { DeepPartial } from "typeorm/common/DeepPartial";
 import { Offer } from "./offers";
-import { Path } from "../admin/translations";
 
 export type GetTranslationsCriteria = {
 	languages?: string[];
 	offerId?: string;
-	paths?: Path[];
+	paths?: string[];
 };
 
 @Entity({ name: "offer_content_translations" })

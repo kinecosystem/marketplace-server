@@ -4,7 +4,6 @@ import { Request as ExpressRequest } from "express-serve-static-core";
 import { isNothing } from "../../utils";
 import * as db from "../../models/offers";
 import { OfferTranslation } from "../../models/translations";
-import { Path } from "../../admin/translations";
 
 export interface Question {
 	id: string;

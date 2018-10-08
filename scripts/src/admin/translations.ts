@@ -19,7 +19,7 @@ export function normalizeLanguageString(str: string) {
 }
 
 /**** Export CSV Template ****/
-type CsvRow = {
+export type CsvRow = {
 	Type: string;
 	Key: string;
 	Default: string;
@@ -190,8 +190,8 @@ export async function writeCsvTemplateToFile(fileName: string = "translation_tem
 
 export type CsvParse = ((input: Buffer, options?: Options) => any) & typeof csvParse;
 
-type TranslationDataRow = [string, string, string, string, number];
-type TranslationData = TranslationDataRow[];
+export type TranslationDataRow = [string, string, string, string, number];
+export type TranslationData = TranslationDataRow[];
 export type OfferTranslationData = {
 	title: string;
 	description: string;
@@ -199,7 +199,6 @@ export type OfferTranslationData = {
 	orderTitle: string;
 	content: any;
 };
-export type Path = keyof OfferTranslationData;
 
 type Column = "title" | "description" | "orderDescription" | "orderTitle" | "content";
 type Table = "offer" | "offerContent";
@@ -278,7 +277,7 @@ async function processTranslationData(csvDataRows: TranslationData) {
 		if (table === "offer") {
 			offerTranslations[column] = translation;
 		} else {
-			const evalString = `offerTranslations.content.${jsonPath}="${translation}"`;
+			const evalString = `offerTranslations.content.${jsonPath}='${translation}'`;
 			try {
 				/* tslint:disable-next-line:no-eval */
 				eval(evalString);

@@ -59,7 +59,7 @@ function offerDbToApi(offer: db.Offer, content: db.OfferContent, offerTranslatio
 	return offerData;
 }
 
-function getOfferTranslations(language: string | null, offerId: string, availableTranslations: OfferTranslation[]) {
+function getOfferTranslations(language: string | false, offerId: string, availableTranslations: OfferTranslation[]) {
 	if (!language) {
 		return {} as OfferTranslations;
 	}

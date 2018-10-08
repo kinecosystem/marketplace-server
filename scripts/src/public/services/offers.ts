@@ -2,7 +2,7 @@ import { LoggerInstance } from "winston";
 
 import * as metrics from "../../metrics";
 import * as db from "../../models/offers";
-import { ModelFilters } from "../../models/index";
+import { ModelFilters } from "../../models";
 import * as dbOrders from "../../models/orders";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
@@ -10,6 +10,8 @@ import { Application } from "../../models/applications";
 import { ContentType, OfferType } from "../../models/offers";
 import { getConfig } from "../config";
 import { Order } from "../../models/orders";
+import { OfferTranslation } from "../../models/translations";
+import { normalizeLanguageString } from "../../admin/translations";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -33,56 +35,80 @@ export interface OfferList {
 	paging: Paging;
 }
 
-function offerDbToApi(offer: db.Offer, content: db.OfferContent) {
-	content.content = offerContents.replaceTemplateVars(offer, content.content);
-	return {
+type OfferTranslations = {
+	title: string;
+	description: string;
+	orderTitle: string;
+	orderDescription: string;
+	content: any;
+};
+
+function offerDbToApi(offer: db.Offer, content: db.OfferContent, offerTranslations: OfferTranslations) {
+	const offerData = {
 		id: offer.id,
-		title: offer.meta.title,
-		description: offer.meta.description,
+		title: offerTranslations.title || offer.meta.title,
+		description: offerTranslations.description || offer.meta.description,
 		image: offer.meta.image,
 		amount: offer.amount,
 		blockchain_data: offer.blockchainData,
 		offer_type: offer.type,
-		content: content.content,
+		content: offerTranslations.content || content.content,
 		content_type: content.contentType,
 	};
+	offerData.content = offerContents.replaceTemplateVars(offer, offerData.content);
+	return offerData;
+}
+
+function getOfferTranslations(language: string | null, offerId: string, availableTranslations: OfferTranslation[]) {
+	if (!language) {
+		return {} as OfferTranslations;
+	}
+	return availableTranslations.reduce((offerTranslations, translation) => {
+		if (translation.language === language && translation.offerId === offerId) {
+			offerTranslations[translation.path as keyof OfferTranslations] = translation.translation;
+		}
+		return offerTranslations;
+	}, {} as OfferTranslations);
 }
 
 /**
  * return the sublist of offers from this app that the user can complete
  */
-async function filterOffers(userId: string, app: Application | undefined, logger: LoggerInstance): Promise<Offer[]> {
+async function filterOffers(userId: string, app: Application | undefined, logger: LoggerInstance, acceptsLanguagesFunc?: any): Promise<Offer[]> {
 	// TODO: this should be a temp fix!
 	// the app should not be undefined as we used left join, figure it out
-	if (!app) {
-		return [];
-	}
-
-	if (app.offers.length === 0) {
+	if (!app || !app.offers.length) {
 		return [];
 	}
 	const offerCounts = await Order.countAllByOffer(userId);
 	const contents = await offerContents.getAllContents();
-
+	let availableTranslations: OfferTranslation[] = [];
+	let language: string | null = null;
+	if (acceptsLanguagesFunc) {
+		availableTranslations = await OfferTranslation.createQueryBuilder("translations")
+			.where("translations.language IN (:languages)", { languages: acceptsLanguagesFunc() })
+			.getMany();
+		const availableLanguages = new Set(availableTranslations.map(translation => translation.language));
+		// The acceptsLanguagesFunc returns an array of all client accepted languages if no params are passed. If an array of languages is passed the when most suitable for the client will be returned.
+		language = acceptsLanguagesFunc(Array.from(availableLanguages)); // get the most suitable language for the client
+	}
 	return (await Promise.all(
 		app.offers
 			.map(async offer => {
-				if ((offerCounts.get(offer.id) || 0) >= offer.cap.per_user) {
-					return null;
+					if ((offerCounts.get(offer.id) || 0) >= offer.cap.per_user) {
+						return null;
+					}
+					const content = contents.get(offer.id);
+					if (!content) {
+						return null;
+					}
+					return offerDbToApi(offer, content, getOfferTranslations(language, offer.id, availableTranslations));
 				}
-
-				const content = contents.get(offer.id);
-
-				if (!content) {
-					return null;
-				}
-
-				return offerDbToApi(offer, content);
-			})
+			)
 	)).filter(offer => offer !== null) as Offer[];
 }
 
-export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance): Promise<OfferList> {
+export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance, acceptsLanguagesFunc?: any): Promise<OfferList> {
 	let offers = [] as Offer[];
 
 	const query = Application.createQueryBuilder("app")
@@ -98,7 +124,8 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 					.orderBy("offer.amount", "DESC")
 					.addOrderBy("offer.id", "ASC")
 					.getOne(),
-				logger
+				logger,
+				acceptsLanguagesFunc
 			)
 		);
 		// global earn capping
@@ -117,7 +144,8 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 					.orderBy("offer.amount", "ASC")
 					.addOrderBy("offer.id", "ASC")
 					.getOne(),
-				logger
+				logger,
+				acceptsLanguagesFunc
 			)
 		);
 	}

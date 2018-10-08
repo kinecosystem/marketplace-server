@@ -312,6 +312,7 @@ async function registerJWT() {
 
 	const userId = generateId();
 	const appClient = new SampleAppClient();
+
 	const jwt = await appClient.getRegisterJWT(userId);
 	const client = await MarketplaceClient.create({ jwt });
 

@@ -14,6 +14,10 @@ function parseContent(content: string): OfferContentContent {
 	return JSON.parse(validContent);
 }
 
+export function normalizeLanguageString(str: string) {
+	return str.toLocaleLowerCase().replace("_", "-");
+}
+
 /**** Export CSV Template ****/
 type CsvRow = {
 	Type: string;
@@ -26,9 +30,9 @@ type CsvRow = {
 type OfferContentContent = {  // I know, but I didn't have a better name for the 'content' field in the OfferContent table
 	pages?: any[]
 	confirmation?: {
-		title: string,
-		description: string,
-		image: string
+		title: string;
+		description: string;
+		image: string;
 	}
 };
 
@@ -259,6 +263,9 @@ async function processTranslationData(csvDataRows: TranslationData) {
 	const allOfferContents = await OfferContent.find({ select: ["offerId", "content"] } as FindManyOptions<OfferContent>);
 	const allContentTranslations: OffersTranslation = {};
 	csvDataRows.forEach(([__, csvKey, ___, translation]) => {
+		if (!translation) {
+			return;
+		}
 		const [table, offerId, column, jsonPath] = getCsvKeyElements(csvKey);
 		let offerTranslations;
 		if (offerId in allContentTranslations) {
@@ -269,11 +276,12 @@ async function processTranslationData(csvDataRows: TranslationData) {
 		if (table === "offer") {
 			offerTranslations[column] = translation;
 		} else {
-			const evalString = `offerTranslations.content.${jsonPath}=\`${translation}\``;
+			const evalString = `offerTranslations.content.${jsonPath}="${translation}"`;
 			try {
 				/* tslint:disable-next-line:no-eval */
 				eval(evalString);
 			} catch (e) {
+				console.error("content eval failed: \neval string: %s\n error message: %s", evalString, e);
 			}
 		}
 		allContentTranslations[offerId] = offerTranslations;
@@ -291,5 +299,5 @@ export async function processFile(filename: string, languageCode: string, rowOff
 	const parsedCsv = (csvParse as CsvParse)(csv);
 	parsedCsv.splice(0, rowOffset);
 	const data = await processTranslationData(parsedCsv);
-	insertIntoDb(data, languageCode);
+	insertIntoDb(data, normalizeLanguageString(languageCode));
 }

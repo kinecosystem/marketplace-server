@@ -132,7 +132,6 @@ export class Client {
 			const res = await axios.get<ConfigResponse>(MARKETPLACE_BASE + "/v1/config");
 			this.config = res.data.blockchain;
 		}
-
 		const network = KinNetwork.from(
 			this.config.network_passphrase,
 			this.config.asset_issuer,

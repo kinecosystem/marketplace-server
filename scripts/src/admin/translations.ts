@@ -30,9 +30,9 @@ type CsvRow = {
 type OfferContentContent = {  // I know, but I didn't have a better name for the 'content' field in the OfferContent table
 	pages?: any[]
 	confirmation?: {
-		title: string,
-		description: string,
-		image: string
+		title: string;
+		description: string;
+		image: string;
 	}
 };
 

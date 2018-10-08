@@ -36,11 +36,11 @@ export interface OfferList {
 }
 
 type OfferTranslations = {
-	title: string,
-	description: string,
-	orderTitle: string,
-	orderDescription: string,
-	content: any
+	title: string;
+	description: string;
+	orderTitle: string;
+	orderDescription: string;
+	content: any;
 };
 
 function offerDbToApi(offer: db.Offer, content: db.OfferContent, offerTranslations: OfferTranslations) {
@@ -59,6 +59,18 @@ function offerDbToApi(offer: db.Offer, content: db.OfferContent, offerTranslatio
 	return offerData;
 }
 
+function getOfferTranslations(language: string | null, offerId: string, availableTranslations: OfferTranslation[]) {
+	if (!language) {
+		return {} as OfferTranslations;
+	}
+	return availableTranslations.reduce((offerTranslations, translation) => {
+		if (translation.language === language && translation.offerId === offerId) {
+			offerTranslations[translation.path as keyof OfferTranslations] = translation.translation;
+		}
+		return offerTranslations;
+	}, {} as OfferTranslations);
+}
+
 /**
  * return the sublist of offers from this app that the user can complete
  */
@@ -68,7 +80,6 @@ async function filterOffers(userId: string, app: Application | undefined, logger
 	if (!app || !app.offers.length) {
 		return [];
 	}
-	// The acceptsLanguagesFunc returns an array of all client accepted languages if no params are passed. If an array of languages is passed the when most suitable for the client will be returned.
 	const offerCounts = await Order.countAllByOffer(userId);
 	const contents = await offerContents.getAllContents();
 	let availableTranslations: OfferTranslation[] = [];
@@ -78,6 +89,7 @@ async function filterOffers(userId: string, app: Application | undefined, logger
 			.where("translations.language IN (:languages)", { languages: acceptsLanguagesFunc() })
 			.getMany();
 		const availableLanguages = new Set(availableTranslations.map(translation => translation.language));
+		// The acceptsLanguagesFunc returns an array of all client accepted languages if no params are passed. If an array of languages is passed the when most suitable for the client will be returned.
 		language = acceptsLanguagesFunc(Array.from(availableLanguages)); // get the most suitable language for the client
 	}
 	return (await Promise.all(
@@ -90,16 +102,7 @@ async function filterOffers(userId: string, app: Application | undefined, logger
 					if (!content) {
 						return null;
 					}
-					let offerTranslations: OfferTranslations = {} as OfferTranslations;
-					if (language) {
-						offerTranslations = availableTranslations.reduce((offerTranslations, translation) => {
-							if (translation.language === language && translation.offerId === offer.id) {
-								offerTranslations[translation.path as keyof OfferTranslations] = translation.translation;
-							}
-							return offerTranslations;
-						}, offerTranslations);
-					}
-					return offerDbToApi(offer, content, offerTranslations);
+					return offerDbToApi(offer, content, getOfferTranslations(language, offer.id, availableTranslations));
 				}
 			)
 	)).filter(offer => offer !== null) as Offer[];

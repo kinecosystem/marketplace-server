@@ -352,7 +352,7 @@ export async function getApplications(params: any, query: Paging): Promise<strin
 }
 
 export async function getApplication(params: { app_id: string }, query: any): Promise<string> {
-	const app = await Application.findOneById(params.app_id);
+	const app = await Application.findOne(params.app_id);
 	if (!app) {
 		throw new Error("no such app: " + params.app_id);
 	}
@@ -406,7 +406,7 @@ export async function getApplicationOffers(params: { app_id: string }, query: Pa
 }
 
 export async function getOffer(params: { offer_id: string }, query: any): Promise<string> {
-	const offer = await Offer.findOneById(params.offer_id);
+	const offer = await Offer.findOne(params.offer_id);
 	if (!offer) {
 		throw new Error("no such offer: " + params.offer_id);
 	}
@@ -435,7 +435,7 @@ export async function getAllOfferStats(params: any, query: any): Promise<string>
 }
 
 export async function getUserOffers(params: { user_id: string }, query: any): Promise<string> {
-	const user = await User.findOneById(params.user_id);
+	const user = await User.findOne(params.user_id);
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
@@ -443,7 +443,7 @@ export async function getUserOffers(params: { user_id: string }, query: any): Pr
 	const offers = (await getUserOffersService(user.id, user.appId, {}, getDefaultLogger())).offers;
 	let ret = `<table>${ OFFER_HEADERS }`;
 	for (const offer of offers) {
-		const dbOffer = (await Offer.findOneById(offer.id))!;
+		const dbOffer = (await Offer.findOne(offer.id))!;
 		ret += await offerToHtml(dbOffer);
 	}
 	ret += "</table>";
@@ -451,7 +451,7 @@ export async function getUserOffers(params: { user_id: string }, query: any): Pr
 }
 
 export async function getUserData(params: { user_id: string }, query: any): Promise<string> {
-	const user = await User.findOneById(params.user_id);
+	const user = await User.findOne(params.user_id);
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
@@ -516,7 +516,7 @@ window.setTimeout(function(){
 }
 
 export async function retryUserWallet(params: { user_id: string }, query: any): Promise<string> {
-	const user = await User.findOneById(params.user_id);
+	const user = await User.findOne(params.user_id);
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
@@ -601,7 +601,7 @@ export async function getWalletPayments(params: { wallet_address: string }, quer
 }
 
 export async function changeOffer(body: Partial<Offer>, params: { offer_id: string }, query: any): Promise<any> {
-	const offer = await Offer.findOneById(params.offer_id);
+	const offer = await Offer.findOne(params.offer_id);
 	if (!offer) {
 		throw new Error("no such offer: " + params.offer_id);
 	}

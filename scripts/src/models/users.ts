@@ -1,5 +1,5 @@
 import * as moment from "moment";
-import { Column, Entity, OneToMany } from "typeorm";
+import { Column, Entity, OneToMany, Unique } from "typeorm";
 
 import { generateId, IdPrefix } from "../utils";
 
@@ -8,8 +8,8 @@ import { CreationDateModel, register as Register, initializer as Initializer } f
 
 @Entity({ name: "users" })
 @Register
+@Unique(["appId", "appUserId"])
 @Initializer("id", () => generateId(IdPrefix.User))
-// @Unique(["appId", "appUserId"]) // supported from 0.2.0
 export class User extends CreationDateModel {
 	@Column({ name: "app_id" })
 	public appId!: string;

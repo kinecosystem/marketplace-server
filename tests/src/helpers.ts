@@ -45,7 +45,7 @@ export async function createUser(options: { appId?: string; activated?: boolean;
 }
 
 async function orderFromOffer(offer: Offer, userId: string): Promise<MarketplaceOrder> {
-	const user = await User.findOneById(userId);
+	const user = await User.findOne(userId);
 	const order = MarketplaceOrder.new({
 		offerId: offer.id,
 		amount: offer.amount,
@@ -100,7 +100,7 @@ export async function createOrders(userId: string): Promise<number> {
 }
 
 export async function createExternalOrders(userId: string): Promise<number> {
-	const user = await User.findOneById(userId);
+	const user = await User.findOne(userId);
 	const order = ExternalOrder.new({
 		amount: 65,
 		status: "pending",

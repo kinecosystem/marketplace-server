@@ -8,7 +8,7 @@ export async function authenticate(req: express.Request): Promise<db.AuthToken> 
 		throw MissingToken();
 	}
 
-	const token = await db.AuthToken.findOneById(req.token);
+	const token = await db.AuthToken.findOne(req.token);
 	if (!token) {
 		throw InvalidToken(req.token);
 	}

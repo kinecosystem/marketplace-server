@@ -124,7 +124,7 @@ async function createOrder(offer: offerDb.Offer, user: User) {
 export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	logger.info("creating marketplace order for", { offerId, userId: user.id });
 
-	const offer = await offerDb.Offer.findOneById(offerId);
+	const offer = await offerDb.Offer.findOne(offerId);
 	if (!offer) {
 		throw NoSuchOffer(offerId);
 	}
@@ -171,7 +171,7 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 }
 
 async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
-	const app = await Application.findOneById(recipient.appId);
+	const app = await Application.findOne(recipient.appId);
 
 	if (!app) {
 		throw NoSuchApp(recipient.appId);
@@ -193,7 +193,7 @@ async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnO
 }
 
 async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOrderJWT) {
-	const app = await Application.findOneById(sender.appId);
+	const app = await Application.findOne(sender.appId);
 
 	if (!app) {
 		throw NoSuchApp(sender.appId);
@@ -269,7 +269,7 @@ export async function submitOrder(
 	}
 
 	if (order.isMarketplaceOrder()) {
-		const offer = await offerDb.Offer.findOneById(order.offerId);
+		const offer = await offerDb.Offer.findOne(order.offerId);
 		if (!offer) {
 			throw NoSuchOffer(order.offerId);
 		}

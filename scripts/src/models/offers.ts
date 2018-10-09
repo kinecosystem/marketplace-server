@@ -63,14 +63,14 @@ export class Offer extends CreationDateModel {
 	public ownerId!: string;
 
 	@OneToMany(type => OfferTranslations, translation => translation.offer, {
-		cascadeInsert: true,
-		cascadeUpdate: true
+		onDelete: "CASCADE",
+		onUpdate: "CASCADE"
 	})
 	public translations!: OfferTranslations[];
 
 	// @ManyToOne(type => OfferOwner, owner => owner.offers) // XXX requires a generated value
 	public get owner(): Promise<OfferOwner | undefined> {
-		return OfferOwner.findOneById(this.ownerId);
+		return OfferOwner.findOne(this.ownerId);
 	}
 
 	public async didExceedCap(userId: string): Promise<boolean> {

@@ -51,7 +51,7 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
 
-	const app = await Application.findOneById(context.appId);
+	const app = await Application.findOne(context.appId);
 	if (!app) {
 		throw NoSuchApp(context.appId);
 	}

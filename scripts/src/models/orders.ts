@@ -104,6 +104,8 @@ export interface Order {
 
 function createOrder(data?: DeepPartial<Order>, contexts?: Array<DeepPartial<OrderContext>>): Order {
 	const order = OrderImpl.new(data);
+	(order as any).isNew = true;
+
 	if (contexts) {
 		contexts.forEach(context => {
 			order.contexts.push(OrderContext.new(context));
@@ -366,8 +368,9 @@ class OrderImpl extends CreationDateModel implements Order {
 	public blockchainData!: BlockchainData;
 
 	@OneToMany(type => OrderContext, context => context.order, {
-		cascadeInsert: true,
-		cascadeUpdate: true
+		/*onDelete: "CASCADE",
+		onUpdate: "CASCADE"*/
+		cascade: true
 	})
 	public contexts!: OrderContext[];
 
@@ -393,19 +396,37 @@ class OrderImpl extends CreationDateModel implements Order {
 	@Column({ name: "expiration_date", nullable: true })
 	public expirationDate?: Date;
 
-	public async save(): Promise<this> {
+	private isNew: boolean = false;
+
+	/*public async save(): Promise<this> {
 		await getManager().transaction(async mgr => {
-			for (const context of this.contexts) {
-				(context as any).order = this;
-				(context as any).orderId = this.id;
-				(context as any).user_id = context.user.id;
-			}
+			console.log(`IS NEW: ${ this.isNew }`);
+
+			/!*if (this.isNew) {
+				for (const context of this.contexts) {
+					(context as any).order = this;
+					(context as any).orderId = this.id;
+					(context as any).userId = context.user.id;
+					// await mgr.save(context);
+				}
+			}*!/
 
 			await mgr.save(this);
+
+			/!*if (this.isNew) {
+				for (const context of this.contexts) {
+					(context as any).order = this;
+					(context as any).orderId = this.id;
+					(context as any).userId = context.user.id;
+					await mgr.save(context);
+				}
+
+				this.isNew = false;
+			}*!/
 		});
 
 		return this;
-	}
+	}*/
 
 	public setStatus(status: OpenOrderStatus) {
 		this.status = status;

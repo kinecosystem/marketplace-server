@@ -34,7 +34,7 @@ export class Application extends CreationDateModel {
 
 	@ManyToMany(type => Offer)
 	@JoinTable()
-	public offers: Offer[] = [];
+	public offers!: Offer[];
 
 	public supportsSignInType(type: SignInType, globalSignInTypes: SignInType[]) {
 		return globalSignInTypes.includes(type) && this.config.sign_in_types.includes(type);

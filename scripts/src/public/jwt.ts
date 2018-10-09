@@ -30,7 +30,7 @@ export async function verify<T, SUB extends string>(token: string, logger: Logge
 	}
 
 	const appId = decoded.payload.iss;
-	const app = await Application.findOneById(appId);
+	const app = await Application.findOne(appId);
 	if (!app) {
 		throw NoSuchApp(appId);
 	}

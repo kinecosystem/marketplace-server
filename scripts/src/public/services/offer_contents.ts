@@ -137,14 +137,15 @@ export async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form:
 		return 0;
 	}
 	let translatedContent;
-	if (acceptsLanguagesFunc) {
+	if (acceptsLanguagesFunc && acceptsLanguagesFunc().length) {
 		const [supportedLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({
 			paths: ["content"],
 			offerId: offerContent.offerId,
 			languages: acceptsLanguagesFunc(),
 		});
 		const language = acceptsLanguagesFunc(supportedLanguages);
-		translatedContent = availableTranslations.filter(translation => translation.language === language)[0].translation;
+		const translations = availableTranslations.filter(translation => translation.language === language);
+		translatedContent = translations.length ? translations[0].translation : null;
 	}
 	const quiz: Quiz = JSON.parse(translatedContent || offerContent.content);  // this might fail if not valid json without replaceTemplateVars
 	let amountSum = 0;

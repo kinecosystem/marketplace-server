@@ -92,6 +92,7 @@ function handleIterableItem(key: string, item: any, rowConstructor: RowConstruct
 
 function constructRowsFromArray(keyBase: string, arr: any[], rowConstructor: RowConstructor) {
 	if (!arr) {
+		console.warn(`Empty content for KeyBase ${keyBase}`);
 		return [];
 	}
 	let result: CsvRow[] = [];
@@ -104,6 +105,7 @@ function constructRowsFromArray(keyBase: string, arr: any[], rowConstructor: Row
 
 function constructRowsFromObj(keyBase: string, obj: { [key: string]: any }, rowConstructor: RowConstructor) {
 	if (!obj) {
+		console.warn(`Empty content for KeyBase ${keyBase}`);
 		return [];
 	}
 	let result: CsvRow[] = [];
@@ -135,9 +137,10 @@ async function getCsvRowData() {
 		keyBase = `offer_contents:${offerId}`;
 		if (offerContentContent.pages) {
 			rows = rows.concat(constructRowsFromArray(`${keyBase}:content:pages`, offerContentContent.pages, boundConstructRow));
-		}
-		if (offerContentContent.confirmation) {
+		} else if (offerContentContent.confirmation) {
 			rows = rows.concat(constructRowsFromObj(`${keyBase}:content:confirmation`, offerContentContent.confirmation, boundConstructRow));
+		} else {
+			console.warn(`Couldn't construct row for keyBase ${keyBase}`);
 		}
 	});
 	return rows.filter(x => x);  // remove empty items

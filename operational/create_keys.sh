@@ -19,14 +19,17 @@ else
     PUBLISH=0
 fi
 
+mkdir -p $DIR/jwt/private_keys
+mkdir -p $DIR/jwt/public_keys
+
+rm -f $DIR/jwt/private_keys/es256_*
+rm -f $DIR/jwt/public_keys/es256_*
+
 for i in `seq 1 10`; do
     uuid=$(uuidgen)
 
     pub=es256_$uuid.pem
     priv=es256_$uuid-priv.pem
-
-    mkdir -p $DIR/jwt/private_keys
-    mkdir -p $DIR/jwt/public_keys
 
     openssl ecparam -name secp256k1 -genkey -noout -out $DIR/jwt/private_keys/$priv 
     openssl ec -in $DIR/jwt/private_keys/$priv -pubout -out $DIR/jwt/public_keys/$pub

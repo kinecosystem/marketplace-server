@@ -35,7 +35,7 @@ db:
 revision := $(shell git rev-parse --short HEAD)
 image := "kinecosystem/marketplace-server"
 
-build-image:
+build-image: create-jwt-keys
 	docker build -t ${image} -f Dockerfile \
 		--build-arg BUILD_COMMIT="${revision}" \
 		--build-arg BUILD_TIMESTAMP="$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")" .
@@ -48,7 +48,7 @@ push-image:
 pull:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml pull
 
-up:
+up: db-docker
 	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml up -d
 
 up-dev: db-docker

@@ -95,6 +95,11 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		return;
 	}
 
+	if (order.status === "completed") {
+		logger.warn(`received payment callback for already completed order ${ payment.id }`);
+		return;
+	}
+
 	order.forEachContext(context => {
 		if (context.type === "earn") {
 			createEarnTransactionBroadcastToBlockchainSucceeded(context.user.id, payment.transaction_id, order.offerId, order.id).report();
@@ -102,11 +107,6 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 			createSpendOrderPaymentConfirmed(context.user.id, payment.transaction_id, order.offerId, order.id, order.isExternalOrder(), order.origin).report();
 		}
 	});
-
-	if (order.status === "completed") {
-		logger.warn(`received payment callback for already completed order ${ payment.id }`);
-		return;
-	}
 
 	// validate payment
 	if (order.amount !== payment.amount) {

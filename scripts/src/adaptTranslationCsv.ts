@@ -1,10 +1,8 @@
 import csvParse = require("csv-parse/lib/sync");
-import { ExportToCsv, Options as ExportCsvOptions } from "export-to-csv";
-
 import { readFileSync, writeFile } from "fs";
-
 import { path } from "./utils";
 import { CsvParse, TranslationData } from "./admin/translations";
+import { ExportToCsv, Options as ExportCsvOptions } from "export-to-csv";
 
 function getOfferTranslation(inputCsv: TranslationData) {
 	return inputCsv.reduce((dict, [type, key, defaultStr, translation]) => {
@@ -14,20 +12,23 @@ function getOfferTranslation(inputCsv: TranslationData) {
 		dict[defaultStr] = translation;
 		return dict;
 	}, {} as { [defaultStr: string]: string });
+
 }
 
 async function addTranslationTo(csv: TranslationData, fromDict: { [defaultStr: string]: string }) {
-	return csv.map(([type, key, defaultStr, __, charLimit]) => ({
+	return csv.map(([type, key, defaultStr, __, charLimit]) => {
+		return {
 			Type: type,
 			Key: key,
 			Default: defaultStr,
 			Translation: fromDict[defaultStr] || defaultStr,
 			"Character Limit": charLimit,
-		}));
+		};
+	});
 }
 
 function writeCsvDataToFile(data: any[], fileName: string) {
-	const options = {
+	const options: ExportCsvOptions = {
 		fieldSeparator: ",",
 		quoteStrings: "\"",
 		decimalseparator: ".",
@@ -38,7 +39,7 @@ function writeCsvDataToFile(data: any[], fileName: string) {
 	};
 
 	const csvExporter = new ExportToCsv(options);
-	writeFile(fileName, csvExporter.generateCsv(data, true), err => {
+	writeFile(fileName, csvExporter.generateCsv(data, true), (err: NodeJS.ErrnoException) => {
 		if (err) {
 			console.error("Error:", err);
 			return;

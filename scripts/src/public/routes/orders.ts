@@ -10,34 +10,18 @@ import {
 	createExternalOrder as createExternalOrderService,
 	createMarketplaceOrder as createMarketplaceOrderService,
 } from "../services/orders";
-import { OfferTranslation } from "../../models/translations";
 
 export type CreateMarketplaceOrderRequest = Request & {
 	params: {
 		offer_id: string;
 	}
 };
-export type OrderTranslations = {
-	orderTitle: string;
-	orderDescription: string;
-};
 /**
  * create an order for an offer
  */
 export const createMarketplaceOrder = async function(req: CreateMarketplaceOrderRequest, res: Response) {
-	const [availableLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({
-		languages: req.acceptsLanguages(),
-		offerId: req.params.offer_id,
-		paths: ["orderTitle", "orderDescription"],
-	});
-	const language = req.acceptsLanguages(availableLanguages); // get the most suitable language for the client
-	const orderTranslations = availableTranslations.reduce((dict, translation) => {
-		if (translation.language === language) {
-			dict[translation.path as keyof OrderTranslations] = translation.translation;
-		}
-		return dict;
-	}, {} as OrderTranslations);
-	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!, req.logger, orderTranslations);
+
+	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!, req.logger);
 	res.status(201).send(order);
 } as any as RequestHandler;
 

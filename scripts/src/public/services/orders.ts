@@ -34,8 +34,6 @@ import { ExternalEarnOrderJWT, ExternalPayToUserOrderJwt, ExternalSpendOrderJWT 
 import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
-import { OfferTranslation } from "../../models/translations";
-import { OrderTranslations } from "../routes/orders";
 
 export interface OrderList {
 	orders: Order[];
@@ -97,13 +95,11 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 	return orderDbToApi(order, userId);
 }
 
-async function createOrder(offer: offerDb.Offer, user: User, orderTranslations = {} as OrderTranslations) {
+async function createOrder(offer: offerDb.Offer, user: User) {
 	if (await offer.didExceedCap(user.id)) {
 		return undefined;
 	}
-	const orderMeta = offer.meta.order_meta;
-	orderMeta.title = orderTranslations.orderTitle || orderMeta.title;
-	orderMeta.description = orderTranslations.orderDescription || orderMeta.description;
+
 	const order = db.MarketplaceOrder.new({
 		status: "opened",
 		offerId: offer.id,
@@ -117,7 +113,7 @@ async function createOrder(offer: offerDb.Offer, user: User, orderTranslations =
 		type: offer.type,
 		// TODO if order meta content is a template:
 		// replaceTemplateVars(offer, offer.meta.order_meta.content!)
-		meta: orderMeta,
+		meta: offer.meta.order_meta
 	});
 	await order.save();
 
@@ -126,7 +122,7 @@ async function createOrder(offer: offerDb.Offer, user: User, orderTranslations =
 	return order;
 }
 
-export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance, orderTranslations?: OrderTranslations ): Promise<OpenOrder> {
+export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	logger.info("creating marketplace order for", { offerId, userId: user.id });
 
 	const offer = await offerDb.Offer.findOneById(offerId);
@@ -136,7 +132,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 
 	const order = await lock(getLockResource("get", offerId, user.id), async () =>
 		(await db.Order.getOpenOrder(offerId, user.id)) ||
-		(await lock(getLockResource("create", offerId), () => createOrder(offer, user, orderTranslations)))
+		(await lock(getLockResource("create", offerId), () => createOrder(offer, user)))
 	);
 
 	if (!order) {

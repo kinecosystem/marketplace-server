@@ -10,6 +10,7 @@ services:
       - .:/opt/app
     ports:
       - 3000:3000
+
   marketplace-internal:
     image: kinecosystem/marketplace-server:latest
     command: ./tests/wait-for postgres:5432 -- npm run start-internal

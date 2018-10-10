@@ -1,7 +1,9 @@
 import { LoggerInstance } from "winston";
+import { Request as ExpressRequest } from "express-serve-static-core";
 
 import { isNothing } from "../../utils";
 import * as db from "../../models/offers";
+import { OfferTranslation } from "../../models/translations";
 
 export interface Question {
 	id: string;
@@ -123,7 +125,7 @@ export function isValid(offerContent: db.OfferContent, form: string | undefined)
 	return typeof answers === "object" && !Array.isArray(answers);
 }
 
-export function sumCorrectQuizAnswers(offerContent: db.OfferContent, form: string | undefined): number {
+export async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form: string | undefined, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<number> {
 	if (isNothing(form)) {
 		return 0;
 	}
@@ -134,7 +136,18 @@ export function sumCorrectQuizAnswers(offerContent: db.OfferContent, form: strin
 	} catch (e) {
 		return 0;
 	}
-	const quiz: Quiz = JSON.parse(offerContent.content);  // this might fail if not valid json without replaceTemplateVars
+	let translatedContent;
+	if (acceptsLanguagesFunc && acceptsLanguagesFunc().length) {
+		const [supportedLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({
+			paths: ["content"],
+			offerId: offerContent.offerId,
+			languages: acceptsLanguagesFunc(),
+		});
+		const language = acceptsLanguagesFunc(supportedLanguages);
+		const translations = availableTranslations.filter(translation => translation.language === language);
+		translatedContent = translations.length ? translations[0].translation : null;
+	}
+	const quiz: Quiz = JSON.parse(translatedContent || offerContent.content);  // this might fail if not valid json without replaceTemplateVars
 	let amountSum = 0;
 
 	for (const page of quiz.pages) {

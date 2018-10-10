@@ -1,4 +1,5 @@
 import { LoggerInstance } from "winston";
+import { Request as ExpressRequest } from "express-serve-static-core";
 
 import { pick } from "../../utils";
 import { lock } from "../../redis";
@@ -254,7 +255,8 @@ export async function submitOrder(
 	form: string | undefined,
 	walletAddress: string,
 	appId: string,
-	logger: LoggerInstance): Promise<Order> {
+	logger: LoggerInstance,
+	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
 
 	const order = await db.Order.getOne(orderId) as db.MarketplaceOrder | db.ExternalOrder;
 
@@ -287,7 +289,7 @@ export async function submitOrder(
 					await offerContents.savePollAnswers(order.user.id, order.offerId, orderId, form); // TODO should we also save quiz results?
 					break;
 				case "quiz":
-					order.amount = offerContents.sumCorrectQuizAnswers(offerContent, form) || 1; // TODO remove || 1 - don't give idiots kin
+					order.amount = await offerContents.sumCorrectQuizAnswers(offerContent, form, acceptsLanguagesFunc) || 1; // TODO remove || 1 - don't give idiots kin
 					// should we replace order.meta.content
 					break;
 				case "tutorial":

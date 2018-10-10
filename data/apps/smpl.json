@@ -7,7 +7,7 @@
   },
   "config": {
     "max_user_wallets": 5,
-    "sign_in_types": ["jwt"]
+    "sign_in_types": ["jwt", "whitelist"]
   },
   "app_id": "smpl",
   "name": "Sample App"

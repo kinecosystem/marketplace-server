@@ -147,6 +147,7 @@ export async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form:
 		const translations = availableTranslations.filter(translation => translation.language === language);
 		translatedContent = translations.length ? translations[0].translation : null;
 	}
+
 	const quiz: Quiz = JSON.parse(translatedContent || offerContent.content);  // this might fail if not valid json without replaceTemplateVars
 	let amountSum = 0;
 

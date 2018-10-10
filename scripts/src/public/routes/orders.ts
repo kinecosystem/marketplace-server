@@ -20,7 +20,6 @@ export type CreateMarketplaceOrderRequest = Request & {
 export type OrderTranslations = {
 	orderTitle: string;
 	orderDescription: string;
-	[index: string]: string;
 };
 /**
  * create an order for an offer
@@ -32,9 +31,9 @@ export const createMarketplaceOrder = async function(req: CreateMarketplaceOrder
 		paths: ["orderTitle", "orderDescription"],
 	});
 	const language = req.acceptsLanguages(availableLanguages); // get the most suitable language for the client
-	const orderTranslations: OrderTranslations = availableTranslations.reduce((dict, translation) => {
+	const orderTranslations = availableTranslations.reduce((dict, translation) => {
 		if (translation.language === language) {
-			dict[translation.path] = translation.translation;
+			dict[translation.path as keyof OrderTranslations] = translation.translation;
 		}
 		return dict;
 	}, {} as OrderTranslations);

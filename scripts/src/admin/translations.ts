@@ -14,8 +14,12 @@ function parseContent(content: string): OfferContentContent {
 	return JSON.parse(validContent);
 }
 
+export function normalizeLanguageString(str: string) {
+	return str.toLocaleLowerCase().replace("_", "-");
+}
+
 /**** Export CSV Template ****/
-type CsvRow = {
+export type CsvRow = {
 	Type: string;
 	Key: string;
 	Default: string;
@@ -26,9 +30,9 @@ type CsvRow = {
 type OfferContentContent = {  // I know, but I didn't have a better name for the 'content' field in the OfferContent table
 	pages?: any[]
 	confirmation?: {
-		title: string,
-		description: string,
-		image: string
+		title: string;
+		description: string;
+		image: string;
 	}
 };
 
@@ -88,6 +92,7 @@ function handleIterableItem(key: string, item: any, rowConstructor: RowConstruct
 
 function constructRowsFromArray(keyBase: string, arr: any[], rowConstructor: RowConstructor) {
 	if (!arr) {
+		console.warn(`Empty content for KeyBase ${keyBase}`);
 		return [];
 	}
 	let result: CsvRow[] = [];
@@ -100,6 +105,7 @@ function constructRowsFromArray(keyBase: string, arr: any[], rowConstructor: Row
 
 function constructRowsFromObj(keyBase: string, obj: { [key: string]: any }, rowConstructor: RowConstructor) {
 	if (!obj) {
+		console.warn(`Empty content for KeyBase ${keyBase}`);
 		return [];
 	}
 	let result: CsvRow[] = [];
@@ -131,9 +137,10 @@ async function getCsvRowData() {
 		keyBase = `offer_contents:${offerId}`;
 		if (offerContentContent.pages) {
 			rows = rows.concat(constructRowsFromArray(`${keyBase}:content:pages`, offerContentContent.pages, boundConstructRow));
-		}
-		if (offerContentContent.confirmation) {
+		} else if (offerContentContent.confirmation) {
 			rows = rows.concat(constructRowsFromObj(`${keyBase}:content:confirmation`, offerContentContent.confirmation, boundConstructRow));
+		} else {
+			console.warn(`Couldn't construct row for keyBase ${keyBase}`);
 		}
 	});
 	return rows.filter(x => x);  // remove empty items
@@ -186,15 +193,16 @@ export async function writeCsvTemplateToFile(fileName: string = "translation_tem
 
 export type CsvParse = ((input: Buffer, options?: Options) => any) & typeof csvParse;
 
-type TranslationDataRow = [string, string, string, string, number];
-type TranslationData = TranslationDataRow[];
-type OfferTranslationData = {
+export type TranslationDataRow = [string, string, string, string, number];
+export type TranslationData = TranslationDataRow[];
+export type OfferTranslationData = {
 	title: string;
 	description: string;
 	orderDescription: string;
 	orderTitle: string;
 	content: any;
 };
+
 type Column = "title" | "description" | "orderDescription" | "orderTitle" | "content";
 type Table = "offer" | "offerContent";
 type OffersTranslation = { [index: string]: OfferTranslationData };
@@ -259,6 +267,9 @@ async function processTranslationData(csvDataRows: TranslationData) {
 	const allOfferContents = await OfferContent.find({ select: ["offerId", "content"] } as FindManyOptions<OfferContent>);
 	const allContentTranslations: OffersTranslation = {};
 	csvDataRows.forEach(([__, csvKey, ___, translation]) => {
+		if (!translation) {
+			return;
+		}
 		const [table, offerId, column, jsonPath] = getCsvKeyElements(csvKey);
 		let offerTranslations;
 		if (offerId in allContentTranslations) {
@@ -269,11 +280,12 @@ async function processTranslationData(csvDataRows: TranslationData) {
 		if (table === "offer") {
 			offerTranslations[column] = translation;
 		} else {
-			const evalString = `offerTranslations.content.${jsonPath}=\`${translation}\``;
+			const evalString = `offerTranslations.content.${jsonPath}='${translation}'`;
 			try {
 				/* tslint:disable-next-line:no-eval */
 				eval(evalString);
 			} catch (e) {
+				console.error("content eval failed: \neval string: %s\n error message: %s", evalString, e);
 			}
 		}
 		allContentTranslations[offerId] = offerTranslations;

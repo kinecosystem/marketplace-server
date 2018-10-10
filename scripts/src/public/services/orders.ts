@@ -1,4 +1,5 @@
 import { LoggerInstance } from "winston";
+import { Request as ExpressRequest } from "express-serve-static-core";
 
 import { pick } from "../../utils";
 import { lock } from "../../redis";
@@ -33,6 +34,8 @@ import { ExternalEarnOrderJWT, ExternalPayToUserOrderJwt, ExternalSpendOrderJWT 
 import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
+import { OfferTranslation } from "../../models/translations";
+import { OrderTranslations } from "../routes/orders";
 
 export interface OrderList {
 	orders: Order[];
@@ -94,11 +97,13 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 	return orderDbToApi(order, userId);
 }
 
-async function createOrder(offer: offerDb.Offer, user: User) {
+async function createOrder(offer: offerDb.Offer, user: User, orderTranslations = {} as OrderTranslations) {
 	if (await offer.didExceedCap(user.id)) {
 		return undefined;
 	}
-
+	const orderMeta = offer.meta.order_meta;
+	orderMeta.title = orderTranslations.orderTitle || orderMeta.title;
+	orderMeta.description = orderTranslations.orderDescription || orderMeta.description;
 	const order = db.MarketplaceOrder.new({
 		status: "opened",
 		offerId: offer.id,
@@ -112,7 +117,7 @@ async function createOrder(offer: offerDb.Offer, user: User) {
 		type: offer.type,
 		// TODO if order meta content is a template:
 		// replaceTemplateVars(offer, offer.meta.order_meta.content!)
-		meta: offer.meta.order_meta
+		meta: orderMeta,
 	});
 	await order.save();
 
@@ -121,7 +126,7 @@ async function createOrder(offer: offerDb.Offer, user: User) {
 	return order;
 }
 
-export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
+export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance, orderTranslations?: OrderTranslations ): Promise<OpenOrder> {
 	logger.info("creating marketplace order for", { offerId, userId: user.id });
 
 	const offer = await offerDb.Offer.findOneById(offerId);
@@ -131,7 +136,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 
 	const order = await lock(getLockResource("get", offerId, user.id), async () =>
 		(await db.Order.getOpenOrder(offerId, user.id)) ||
-		(await lock(getLockResource("create", offerId), () => createOrder(offer, user)))
+		(await lock(getLockResource("create", offerId), () => createOrder(offer, user, orderTranslations)))
 	);
 
 	if (!order) {
@@ -254,7 +259,8 @@ export async function submitOrder(
 	form: string | undefined,
 	walletAddress: string,
 	appId: string,
-	logger: LoggerInstance): Promise<Order> {
+	logger: LoggerInstance,
+	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
 
 	const order = await db.Order.getOne(orderId) as db.MarketplaceOrder | db.ExternalOrder;
 
@@ -287,7 +293,7 @@ export async function submitOrder(
 					await offerContents.savePollAnswers(order.user.id, order.offerId, orderId, form); // TODO should we also save quiz results?
 					break;
 				case "quiz":
-					order.amount = offerContents.sumCorrectQuizAnswers(offerContent, form) || 1; // TODO remove || 1 - don't give idiots kin
+					order.amount = await offerContents.sumCorrectQuizAnswers(offerContent, form, acceptsLanguagesFunc) || 1; // TODO remove || 1 - don't give idiots kin
 					// should we replace order.meta.content
 					break;
 				case "tutorial":

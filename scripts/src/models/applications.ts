@@ -1,7 +1,9 @@
 import { generateId, IdPrefix } from "../utils";
-import { Column, Entity, Index, JoinTable, ManyToMany } from "typeorm";
+import { BaseEntity, Column, Entity, Index, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany } from "typeorm";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
-import { Offer } from "./offers";
+import { Cap, Offer, OfferType } from "./offers";
+import { Model } from "sequelize";
+import { Order, OrderContext } from "./orders";
 
 export type StringMap = { [key: string]: string; };  // key => value pairs
 export type SignInType = "jwt" | "whitelist";
@@ -32,9 +34,8 @@ export class Application extends CreationDateModel {
 	@Column("simple-json", { name: "config" })
 	public config!: ApplicationConfig;
 
-	@ManyToMany(type => Offer)
-	@JoinTable()
-	public offers: Offer[] = [];
+	@OneToMany(type => AppOffer, appOffer => appOffer.app)
+	public appOffers!: AppOffer[];
 
 	public supportsSignInType(type: SignInType, globalSignInTypes: SignInType[]) {
 		return globalSignInTypes.includes(type) && this.config.sign_in_types.includes(type);
@@ -43,6 +44,59 @@ export class Application extends CreationDateModel {
 	public allowsNewWallet(currentNumberOfWallets: number) {
 		return this.config.max_user_wallets === null || currentNumberOfWallets < this.config.max_user_wallets;
 	}
+}
+
+@Entity({ name: "applications_offers_offers" })
+@Initializer("apiKey", () => generateId(IdPrefix.App))
+@Register
+export class AppOffer extends BaseEntity {
+	// XXX testing purposes
+	public static SAMPLE_API_KEY = "A28hNcn2wp77QyaM8kB2C";
+
+	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
+		return await AppOffer.createQueryBuilder("app_offer")
+			.leftJoinAndSelect("app_offer.offers", "offer")
+			.where("app_offer.applicationsId = :appId", { appId })
+			.andWhere("offer.type = :type", { type })
+			.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
+			.addOrderBy("offer.id", "ASC")
+			.getMany();
+	}
+
+	public async didExceedCap(userId: string): Promise<boolean> {
+		const total = await Order.countByOffer(this.offerId);
+
+		if (total >= this.cap.total) {
+			return true;
+		}
+
+		const forUser = await Order.countByOffer(this.offerId, userId);
+		if (forUser >= this.cap.per_user) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Column({ name: "applicationsId" })
+	public appId!: string;
+
+	@Column({ name: "offerId" })
+	public offerId!: string;
+
+	@Column("simple-json")
+	public cap!: Cap;
+
+	@Column({ name: "wallet_address" })
+	public walletAddress!: string;
+
+	@ManyToOne(type => Offer)
+	@JoinColumn({ name: "offerId" })
+	public readonly offer!: Offer;
+
+	@ManyToOne(type => Application, app => app.appOffers)
+	@JoinColumn({ name: "applicationsId" })
+	public readonly app!: Application;
 }
 
 @Entity({ name: "app_whitelists" })

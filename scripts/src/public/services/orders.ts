@@ -8,7 +8,7 @@ import { User } from "../../models/users";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
-import { Application } from "../../models/applications";
+import { Application, AppOffer } from "../../models/applications";
 import { isExternalEarn, isPayToUser, validateExternalOrderJWT } from "../services/native_offers";
 import {
 	ApiError,
@@ -97,31 +97,31 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 	return orderDbToApi(order, userId);
 }
 
-async function createOrder(offer: offerDb.Offer, user: User, orderTranslations = {} as OrderTranslations) {
-	if (await offer.didExceedCap(user.id)) {
+async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {} as OrderTranslations) {
+	if (await appOffer.didExceedCap(user.id)) {
 		return undefined;
 	}
-	const orderMeta = offer.meta.order_meta;
+	const orderMeta = appOffer.offer.meta.order_meta;
 	orderMeta.title = orderTranslations.orderTitle || orderMeta.title;
 	orderMeta.description = orderTranslations.orderDescription || orderMeta.description;
 	const order = db.MarketplaceOrder.new({
 		status: "opened",
-		offerId: offer.id,
-		amount: offer.amount,
+		offerId: appOffer.offer.id,
+		amount: appOffer.offer.amount,
 		blockchainData: {
-			sender_address: offer.type === "spend" ? user.walletAddress : offer.blockchainData.sender_address,
-			recipient_address: offer.type === "spend" ? offer.blockchainData.recipient_address : user.walletAddress
+			sender_address: appOffer.offer.type === "spend" ? user.walletAddress : appOffer.walletAddress,
+			recipient_address: appOffer.offer.type === "spend" ? appOffer.walletAddress : user.walletAddress
 		}
 	}, {
 		user,
-		type: offer.type,
+		type: appOffer.offer.type,
 		// TODO if order meta content is a template:
 		// replaceTemplateVars(offer, offer.meta.order_meta.content!)
 		meta: orderMeta,
 	});
 	await order.save();
 
-	metrics.createOrder("marketplace", offer.type, offer.id);
+	metrics.createOrder("marketplace", appOffer.offer.type, appOffer.offer.id);
 
 	return order;
 }
@@ -129,14 +129,14 @@ async function createOrder(offer: offerDb.Offer, user: User, orderTranslations =
 export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance, orderTranslations?: OrderTranslations ): Promise<OpenOrder> {
 	logger.info("creating marketplace order for", { offerId, userId: user.id });
 
-	const offer = await offerDb.Offer.findOneById(offerId);
-	if (!offer) {
+	const appOffer = await AppOffer.findOne({ offerId, appId: user.appId });
+	if (!appOffer) {
 		throw NoSuchOffer(offerId);
 	}
 
 	const order = await lock(getLockResource("get", offerId, user.id), async () =>
 		(await db.Order.getOpenOrder(offerId, user.id)) ||
-		(await lock(getLockResource("create", offerId), () => createOrder(offer, user, orderTranslations)))
+		(await lock(getLockResource("create", offerId), () => createOrder(appOffer, user, orderTranslations)))
 	);
 
 	if (!order) {

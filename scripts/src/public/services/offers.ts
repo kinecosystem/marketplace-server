@@ -7,7 +7,7 @@ import { ModelFilters } from "../../models";
 import * as dbOrders from "../../models/orders";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
-import { Application } from "../../models/applications";
+import { AppOffer } from "../../models/applications";
 import { ContentType, OfferType } from "../../models/offers";
 import { getConfig } from "../config";
 import { Order } from "../../models/orders";
@@ -72,15 +72,11 @@ function getOfferTranslations(language: string | false, offerId: string, availab
 }
 
 /**
- * return the sublist of offers from this app that the user can complete
+ * return the sublist of offers from this app that the user can complete due to capping
  */
-async function filterOffers(userId: string, app: Application | undefined, logger: LoggerInstance, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Offer[]> {
-	// TODO: this should be a temp fix!
-	// the app should not be undefined as we used left join, figure it out
-	if (!app || !app.offers.length) {
-		return [];
-	}
-	const offerCounts = await Order.countAllByOffer(userId);
+async function filterOffers(userId: string, appOffers: AppOffer[], logger: LoggerInstance, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Offer[]> {
+	const totalOfferCounts = await Order.countAllByOffer();
+	const userOfferCounts = await Order.countAllByOffer(userId);
 	const contents = await offerContents.getAllContents();
 	let availableTranslations: OfferTranslation[] = [];
 	let language: string | false = false;
@@ -90,41 +86,37 @@ async function filterOffers(userId: string, app: Application | undefined, logger
 		language = acceptsLanguagesFunc(availableLanguages); // get the most suitable language for the client
 	}
 	return (await Promise.all(
-		app.offers
-			.map(async offer => {
-					if ((offerCounts.get(offer.id) || 0) >= offer.cap.per_user) {
-						return null;
-					}
-					const content = contents.get(offer.id);
-					if (!content) {
-						return null;
-					}
-					return offerDbToApi(offer, content, getOfferTranslations(language, offer.id, availableTranslations));
+		appOffers
+			.map(async appOffer => {
+				const offer = appOffer.offer;
+				if ((totalOfferCounts.get(offer.id) || 0) >= offer.cap.total) {
+					return null;
 				}
-			)
+				if ((userOfferCounts.get(offer.id) || 0) >= offer.cap.per_user) {
+					return null;
+				}
+				const content = contents.get(offer.id);
+				if (!content) {
+					return null;
+				}
+				return offerDbToApi(offer, content, getOfferTranslations(language, offer.id, availableTranslations));
+			})
 	)).filter(offer => offer !== null) as Offer[];
 }
 
 export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<OfferList> {
 	let offers = [] as Offer[];
 
-	const query = Application.createQueryBuilder("app")
-		.where("app.id = :appId", { appId })
-		.leftJoinAndSelect("app.offers", "offer");
-
 	if (!filters.type || filters.type === "earn") {
 		offers = offers.concat(
 			await filterOffers(
 				userId,
-				await query
-					.andWhere("offer.type = :type", { type: "earn" })
-					.orderBy("offer.amount", "DESC")
-					.addOrderBy("offer.id", "ASC")
-					.getOne(),
+				await AppOffer.getAppOffers(appId, "earn"),
 				logger,
 				acceptsLanguagesFunc
 			)
 		);
+		// TODO we might want to add a rate limit/ daily cap globally per app
 		// global earn capping
 		const max_daily_earn_offers = getConfig().max_daily_earn_offers;
 		if (max_daily_earn_offers !== null) {
@@ -136,11 +128,7 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 		offers = offers.concat(
 			await filterOffers(
 				userId,
-				await query
-					.andWhere("offer.type = :type", { type: "spend" })
-					.orderBy("offer.amount", "ASC")
-					.addOrderBy("offer.id", "ASC")
-					.getOne(),
+				await AppOffer.getAppOffers(appId, "spend"),
 				logger,
 				acceptsLanguagesFunc
 			)

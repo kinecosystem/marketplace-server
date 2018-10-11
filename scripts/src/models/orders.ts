@@ -89,16 +89,27 @@ export interface Order {
 	error?: ApiError | null;
 
 	forEachContext(fn: (context: OrderContext) => void): void;
+
 	contextFor(userId: string): OrderContext | null;
+
 	setStatus(status: OpenOrderStatus): void;
+
 	isExpired(): boolean;
+
 	isExternalOrder(): this is ExternalOrder;
+
 	isMarketplaceOrder(): this is MarketplaceOrder;
+
 	isP2P(): this is P2POrder;
+
 	isSpend(): boolean;
+
 	isEarn(): boolean;
+
 	isNormal(): this is NormalOrder;
+
 	save(): Promise<this>;
+
 	remove(): Promise<this>;
 }
 
@@ -114,22 +125,16 @@ function createOrder(data?: DeepPartial<Order>, contexts?: Array<DeepPartial<Ord
 }
 
 export const Order = {
-	/**
-	 * count all offers that are completed, pending but not expired, opened but not expired - i.e. not failed and not expired
-	 */
+	// count number of orders completed/pending/opened for a given offer (and an optional user)
 	countByOffer(offerId: string, userId?: string): Promise<number> {
 		const statuses = userId ? ["pending"] : ["opened", "pending"];
 
 		const query = OrderImpl.createQueryBuilder("ordr"); // don't use 'order', it messed things up
-		if (userId) {
-			query
-				.innerJoin("ordr.contexts", "context")
-				.where("context.user_id = :userId", { userId })
-				.andWhere("ordr.offer_id = :offerId", { offerId });
-		} else {
-			query.where("ordr.offer_id = :offerId", { offerId });
-		}
 
+		if (userId) {
+			query.innerJoin("ordr.contexts", "context", "context.user_id = :userId", { userId });
+		}
+		query.where("ordr.offer_id = :offerId", { offerId });
 		query.andWhere(new Brackets(qb => {
 			qb.where("ordr.status = :status", { status: "completed" })
 				.orWhere(
@@ -143,17 +148,31 @@ export const Order = {
 		return query.getCount();
 	},
 
-	async countAllByOffer(userId: string): Promise<Map<string, number>> {
-		const results: Array<{ offer_id: string, cnt: number }> = await getManager().query(
-			`SELECT
-					orders.offer_id, COUNT(DISTINCT(orders.id)) as cnt
-				FROM orders
-				LEFT JOIN orders_contexts
-				ON orders.id = orders_contexts.order_id
-				WHERE
-					(status = $1 OR (status IN ($2) AND expiration_date > $3))
-					AND orders_contexts.user_id = ($4)
-				GROUP BY offer_id`, ["completed", ["pending"], new Date(), userId]);
+	// count the number of orders completed/pending/opened per offer for a given user or all
+	async countAllByOffer(userId?: string): Promise<Map<string, number>> {
+		const statuses = userId ? ["pending"] : ["opened", "pending"];
+
+		const query = OrderImpl.createQueryBuilder("ordr"); // don't use 'order', it messed things up
+		query.select("ordr.offer_id");
+		query.addSelect("COUNT(DISTINCT(ordr.id)) as cnt)");
+
+		if (userId) {
+			query.leftJoin("ordr.contexts", "context", "context.user_id = :userId", { userId });
+		}
+
+		query.andWhere(new Brackets(qb => {
+			qb.where("ordr.status = :status", { status: "completed" })
+				.orWhere(
+					new Brackets(qb2 => {
+						qb2.where("ordr.status IN (:statuses)", { statuses })
+							.andWhere("ordr.expiration_date > :date", { date: new Date() });
+					})
+				);
+		}));
+
+		query.groupBy("ordr.offer_id");
+
+		const results: Array<{ offer_id: string, cnt: number }> = await query.getRawMany();
 		const map = new Map<string, number>();
 		for (const res of results) {
 			map.set(res.offer_id, res.cnt);

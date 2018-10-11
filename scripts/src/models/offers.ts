@@ -4,6 +4,8 @@ import { CreationDateModel, Model, register as Register, initializer as Initiali
 import { generateId, IdPrefix } from "../utils";
 import { OrderMeta, Order, OrderContext } from "./orders";
 import { OfferTranslation } from "./translations";
+import { Application } from "./applications";
+import { AppOffer } from "../../bin/models/applications";
 
 export type BlockchainData = {
 	transaction_id?: string;
@@ -48,16 +50,10 @@ export class Offer extends CreationDateModel {
 	public amount!: number;
 
 	@Column("simple-json")
-	public cap!: Cap;
-
-	@Column("simple-json")
 	public meta!: OfferMeta;
 
 	@Column()
 	public type!: OfferType;
-
-	@Column("simple-json", { name: "blockchain_data" })
-	public blockchainData!: BlockchainData;
 
 	@Column({ name: "owner_id" })
 	public ownerId!: string;
@@ -67,26 +63,6 @@ export class Offer extends CreationDateModel {
 		cascadeUpdate: true
 	})
 	public translations!: OfferTranslation[];
-
-	// @ManyToOne(type => OfferOwner, owner => owner.offers) // XXX requires a generated value
-	public get owner(): Promise<OfferOwner | undefined> {
-		return OfferOwner.findOneById(this.ownerId);
-	}
-
-	public async didExceedCap(userId: string): Promise<boolean> {
-		// const total = await Order.countByOffer(this.id);
-
-		// if (total >= this.cap.total) {
-		// 	return true;
-		// }
-
-		const forUser = await Order.countByOffer(this.id, userId);
-		if (forUser >= this.cap.per_user) {
-			return true;
-		}
-
-		return false;
-	}
 }
 
 @Entity({ name: "offer_contents" })

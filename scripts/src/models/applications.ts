@@ -1,5 +1,16 @@
 import { generateId, IdPrefix } from "../utils";
-import { BaseEntity, Column, Entity, Index, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany } from "typeorm";
+import {
+	BaseEntity,
+	Column,
+	Entity,
+	Index,
+	JoinColumn,
+	JoinTable,
+	ManyToMany,
+	ManyToOne,
+	OneToMany,
+	PrimaryColumn
+} from "typeorm";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
 import { Cap, Offer, OfferType } from "./offers";
 import { Model } from "sequelize";
@@ -55,7 +66,7 @@ export class AppOffer extends BaseEntity {
 
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
 		return await AppOffer.createQueryBuilder("app_offer")
-			.leftJoinAndSelect("app_offer.offers", "offer")
+			.leftJoinAndSelect("app_offer.offer", "offer")
 			.where("app_offer.applicationsId = :appId", { appId })
 			.andWhere("offer.type = :type", { type })
 			.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
@@ -63,10 +74,10 @@ export class AppOffer extends BaseEntity {
 			.getMany();
 	}
 
-	@Column({ name: "applicationsId" })
+	@PrimaryColumn({ name: "applicationsId" })
 	public appId!: string;
 
-	@Column({ name: "offerId" })
+	@PrimaryColumn({ name: "offerId" })
 	public offerId!: string;
 
 	@Column("simple-json")
@@ -75,7 +86,7 @@ export class AppOffer extends BaseEntity {
 	@Column({ name: "wallet_address" })
 	public walletAddress!: string;
 
-	@ManyToOne(type => Offer)
+	@ManyToOne(type => Offer, { eager: true })
 	@JoinColumn({ name: "offerId" })
 	public readonly offer!: Offer;
 

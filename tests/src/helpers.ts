@@ -144,13 +144,6 @@ export async function createOffers() {
 			[`spend${i}_1`, `spend${i}_2`, `spend${i}_3`, `spend${i}_4`, `spend${i}_5`]
 		);
 	}
-
-	const offers = await Offer.find();
-	const apps = await Application.find();
-	for (const app of apps) {
-		app.offers = offers;
-		await app.save();
-	}
 }
 
 export async function completePayment(orderId: string) {

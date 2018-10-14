@@ -151,16 +151,19 @@ export const Order = {
 
 	// count the number of orders completed/pending/opened per offer for a given user or all
 	async countAllByOffer(appId: string, userId?: string): Promise<Map<string, number>> {
-		throw new Error("appId isn't considered");
-
 		const statuses = userId ? ["pending"] : ["opened", "pending"];
 
 		const query = OrderImpl.createQueryBuilder("ordr"); // don't use 'order', it messed things up
 		query.select("ordr.offer_id");
-		query.addSelect("COUNT(DISTINCT(ordr.id)) as cnt)");
+		query.addSelect("COUNT(DISTINCT(ordr.id)) AS cnt");
+
+		query.leftJoin("ordr.contexts", "context");
+		query.leftJoin("context.user", "user");
+
+		query.andWhere("user.app_id = :appId", { appId });
 
 		if (userId) {
-			query.leftJoin("ordr.contexts", "context", "context.user_id = :userId", { userId });
+			query.andWhere("context.user_id = :userId", { userId });
 		}
 
 		query.andWhere(new Brackets(qb => {

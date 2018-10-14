@@ -3,25 +3,26 @@ import * as moment from "moment";
 import { random } from "../../../scripts/bin/utils";
 import { Event } from "../../../scripts/bin/analytics";
 import { User } from "../../../scripts/bin/models/users";
-import { Offer, JWTValue } from "../../../scripts/bin/models/offers";
+import { JWTValue, Offer } from "../../../scripts/bin/models/offers";
 import * as payment from "../../../scripts/bin/public/services/payment";
 import { getOffers } from "../../../scripts/bin/public/services/offers";
 import { getDefaultLogger, initLogger } from "../../../scripts/bin/logging";
-import { Order, ExternalOrder, OrderContext } from "../../../scripts/bin/models/orders";
-import { init as initModels, close as closeModels } from "../../../scripts/bin/models/index";
+import { ExternalOrder, Order } from "../../../scripts/bin/models/orders";
+import { close as closeModels, init as initModels } from "../../../scripts/bin/models/index";
 import {
-	createMarketplaceOrder,
-	submitOrder,
-	getOrder,
 	changeOrder,
-	setFailedOrder
+	createMarketplaceOrder,
+	getOrder,
+	setFailedOrder,
+	submitOrder
 } from "../../../scripts/bin/public/services/orders";
+import { TransactionTimeout } from "../../../scripts/bin/errors";
+import { AppOffer } from "../../../scripts/bin/models/applications";
 import { JWTContent } from "../../../scripts/bin/public/jwt";
 
 import * as helpers from "../helpers";
 import * as jsonwebtoken from "jsonwebtoken";
 import * as expect from "expect";
-import { TransactionTimeout } from "../../../scripts/bin/errors";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
@@ -121,19 +122,19 @@ describe("test orders", async () => {
 		expect(await Order.countToday(user.id, "earn")).toEqual(1);
 	});
 
-	test("return getOrder reduces cap", async () => {
+	test("return getOrder reduces cap2", async () => {
 		const user = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
-		const offer = await Offer.findOneById(offers.offers[0].id);
+		const appOffer = await AppOffer.findOne({ offerId: offers[0].id, appId: user.appId });
 
-		for (let i = 0; i < offer.cap.per_user && i < offer.cap.total; i++) {
-			const openOrder = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
+		for (let i = 0; i < appOffer.cap.per_user && i < appOffer.cap.total; i++) {
+			const openOrder = await createMarketplaceOrder(appOffer.offerId, user, getDefaultLogger());
 			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
 			await helpers.completePayment(order.id);
 		}
 
 		const counts = await Order.countAllByOffer(user.id);
-		expect(counts.get(offer.id)).toEqual(1);
+		expect(counts.get(appOffer.offerId)).toEqual(1);
 		const offers2 = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		expect(offers2.offers.length).toBeLessThan(offers.offers.length);
 	});
@@ -249,11 +250,14 @@ describe("test orders", async () => {
 
 		// add even offers to app
 		for (let i = 0; i < offers.length; i++) {
-
 			if (i % 2 === 0) {
 				offersIds.push(offers[i].id);
-				app.offers.push(offers[i]);
-				await app.save();
+				await AppOffer.create({
+					appId: app.id,
+					offerId: offers[i].id,
+					cap: { total: 10, per_user: 10 },
+					walletAddress: "some_address"
+				}).save();
 			}
 		}
 

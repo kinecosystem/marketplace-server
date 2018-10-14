@@ -122,10 +122,12 @@ describe("test orders", async () => {
 		expect(await Order.countToday(user.id, "earn")).toEqual(1);
 	});
 
-	test("return getOrder reduces cap2", async () => {
+	test("return getOrder reduces cap", async () => {
 		const user = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
-		const appOffer = await AppOffer.findOne({ offerId: offers[0].id, appId: user.appId });
+
+		const appOffer = await AppOffer.findOne({ offerId: offers.offers[0].id, appId: user.appId });
+		console.log(appOffer);
 
 		for (let i = 0; i < appOffer.cap.per_user && i < appOffer.cap.total; i++) {
 			const openOrder = await createMarketplaceOrder(appOffer.offerId, user, getDefaultLogger());
@@ -133,7 +135,7 @@ describe("test orders", async () => {
 			await helpers.completePayment(order.id);
 		}
 
-		const counts = await Order.countAllByOffer(user.id);
+		const counts = await Order.countAllByOffer(user.appId, user.id);
 		expect(counts.get(appOffer.offerId)).toEqual(1);
 		const offers2 = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		expect(offers2.offers.length).toBeLessThan(offers.offers.length);

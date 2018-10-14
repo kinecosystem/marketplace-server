@@ -22,6 +22,7 @@ import { generateId, IdPrefix } from "../utils";
 import { User } from "./users";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
 import { CreationDateModel, initializers as Initializers, register as Register } from "./index";
+import { Exception } from "winston";
 
 export interface OrderMeta {
 	title: string;
@@ -149,7 +150,9 @@ export const Order = {
 	},
 
 	// count the number of orders completed/pending/opened per offer for a given user or all
-	async countAllByOffer(userId?: string): Promise<Map<string, number>> {
+	async countAllByOffer(appId: string, userId?: string): Promise<Map<string, number>> {
+		throw new Error("appId isn't considered");
+
 		const statuses = userId ? ["pending"] : ["opened", "pending"];
 
 		const query = OrderImpl.createQueryBuilder("ordr"); // don't use 'order', it messed things up

@@ -1,5 +1,5 @@
-import { Application } from "../models/applications";
-import { Offer, PollAnswer } from "../models/offers";
+import { Application, AppOffer } from "../models/applications";
+import { Cap, Offer, PollAnswer } from "../models/offers";
 import { getManager } from "typeorm";
 import { User } from "../models/users";
 import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
@@ -52,8 +52,6 @@ const OFFER_HEADERS = `<tr>
 <th>total cap</th>
 <th>total per user</th>
 <th>owner</th>
-<th>recipient</th>
-<th>sender</th>
 <th>date</th>
 </tr>`;
 
@@ -402,10 +400,9 @@ export async function getApplicationOffers(params: { app_id: string }, query: Pa
 		throw new Error("no such app: " + params.app_id);
 	}
 
-	const offers = app.offers;
 	let ret = `<table>${OFFER_HEADERS}`;
-	for (const offer of offers) {
-		ret += await offerToHtml(offer);
+	for (const appOffer of app.appOffers) {
+		ret += await offerToHtml(appOffer.offer);
 	}
 	ret += "</table>";
 	return ret;
@@ -608,9 +605,9 @@ export async function getWalletPayments(params: { wallet_address: string }, quer
 	return `<pre class="wide">${ JSON.stringify(data, null, 2) }</pre>`;
 }
 
-export async function changeOffer(body: Partial<Offer>, params: { offer_id: string }, query: any): Promise<any> {
-	const offer = await Offer.findOneById(params.offer_id);
-	if (!offer) {
+export async function changeOffer(body: { cap: Cap }, params: { app_id: string, offer_id: string }, query: any): Promise<any> {
+	const appOffer = await AppOffer.findOne({ offerId: params.offer_id, appId: params.app_id });
+	if (!appOffer) {
 		throw new Error("no such offer: " + params.offer_id);
 	}
 
@@ -630,6 +627,6 @@ export async function changeOffer(body: Partial<Offer>, params: { offer_id: stri
 		throw new Error("cap must be defined, a number and greater or equal to 0 - received: " + JSON.stringify(body));
 	}
 
-	await offer.save();
-	return { offer };
+	await appOffer.save();
+	return { appOffer };
 }

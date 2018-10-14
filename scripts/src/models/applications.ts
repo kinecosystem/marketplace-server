@@ -63,21 +63,6 @@ export class AppOffer extends BaseEntity {
 			.getMany();
 	}
 
-	public async didExceedCap(userId: string): Promise<boolean> {
-		const total = await Order.countByOffer(this.offerId);
-
-		if (total >= this.cap.total) {
-			return true;
-		}
-
-		const forUser = await Order.countByOffer(this.offerId, userId);
-		if (forUser >= this.cap.per_user) {
-			return true;
-		}
-
-		return false;
-	}
-
 	@Column({ name: "applicationsId" })
 	public appId!: string;
 
@@ -97,6 +82,21 @@ export class AppOffer extends BaseEntity {
 	@ManyToOne(type => Application, app => app.appOffers)
 	@JoinColumn({ name: "applicationsId" })
 	public readonly app!: Application;
+
+	public async didExceedCap(userId: string): Promise<boolean> {
+		const total = await Order.countByOffer(this.offerId);
+
+		if (total >= this.cap.total) {
+			return true;
+		}
+
+		const forUser = await Order.countByOffer(this.offerId, userId);
+		if (forUser >= this.cap.per_user) {
+			return true;
+		}
+
+		return false;
+	}
 }
 
 @Entity({ name: "app_whitelists" })

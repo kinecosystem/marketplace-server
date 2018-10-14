@@ -13,7 +13,7 @@ import { init as initModels, close as closeModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
 import { createEarn, createSpend } from "./create_data/offers";
 import { ContentType, Offer } from "./models/offers";
-import { StringMap, Application, ApplicationConfig } from "./models/applications";
+import { StringMap, Application, ApplicationConfig, AppOffer } from "./models/applications";
 import { path } from "./utils";
 
 import "./models/orders";
@@ -62,15 +62,8 @@ function toMap(data: string[][]): Array<Map<string, string>> {
 	return list;
 }
 
-async function getAllApps(): Promise<Application[]> {
-	return await Application.createQueryBuilder("app")
-		.leftJoinAndSelect("app.offers", "offer")
-		.getMany();
-}
-
 async function parseSpend(data: string[][]) {
 	const list = toMap(data);
-	const offers: Offer[] = [];
 	for (const v of list) {
 		const offer = await createSpend(
 			v.get("OfferName")!,
@@ -97,12 +90,6 @@ async function parseSpend(data: string[][]) {
 			v.get("OrderContentHyperLink")!,
 			v.get("CouponCodes")!.split(/\s+/),
 		);
-		offers.push(offer);
-	}
-
-	for (const app of await getAllApps()) {
-		app.offers = app.offers.concat(offers);
-		await app.save();
 	}
 }
 
@@ -130,11 +117,10 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 		return offer;
 	}
 
-	const offers: Offer[] = [];
 	for (const v of list) {
 		if (v.get("OfferName") !== "") {
 			if (offer) {
-				offers.push(await createEarnInner(offer, poll));
+				await createEarnInner(offer, poll);
 			}
 			offer = v;
 			poll.pages = [];
@@ -194,15 +180,6 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 		} else {
 			console.log(`poll type unknown: ${v.get("PollPageType")}`);
 		}
-	}
-
-	if (offer) {
-		offers.push(await createEarnInner(offer, poll));
-	}
-
-	for (const app of await getAllApps()) {
-		app.offers = app.offers.concat(offers);
-		await app.save();
 	}
 }
 

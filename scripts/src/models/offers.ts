@@ -1,11 +1,10 @@
-import { Column, Entity, Index, OneToMany, PrimaryColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryColumn } from "typeorm";
 
-import { CreationDateModel, Model, register as Register, initializer as Initializer } from "./index";
+import { CreationDateModel, initializer as Initializer, Model, register as Register } from "./index";
 import { generateId, IdPrefix } from "../utils";
-import { OrderMeta, Order, OrderContext } from "./orders";
+import { OrderMeta } from "./orders";
 import { OfferTranslation } from "./translations";
-import { Application } from "./applications";
-import { AppOffer } from "../../bin/models/applications";
+import { AppOffer } from "./applications";
 
 export type BlockchainData = {
 	transaction_id?: string;
@@ -63,6 +62,9 @@ export class Offer extends CreationDateModel {
 		cascadeUpdate: true
 	})
 	public translations!: OfferTranslation[];
+
+	@OneToMany(type => AppOffer, appOffer => appOffer.offer)
+	public appOffers!: AppOffer[];
 }
 
 @Entity({ name: "offer_contents" })

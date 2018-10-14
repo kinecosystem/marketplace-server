@@ -43,14 +43,14 @@ type OfferTranslations = {
 	content: any;
 };
 
-function offerDbToApi(offer: db.Offer, content: db.OfferContent, offerTranslations: OfferTranslations) {
+function offerDbToApi(offer: db.Offer, content: db.OfferContent, offerTranslations: OfferTranslations, walletAddress: string) {
 	const offerData = {
 		id: offer.id,
 		title: offerTranslations.title || offer.meta.title,
 		description: offerTranslations.description || offer.meta.description,
 		image: offer.meta.image,
 		amount: offer.amount,
-		blockchain_data: offer.blockchainData,
+		blockchain_data: offer.type === "spend" ? { recipient_address: walletAddress } : { sender_address: walletAddress },
 		offer_type: offer.type,
 		content: offerTranslations.content || content.content,
 		content_type: content.contentType,
@@ -74,9 +74,9 @@ function getOfferTranslations(language: string | false, offerId: string, availab
 /**
  * return the sublist of offers from this app that the user can complete due to capping
  */
-async function filterOffers(userId: string, appOffers: AppOffer[], logger: LoggerInstance, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Offer[]> {
-	const totalOfferCounts = await Order.countAllByOffer();
-	const userOfferCounts = await Order.countAllByOffer(userId);
+async function filterOffers(userId: string, appId: string, appOffers: AppOffer[], logger: LoggerInstance, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Offer[]> {
+	const totalOfferCounts = await Order.countAllByOffer(appId);
+	const userOfferCounts = await Order.countAllByOffer(appId, userId);
 	const contents = await offerContents.getAllContents();
 	let availableTranslations: OfferTranslation[] = [];
 	let language: string | false = false;
@@ -89,17 +89,21 @@ async function filterOffers(userId: string, appOffers: AppOffer[], logger: Logge
 		appOffers
 			.map(async appOffer => {
 				const offer = appOffer.offer;
-				if ((totalOfferCounts.get(offer.id) || 0) >= offer.cap.total) {
+				if ((totalOfferCounts.get(offer.id) || 0) >= appOffer.cap.total) {
 					return null;
 				}
-				if ((userOfferCounts.get(offer.id) || 0) >= offer.cap.per_user) {
+				if ((userOfferCounts.get(offer.id) || 0) >= appOffer.cap.per_user) {
 					return null;
 				}
 				const content = contents.get(offer.id);
 				if (!content) {
 					return null;
 				}
-				return offerDbToApi(offer, content, getOfferTranslations(language, offer.id, availableTranslations));
+				return offerDbToApi(
+					offer,
+					content,
+					getOfferTranslations(language, offer.id, availableTranslations),
+					appOffer.walletAddress);
 			})
 	)).filter(offer => offer !== null) as Offer[];
 }
@@ -111,6 +115,7 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 		offers = offers.concat(
 			await filterOffers(
 				userId,
+				appId,
 				await AppOffer.getAppOffers(appId, "earn"),
 				logger,
 				acceptsLanguagesFunc
@@ -128,6 +133,7 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 		offers = offers.concat(
 			await filterOffers(
 				userId,
+				appId,
 				await AppOffer.getAppOffers(appId, "spend"),
 				logger,
 				acceptsLanguagesFunc

@@ -67,7 +67,7 @@ export class AppOffer extends BaseEntity {
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
 		return await AppOffer.createQueryBuilder("app_offer")
 			.leftJoinAndSelect("app_offer.offer", "offer")
-			.where(`app_offer."applicationsId" = :appId`, { appId })
+			.where(`"applicationsId" = :appId`, { appId })
 			.andWhere("offer.type = :type", { type })
 			.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
 			.addOrderBy("offer.id", "ASC")

@@ -181,6 +181,9 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 			console.log(`poll type unknown: ${v.get("PollPageType")}`);
 		}
 	}
+	if (offer) {
+		await createEarnInner(offer, poll);
+	}
 }
 
 function getStellarAddresses() {

@@ -245,7 +245,7 @@ describe("test orders", async () => {
 	});
 
 	test("only app offers should return", async () => {
-		const app = await helpers.createApp("app1");
+		const app = await helpers.createApp(`test:${random()}`);
 		const user = await helpers.createUser({ appId: app.id });
 		const offers = await Offer.find();
 		const offersIds: string[] = [];
@@ -269,5 +269,9 @@ describe("test orders", async () => {
 		}
 
 		expect(offersIds.sort()).toEqual(apiOffersIds.sort());
+
+		const appOffers = [...await AppOffer.getAppOffers(app.id, "earn"), ...await AppOffer.getAppOffers(app.id, "spend")];
+
+		expect(offersIds.sort()).toEqual(appOffers.map(appOffer=> appOffer.offerId).sort());
 	});
 });

@@ -3,21 +3,21 @@
  * All the names of companies, products and KIN values are completely made up and are used for TESTING only.
  */
 import { getConfig } from "./public/config"; // must be the first import
-getConfig();
-
 import * as fs from "fs";
 import { join } from "path";
 import { Keypair } from "@kinecosystem/kin.js";
 
-import { init as initModels, close as closeModels } from "./models";
+import { close as closeModels, init as initModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
 import { createEarn, createSpend } from "./create_data/offers";
 import { ContentType, Offer } from "./models/offers";
-import { StringMap, Application, ApplicationConfig, AppOffer } from "./models/applications";
+import { Application, ApplicationConfig, StringMap } from "./models/applications";
 import { path } from "./utils";
 
 import "./models/orders";
 import "./models/users";
+
+getConfig();
 
 const STELLAR_ADDRESS = process.env.STELLAR_ADDRESS;  // address to use instead of the ones defined in the data
 type AppDef = { app_id: string, name: string, api_key: string, jwt_public_keys: StringMap, config: ApplicationConfig };

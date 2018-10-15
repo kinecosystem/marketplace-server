@@ -637,12 +637,14 @@ export async function changeOffer(body: { cap: Cap }, params: { app_id: string, 
 
 	let didChange = false;
 	if (body && body.cap) {
-		if (!isNothing(body.cap.total) && body.cap.total >= 0) {
-			appOffer.cap.total = body.cap.total;
+		const total = body.cap.total;
+		if (!isNothing(total) && total >= 0) {
+			appOffer.cap.total = total;
 			didChange = true;
 		}
-		if (!isNothing(body.cap.per_user) && body.cap.per_user >= 0) {
-			appOffer.cap.per_user = body.cap.per_user;
+		const per_user = body.cap.per_user;
+		if (!isNothing(per_user) && per_user >= 0) {
+			appOffer.cap.per_user = per_user;
 			didChange = true;
 		}
 	}

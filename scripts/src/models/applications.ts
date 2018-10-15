@@ -73,7 +73,7 @@ export class AppOffer extends BaseEntity {
 	@PrimaryColumn({ name: "applicationsId" })
 	public appId!: string;
 
-	@PrimaryColumn({ name: "offerId" })
+	@PrimaryColumn({ name: "offersId" })
 	public offerId!: string;
 
 	@Column("simple-json")
@@ -83,7 +83,7 @@ export class AppOffer extends BaseEntity {
 	public walletAddress!: string;
 
 	@ManyToOne(type => Offer, { eager: true })
-	@JoinColumn({ name: "offerId" })
+	@JoinColumn({ name: "offersId" })
 	public readonly offer!: Offer;
 
 	@ManyToOne(type => Application, app => app.appOffers)

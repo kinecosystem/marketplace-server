@@ -179,7 +179,7 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		.get("/orders/:order_id/retry", wrapService(retryOrder))
 		.get("/users/:user_id/retry", wrapService(retryUserWallet))
 		// change data
-		.post("/applications/:app_id//offers/:offer_id", jsonResponse(changeOffer))
+		.post("/applications/:app_id/offers/:offer_id", jsonResponse(changeOffer))
 	;
 
 	app.use("", router);

@@ -4,10 +4,10 @@ import { getManager } from "typeorm";
 import { User } from "../models/users";
 import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
 import { IdPrefix, isNothing } from "../utils";
+import * as payment from "../public/services/payment";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getDefaultLogger } from "../logging";
 import { getOffers as getUserOffersService } from "../public/services/offers";
-import * as payment from "../public/services/payment";
 
 type OfferStats = {
 	id: string
@@ -51,6 +51,7 @@ const OFFER_HEADERS = `<tr>
 <th>image</th>
 <th>total cap</th>
 <th>total per user</th>
+<th>address</th>
 <th>owner</th>
 <th>date</th>
 </tr>`;
@@ -260,7 +261,28 @@ async function appToHtml(app: Application): Promise<string> {
 </tr>`;
 }
 
-async function offerToHtml(offer: Offer): Promise<string> {
+async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
+	function total() {
+		if (appOffer) {
+			return `<input type="text" onchange="submitData('/applications/${ appOffer.appId }/offers/${ offer.id }', { cap: { total: parseInt(this.value, 10) } })" value="${ appOffer.cap.total }"/>`;
+		}
+		return ``;
+	}
+
+	function perUser() {
+		if (appOffer) {
+			return `<input type="text" onchange="submitData('/applications/${ appOffer.appId }/offers/${ offer.id }', { cap: { per_user: parseInt(this.value, 10) } })" value="${ appOffer.cap.per_user }"/>`;
+		}
+		return ``;
+	}
+
+	function address() {
+		if (appOffer) {
+			return `<a href="${ BLOCKCHAIN.horizon_url}/accounts/${ appOffer.walletAddress }">${ appOffer.walletAddress }</a>`;
+		}
+		return ``;
+	}
+
 	return `<tr>
 <td>${ offer.id }</td>
 <td><a href="/offers/${ offer.id }/stats">stats</a></td>
@@ -272,11 +294,10 @@ async function offerToHtml(offer: Offer): Promise<string> {
 <td>${ offer.meta.title }</td>
 <td>${ offer.meta.description }</td>
 <td><img src="${offer.meta.image}"/></td>
-<td><input type="text" onchange="submitData('/offers/${ offer.id }', { cap: { total: parseInt(this.value, 10) } })" value="${ offer.cap.total }"/></td>
-<td><input type="text" onchange="submitData('/offers/${ offer.id }', { cap: { per_user: parseInt(this.value, 10) } })" value="${ offer.cap.per_user }"/></td>
+<td>${ total() }</td>
+<td>${ perUser() }</td>
+<td>${ address() }</td>
 <td>${ offer.ownerId }</td>
-<td><a href="${ BLOCKCHAIN.horizon_url}/accounts/${ offer.blockchainData.recipient_address }">${ offer.blockchainData.recipient_address }</a></td>
-<td><a href="${ BLOCKCHAIN.horizon_url}/accounts/${ offer.blockchainData.sender_address }">${ offer.blockchainData.sender_address }</a></td>
 <td>${ offer.createdDate.toISOString() }</td>
 </tr>`;
 }
@@ -390,7 +411,8 @@ export async function getOffers(params: any, query: Paging): Promise<string> {
 export async function getApplicationOffers(params: { app_id: string }, query: Paging): Promise<string> {
 	const app = await Application.createQueryBuilder("app")
 		.where("app.id = :appId", { appId: params.app_id })
-		.leftJoinAndSelect("app.offers", "offer")
+		.leftJoinAndSelect("app.appOffers", "app_offer")
+		.leftJoinAndSelect("app_offer.offer", "offer")
 		.addOrderBy("offer.created_date", "ASC")
 		.limit(take(query))
 		.offset(skip(query))
@@ -400,9 +422,11 @@ export async function getApplicationOffers(params: { app_id: string }, query: Pa
 		throw new Error("no such app: " + params.app_id);
 	}
 
+	console.log(`length ${app.appOffers.length}`);
 	let ret = `<table>${OFFER_HEADERS}`;
 	for (const appOffer of app.appOffers) {
-		ret += await offerToHtml(appOffer.offer);
+		console.log(`offer: `, appOffer.offer);
+		ret += await offerToHtml(appOffer.offer, appOffer);
 	}
 	ret += "</table>";
 	return ret;
@@ -446,8 +470,8 @@ export async function getUserOffers(params: { user_id: string }, query: any): Pr
 	const offers = (await getUserOffersService(user.id, user.appId, {}, getDefaultLogger())).offers;
 	let ret = `<table>${ OFFER_HEADERS }`;
 	for (const offer of offers) {
-		const dbOffer = (await Offer.findOneById(offer.id))!;
-		ret += await offerToHtml(dbOffer);
+		const appOffer = (await AppOffer.findOne({ offerId: offer.id, appId: user.appId }))!;
+		ret += await offerToHtml(appOffer.offer, appOffer);
 	}
 	ret += "</table>";
 	return ret;
@@ -613,12 +637,12 @@ export async function changeOffer(body: { cap: Cap }, params: { app_id: string, 
 
 	let didChange = false;
 	if (body && body.cap) {
-		if (!isNothing(body.cap.total)  && body.cap.total >= 0) {
-			offer.cap.total = body.cap.total;
+		if (!isNothing(body.cap.total) && body.cap.total >= 0) {
+			appOffer.cap.total = body.cap.total;
 			didChange = true;
 		}
 		if (!isNothing(body.cap.per_user) && body.cap.per_user >= 0) {
-			offer.cap.per_user = body.cap.per_user;
+			appOffer.cap.per_user = body.cap.per_user;
 			didChange = true;
 		}
 	}

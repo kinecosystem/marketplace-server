@@ -126,32 +126,9 @@ function createOrder(data?: DeepPartial<Order>, contexts?: Array<DeepPartial<Ord
 }
 
 export const Order = {
-	// count number of orders completed/pending/opened for a given offer (and an optional user)
-	countByOffer(offerId: string, userId?: string): Promise<number> {
-		const statuses = userId ? ["pending"] : ["opened", "pending"];
-
-		const query = OrderImpl.createQueryBuilder("ordr"); // don't use 'order', it messed things up
-
-		if (userId) {
-			query.innerJoin("ordr.contexts", "context", "context.user_id = :userId", { userId });
-		}
-		query.where("ordr.offer_id = :offerId", { offerId });
-		query.andWhere(new Brackets(qb => {
-			qb.where("ordr.status = :status", { status: "completed" })
-				.orWhere(
-					new Brackets(qb2 => {
-						qb2.where("ordr.status IN (:statuses)", { statuses })
-							.andWhere("ordr.expiration_date > :date", { date: new Date() });
-					})
-				);
-		}));
-
-		return query.getCount();
-	},
-
 	// count the number of orders completed/pending/opened per offer for a given user or all
-	async countAllByOffer(appId: string, userId?: string): Promise<Map<string, number>> {
-		const statuses = userId ? ["pending"] : ["opened", "pending"];
+	async countAllByOffer(appId: string, options: { userId?: string, offerId?: string } = {}): Promise<Map<string, number>> {
+		const statuses = options.userId ? ["pending"] : ["opened", "pending"];
 
 		const query = OrderImpl.createQueryBuilder("ordr"); // don't use 'order', it messed things up
 		query.select("ordr.offer_id");
@@ -160,8 +137,11 @@ export const Order = {
 		query.leftJoin("ordr.contexts", "context");
 		query.leftJoin("context.user", "user", `"user".app_id = :appId`, { appId });
 
-		if (userId) {
-			query.andWhere("context.user_id = :userId", { userId });
+		if (options.userId) {
+			query.andWhere("context.user_id = :userId", { userId: options.userId });
+		}
+		if (options.offerId) {
+			query.andWhere("ordr.offer_id = :offerId", { offerId: options.offerId });
 		}
 
 		query.andWhere(new Brackets(qb => {

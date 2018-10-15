@@ -58,12 +58,8 @@ export class Application extends CreationDateModel {
 }
 
 @Entity({ name: "applications_offers_offers" })
-@Initializer("apiKey", () => generateId(IdPrefix.App))
 @Register
 export class AppOffer extends BaseEntity {
-	// XXX testing purposes
-	public static SAMPLE_API_KEY = "A28hNcn2wp77QyaM8kB2C";
-
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
 		return await AppOffer.createQueryBuilder("app_offer")
 			.leftJoinAndSelect("app_offer.offer", "offer")
@@ -95,13 +91,12 @@ export class AppOffer extends BaseEntity {
 	public readonly app!: Application;
 
 	public async didExceedCap(userId: string): Promise<boolean> {
-		const total = await Order.countByOffer(this.offerId);
-
+		const total = (await Order.countAllByOffer(this.appId, { offerId: this.offerId })).get(this.offerId) || 0;
 		if (total >= this.cap.total) {
 			return true;
 		}
 
-		const forUser = await Order.countByOffer(this.offerId, userId);
+		const forUser = (await Order.countAllByOffer(this.appId, { offerId: this.offerId, userId })).get(this.offerId) || 0;
 		if (forUser >= this.cap.per_user) {
 			return true;
 		}

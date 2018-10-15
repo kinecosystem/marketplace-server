@@ -71,20 +71,29 @@ function getOfferTranslations(language: string | false, offerId: string, availab
 	}, {} as OfferTranslations);
 }
 
+async function getLanguage(acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<[string | false, OfferTranslation[]]> {
+	if (acceptsLanguagesFunc) {
+		const [availableLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({ languages: acceptsLanguagesFunc() });
+		const language = acceptsLanguagesFunc(availableLanguages); // get the most suitable language for the client
+		return [language, availableTranslations];
+	}
+	return [false, []];
+}
+
 /**
  * return the sublist of offers from this app that the user can complete due to capping
  */
 async function filterOffers(userId: string, appId: string, appOffers: AppOffer[], logger: LoggerInstance, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Offer[]> {
-	const totalOfferCounts = await Order.countAllByOffer(appId);
-	const userOfferCounts = await Order.countAllByOffer(appId, userId);
-	const contents = await offerContents.getAllContents();
-	let availableTranslations: OfferTranslation[] = [];
-	let language: string | false = false;
-	if (acceptsLanguagesFunc) {
-		let availableLanguages;
-		[availableLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({ languages: acceptsLanguagesFunc() });
-		language = acceptsLanguagesFunc(availableLanguages); // get the most suitable language for the client
+	if (!appOffers) { // special case as most partners don't hanve spend offers
+		return [];
 	}
+	const [totalOfferCounts, userOfferCounts, contents, [language, availableTranslations]] = await Promise.all([
+		Order.countAllByOffer(appId),
+		Order.countAllByOffer(appId, { userId }),
+		offerContents.getAllContents(),
+		getLanguage(acceptsLanguagesFunc)
+	]);
+
 	return (await Promise.all(
 		appOffers
 			.map(async appOffer => {
@@ -109,38 +118,39 @@ async function filterOffers(userId: string, appId: string, appOffers: AppOffer[]
 }
 
 export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<OfferList> {
-	let offers = [] as Offer[];
-
-	if (!filters.type || filters.type === "earn") {
-		offers = offers.concat(
-			await filterOffers(
+	async function getEarn() {
+		if (!filters.type || filters.type === "earn") {
+			const offers = await filterOffers(
 				userId,
 				appId,
 				await AppOffer.getAppOffers(appId, "earn"),
 				logger,
 				acceptsLanguagesFunc
-			)
-		);
-		// TODO we might want to add a rate limit/ daily cap globally per app
-		// global earn capping
-		const max_daily_earn_offers = getConfig().max_daily_earn_offers;
-		if (max_daily_earn_offers !== null) {
-			offers = offers.slice(0, Math.max(0, max_daily_earn_offers - await dbOrders.Order.countToday(userId, "earn")));
+			);
+			// TODO we might want to add a rate limit/ daily cap globally per app
+			// global earn capping
+			const max_daily_earn_offers = getConfig().max_daily_earn_offers;
+			if (max_daily_earn_offers !== null) {
+				return offers.slice(0, Math.max(0, max_daily_earn_offers - await dbOrders.Order.countToday(userId, "earn")));
+			}
+			return offers;
 		}
+		return [];
 	}
-
-	if (!filters.type || filters.type === "spend") {
-		offers = offers.concat(
-			await filterOffers(
+	async function getSpend() {
+		if (!filters.type || filters.type === "spend") {
+			return await filterOffers(
 				userId,
 				appId,
 				await AppOffer.getAppOffers(appId, "spend"),
 				logger,
 				acceptsLanguagesFunc
-			)
-		);
+			);
+		}
+		return [];
 	}
 
+	const offers: Offer[] = ([] as Offer[]).concat(...(await Promise.all([getEarn(), getSpend()])));
 	metrics.offersReturned(offers.length, appId);
 	return { offers, paging: { cursors: {} } };
 }

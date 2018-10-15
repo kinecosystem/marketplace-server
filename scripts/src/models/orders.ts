@@ -2,16 +2,16 @@ import * as moment from "moment";
 import { DeepPartial } from "typeorm/common/DeepPartial";
 import { FindManyOptions } from "typeorm/find-options/FindManyOptions";
 import {
-	Index,
+	BaseEntity,
+	Brackets,
 	Column,
 	Entity,
-	Brackets,
-	OneToMany,
-	ManyToOne,
 	getManager,
-	ObjectType,
-	BaseEntity,
+	Index,
 	JoinColumn,
+	ManyToOne,
+	ObjectType,
+	OneToMany,
 	PrimaryColumn,
 	SelectQueryBuilder
 } from "typeorm";
@@ -22,7 +22,6 @@ import { generateId, IdPrefix } from "../utils";
 import { User } from "./users";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
 import { CreationDateModel, initializers as Initializers, register as Register } from "./index";
-import { Exception } from "winston";
 
 export interface OrderMeta {
 	title: string;

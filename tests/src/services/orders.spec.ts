@@ -1,6 +1,6 @@
 import * as moment from "moment";
-
-import { random } from "../../../scripts/bin/utils";
+import * as metrics from "../../../scripts/bin/metrics";
+import { generateId, random, IdPrefix } from "../../../scripts/bin/utils";
 import { Event } from "../../../scripts/bin/analytics";
 import { User } from "../../../scripts/bin/models/users";
 import { JWTValue, Offer } from "../../../scripts/bin/models/offers";
@@ -22,7 +22,6 @@ import { JWTContent } from "../../../scripts/bin/public/jwt";
 
 import * as helpers from "../helpers";
 import * as jsonwebtoken from "jsonwebtoken";
-import * as expect from "expect";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
@@ -44,6 +43,10 @@ describe("test orders", async () => {
 	afterEach(async done => {
 		await closeModels();
 		done();
+	});
+
+	afterAll(() => {
+		metrics.destruct();
 	});
 
 	test("getAll and filters", async () => {
@@ -243,7 +246,7 @@ describe("test orders", async () => {
 	});
 
 	test("only app offers should return", async () => {
-		const app = await helpers.createApp(`test:${random()}`);
+		const app = await helpers.createApp(generateId(IdPrefix.App));
 		const user = await helpers.createUser({ appId: app.id });
 		const offers = await Offer.find();
 		const offersIds: string[] = [];
@@ -270,6 +273,37 @@ describe("test orders", async () => {
 
 		const appOffers = [...await AppOffer.getAppOffers(app.id, "earn"), ...await AppOffer.getAppOffers(app.id, "spend")];
 
-		expect(offersIds.sort()).toEqual(appOffers.map(appOffer=> appOffer.offerId).sort());
+		expect(offersIds.sort()).toEqual(appOffers.map(appOffer => appOffer.offerId).sort());
+	});
+
+	test("offer cap is not shared between apps", async () => {
+		const offer = await Offer.findOne();
+
+		async function createAppUser(offer: Offer, appId: string): Promise<User> {
+			const app = await helpers.createApp(appId);
+			const user = await helpers.createUser({ appId: app.id });
+			await AppOffer.create({
+				appId: app.id,
+				offerId: offer.id,
+				cap: { total: 1, per_user: 1 },
+				walletAddress: "some_address"
+			}).save();
+
+			return user;
+		}
+
+		const user1 = await createAppUser(offer, generateId(IdPrefix.App));
+		const user2 = await createAppUser(offer, generateId(IdPrefix.App));
+
+
+		const openOrder = await createMarketplaceOrder(offer.id, user1, getDefaultLogger());
+		const order = await submitOrder(openOrder.id, user1.id, "{}", user1.walletAddress, user1.appId, getDefaultLogger());
+		await helpers.completePayment(order.id);
+
+		// user1 should receive an error
+		await expect(createMarketplaceOrder(offer.id, user1, getDefaultLogger())).rejects.toThrow();
+
+		// user2 should be able to open an order
+		await expect(createMarketplaceOrder(offer.id, user2, getDefaultLogger())).resolves.toBeDefined();
 	});
 });

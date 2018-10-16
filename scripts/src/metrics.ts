@@ -3,10 +3,13 @@ import { StatsD } from "hot-shots";
 import { getConfig } from "./config";
 import { MarketplaceError } from "./errors";
 import { Order } from "./models/orders";
-import { User } from "./models/users";
 
 // XXX can add general tags to the metrics (i.e. - public/ internal, machine name etc)
 const statsd = new StatsD(Object.assign({ prefix: "marketplace_" }, getConfig().statsd));
+
+export function destruct() {
+	statsd.close(() => console.log("The close did not work quite right"));
+}
 
 export function userRegister(newUser: boolean, newWallet: boolean) {
 	statsd.increment("user_register", 1, undefined, { new_user: newUser.toString(), new_wallet: newWallet.toString() });

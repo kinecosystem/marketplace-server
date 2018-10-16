@@ -57,23 +57,23 @@ export class Application extends CreationDateModel {
 	}
 }
 
-@Entity({ name: "applications_offers_offers" })
+@Entity({ name: "application_offers" })
 @Register
 export class AppOffer extends BaseEntity {
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
 		return await AppOffer.createQueryBuilder("app_offer")
 			.leftJoinAndSelect("app_offer.offer", "offer")
-			.where(`"applicationsId" = :appId`, { appId })
+			.where("app_id = :appId", { appId })
 			.andWhere("offer.type = :type", { type })
 			.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
 			.addOrderBy("offer.id", "ASC")
 			.getMany();
 	}
 
-	@PrimaryColumn({ name: "applicationsId" })
+	@PrimaryColumn({ name: "app_id" })
 	public appId!: string;
 
-	@PrimaryColumn({ name: "offersId" })
+	@PrimaryColumn({ name: "offer_id" })
 	public offerId!: string;
 
 	@Column("simple-json")
@@ -83,11 +83,11 @@ export class AppOffer extends BaseEntity {
 	public walletAddress!: string;
 
 	@ManyToOne(type => Offer, { eager: true })
-	@JoinColumn({ name: "offersId" })
+	@JoinColumn({ name: "offer_id" })
 	public readonly offer!: Offer;
 
 	@ManyToOne(type => Application, app => app.appOffers)
-	@JoinColumn({ name: "applicationsId" })
+	@JoinColumn({ name: "app_id" })
 	public readonly app!: Application;
 
 	public async didExceedCap(userId: string): Promise<boolean> {

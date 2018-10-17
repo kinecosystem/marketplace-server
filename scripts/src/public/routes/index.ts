@@ -50,7 +50,7 @@ function proxyOverRouter(router: express.Router, proxy: ExtendedRouter, obj: any
 
 const AUTHENTICATED_METHODS = ["get", "delete", "post", "put", "patch"];
 
-enum AuthScopes { TOS }
+enum AuthScopes { }
 
 function Router(): ExtendedRouter {
 	const router = express.Router() as ExtendedRouter;
@@ -63,8 +63,10 @@ function Router(): ExtendedRouter {
 						return (target as any)[name](path, async (req: express.Request, res: express.Response, next: express.NextFunction) => {
 							const token = await authenticate(req);
 							const user = await db.User.findOneById(token.userId);
-							// XXX scopes should be per token and should not consider user data
-							if (scopes.includes(AuthScopes.TOS) && (!user || !user.activated || token.createdDate < user.activatedDate!)) {
+
+							if (!user) {
+								// This error now defines an inconsistent state in the DB where a token exists but not user is found
+								// This should never happen as the token.user_id is a foreign key to the users table
 								throw TOSMissingOrOldToken();
 							}
 
@@ -88,20 +90,20 @@ function Router(): ExtendedRouter {
 export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.use(Router().get(createPath("config/", pathPrefix), getConfigHandler));
 
-	app.use(Router().authenticated(/* no TOS scope */).get(createPath("offers/", pathPrefix), getOffers));
+	app.use(Router().authenticated().get(createPath("offers/", pathPrefix), getOffers));
 
-	app.use(Router().authenticated(AuthScopes.TOS).post(createPath("offers/external/orders", pathPrefix), createExternalOrder));
-	app.use(Router().authenticated(AuthScopes.TOS).post(createPath("offers/:offer_id/orders", pathPrefix), createMarketplaceOrder));
+	app.use(Router().authenticated().post(createPath("offers/external/orders", pathPrefix), createExternalOrder));
+	app.use(Router().authenticated().post(createPath("offers/:offer_id/orders", pathPrefix), createMarketplaceOrder));
 
-	app.use(Router().authenticated(AuthScopes.TOS).get(createPath("orders/", pathPrefix), getOrderHistory));
-	app.use(Router().authenticated(AuthScopes.TOS).get(createPath("orders/:order_id", pathPrefix), getOrder));
-	app.use(Router().authenticated(AuthScopes.TOS).post(createPath("orders/:order_id", pathPrefix), submitOrder));
-	app.use(Router().authenticated(AuthScopes.TOS).delete(createPath("orders/:order_id", pathPrefix), cancelOrder));
-	app.use(Router().authenticated(AuthScopes.TOS).patch(createPath("orders/:order_id", pathPrefix), changeOrder));
+	app.use(Router().authenticated().get(createPath("orders/", pathPrefix), getOrderHistory));
+	app.use(Router().authenticated().get(createPath("orders/:order_id", pathPrefix), getOrder));
+	app.use(Router().authenticated().post(createPath("orders/:order_id", pathPrefix), submitOrder));
+	app.use(Router().authenticated().delete(createPath("orders/:order_id", pathPrefix), cancelOrder));
+	app.use(Router().authenticated().patch(createPath("orders/:order_id", pathPrefix), changeOrder));
 
 	app.use(Router().post(createPath("users/", pathPrefix), signInUser));
-	app.use(Router().authenticated(AuthScopes.TOS).get(createPath("users/exists", pathPrefix), userExists));
-	app.use(Router().authenticated(/* no TOS scope */).post(createPath("users/me/activate", pathPrefix), activateUser));
+	app.use(Router().authenticated().get(createPath("users/exists", pathPrefix), userExists));
+	app.use(Router().authenticated().post(createPath("users/me/activate", pathPrefix), activateUser));
 
 	app.get("/status", statusHandler);
 }

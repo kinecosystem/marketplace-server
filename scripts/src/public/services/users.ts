@@ -22,7 +22,7 @@ export type AuthToken = {
 function AuthTokenDbToApi(authToken: db.AuthToken, user: db.User, logger: LoggerInstance): AuthToken {
 	return {
 		token: authToken.id,
-		activated: user.activated,
+		activated: true, // always true - activation not needed
 		app_id: user.appId,
 		user_id: user.appUserId,
 		ecosystem_user_id: user.id,
@@ -93,32 +93,12 @@ export async function getOrCreateUserCredentials(
 
 export async function activateUser(
 	authToken: db.AuthToken, user: db.User, logger: LoggerInstance): Promise<AuthToken> {
-
-	logger.info("activating user", { userId: user.id });
-	if (!user.activated) {
-		await getManager().transaction(async mgr => {
-			user.activatedDate = new Date();
-			await mgr.save(user);
-
-			authToken = db.AuthToken.new(pick(authToken, "userId", "deviceId"));
-			await mgr.save(authToken);
-			// XXX should we deactivate old tokens?
-		});
-
-		// XXX should implement some sort of authtoken scoping that will be encoded into the token:
-		// token.scope = {tos: true}
-		logger.info(`new  activated user ${user.id}`);
-		metrics.userActivate(true);
-	} else {
-		logger.info(`existing user already activated ${user.id}`);
-		metrics.userActivate(false);
-	}
-
+	// no activation needed anymore
 	return AuthTokenDbToApi(authToken, user, logger);
 }
 
 export async function userExists(appId: string, appUserId: string, logger?: LoggerInstance): Promise<boolean> {
 	const user = await db.User.findOne({ appId, appUserId });
 	logger && logger.debug(`userExists service appId: ${ appId }, appUserId: ${ appUserId }, user: `, user);
-	return user !== undefined && user.activated;
+	return user !== undefined;
 }

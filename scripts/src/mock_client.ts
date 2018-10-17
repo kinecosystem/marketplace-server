@@ -95,14 +95,7 @@ async function didNotApproveTOS() {
 			userId: "new_user_123" },  "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	const offers = await client.getOffers();
-	try {
-		await client.createOrder(offers.offers[0].id);
-	} catch (error) {
-		console.log("OK.\n");
-		return; // ok!
-	}
-
-	throw Error("expected to throw have to complete TOS");
+	await client.createOrder(offers.offers[0].id); // should not throw - we removed need of activate
 }
 
 async function spendFlow() {

@@ -2,7 +2,7 @@ import { Application } from "../models/applications";
 import { Offer, PollAnswer } from "../models/offers";
 import { getManager } from "typeorm";
 import { User } from "../models/users";
-import { OpenOrderStatus, Order } from "../models/orders";
+import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
 import { IdPrefix, isNothing } from "../utils";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getDefaultLogger } from "../logging";
@@ -274,8 +274,8 @@ async function offerToHtml(offer: Offer): Promise<string> {
 <td>${ offer.meta.title }</td>
 <td>${ offer.meta.description }</td>
 <td><img src="${offer.meta.image}"/></td>
-<td><input type="text" onchange="submitData('/offers/${ offer.id }', { cap: { total: this.value } })" value="${ offer.cap.total }"/></td>
-<td><input type="text" onchange="submitData('/offers/${ offer.id }', { cap: { per_user: this.value } })" value="${ offer.cap.per_user }"/></td>
+<td><input type="text" onchange="submitData('/offers/${ offer.id }', { cap: { total: parseInt(this.value, 10) } })" value="${ offer.cap.total }"/></td>
+<td><input type="text" onchange="submitData('/offers/${ offer.id }', { cap: { per_user: parseInt(this.value, 10) } })" value="${ offer.cap.per_user }"/></td>
 <td>${ offer.ownerId }</td>
 <td><a href="${ BLOCKCHAIN.horizon_url}/accounts/${ offer.blockchainData.recipient_address }">${ offer.blockchainData.recipient_address }</a></td>
 <td><a href="${ BLOCKCHAIN.horizon_url}/accounts/${ offer.blockchainData.sender_address }">${ offer.blockchainData.sender_address }</a></td>
@@ -284,7 +284,13 @@ async function offerToHtml(offer: Offer): Promise<string> {
 }
 
 async function orderToHtml(order: Order): Promise<string> {
-	const contexts = order.contexts || [];
+	const defaultContext = {
+		meta: { title: "", description: "", content: "" },
+		type: "",
+		userId: ""
+	};
+
+	const contexts = order.contexts || [defaultContext];
 	const transactionId = order.blockchainData ? order.blockchainData.transaction_id : null;
 	const payJwt = order.value && order.value.type === "payment_confirmation" ? order.value.jwt : null;
 	let html = "";
@@ -296,7 +302,7 @@ async function orderToHtml(order: Order): Promise<string> {
 <td><pre>${ JSON.stringify(order.error) }</pre></td>
 <td>${ order.origin }</td>
 <td>${ context.type }</td>
-<td><a href="/users/${ context.user.id }">${ context.user.id }</a></td>
+<td><a href="/users/${ context.userId }">${ context.userId }</a></td>
 <td>${ order.amount }</td>
 <td>${ context.meta.title }</td>
 <td>${ context.meta.description }</td>
@@ -467,22 +473,23 @@ export async function getApplicationUserData(params: { app_user_id: string, app_
 }
 
 export async function getOrders(params: any, query: Paging & { status?: OpenOrderStatus, user_id?: string, offer_id?: string }): Promise<string> {
-	const queryBy: { offerId?: string, userId?: string, status?: OpenOrderStatus } = {};
+	const q = await Order.queryBuilder("order");
+
 	if (query.offer_id) {
-		queryBy.offerId = query.offer_id;
-	}
-	if (query.user_id) {
-		queryBy.userId = query.user_id;
+		q.andWhere("offer_id = :offer_id", { offer_id: query.offer_id });
 	}
 	if (query.status) {
-		queryBy.status = query.status;
+		q.andWhere("status = :status", { status: query.status });
 	}
-	const orders = await Order.find({
-		where: queryBy,
-		order: { currentStatusDate: "DESC" },
-		take: take(query),
-		skip: skip(query)
-	});
+	if (query.user_id) {
+		const contexts = await OrderContext.find({ userId: query.user_id });
+		if (contexts.length > 0) {
+			q.andWhere("id in (:ids)", { ids: contexts.map(c => c.orderId) });
+		} else {
+			q.andWhere("id = 'no-such-id' ");
+		}
+	}
+	const orders = await q.orderBy("current_status_date", "DESC").skip(skip(query)).take(take(query)).getMany();
 
 	let ret = `<table>${ ORDER_HEADERS }`;
 	for (const order of orders) {
@@ -541,6 +548,7 @@ export async function getOrder(params: { order_id: string }, query: any): Promis
 	}
 	let ret = `<table>${ ORDER_HEADERS }`;
 	for (const order of orders) {
+		order.contexts = await OrderContext.find({ orderId: order.id });
 		ret += await orderToHtml(order);
 	}
 	ret += "</table>";
@@ -608,12 +616,12 @@ export async function changeOffer(body: Partial<Offer>, params: { offer_id: stri
 
 	let didChange = false;
 	if (body && body.cap) {
-		if (body.cap.total && !isNothing(parseInt(body.cap.total as any, 10)) && parseInt(body.cap.total as any, 10) >= 0) {
-			offer.cap.total = parseInt(body.cap.total as any, 10);
+		if (!isNothing(body.cap.total)  && body.cap.total >= 0) {
+			offer.cap.total = body.cap.total;
 			didChange = true;
 		}
-		if (body.cap.per_user && !isNothing(parseInt(body.cap.per_user as any, 10)) && parseInt(body.cap.per_user as any, 10) >= 0) {
-			offer.cap.per_user = parseInt(body.cap.per_user as any, 10);
+		if (!isNothing(body.cap.per_user) && body.cap.per_user >= 0) {
+			offer.cap.per_user = body.cap.per_user;
 			didChange = true;
 		}
 	}

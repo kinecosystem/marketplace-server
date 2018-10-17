@@ -268,7 +268,7 @@ async function earnTutorial() {
 		apiKey: API_KEY,
 		userId: "tutorial:" + generateId() }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
-	await client.activate();
+	// await client.activate(); // test removal of the need to activate
 
 	const selectedOffer = await getOffer(client, "earn", "tutorial");
 

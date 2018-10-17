@@ -27,7 +27,7 @@ describe("api tests for /users", async () => {
 	});
 
 	test("userExists", async () => {
-		const user = await helpers.createUser({ activated: true });
+		const user = await helpers.createUser();
 		expect(await userExists(user.appId, user.appUserId)).toBeTruthy();
 		expect(await userExists("another-app", user.appUserId)).toBeFalsy();
 		expect(await userExists(user.appId, "another-user-id")).toBeFalsy();

@@ -95,14 +95,7 @@ async function didNotApproveTOS() {
 			userId: "new_user_123" },  "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	const offers = await client.getOffers();
-	try {
-		await client.createOrder(offers.offers[0].id);
-	} catch (error) {
-		console.log("OK.\n");
-		return; // ok!
-	}
-
-	throw Error("expected to throw have to complete TOS");
+	await client.createOrder(offers.offers[0].id); // should not throw - we removed need of activate
 }
 
 async function spendFlow() {
@@ -268,7 +261,7 @@ async function earnTutorial() {
 		apiKey: API_KEY,
 		userId: "tutorial:" + generateId() }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
-	// await client.activate(); // test removal of the need to activate
+	await client.activate();
 
 	const selectedOffer = await getOffer(client, "earn", "tutorial");
 

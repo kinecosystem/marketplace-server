@@ -23,7 +23,7 @@ const animalPoll: Poll = {
 	}],
 };
 
-export async function createUser(options: { appId?: string; activated?: boolean; } = {}): Promise<User> {
+export async function createUser(options: { appId?: string } = {}): Promise<User> {
 	const uniqueId = generateId();
 	const userData = {
 		appUserId: `test_${uniqueId}`,
@@ -31,9 +31,6 @@ export async function createUser(options: { appId?: string; activated?: boolean;
 		walletAddress: `test_${uniqueId}`
 	} as User;
 
-	if (options.activated) {
-		userData.activatedDate = new Date();
-	}
 	const user = await (User.new(userData)).save();
 
 	const authToken = await (AuthToken.new({

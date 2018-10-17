@@ -163,11 +163,16 @@ export async function getCsvTemplateData() {
 }
 
 export async function writeCsvTemplateToFile(fileName: string = "translation_template.csv") {
-	writeFile(fileName, await getCsvTemplateData(), (err: NodeJS.ErrnoException) => {
-		if (err) {
-			console.error("Error:", err);
-		}
-		console.log("CSV saved as", fileName);
+	return new Promise(async (resolve, reject) => {
+		writeFile(fileName, await getCsvTemplateData(), (err: NodeJS.ErrnoException) => {
+			if (err) {
+				console.error("Error:", err);
+				reject(err);
+				return;
+			}
+			console.log("CSV saved as", fileName);
+			resolve(fileName);
+		});
 	});
 }
 

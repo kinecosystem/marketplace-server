@@ -20,18 +20,11 @@ export class User extends CreationDateModel {
 	@Column({ name: "wallet_address" })
 	public walletAddress!: string;
 
-	@Column({ name: "activated_date", nullable: true })
-	public activatedDate?: Date;
-
 	@OneToMany(type => OrderContext, context => context.user)
 	public contexts!: OrderContext[];
 
 	@Column({ name: "wallet_count", default: 1 })
 	public walletCount!: number;
-
-	public get activated(): boolean {
-		return !!this.activatedDate;
-	}
 }
 
 @Entity({ name: "auth_tokens" })

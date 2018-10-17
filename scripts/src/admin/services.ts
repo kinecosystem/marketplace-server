@@ -329,7 +329,6 @@ async function userToHtml(user: User): Promise<string> {
 <a href="/wallets/${ user.walletAddress }/payments">kin transactions</a>
 </li>
 <li>created: ${ user.createdDate }</li>
-<li>activated: ${ user.activatedDate} </li>
 <li><a href="/orders?user_id=${ user.id }">orders</a></li>
 <li><a href="/users/${ user.id }/offers">offers</a></li>
 </ul>`;

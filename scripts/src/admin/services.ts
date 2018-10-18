@@ -220,7 +220,6 @@ function offerStatsToHtml(stats: OfferStats) {
 <td>${ stats.id }</td>
 <td>${ stats.name }</td>
 <td>${ stats.type }</td>
-<td>${ stats.total_cap }</td>
 <td>${ stats.orders }</td>
 <td>${ stats.failed_orders }</td>
 <td>${ stats.assets_owned }</td>

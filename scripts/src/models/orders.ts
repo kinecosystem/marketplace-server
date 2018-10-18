@@ -134,11 +134,12 @@ export const Order = {
 		query.addSelect("COUNT(DISTINCT(ordr.id)) AS cnt");
 
 		query.leftJoin("ordr.contexts", "context");
-		query.leftJoin("context.user", "user");
-		query.andWhere(`"user".app_id = :appId`, { appId });
 
 		if (options.userId) {
 			query.andWhere("context.user_id = :userId", { userId: options.userId });
+		} else {
+			query.leftJoin("context.user", "user");
+			query.andWhere(`"user".app_id = :appId`, { appId });
 		}
 		if (options.offerId) {
 			query.andWhere("ordr.offer_id = :offerId", { offerId: options.offerId });

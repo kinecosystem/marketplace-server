@@ -3,7 +3,7 @@ import { getDefaultLogger } from "../logging";
 
 import {
 	getApplications, getApplication, getOffers,
-	getOffer, getPollResults, getAllOfferStats,
+	getOffer, getPollResults,
 	getUserData, getApplicationUserData, getOrder,
 	getApplicationUsers, getOfferStats,
 	getOrders, fuzzySearch, getWallet, getWalletPayments,
@@ -148,7 +148,6 @@ export async function index(params: { app_id: string }, query: any): Promise<str
 <li><a href="/applications">/applications</a></li>
 <li><a href="/offers">/offers</a></li>
 <li><a href="/orders">/orders</a></li>
-<li><a href="/offers/stats">/offers/stats</a></li>
 <li><a href="/fuzzy">/fuzzy</a></li>
 </ul>`;
 }
@@ -159,13 +158,12 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		.get("/applications", wrapService(getApplications))
 		.get("/applications/:app_id", wrapService(getApplication))
 		.get("/applications/:app_id/offers", wrapService(getApplicationOffers))
+		.get("/applications/:app_id/offers/stats", wrapService(getOfferStats))
 		.get("/applications/:app_id/users", wrapService(getApplicationUsers))
 		.get("/applications/:app_id/stats", wrapService(getApplicationStats))
 		.get("/offers", wrapService(getOffers))
 		.get("/orders", wrapService(getOrders))
-		.get("/offers/stats", wrapService(getAllOfferStats))
 		.get("/offers/:offer_id", wrapService(getOffer))
-		.get("/offers/:offer_id/stats", wrapService(getOfferStats))
 		.get("/polls/:offer_id", wrapService(getPollResults))
 		.get("/users/:user_id", wrapService(getUserData))
 		.get("/users/:user_id/offers", wrapService(getUserOffers))

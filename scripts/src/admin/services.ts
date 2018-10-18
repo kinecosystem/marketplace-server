@@ -60,7 +60,6 @@ const OFFER_STATS_HEADERS = `<tr>
 <th>ID</th>
 <th>name</th>
 <th>type</th>
-<th>total cap</th>
 <th>completed/pending orders</th>
 <th>failed orders</th>
 <th>assets owned</th>
@@ -105,7 +104,6 @@ function getOfferStatsQuery(offerId: string | "all") {
   a.id,
   a.name,
   a.type,
-  a.cap::json->'total' as total_cap,
   coalesce(ordered.num,0) as orders,
   coalesce(failed_orders.num, 0) as failed_orders,
   coalesce(owned.num,0) as assets_owned,

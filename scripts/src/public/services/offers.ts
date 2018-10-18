@@ -87,8 +87,8 @@ async function filterOffers(userId: string, appId: string, appOffers: AppOffer[]
 	if (!appOffers) { // special case as most partners don't hanve spend offers
 		return [];
 	}
-	const [totalOfferCounts, userOfferCounts, contents, [language, availableTranslations]] = await Promise.all([
-		Order.countAllByOffer(appId),
+	const [/*totalOfferCounts*/, userOfferCounts, contents, [language, availableTranslations]] = await Promise.all([
+		/*Order.countAllByOffer(appId)*/,
 		Order.countAllByOffer(appId, { userId }),
 		offerContents.getAllContents(),
 		getLanguage(acceptsLanguagesFunc)
@@ -98,9 +98,9 @@ async function filterOffers(userId: string, appId: string, appOffers: AppOffer[]
 		appOffers
 			.map(async appOffer => {
 				const offer = appOffer.offer;
-				if ((totalOfferCounts.get(offer.id) || 0) >= appOffer.cap.total) {
-					return null;
-				}
+				// if ((totalOfferCounts.get(offer.id) || 0) >= appOffer.cap.total) {
+				// 	return null;
+				// }
 				if ((userOfferCounts.get(offer.id) || 0) >= appOffer.cap.per_user) {
 					return null;
 				}

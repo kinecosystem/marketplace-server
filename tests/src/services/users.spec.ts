@@ -7,6 +7,7 @@ import { userExists } from "../../../scripts/bin/public/services/users";
 import { init as initModels, close as closeModels } from "../../../scripts/bin/models/index";
 
 import * as helpers from "../helpers";
+import * as metrics from "../../../scripts/bin/metrics";
 
 describe("api tests for /users", async () => {
 	beforeAll(async done => {
@@ -17,6 +18,7 @@ describe("api tests for /users", async () => {
 
 	afterAll(async () => {
 		await closeModels();
+		metrics.destruct();
 	});
 
 	test("return a user with 200", async () => {

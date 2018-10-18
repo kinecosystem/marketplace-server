@@ -1,10 +1,10 @@
 import "reflect-metadata";
 import { ObjectType } from "typeorm/common/ObjectType";
 import { DeepPartial } from "typeorm/common/DeepPartial";
-import { BaseEntity, Column, createConnection, PrimaryColumn, Connection, ConnectionOptions } from "typeorm";
+import { BaseEntity, Column, Connection, ConnectionOptions, createConnection, PrimaryColumn } from "typeorm";
 
 import { getConfig } from "../config";
-import { normalizeError, path, IdPrefix, generateId } from "../utils";
+import { generateId, IdPrefix, path } from "../utils";
 
 const entities: ModelConstructor[] = [];
 

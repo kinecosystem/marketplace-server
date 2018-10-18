@@ -3,21 +3,21 @@
  * All the names of companies, products and KIN values are completely made up and are used for TESTING only.
  */
 import { getConfig } from "./public/config"; // must be the first import
-getConfig();
-
 import * as fs from "fs";
 import { join } from "path";
 import { Keypair } from "@kinecosystem/kin.js";
 
-import { init as initModels, close as closeModels } from "./models";
+import { close as closeModels, init as initModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
 import { createEarn, createSpend } from "./create_data/offers";
 import { ContentType, Offer } from "./models/offers";
-import { StringMap, Application, ApplicationConfig } from "./models/applications";
+import { Application, ApplicationConfig, StringMap } from "./models/applications";
 import { path } from "./utils";
 
 import "./models/orders";
 import "./models/users";
+
+getConfig();
 
 const STELLAR_ADDRESS = process.env.STELLAR_ADDRESS;  // address to use instead of the ones defined in the data
 type AppDef = { app_id: string, name: string, api_key: string, jwt_public_keys: StringMap, config: ApplicationConfig };
@@ -62,15 +62,8 @@ function toMap(data: string[][]): Array<Map<string, string>> {
 	return list;
 }
 
-async function getAllApps(): Promise<Application[]> {
-	return await Application.createQueryBuilder("app")
-		.leftJoinAndSelect("app.offers", "offer")
-		.getMany();
-}
-
 async function parseSpend(data: string[][]) {
 	const list = toMap(data);
-	const offers: Offer[] = [];
 	for (const v of list) {
 		const offer = await createSpend(
 			v.get("OfferName")!,
@@ -97,12 +90,6 @@ async function parseSpend(data: string[][]) {
 			v.get("OrderContentHyperLink")!,
 			v.get("CouponCodes")!.split(/\s+/),
 		);
-		offers.push(offer);
-	}
-
-	for (const app of await getAllApps()) {
-		app.offers = app.offers.concat(offers);
-		await app.save();
 	}
 }
 
@@ -130,11 +117,10 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 		return offer;
 	}
 
-	const offers: Offer[] = [];
 	for (const v of list) {
 		if (v.get("OfferName") !== "") {
 			if (offer) {
-				offers.push(await createEarnInner(offer, poll));
+				await createEarnInner(offer, poll);
 			}
 			offer = v;
 			poll.pages = [];
@@ -195,14 +181,8 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 			console.log(`poll type unknown: ${v.get("PollPageType")}`);
 		}
 	}
-
 	if (offer) {
-		offers.push(await createEarnInner(offer, poll));
-	}
-
-	for (const app of await getAllApps()) {
-		app.offers = app.offers.concat(offers);
-		await app.save();
+		await createEarnInner(offer, poll);
 	}
 }
 

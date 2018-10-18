@@ -1,9 +1,10 @@
-import { Column, Entity, Index, OneToMany, PrimaryColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryColumn } from "typeorm";
 
-import { CreationDateModel, Model, register as Register, initializer as Initializer } from "./index";
+import { CreationDateModel, initializer as Initializer, Model, register as Register } from "./index";
 import { generateId, IdPrefix } from "../utils";
-import { OrderMeta, Order, OrderContext } from "./orders";
+import { OrderMeta } from "./orders";
 import { OfferTranslation } from "./translations";
+import { AppOffer } from "./applications";
 
 export type BlockchainData = {
 	transaction_id?: string;
@@ -48,16 +49,10 @@ export class Offer extends CreationDateModel {
 	public amount!: number;
 
 	@Column("simple-json")
-	public cap!: Cap;
-
-	@Column("simple-json")
 	public meta!: OfferMeta;
 
 	@Column()
 	public type!: OfferType;
-
-	@Column("simple-json", { name: "blockchain_data" })
-	public blockchainData!: BlockchainData;
 
 	@Column({ name: "owner_id" })
 	public ownerId!: string;
@@ -68,25 +63,8 @@ export class Offer extends CreationDateModel {
 	})
 	public translations!: OfferTranslation[];
 
-	// @ManyToOne(type => OfferOwner, owner => owner.offers) // XXX requires a generated value
-	public get owner(): Promise<OfferOwner | undefined> {
-		return OfferOwner.findOneById(this.ownerId);
-	}
-
-	public async didExceedCap(userId: string): Promise<boolean> {
-		// const total = await Order.countByOffer(this.id);
-
-		// if (total >= this.cap.total) {
-		// 	return true;
-		// }
-
-		const forUser = await Order.countByOffer(this.id, userId);
-		if (forUser >= this.cap.per_user) {
-			return true;
-		}
-
-		return false;
-	}
+	@OneToMany(type => AppOffer, appOffer => appOffer.offer)
+	public appOffers!: AppOffer[];
 }
 
 @Entity({ name: "offer_contents" })

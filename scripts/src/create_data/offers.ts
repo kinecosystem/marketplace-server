@@ -1,5 +1,6 @@
-import { Asset, ContentType, Offer, OfferContent, OfferOwner } from "../models/offers";
+import { Asset, Cap, ContentType, Offer, OfferContent, OfferOwner } from "../models/offers";
 import { CouponInfo, CouponOrderContent, Poll, Quiz, Tutorial } from "../public/services/offer_contents";
+import { Application, AppOffer } from "../models/applications";
 
 async function getOrCreateOwner(brandName: string): Promise<OfferOwner> {
 	let owner = await OfferOwner.findOne({ name: brandName });
@@ -53,7 +54,6 @@ export async function createSpend(
 		amount,
 		type: "spend",
 		ownerId: owner.id,
-		cap: { total: capTotal, per_user: capPerUser },
 		meta: {
 			title, image, description,
 			order_meta: {
@@ -63,7 +63,6 @@ export async function createSpend(
 				content: JSON.stringify(orderContent)
 			}
 		},
-		blockchainData: { recipient_address: walletAddress }
 	});
 	await offer.save();
 
@@ -87,6 +86,7 @@ export async function createSpend(
 		await asset.save();
 	}
 
+	await saveAppOffers(offer, { total: capTotal, per_user: capPerUser }, walletAddress);
 	return offer;
 }
 
@@ -110,7 +110,6 @@ export async function createEarn(
 		amount,
 		type: "earn",
 		ownerId: owner.id,
-		cap: { total: capTotal, per_user: capPerUser },
 		meta: {
 			title, image, description,
 			order_meta: {
@@ -118,7 +117,6 @@ export async function createEarn(
 				description: orderDescription,
 			}
 		},
-		blockchainData: { sender_address: walletAddress }
 	});
 
 	await offer.save();
@@ -130,5 +128,13 @@ export async function createEarn(
 	});
 	await content.save();
 
+	await saveAppOffers(offer, { total: capTotal, per_user: capPerUser }, walletAddress);
 	return offer;
+}
+
+async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string) {
+	await Promise.all(
+		(await Application.find()).map(app =>
+			AppOffer.create({ appId: app.id, offerId: offer.id, walletAddress, cap }).save()
+		));
 }

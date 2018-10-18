@@ -91,10 +91,10 @@ export class AppOffer extends BaseEntity {
 	public readonly app!: Application;
 
 	public async didExceedCap(userId: string): Promise<boolean> {
-		const total = (await Order.countAllByOffer(this.appId, { offerId: this.offerId })).get(this.offerId) || 0;
-		if (total >= this.cap.total) {
-			return true;
-		}
+		// const total = (await Order.countAllByOffer(this.appId, { offerId: this.offerId })).get(this.offerId) || 0;
+		// if (total >= this.cap.total) {
+		// 	return true;
+		// }
 
 		const forUser = (await Order.countAllByOffer(this.appId, { offerId: this.offerId, userId })).get(this.offerId) || 0;
 		if (forUser >= this.cap.per_user) {

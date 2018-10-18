@@ -12,13 +12,10 @@ import { getOffers as getUserOffersService } from "../public/services/offers";
 type OfferStats = {
 	id: string
 	name: string,
-	type: string,
 	total_cap: number,
 	orders: number,
+	kin: number,
 	failed_orders: number,
-	assets_owned: number,
-	assets_left: number,
-	orders_missing_asset: number
 };
 
 type AppStats = {
@@ -40,7 +37,6 @@ getBlockchainConfig(getDefaultLogger()).then(data => BLOCKCHAIN = data);
 
 const OFFER_HEADERS = `<tr>
 <th>ID</th>
-<th>stats</th>
 <th>orders</th>
 <th>polls</th>
 <th>name</th>
@@ -59,12 +55,9 @@ const OFFER_HEADERS = `<tr>
 const OFFER_STATS_HEADERS = `<tr>
 <th>ID</th>
 <th>name</th>
-<th>type</th>
-<th>completed/pending orders</th>
+<th>orders</th>
+<th>kin</th>
 <th>failed orders</th>
-<th>assets owned</th>
-<th>assets left</th>
-<th>orders missing asset</th>
 </tr>`;
 
 const APP_STATS_HEADERS = `<tr>
@@ -98,31 +91,40 @@ const ORDER_HEADERS = `<tr>
 <th>payment confirmation</th>
 </tr>`;
 
-function getOfferStatsQuery(offerId: string | "all") {
+function getOfferStatsQuery(appId: string) {
 	return `
-	 select
-  a.id,
-  a.name,
-  a.type,
-  coalesce(ordered.num,0) as orders,
-  coalesce(failed_orders.num, 0) as failed_orders,
-  coalesce(owned.num,0) as assets_owned,
-  coalesce(unowned.num,0) as assets_left,
-  CASE WHEN a.type = 'spend' THEN
-    coalesce(ordered.num,0) - coalesce(owned.num,0) ELSE
-    NULL END
-  as orders_missing_asset
-from offers a
-left join (select offer_id, count(*) as num from orders where status = 'completed' or ((status = 'pending' or status='opened') and expiration_date > now()) group by offer_id) as ordered
-on ordered.offer_id = a.id
-left join (select offer_id, count(*) as num from orders where status = 'failed' or (status = 'pending' and expiration_date < now()) group by offer_id) as failed_orders
-on failed_orders.offer_id = a.id
-left join (select offer_id, count(*) as num from assets where owner_id is null group by offer_id) unowned
-on unowned.offer_id = a.id
-left join (select offer_id, count(*) as num from assets where owner_id is not null group by offer_id) owned
-on owned.offer_id = a.id
-where a.id = '${ offerId }' or '${ offerId }' = 'all'
-order by type desc, abs(ordered.num - owned.num) desc, ordered.num desc`;
+	 with app_orders as (
+    select
+      orders.offer_id,
+      orders.amount,
+      orders.origin,
+      context.type,
+      orders.status,
+      orders.expiration_date
+    from orders
+    inner join orders_contexts context on context.order_id = orders.id
+    inner join users on users.id = context.user_id
+    where users.app_id='${appId}'
+), app_offers as (
+    select offers.*,
+      (a.cap::json->'total')::text::integer as total_cap
+    from offers
+inner join application_offers a on offers.id = a.offer_id
+where a.app_id='${appId}')
+select
+  CASE WHEN offers.id IS NULL THEN CONCAT('native ', ordered.type) ELSE offers.id END as id,
+  max(offers.name) as name,
+  MAX(offers.total_cap) as total_cap,
+  SUM(coalesce(ordered.num,0)) as orders,
+  SUM(ordered.kin) as kin,
+  SUM(coalesce(failed_orders.num, 0)) as failed_orders
+from app_offers offers
+full outer join (select offer_id, type, count(*) as num, sum(amount) as kin from app_orders where status = 'completed' group by offer_id, type) as ordered
+on ordered.offer_id = offers.id
+full outer join (select offer_id, type, count(*) as num from app_orders where status != 'completed' group by offer_id, type) as failed_orders
+on failed_orders.offer_id = offers.id
+group by id, ordered.type
+order by orders desc`;
 }
 
 function getApplicationStatsQuery(appId: string | "all") {
@@ -219,12 +221,9 @@ function offerStatsToHtml(stats: OfferStats) {
 	return `<tr>
 <td>${ stats.id }</td>
 <td>${ stats.name }</td>
-<td>${ stats.type }</td>
 <td>${ stats.orders }</td>
+<td>${ stats.kin }</td>
 <td>${ stats.failed_orders }</td>
-<td>${ stats.assets_owned }</td>
-<td>${ stats.assets_left }</td>
-<td>${ stats.orders_missing_asset }</td>
 </tr>`;
 }
 
@@ -252,6 +251,7 @@ async function appToHtml(app: Application): Promise<string> {
 <td><a href="/applications/${ app.id }/users">users</a></td>
 <td><a href="/applications/${ app.id }/offers">offers</a></td>
 <td><a href="/applications/${ app.id }/stats">stats</a></td>
+<td><a href="/applications/${ app.id }/offers/stats">offer stats</a></td>
 <td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.sender }">sender wallet (earn)</a></td>
 <td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.recipient }">recipient wallet (spend)</a></td>
 <td><pre class="wide">${ JSON.stringify(app.jwtPublicKeys, null, 2) }</pre></td>
@@ -282,7 +282,6 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 
 	return `<tr>
 <td>${ offer.id }</td>
-<td><a href="/offers/${ offer.id }/stats">stats</a></td>
 <td><a href="/orders?offer_id=${ offer.id }">orders</a></td>
 <td><a href="/polls/${ offer.id }">polls</a></td>
 <td>${ offer.name }</td>
@@ -436,19 +435,8 @@ export async function getOffer(params: { offer_id: string }, query: any): Promis
 	return `<table>${ OFFER_HEADERS }${ await offerToHtml(offer) }</table>`;
 }
 
-export async function getOfferStats(params: { offer_id: string }, query: any): Promise<string> {
-	const stats: OfferStats[] = await getManager().query(getOfferStatsQuery(params.offer_id));
-	let ret = `<table>${ OFFER_STATS_HEADERS }`;
-	for (const stat of stats) {
-		ret += offerStatsToHtml(stat);
-	}
-	ret += "</table>";
-	return ret;
-}
-
-export async function getAllOfferStats(params: any, query: any): Promise<string> {
-	const stats: OfferStats[] = await getManager().query(getOfferStatsQuery("all"));
-
+export async function getOfferStats(params: { app_id: string }, query: any): Promise<string> {
+	const stats: OfferStats[] = await getManager().query(getOfferStatsQuery(params.app_id));
 	let ret = `<table>${ OFFER_STATS_HEADERS }`;
 	for (const stat of stats) {
 		ret += offerStatsToHtml(stat);

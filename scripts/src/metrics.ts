@@ -12,50 +12,50 @@ export function destruct() {
 }
 
 export function userRegister(newUser: boolean, newWallet: boolean) {
-	statsd.increment("user_register", 1, undefined, { new_user: newUser.toString(), new_wallet: newWallet.toString() });
+	statsd.increment("user_register", 1, { new_user: newUser.toString(), new_wallet: newWallet.toString() });
 }
 
 export function userActivate(newUser: boolean) {
-	statsd.increment("user_activate", 1, undefined, { new_user: "true" });
+	statsd.increment("user_activate", 1, { new_user: "true" });
 }
 
 export function maxWalletsExceeded() {
-	statsd.increment("max_wallets_exceeded", 1, undefined);
+	statsd.increment("max_wallets_exceeded", 1);
 }
 
 export function timeRequest(time: number, method: string, path: string) {
-	statsd.timing("request", time, undefined, { method, path });
+	statsd.timing("request", time, { method, path });
 }
 
 export function createOrder(orderType: "marketplace" | "external", offerType: "earn" | "spend", offerId: string) {
-	statsd.increment("create_order", 1, undefined, { order_type: orderType, offer_type: offerType, offer_id: offerId });
+	statsd.increment("create_order", 1, { order_type: orderType, offer_type: offerType, offer_id: offerId });
 }
 
 export function submitOrder(offerType: "earn" | "spend", offerId: string) {
-	statsd.increment("submit_order", 1, undefined, { offer_type: offerType, offer_id: offerId });
+	statsd.increment("submit_order", 1, { offer_type: offerType, offer_id: offerId });
 }
 
 export function completeOrder(offerType: "earn" | "spend", offerId: string, prevStatus: string, time: number) {
-	statsd.increment("complete_order", 1, undefined, { offer_type: offerType, offer_id: offerId });
+	statsd.increment("complete_order", 1, { offer_type: offerType, offer_id: offerId });
 	// time from last status
-	statsd.timing("complete_order_time", time, undefined, { offer_type: offerType, prev_status: prevStatus });
+	statsd.timing("complete_order_time", time, { offer_type: offerType, prev_status: prevStatus });
 }
 
 export function offersReturned(numOffers: number, appId: string) {
-	statsd.histogram("offers_returned", numOffers, undefined, { app_id: appId });
+	statsd.histogram("offers_returned", numOffers, { app_id: appId });
 }
 
 export function reportClientError(error: MarketplaceError, appId: string) {
-	statsd.increment("client_error", 1, undefined,
+	statsd.increment("client_error", 1,
 		{ status: error.status.toString(), title: error.title, code: error.code.toString(), appId });
 }
 
 export function reportServerError(method: string, path: string) {
-	statsd.increment("server_error", 1, undefined, { method, path });
+	statsd.increment("server_error", 1, { method, path });
 }
 
 export function reportProcessAbort(reason: string = "") {
-	statsd.increment("process_abort", 1, undefined, { system: "exit", reason });
+	statsd.increment("process_abort", 1, { system: "exit", reason });
 }
 
 export function orderFailed(order: Order) {

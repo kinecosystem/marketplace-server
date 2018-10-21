@@ -108,11 +108,7 @@ function clientErrorHandler(error: MarketplaceError, req: express.Request, res: 
 	const log = req.logger || logger;
 
 	log.error(`client error (4xx)`, error);
-	metrics.reportClientError(error, pick(req.headers as any,
-		"x-os",
-		"x-sdk-version",
-		"x-device-model",
-		"x-device-manufacturer"));
+	metrics.reportClientError(error, req.context && req.context.user ? req.context.user.appId : "");
 	// set headers from the error if any
 	Object.keys(error.headers).forEach(key => res.setHeader(key, error.headers[key]));
 	res.status(error.status).send(error.toJson());

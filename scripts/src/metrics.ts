@@ -45,9 +45,9 @@ export function offersReturned(numOffers: number, appId: string) {
 	statsd.histogram("offers_returned", numOffers, undefined, { app_id: appId });
 }
 
-export function reportClientError(error: MarketplaceError, headers: { [name: string]: string }) {
-	const data = Object.assign({ status: error.status.toString(), title: error.title, code: error.code }, headers);
-	statsd.increment("client_error", 1, undefined, data);
+export function reportClientError(error: MarketplaceError, appId: string) {
+	statsd.increment("client_error", 1, undefined,
+		{ status: error.status.toString(), title: error.title, code: error.code.toString(), appId });
 }
 
 export function reportServerError(method: string, path: string) {
@@ -85,6 +85,7 @@ CreatedDate: ${order.createdDate.toISOString()} | LastDate: ${(order.currentStat
 				app_id: context.user.appId,
 				order_id: order.id,
 				order_origin: order.origin,
-				type: "failed_order" });
+				type: "failed_order"
+			});
 	});
 }

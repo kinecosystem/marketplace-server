@@ -47,7 +47,7 @@ export function offersReturned(numOffers: number, appId: string) {
 
 export function reportClientError(error: MarketplaceError, appId: string) {
 	statsd.increment("client_error", 1,
-		{ status: error.status.toString(), title: error.title, code: error.code.toString(), appId });
+		{ status: error.status.toString(), title: error.title, code: error.code.toString(), app_id: appId });
 }
 
 export function reportServerError(method: string, path: string) {

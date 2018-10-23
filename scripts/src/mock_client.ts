@@ -312,6 +312,19 @@ async function registerJWT() {
 	console.log("OK.\n");
 }
 
+async function extraTrustlineIsOK() {
+	console.log("===================================== extraTrustlineIsOK =====================================");
+
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+
+	const jwt = await appClient.getRegisterJWT(userId);
+	const client = await MarketplaceClient.create({ jwt });
+
+	await client.trustKin(); // should not throw
+	console.log("OK.\n");
+}
+
 async function nativeSpendFlow() {
 	console.log("===================================== nativeSpendFlow =====================================");
 
@@ -525,6 +538,7 @@ async function p2p() {
 
 async function main() {
 	await registerJWT();
+	await extraTrustlineIsOK();
 	await earnPollFlow();
 	await earnTutorial();
 	await spendFlow();

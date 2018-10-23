@@ -54,7 +54,7 @@ export const createExternalOrder = async function(req: CreateExternalOrderReques
 	res.status(201).send(order);
 } as any as RequestHandler;
 
-export type getOrderRequest = Request & {
+export type GetOrderRequest = Request & {
 	params: {
 		order_id: string;
 	}
@@ -62,12 +62,12 @@ export type getOrderRequest = Request & {
 /**
  * get an order
  */
-export const getOrder = async function(req: getOrderRequest, res: Response) {
+export const getOrder = async function(req: GetOrderRequest, res: Response) {
 	const order = await getOrderService(req.params.order_id, req.context.user!.id, req.logger);
 	res.status(200).send(order);
 } as any as RequestHandler;
 
-export type submitOrderRequest = Request & {
+export type SubmitOrderRequest = Request & {
 	params: {
 		order_id: string;
 	},
@@ -80,7 +80,7 @@ export type submitOrderRequest = Request & {
  *
  * check that order hasn't passed expiration + grace period
  */
-export const submitOrder = async function(req: submitOrderRequest, res: Response) {
+export const submitOrder = async function(req: SubmitOrderRequest, res: Response) {
 	req.logger.info("submit order", { userId: req.context.user!.id, orderId: req.params.order_id });
 
 	const order = await submitOrderService(
@@ -97,7 +97,7 @@ export const submitOrder = async function(req: submitOrderRequest, res: Response
 /**
  * cancel an order
  */
-export const cancelOrder = async function(req: getOrderRequest, res: Response) {
+export const cancelOrder = async function(req: GetOrderRequest, res: Response) {
 	await cancelOrderService(req.params.order_id, req.logger);
 	res.status(204).send();
 } as any as RequestHandler;

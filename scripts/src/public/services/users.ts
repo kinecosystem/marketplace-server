@@ -1,14 +1,12 @@
-import { getManager } from "typeorm";
 import { LoggerInstance } from "winston";
 
-import * as db from "../../models/users";
+import * as metrics from "../../metrics";
+import { MaxWalletsExceeded } from "../../errors";
+import { Order } from "../../models/orders";
+import { Application } from "../../models/applications";
+import { User, AuthToken as DbAuthToken } from "../../models/users";
 
 import * as payment from "./payment";
-import { pick } from "../../utils";
-import * as metrics from "../../metrics";
-import { Application } from "../../models/applications";
-import { MaxWalletsExceeded } from "../../errors";
-import { User } from "../../models/users";
 
 export type AuthToken = {
 	token: string;
@@ -19,7 +17,7 @@ export type AuthToken = {
 	ecosystem_user_id: string;
 };
 
-function AuthTokenDbToApi(authToken: db.AuthToken, user: db.User, logger: LoggerInstance): AuthToken {
+function AuthTokenDbToApi(authToken: DbAuthToken, user: User, logger: LoggerInstance): AuthToken {
 	return {
 		token: authToken.id,
 		activated: true, // always true - activation not needed
@@ -56,18 +54,18 @@ export async function getOrCreateUserCredentials(
 		logger.info(`returning existing user ${existingUser.id}`);
 	}
 
-	let user = await db.User.findOne({ appId, appUserId });
+	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
 		try {
 			logger.info("creating a new user", { appId, appUserId });
-			user = db.User.new({ appUserId, appId, walletAddress });
+			user = User.new({ appUserId, appId, walletAddress });
 			await user.save();
 			logger.info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
 			await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
 			metrics.userRegister(true, true);
 		} catch (e) {
 			// maybe caught a "violates unique constraint" error, check by finding the user again
-			user = await db.User.findOne({ appId, appUserId });
+			user = await User.findOne({ appId, appUserId });
 			if (user) {
 				logger.warn("solved user registration race condition");
 				await handleExistingUser(user);
@@ -80,25 +78,62 @@ export async function getOrCreateUserCredentials(
 	}
 
 	// XXX should be a scope object
-	let authToken = await db.AuthToken.findOne({
+	let authToken = await DbAuthToken.findOne({
 		where: { userId: user.id, deviceId },
 		order: { createdDate: "DESC" }
 	});
 	if (!authToken || authToken.isAboutToExpire()) {
-		authToken = await (db.AuthToken.new({ userId: user.id, deviceId }).save());
+		authToken = await (DbAuthToken.new({ userId: user.id, deviceId }).save());
 	}
 
 	return AuthTokenDbToApi(authToken, user, logger);
 }
 
 export async function activateUser(
-	authToken: db.AuthToken, user: db.User, logger: LoggerInstance): Promise<AuthToken> {
+	authToken: DbAuthToken, user: User, logger: LoggerInstance): Promise<AuthToken> {
 	// no activation needed anymore
 	return AuthTokenDbToApi(authToken, user, logger);
 }
 
 export async function userExists(appId: string, appUserId: string, logger?: LoggerInstance): Promise<boolean> {
-	const user = await db.User.findOne({ appId, appUserId });
+	const user = await User.findOne({ appId, appUserId });
 	logger && logger.debug(`userExists service appId: ${ appId }, appUserId: ${ appUserId }, user: `, user);
 	return user !== undefined;
+}
+
+export type UserInfo = {
+	earn_count: number;
+	spend_count: number;
+	last_earn: number; // timestamp
+	last_spend: number; // timestamp
+};
+
+export async function getUserInfo(userId: string): Promise<UserInfo> {
+	const data = await Order.queryBuilder("ordr")
+		.select("orders_contexts.type")
+		.addSelect("MAX(orders.created_date) as last_date")
+		.addSelect("COUNT(*) as cnt")
+		.leftJoin("ordr.contexts", "context")
+		.where("orders_contexts.user_id = :userId", { userId })
+		.groupBy("orders_contexts.type")
+		.getMany() as any as Array<{ type: string; last_date: Date; cnt: number; }>;
+
+	const info = {
+		earn_count: 0,
+		spend_count: 0,
+		last_earn: 0,
+		last_spend: 0
+	};
+
+	for (const row of data) {
+		if (row.type === "earn") {
+			info.earn_count = row.cnt;
+			info.last_earn = row.last_date.getDate();
+		} else if (row.type === "spend") {
+			info.spend_count = row.cnt;
+			info.last_spend = row.last_date.getDate();
+		}
+	}
+
+	return info;
 }

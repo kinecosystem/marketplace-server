@@ -7,6 +7,7 @@ import { Application } from "../../models/applications";
 import { User, AuthToken as DbAuthToken } from "../../models/users";
 
 import * as payment from "./payment";
+import { readUTCDate } from "../../utils";
 
 export type AuthToken = {
 	token: string;
@@ -101,39 +102,41 @@ export async function userExists(appId: string, appUserId: string, logger?: Logg
 	return user !== undefined;
 }
 
-export type UserInfo = {
+export type UserStats = {
 	earn_count: number;
 	spend_count: number;
-	last_earn: number; // timestamp
-	last_spend: number; // timestamp
+	last_earn_date?: string;
+	last_spend_date?: string;
 };
 
-export async function getUserInfo(userId: string): Promise<UserInfo> {
-	const data = await Order.queryBuilder("ordr")
-		.select("orders_contexts.type")
-		.addSelect("MAX(orders.created_date) as last_date")
+export type UserProfile = {
+	stats: UserStats
+};
+
+export async function getUserProfile(userId: string): Promise<UserProfile> {
+	const data: Array<{ type: string; last_date: string; cnt: number; }> = await Order.queryBuilder("ordr")
+		.select("context.type as type")
+		.addSelect("MAX(ordr.created_date) as last_date")
 		.addSelect("COUNT(*) as cnt")
 		.leftJoin("ordr.contexts", "context")
-		.where("orders_contexts.user_id = :userId", { userId })
-		.groupBy("orders_contexts.type")
-		.getMany() as any as Array<{ type: string; last_date: Date; cnt: number; }>;
+		.where("context.user_id = :userId", { userId })
+		.groupBy("context.type")
+		.getRawMany();
 
-	const info = {
+	const stats: UserStats = {
 		earn_count: 0,
-		spend_count: 0,
-		last_earn: 0,
-		last_spend: 0
+		spend_count: 0
 	};
 
 	for (const row of data) {
 		if (row.type === "earn") {
-			info.earn_count = row.cnt;
-			info.last_earn = row.last_date.getDate();
+			stats.earn_count = row.cnt;
+			stats.last_earn_date = readUTCDate(row.last_date).toISOString();
 		} else if (row.type === "spend") {
-			info.spend_count = row.cnt;
-			info.last_spend = row.last_date.getDate();
+			stats.spend_count = row.cnt;
+			stats.last_spend_date = readUTCDate(row.last_date).toISOString();
 		}
 	}
 
-	return info;
+	return { stats };
 }

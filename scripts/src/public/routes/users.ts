@@ -4,7 +4,7 @@ import { NoSuchApp, UnknownSignInType } from "../../errors";
 import {
 	getOrCreateUserCredentials,
 	userExists as userExistsService,
-	getUserInfo as getUserInfoService,
+	getUserProfile as getUserProfileService,
 	activateUser as activateUserService
 } from "../services/users";
 import {
@@ -92,15 +92,19 @@ export const activateUser = async function(req: Request, res: Response) {
 export type UserInfoRequest = Request & { params: { user_id: string; } };
 
 export const userInfo = async function(req: UserInfoRequest, res: Response) {
+	req.logger.debug(`userInfo userId: ${ req.params.user_id }`);
+
 	if (req.context.user!.id !== req.params.user_id) {
 		const userFound = await userExistsService(req.context.user!.appId, req.query.user_id, req.logger);
+		console.log("found user", userFound);
 		if (userFound) {
 			res.status(200).send({});
 		} else {
 			res.status(404);
 		}
 	} else {
-		res.status(200).send(getUserInfoService(req.params.user_id));
+		const profile = await getUserProfileService(req.params.user_id);
+		res.status(200).send(profile);
 	}
 } as any as RequestHandler;
 

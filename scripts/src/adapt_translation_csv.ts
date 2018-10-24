@@ -18,15 +18,15 @@ function getOfferTranslation(inputCsv: TranslationData) {
 
 async function addTranslationTo(csv: TranslationData, fromDict: { [defaultStr: string]: string }) {
 	return csv.map(([type, key, defaultStr, __, charLimit]) => ({
-			Type: type,
-			Key: key,
-			Default: defaultStr,
-			Translation: fromDict[defaultStr] || defaultStr,
-			"Character Limit": charLimit,
-		}));
+		Type: type,
+		Key: key,
+		Default: defaultStr,
+		Translation: fromDict[defaultStr] || defaultStr,
+		"Character Limit": charLimit,
+	}));
 }
 
-function writeCsvDataToFile(data: any[], fileName: string) {
+function writeCsvDataToFile(data: any[], fileName: string, resolve: (value?: any) => void, reject: (reason?: any) => void) {
 	const options = {
 		fieldSeparator: ",",
 		quoteStrings: "\"",
@@ -41,29 +41,34 @@ function writeCsvDataToFile(data: any[], fileName: string) {
 	writeFile(fileName, csvExporter.generateCsv(data, true), err => {
 		if (err) {
 			console.error("Error:", err);
+			reject(err);
 			return;
 		}
 		console.log("CSV saved as", fileName);
+		resolve(fileName);
 	});
 }
 
 export async function processFile(translationFile: string, fileToTranslate: string, saveAs: string | null = null, rowOffSet: number = 1) {
-	if (!translationFile || !fileToTranslate) {
-		console.error("Both input and output file are required");
-		return;
-	}
-	const translationCsv = readFileSync(path(translationFile));
-	const outputCsv = readFileSync(path(fileToTranslate));
-	const parsedTranslationCsv = (csvParse as CsvParse)(translationCsv);
-	const parsedCsvToTranslate = (csvParse as CsvParse)(outputCsv);
-	parsedTranslationCsv.splice(0, rowOffSet);
-	parsedCsvToTranslate.splice(0, rowOffSet);
-	const offerToTranslationDict = getOfferTranslation(parsedTranslationCsv);
-	const translatedData = await addTranslationTo(parsedCsvToTranslate, offerToTranslationDict);
-	if (!saveAs) {
-		const segments = fileToTranslate.split(".");
-		segments[0] = segments[0] + "-translated";
-		saveAs = segments.join(".");
-	}
-	writeCsvDataToFile(translatedData, saveAs);
+	return new Promise(async (resolve, reject) => {
+		if (!translationFile || !fileToTranslate) {
+			console.error("Both input and output file are required");
+			reject("Both input and output file are required");
+			return;
+		}
+		const translationCsv = readFileSync(path(translationFile));
+		const outputCsv = readFileSync(path(fileToTranslate));
+		const parsedTranslationCsv = (csvParse as CsvParse)(translationCsv);
+		const parsedCsvToTranslate = (csvParse as CsvParse)(outputCsv);
+		parsedTranslationCsv.splice(0, rowOffSet);
+		parsedCsvToTranslate.splice(0, rowOffSet);
+		const offerToTranslationDict = getOfferTranslation(parsedTranslationCsv);
+		const translatedData = await addTranslationTo(parsedCsvToTranslate, offerToTranslationDict);
+		if (!saveAs) {
+			const segments = fileToTranslate.split(".");
+			segments[0] = segments[0] + "-translated";
+			saveAs = segments.join(".");
+		}
+		writeCsvDataToFile(translatedData, saveAs, resolve, reject);
+	});
 }

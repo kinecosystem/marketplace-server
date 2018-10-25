@@ -143,8 +143,10 @@ export function readKeysDir(dir: string): KeyMap {
 	return keys;
 }
 
-export function readUTCDate(date: string): Date {
-	if (date.endsWith("Z")) {
+export function readUTCDate(date: string | Date): Date {
+	if (date instanceof Date) {
+		return date;
+	} else if (date.endsWith("Z")) {
 		return new Date(date);
 	}
 	return new Date(date + "Z");

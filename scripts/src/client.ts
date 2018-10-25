@@ -3,7 +3,7 @@ import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse } from "axios";
 import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "@kinecosystem/kin.js";
 
 import { ApiError } from "./errors";
-import { AuthToken } from "./public/services/users";
+import { AuthToken, UserProfile } from "./public/services/users";
 import { OfferList } from "./public/services/offers";
 import { CompletedPayment } from "./internal/services";
 import { ConfigResponse } from "./public/routes/config";
@@ -151,7 +151,11 @@ export class Client {
 		if (isJWT(signInPayload)) {
 			Object.assign(data, { sign_in_type: "jwt", jwt: signInPayload.jwt });
 		} else {
-			Object.assign(data, { sign_in_type: "whitelist", user_id: signInPayload.userId, api_key: signInPayload.apiKey });
+			Object.assign(data, {
+				sign_in_type: "whitelist",
+				user_id: signInPayload.userId,
+				api_key: signInPayload.apiKey
+			});
 		}
 
 		const requests = await ClientRequests.create(data);
@@ -226,6 +230,11 @@ export class Client {
 
 	public async createExternalOrder(jwt: string): Promise<OpenOrder> {
 		const res = await this.requests.request(`/v1/offers/external/orders`, { jwt }).post<OpenOrder>();
+		return res.data;
+	}
+
+	public async getUserProfile(userId: string = "me"): Promise<UserProfile> {
+		const res = await this.requests.request(`/v1/users/${userId}`).get<UserProfile>();
 		return res.data;
 	}
 

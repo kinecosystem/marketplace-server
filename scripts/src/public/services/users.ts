@@ -140,10 +140,10 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
 
 	for (const row of data) {
 		if (row.type === "earn") {
-			stats.earn_count = row.cnt;
+			stats.earn_count = Number(row.cnt);
 			stats.last_earn_date = readUTCDate(row.last_date).toISOString();
 		} else if (row.type === "spend") {
-			stats.spend_count = row.cnt;
+			stats.spend_count = Number(row.cnt);
 			stats.last_spend_date = readUTCDate(row.last_date).toISOString();
 		}
 	}

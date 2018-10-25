@@ -49,7 +49,8 @@ class SampleAppClient {
 		sender_description: string;
 		recipient_id: string;
 		recipient_title: string;
-		recipient_description: string; }) {
+		recipient_description: string;
+	}) {
 
 		const datastr = Object.keys(data).map(key => `${ key }=${ data[key as keyof typeof data] }`).join("&");
 		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/p2p/token?" + datastr);
@@ -91,8 +92,9 @@ async function didNotApproveTOS() {
 	console.log("=====================================didNotApproveTOS=====================================");
 
 	const client = await MarketplaceClient.create({
-			apiKey: API_KEY,
-			userId: "new_user_123" },  "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+		apiKey: API_KEY,
+		userId: "new_user_123"
+	}, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	const offers = await client.getOffers();
 	await client.createOrder(offers.offers[0].id); // should not throw - we removed need of activate
@@ -102,8 +104,9 @@ async function spendFlow() {
 	console.log("=====================================spend=====================================");
 
 	const client = await MarketplaceClient.create({
-			apiKey: API_KEY,
-			userId: "rich_user2" }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+		apiKey: API_KEY,
+		userId: "rich_user2"
+	}, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
 	await client.activate();
 	const selectedOffer = await getOffer(client, "spend");
@@ -156,8 +159,9 @@ async function earnPollFlow() {
 	console.log("===================================== earn poll =====================================");
 
 	const client = await MarketplaceClient.create({
-			apiKey: API_KEY,
-			userId: "earn:" + generateId() }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+		apiKey: API_KEY,
+		userId: "earn:" + generateId()
+	}, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	await client.activate();
 
@@ -215,7 +219,8 @@ async function earnQuizFlow() {
 
 	const client = await MarketplaceClient.create({
 		apiKey: API_KEY,
-		userId: "quiz_user:" + generateId() }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+		userId: "quiz_user:" + generateId()
+	}, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	await client.activate();
 
@@ -259,7 +264,8 @@ async function earnTutorial() {
 	console.log("===================================== earnTutorial =====================================");
 	const client = await MarketplaceClient.create({
 		apiKey: API_KEY,
-		userId: "tutorial:" + generateId() }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+		userId: "tutorial:" + generateId()
+	}, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	await client.activate();
 
@@ -285,7 +291,8 @@ async function testRegisterNewUser() {
 	console.log("===================================== testRegisterNewUser =====================================");
 	const client = await MarketplaceClient.create({
 		apiKey: API_KEY,
-		userId: "new_user:" + generateId() });
+		userId: "new_user:" + generateId()
+	});
 
 	console.log("OK.\n");
 }
@@ -523,8 +530,38 @@ async function p2p() {
 	console.log("OK.\n");
 }
 
+async function userProfile() {
+	console.log("===================================== userProfile =====================================");
+
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+
+	const jwt = await appClient.getRegisterJWT(userId);
+	const client = await MarketplaceClient.create({ jwt });
+
+	let profile = await client.getUserProfile();
+
+	expect(profile.stats.earn_count).toEqual(0);
+	expect(profile.stats.spend_count).toEqual(0);
+
+	// start an order
+	const selectedOffer = await getOffer(client, "earn", "tutorial");
+	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content.slice(0, 100)}`);
+	const openOrder = await client.createOrder(selectedOffer.id);
+	console.log(`got order ${openOrder.id}`);
+
+	profile = await client.getUserProfile();
+
+	console.log("profile", profile);
+	expect(profile.stats.earn_count).toEqual(1);
+	expect(profile.stats.spend_count).toEqual(0);
+
+	console.log("OK.\n");
+}
+
 async function main() {
 	await registerJWT();
+	await userProfile();
 	await earnPollFlow();
 	await earnTutorial();
 	await spendFlow();

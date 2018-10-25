@@ -1,5 +1,5 @@
 import { Request, RequestHandler, Response } from "express";
-import { NoSuchApp, UnknownSignInType } from "../../errors";
+import { InvalidWalletAddress, NoSuchApp, NoSuchUser, UnknownSignInType } from "../../errors";
 
 import {
 	activateUser as activateUserService,
@@ -10,6 +10,7 @@ import {
 import { SignInContext, validateRegisterJWT, validateWhitelist } from "../services/applications";
 import { Application, SignInType } from "../../models/applications";
 import { getConfig } from "../config";
+import { User } from "../../models/users";
 
 export type CommonSignInData = {
 	sign_in_type: "jwt" | "whitelist";
@@ -65,6 +66,32 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		req.logger);
 
 	res.status(200).send(authToken);
+} as any as RequestHandler;
+
+export const updateUser = async function(req: RegisterRequest, res: Response) {
+	const context = req.context;
+	const walletAddress = context.user!.walletAddress;
+	const appUserId = context.user!.appUserId;
+	const appId = context.user!.appId;
+	const app = await Application.findOneById(appId);
+	req.logger.info("updating user", { walletAddress, appUserId, appId });
+
+	if (!app) {
+		throw NoSuchApp(appId);
+	}
+
+	const user = await User.findOne({ appId, appUserId });
+	if (!user) {
+		throw NoSuchUser(context.user!.id);
+	}
+
+	if (!walletAddress || walletAddress.length !== 56) {
+		throw InvalidWalletAddress(walletAddress);
+	}
+
+	user.walletAddress = walletAddress;
+	await user.save();
+	res.status(204).send();
 } as any as RequestHandler;
 
 export type UserExistsRequest = Request & { query: { user_id: string; } };

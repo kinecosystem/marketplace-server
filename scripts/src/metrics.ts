@@ -8,7 +8,7 @@ import { Order } from "./models/orders";
 const statsd = new StatsD(Object.assign({ prefix: "marketplace_" }, getConfig().statsd));
 
 export function destruct() {
-	statsd.close(() => console.log("The close did not work quite right"));
+	return new Promise(resolve => statsd.close(() => resolve()));
 }
 
 export function userRegister(newUser: boolean, newWallet: boolean) {

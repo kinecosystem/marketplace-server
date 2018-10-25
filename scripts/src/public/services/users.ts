@@ -1,14 +1,14 @@
-import { getManager } from "typeorm";
 import { LoggerInstance } from "winston";
 
-import * as db from "../../models/users";
+import * as metrics from "../../metrics";
+import { MaxWalletsExceeded } from "../../errors";
+import { Order } from "../../models/orders";
+import { Application } from "../../models/applications";
+import { User, AuthToken as DbAuthToken } from "../../models/users";
 
 import * as payment from "./payment";
-import { pick } from "../../utils";
-import * as metrics from "../../metrics";
-import { Application } from "../../models/applications";
-import { MaxWalletsExceeded } from "../../errors";
-import { User } from "../../models/users";
+import { readUTCDate } from "../../utils";
+import { Brackets } from "typeorm";
 
 export type AuthToken = {
 	token: string;
@@ -19,7 +19,7 @@ export type AuthToken = {
 	ecosystem_user_id: string;
 };
 
-function AuthTokenDbToApi(authToken: db.AuthToken, user: db.User, logger: LoggerInstance): AuthToken {
+function AuthTokenDbToApi(authToken: DbAuthToken, user: User, logger: LoggerInstance): AuthToken {
 	return {
 		token: authToken.id,
 		activated: true, // always true - activation not needed
@@ -56,18 +56,18 @@ export async function getOrCreateUserCredentials(
 		logger.info(`returning existing user ${existingUser.id}`);
 	}
 
-	let user = await db.User.findOne({ appId, appUserId });
+	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
 		try {
 			logger.info("creating a new user", { appId, appUserId });
-			user = db.User.new({ appUserId, appId, walletAddress });
+			user = User.new({ appUserId, appId, walletAddress });
 			await user.save();
 			logger.info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
 			await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
 			metrics.userRegister(true, true);
 		} catch (e) {
 			// maybe caught a "violates unique constraint" error, check by finding the user again
-			user = await db.User.findOne({ appId, appUserId });
+			user = await User.findOne({ appId, appUserId });
 			if (user) {
 				logger.warn("solved user registration race condition");
 				await handleExistingUser(user);
@@ -80,25 +80,73 @@ export async function getOrCreateUserCredentials(
 	}
 
 	// XXX should be a scope object
-	let authToken = await db.AuthToken.findOne({
+	let authToken = await DbAuthToken.findOne({
 		where: { userId: user.id, deviceId },
 		order: { createdDate: "DESC" }
 	});
 	if (!authToken || authToken.isAboutToExpire()) {
-		authToken = await (db.AuthToken.new({ userId: user.id, deviceId }).save());
+		authToken = await (DbAuthToken.new({ userId: user.id, deviceId }).save());
 	}
 
 	return AuthTokenDbToApi(authToken, user, logger);
 }
 
 export async function activateUser(
-	authToken: db.AuthToken, user: db.User, logger: LoggerInstance): Promise<AuthToken> {
+	authToken: DbAuthToken, user: User, logger: LoggerInstance): Promise<AuthToken> {
 	// no activation needed anymore
 	return AuthTokenDbToApi(authToken, user, logger);
 }
 
 export async function userExists(appId: string, appUserId: string, logger?: LoggerInstance): Promise<boolean> {
-	const user = await db.User.findOne({ appId, appUserId });
+	const user = await User.findOne({ appId, appUserId });
 	logger && logger.debug(`userExists service appId: ${ appId }, appUserId: ${ appUserId }, user: `, user);
 	return user !== undefined;
+}
+
+export type UserStats = {
+	earn_count: number;
+	spend_count: number;
+	last_earn_date?: string;
+	last_spend_date?: string;
+};
+
+export type UserProfile = {
+	stats: UserStats
+};
+
+export async function getUserProfile(userId: string): Promise<UserProfile> {
+	const data: Array<{ type: string; last_date: string; cnt: number; }> = await Order.queryBuilder("ordr")
+		.select("context.type as type")
+		.addSelect("MAX(ordr.created_date) as last_date")
+		.addSelect("COUNT(*) as cnt")
+		.leftJoin("ordr.contexts", "context")
+		.where("context.user_id = :userId", { userId })
+		.andWhere(new Brackets(qb => {
+			qb.where("ordr.status = :status", { status: "completed" })
+				.orWhere(
+					new Brackets(qb2 => {
+						qb2.where("ordr.status IN (:statuses)", { statuses: ["pending", "opened"] })
+							.andWhere("ordr.expiration_date > :date", { date: new Date() });
+					})
+				);
+		}))
+		.groupBy("context.type")
+		.getRawMany();
+
+	const stats: UserStats = {
+		earn_count: 0,
+		spend_count: 0
+	};
+
+	for (const row of data) {
+		if (row.type === "earn") {
+			stats.earn_count = row.cnt;
+			stats.last_earn_date = readUTCDate(row.last_date).toISOString();
+		} else if (row.type === "spend") {
+			stats.spend_count = row.cnt;
+			stats.last_spend_date = readUTCDate(row.last_date).toISOString();
+		}
+	}
+
+	return { stats };
 }

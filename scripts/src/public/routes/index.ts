@@ -8,7 +8,7 @@ import { statusHandler } from "../middleware";
 
 import { getOffers } from "./offers";
 import { getConfigHandler } from "./config";
-import { signInUser, userExists, activateUser } from "./users";
+import { signInUser, userInfo, myUserInfo, userExists, activateUser } from "./users";
 import {
 	getOrder,
 	cancelOrder,
@@ -101,9 +101,12 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.use(Router().authenticated().delete(createPath("orders/:order_id", pathPrefix), cancelOrder));
 	app.use(Router().authenticated().patch(createPath("orders/:order_id", pathPrefix), changeOrder));
 
-	app.use(Router().post(createPath("users/", pathPrefix), signInUser));
-	app.use(Router().authenticated().get(createPath("users/exists", pathPrefix), userExists));
 	app.use(Router().authenticated().post(createPath("users/me/activate", pathPrefix), activateUser));
+	app.use(Router().authenticated().get(createPath("users/exists", pathPrefix), userExists));
+	app.use(Router().authenticated().get(createPath("users/me", pathPrefix), myUserInfo));
+	app.use(Router().authenticated().get(createPath("users/:user_id", pathPrefix), userInfo));
+
+	app.use(Router().post(createPath("users/", pathPrefix), signInUser));
 
 	app.get("/status", statusHandler);
 }

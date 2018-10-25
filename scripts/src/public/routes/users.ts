@@ -1,16 +1,13 @@
-import { Request, Response, RequestHandler } from "express";
+import { Request, RequestHandler, Response } from "express";
 import { NoSuchApp, UnknownSignInType } from "../../errors";
 
 import {
+	activateUser as activateUserService,
 	getOrCreateUserCredentials,
-	userExists as userExistsService,
-	activateUser as activateUserService
+	getUserProfile as getUserProfileService,
+	userExists as userExistsService
 } from "../services/users";
-import {
-	SignInContext,
-	validateRegisterJWT,
-	validateWhitelist
-} from "../services/applications";
+import { SignInContext, validateRegisterJWT, validateWhitelist } from "../services/applications";
 import { Application, SignInType } from "../../models/applications";
 import { getConfig } from "../config";
 
@@ -86,4 +83,27 @@ export const userExists = async function(req: UserExistsRequest, res: Response) 
 export const activateUser = async function(req: Request, res: Response) {
 	const authToken = await activateUserService(req.context.token!, req.context.user!, req.logger);
 	res.status(200).send(authToken);
+} as any as RequestHandler;
+
+export type UserInfoRequest = Request & { params: { user_id: string; } };
+
+export const userInfo = async function(req: UserInfoRequest, res: Response) {
+	req.logger.debug(`userInfo userId: ${ req.params.user_id }`);
+
+	if (req.context.user!.appUserId !== req.params.user_id) {
+		const userFound = await userExistsService(req.context.user!.appId, req.params.user_id, req.logger);
+		if (userFound) {
+			res.status(200).send({});
+		} else {
+			res.status(404).send();
+		}
+	} else {
+		const profile = await getUserProfileService(req.context.user!.id);
+		res.status(200).send(profile);
+	}
+} as any as RequestHandler;
+
+export const myUserInfo = async function(req: Request, res: Response) {
+	req.params.user_id = req.context.user!.appUserId;
+	await (userInfo as any)(req as UserInfoRequest, res);
 } as any as RequestHandler;

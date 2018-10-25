@@ -142,3 +142,10 @@ export function readKeysDir(dir: string): KeyMap {
 	});
 	return keys;
 }
+
+export function readUTCDate(date: string): Date {
+	if (date.endsWith("Z")) {
+		return new Date(date);
+	}
+	return new Date(date + "Z");
+}

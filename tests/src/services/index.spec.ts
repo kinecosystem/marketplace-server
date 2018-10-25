@@ -10,7 +10,7 @@ describe("general api checks", async () => {
 			.expect(404);
 	});
 	afterAll(async () => {
-		metrics.destruct();
+		await metrics.destruct();
 	});
 
 });

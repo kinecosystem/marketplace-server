@@ -129,11 +129,10 @@ export const Order = {
 	async countAllByOffer(appId: string, options: { userId?: string, offerId?: string } = {}): Promise<Map<string, number>> {
 		const statuses = options.userId ? ["pending"] : ["opened", "pending"];
 
-		const query = OrderImpl.createQueryBuilder("ordr"); // don't use 'order', it messed things up
-		query.select("ordr.offer_id");
-		query.addSelect("COUNT(DISTINCT(ordr.id)) AS cnt");
-
-		query.leftJoin("ordr.contexts", "context");
+		const query = OrderImpl.createQueryBuilder("ordr") // don't use 'order', it messed things up
+			.select("ordr.offer_id")
+			.addSelect("COUNT(DISTINCT(ordr.id)) AS cnt")
+			.leftJoin("ordr.contexts", "context");
 
 		if (options.userId) {
 			query.andWhere("context.user_id = :userId", { userId: options.userId });
@@ -153,9 +152,8 @@ export const Order = {
 							.andWhere("ordr.expiration_date > :date", { date: new Date() });
 					})
 				);
-		}));
-
-		query.groupBy("ordr.offer_id");
+		}))
+			.groupBy("ordr.offer_id");
 
 		const results: Array<{ offer_id: string, cnt: number }> = await query.getRawMany();
 		const map = new Map<string, number>();

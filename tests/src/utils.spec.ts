@@ -9,7 +9,7 @@ describe("util functions", () => {
 	});
 
 	afterAll(async () => {
-		metrics.destruct();
+		await metrics.destruct();
 	});
 
 	describe("random functions", () => {

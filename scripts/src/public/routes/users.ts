@@ -7,6 +7,7 @@ import {
 	getUserProfile as getUserProfileService,
 	userExists as userExistsService
 } from "../services/users";
+import * as metrics from "../../metrics";
 import { SignInContext, validateRegisterJWT, validateWhitelist } from "../services/applications";
 import { Application, SignInType } from "../../models/applications";
 import { getConfig } from "../config";
@@ -91,6 +92,7 @@ export const updateUser = async function(req: RegisterRequest, res: Response) {
 
 	user.walletAddress = walletAddress;
 	await user.save();
+	metrics.walletAddressUpdate(walletAddress);
 	res.status(204).send();
 } as any as RequestHandler;
 

@@ -45,8 +45,8 @@ describe("test orders", async () => {
 		done();
 	});
 
-	afterAll(() => {
-		metrics.destruct();
+	afterAll(async () => {
+		await metrics.destruct();
 	});
 
 	test("getAll and filters", async () => {

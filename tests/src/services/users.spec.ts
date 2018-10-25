@@ -1,16 +1,16 @@
 import * as expect from "expect";
-import mock = require("supertest");
 
 import { app } from "../../../scripts/bin/public/app";
 import * as payment from "../../../scripts/bin/public/services/payment";
 import { userExists } from "../../../scripts/bin/public/services/users";
-import { init as initModels, close as closeModels } from "../../../scripts/bin/models/index";
+import { close as closeModels, init as initModels } from "../../../scripts/bin/models/index";
 import { generateId, IdPrefix } from "../../../scripts/bin/utils";
 
 import * as helpers from "../helpers";
 import * as metrics from "../../../scripts/bin/metrics";
 import { AuthToken } from "../../../scripts/bin/models/users";
 import { Response } from "supertest";
+import mock = require("supertest");
 
 describe("api tests for /users", async () => {
 	beforeAll(async done => {
@@ -21,7 +21,7 @@ describe("api tests for /users", async () => {
 
 	afterAll(async () => {
 		await closeModels();
-		metrics.destruct();
+		await metrics.destruct();
 	});
 
 	test("user profile test", async () => {

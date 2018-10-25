@@ -8,6 +8,7 @@ import { User, AuthToken as DbAuthToken } from "../../models/users";
 
 import * as payment from "./payment";
 import { readUTCDate } from "../../utils";
+import { Brackets } from "typeorm";
 
 export type AuthToken = {
 	token: string;
@@ -120,6 +121,15 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
 		.addSelect("COUNT(*) as cnt")
 		.leftJoin("ordr.contexts", "context")
 		.where("context.user_id = :userId", { userId })
+		.andWhere(new Brackets(qb => {
+			qb.where("ordr.status = :status", { status: "completed" })
+				.orWhere(
+					new Brackets(qb2 => {
+						qb2.where("ordr.status IN (:statuses)", { statuses: ["pending", "opened"] })
+							.andWhere("ordr.expiration_date > :date", { date: new Date() });
+					})
+				);
+		}))
 		.groupBy("context.type")
 		.getRawMany();
 

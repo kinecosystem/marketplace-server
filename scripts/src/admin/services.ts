@@ -346,6 +346,7 @@ async function userToHtml(user: User): Promise<string> {
 <li>created: ${ user.createdDate }</li>
 <li><a href="/orders?user_id=${ user.id }">orders</a></li>
 <li><a href="/users/${ user.id }/offers">offers</a></li>
+<li><a href="https://analytics.amplitude.com/kinecosystem/project/204515/search/${ user.id }">client events</a></li>
 </ul>`;
 }
 

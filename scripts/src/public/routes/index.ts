@@ -107,7 +107,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.use(Router().authenticated().get(createPath("users/:user_id", pathPrefix), userInfo));
 
 	app.use(Router().post(createPath("users/", pathPrefix), signInUser));
-	app.use(Router().patch(createPath("users/", pathPrefix), updateUser));
+	app.use(Router().authenticated().patch(createPath("users/", pathPrefix), updateUser));
 
 	app.get("/status", statusHandler);
 }

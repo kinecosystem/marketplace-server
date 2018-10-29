@@ -2,6 +2,8 @@ import * as expect from "expect";
 import * as jsonwebtoken from "jsonwebtoken";
 import axios from "axios";
 
+import { init as initModels } from "./models/index";
+import "./public/app";
 import { JWTContent } from "./public/jwt";
 import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
@@ -21,6 +23,7 @@ import {
 	QuizPage,
 	Tutorial
 } from "./public/services/offer_contents";
+import { AuthToken } from "./models/users";
 
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
 const API_KEY = process.env.API_KEY || Application.SAMPLE_API_KEY;  // get this from JWT_SERVICE
@@ -319,6 +322,25 @@ async function registerJWT() {
 	console.log("OK.\n");
 }
 
+async function updateWallet() {
+	console.log("===================================== updateWallet =====================================");
+
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+
+	const jwt = await appClient.getRegisterJWT(userId);
+	const client = await MarketplaceClient.create({ jwt });
+	console.log("Created client 1");
+	const client2 = await MarketplaceClient.create({ jwt });
+	console.log("Created client 2");
+	await client.updateWallet(client2.wallet.address);
+	const userData = await AuthToken.query(
+		`select token.*, users.* from auth_tokens token left join users on users.id = token.user_id 				where token.id = '${client.requests.authToken.token}'`
+	);
+	expect(userData[0].wallet_address).toBe(client2.wallet.address);
+	console.log("OK.\n");
+}
+
 async function nativeSpendFlow() {
 	console.log("===================================== nativeSpendFlow =====================================");
 
@@ -560,7 +582,9 @@ async function userProfile() {
 }
 
 async function main() {
+	await initModels();
 	await registerJWT();
+	await updateWallet();
 	await userProfile();
 	await earnPollFlow();
 	await earnTutorial();

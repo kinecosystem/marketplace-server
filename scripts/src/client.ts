@@ -59,13 +59,13 @@ export class ClientError extends Error {
 	public response?: AxiosResponse;
 }
 
-class ClientRequests {
+export class ClientRequests {
 	public static async create(data: { device_id: string; wallet_address: string; }) {
 		const res = await axios.post<AuthToken>(MARKETPLACE_BASE + "/v1/users", data);
 		return new ClientRequests(res.data);
 	}
 
-	private authToken: AuthToken;
+	public authToken: AuthToken;
 
 	private constructor(authToken: AuthToken) {
 		this.authToken = authToken;
@@ -168,8 +168,8 @@ export class Client {
 
 	public readonly appId: string;
 
-	private readonly wallet: KinWallet;
-	private readonly requests: ClientRequests;
+	public readonly wallet: KinWallet;
+	public readonly requests: ClientRequests;
 
 	private constructor(wallet: KinWallet, requests: ClientRequests) {
 		this.wallet = wallet;
@@ -183,6 +183,11 @@ export class Client {
 
 	public async activate() {
 		await this.requests.activate();
+	}
+
+	public async updateWallet(walletAddress: string) {
+		const res = await this.requests.request("/v1/users", { wallet_address: walletAddress }).patch();
+		return;
 	}
 
 	public async pay(recipient: string, amount: number, orderId: string) {

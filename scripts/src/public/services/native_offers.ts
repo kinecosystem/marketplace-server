@@ -13,12 +13,15 @@ export type ExternalSenderPayload = {
 };
 export type ExternalRecipientPayload = { user_id: string } & ExternalSenderPayload;
 
-export type SpendPayload = {
+export type JWTPayload = {
+	nonce?: string;
 	offer: ExternalOfferPayload;
+};
+
+export type SpendPayload = JWTPayload & {
 	sender: ExternalSenderPayload;
 };
-export type EarnPayload = {
-	offer: ExternalOfferPayload;
+export type EarnPayload = JWTPayload & {
 	recipient: ExternalRecipientPayload;
 };
 export type PayToUserPayload = EarnPayload & SpendPayload;

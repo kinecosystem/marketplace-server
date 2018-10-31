@@ -223,8 +223,9 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	const payload = await validateExternalOrderJWT(jwt, user.appUserId, logger);
+	const nonce = payload.nonce || "default";
 
-	let order = await db.Order.findBy(payload.offer.id, user.id);
+	let order = await db.Order.findBy({ offerId: payload.offer.id, userId: user.id, nonce });
 
 	if (!order || order.status === "failed") {
 		if (isPayToUser(payload)) {

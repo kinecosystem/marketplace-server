@@ -124,6 +124,12 @@ function createOrder(data?: DeepPartial<Order>, contexts?: Array<DeepPartial<Ord
 	return order;
 }
 
+export type FindByParams = {
+	offerId: string;
+	userId: string;
+	nonce?: string;
+};
+
 export const Order = {
 	// count the number of orders completed/pending/opened per offer for a given user or all
 	async countAllByOffer(appId: string, options: { userId?: string, offerId?: string } = {}): Promise<Map<string, number>> {
@@ -211,15 +217,19 @@ export const Order = {
 	 * @param orderId
 	 * @param userId
 	 */
-	findBy<T extends Order>(offerId: string, userId: string, origin?: OrderOrigin): Promise<T | undefined> {
+	findBy<T extends Order>(params: FindByParams & { origin?: OrderOrigin; }): Promise<T | undefined> {
 		const query = OrderImpl.createQueryBuilder("ordr")
 			.innerJoinAndSelect("ordr.contexts", "context")
 			.leftJoinAndSelect("context.user", "user")
-			.where("ordr.offer_id = :offerId", { offerId })
-			.andWhere("context.user_id = :userId", { userId });
+			.where("ordr.offer_id = :offerId", { offerId: params.offerId })
+			.andWhere("context.user_id = :userId", { userId: params.userId });
 
-		if (origin) {
-			query.andWhere("ordr.origin = :origin", { origin });
+		if (params.nonce) {
+			query.andWhere("ordr.nonce = :nonce", { nonce: params.nonce });
+		}
+
+		if (params.origin) {
+			query.andWhere("ordr.origin = :origin", { origin: params.origin });
 		}
 
 		return query.getOne() as Promise<T | undefined>;
@@ -314,8 +324,8 @@ function extendedOrder(origin: OrderOrigin): (typeof Order) & OrderFactory {
 			return createOrder(data, context!);
 		},
 
-		findBy<T extends Order>(offerId: string, userId: string): Promise<T | undefined> {
-			return Order.findBy(offerId, userId, origin);
+		findBy<T extends Order>(params: FindByParams): Promise<T | undefined> {
+			return Order.findBy(Object.assign({}, params, { origin }));
 		},
 
 		getOne<T extends Order>(orderId: string, status?: OrderStatusAndNegation): Promise<T | undefined> {
@@ -358,6 +368,7 @@ export type P2POrder = Order & {
 	currentStatusDate: () => moment().toDate(),
 	expirationDate: () => moment().add(10, "minutes").toDate() // opened expiration
 })
+@Index(["offerId", "nonce"])
 @Index(["offerId", "status"])
 @Register
 class OrderImpl extends CreationDateModel implements Order {
@@ -376,6 +387,9 @@ class OrderImpl extends CreationDateModel implements Order {
 	@Index()
 	@Column({ name: "offer_id" })
 	public offerId!: string;
+
+	@Column()
+	public nonce!: string;
 
 	@Column("simple-json", { nullable: true })
 	public error?: ApiError | null;

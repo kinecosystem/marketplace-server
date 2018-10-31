@@ -208,7 +208,7 @@ export function MaxWalletsExceeded() {
 }
 
 export function InvalidWalletAddress(address: string) {
-	return BadRequestError(CODES.BadRequest.InvalidWalletAddress, `Invalid wallet address ${ address }`);
+	return BadRequestError(CODES.BadRequest.InvalidWalletAddress, `Invalid (not 56 characters) wallet address: ${ address }`);
 }
 
 function TransactionFailed(index: number, message: string) {

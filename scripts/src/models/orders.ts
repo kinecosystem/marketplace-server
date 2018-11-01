@@ -233,6 +233,8 @@ export const Order = {
 			query.andWhere("ordr.origin = :origin", { origin: params.origin });
 		}
 
+		query.orderBy("ordr.current_status_date", "DESC");
+
 		return query.getOne() as Promise<T | undefined>;
 	},
 

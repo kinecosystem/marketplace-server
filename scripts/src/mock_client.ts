@@ -2,7 +2,6 @@ import * as expect from "expect";
 import * as jsonwebtoken from "jsonwebtoken";
 import axios from "axios";
 
-import { init as initModels } from "./models/index";
 import { JWTContent } from "./public/jwt";
 import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
@@ -575,7 +574,6 @@ async function userProfile() {
 }
 
 async function main() {
-	await initModels();
 	await registerJWT();
 	await updateWallet();
 	await userProfile();

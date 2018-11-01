@@ -57,7 +57,7 @@ describe("api tests for /users", async () => {
 			.expect(200)
 			.expect((res: Response) => {
 				if (res.body.stats.earn_count !== 2 || res.body.stats.spend_count !== 2) {
-					throw new Error("unexpeced body " + JSON.stringify(res.body));
+					throw new Error("unexpected body: " + JSON.stringify(res.body));
 				}
 			});
 

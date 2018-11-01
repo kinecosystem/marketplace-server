@@ -45,7 +45,7 @@ services:
       - 6379
 
   jwt-service:
-    image: kinecosystem/jwt-service:8c2cf64
+    image: kinecosystem/jwt-service:7e65140
     ports:
       - 3000
     environment:

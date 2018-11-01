@@ -26,18 +26,32 @@ const API_KEY = process.env.API_KEY || Application.SAMPLE_API_KEY;  // get this 
 
 // TODO: should this be moved to the client?
 class SampleAppClient {
+	private static createJwtRequestUrl(base: string, params: { [key: string]: string | undefined | null }) {
+		const url = (JWT_SERVICE_BASE + "/" + base);
+		return url + "?" + Object.entries(params).reduce((previous: string, [key, value]) => {
+			if (value === null || value === undefined) {
+				return previous;
+			}
+
+			return previous + `&${ key }=${ value }`;
+		}, "").substring(1);
+	}
+
 	public async getRegisterJWT(userId: string): Promise<string> {
 		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + `/register/token?user_id=${ userId }`);
 		return res.data.jwt;
 	}
 
-	public async getSpendJWT(offerId: string): Promise<string> {
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + `/spend/token?offer_id=${ offerId }`);
+	public async getSpendJWT(offerId: string, nonce?: string): Promise<string> {
+		const url = SampleAppClient.createJwtRequestUrl("spend/token", { offer_id: offerId, nonce });
+
+		const res = await axios.get<JWTPayload>(url);
 		return res.data.jwt;
 	}
 
-	public async getEarnJWT(userId: string, offerId: string): Promise<string> {
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + `/earn/token?user_id=${ userId }&offer_id=${ offerId }`);
+	public async getEarnJWT(userId: string, offerId: string, nonce?: string): Promise<string> {
+		const url = SampleAppClient.createJwtRequestUrl("earn/token", { user_id: userId, offer_id: offerId, nonce });
+		const res = await axios.get<JWTPayload>(url);
 		return res.data.jwt;
 	}
 
@@ -49,10 +63,10 @@ class SampleAppClient {
 		recipient_id: string;
 		recipient_title: string;
 		recipient_description: string;
+		nonce?: string;
 	}) {
-
-		const datastr = Object.keys(data).map(key => `${ key }=${ data[key as keyof typeof data] }`).join("&");
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/p2p/token?" + datastr);
+		const url = SampleAppClient.createJwtRequestUrl("p2p/token", data as any);
+		const res = await axios.get<JWTPayload>(url);
 		return res.data.jwt;
 	}
 
@@ -426,6 +440,38 @@ async function tryToNativeSpendTwice() {
 	console.log("OK.\n");
 }
 
+async function tryToNativeSpendTwiceWithNonce() {
+	console.log("===================================== tryToNativeSpendTwiceWithNonce =====================================");
+
+	const userId = "rich_user:" + generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+
+	const client = await MarketplaceClient.create({ jwt }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.activate();
+
+	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
+	const offerJwt = await appClient.getSpendJWT(selectedOffer.id, "nonce:one");
+	const openOrder = await client.createExternalOrder(offerJwt);
+	console.log(`created order`, openOrder.id, `for offer`, selectedOffer.id);
+
+	// pay for the offer
+	const res = await client.pay(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
+	console.log("pay result hash: " + res.hash);
+	await client.submitOrder(openOrder.id);
+
+	// poll on order payment
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
+	console.log(`completed order`, order.id);
+	const offerJwt2 = await appClient.getSpendJWT(selectedOffer.id, "nonce:two");
+	// should allow to create a new order
+	const openOrder2 = await client.createExternalOrder(offerJwt2);
+	console.log(`created order`, openOrder.id, `for offer`, selectedOffer.id);
+
+	console.log("OK.\n");
+}
+
 async function nativeEarnFlow() {
 	console.log("===================================== nativeEarnFlow =====================================");
 
@@ -586,6 +632,7 @@ async function main() {
 	await didNotApproveTOS();
 	await testRegisterNewUser();
 	await tryToNativeSpendTwice();
+	await tryToNativeSpendTwiceWithNonce();
 	await p2p();
 }
 

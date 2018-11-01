@@ -295,7 +295,6 @@ describe("test orders", async () => {
 		const user1 = await createAppUser(offer, generateId(IdPrefix.App));
 		const user2 = await createAppUser(offer, generateId(IdPrefix.App));
 
-
 		const openOrder = await createMarketplaceOrder(offer.id, user1, getDefaultLogger());
 		const order = await submitOrder(openOrder.id, user1.id, "{}", user1.walletAddress, user1.appId, getDefaultLogger());
 		await helpers.completePayment(order.id);

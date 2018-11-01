@@ -223,7 +223,7 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
 	const payload = await validateExternalOrderJWT(jwt, user.appUserId, logger);
-	const nonce = payload.nonce || "default";
+	const nonce = payload.nonce || db.Order.DEFAULT_NONCE;
 
 	let order = await db.Order.findBy({ offerId: payload.offer.id, userId: user.id, nonce });
 

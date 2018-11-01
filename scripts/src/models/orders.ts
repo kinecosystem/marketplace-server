@@ -131,6 +131,7 @@ export type FindByParams = {
 };
 
 export const Order = {
+	DEFAULT_NONCE: "default",
 	// count the number of orders completed/pending/opened per offer for a given user or all
 	async countAllByOffer(appId: string, options: { userId?: string, offerId?: string } = {}): Promise<Map<string, number>> {
 		const statuses = options.userId ? ["pending"] : ["opened", "pending"];
@@ -320,7 +321,10 @@ export type ExternalOrderFactory = OrderFactory & {
 function extendedOrder(origin: OrderOrigin): (typeof Order) & OrderFactory {
 	return Object.assign({}, Order, {
 		"new"(data?: DeepPartial<Order>, ...context: Array<DeepPartial<OrderContext>>): Order {
-			data = Object.assign({}, data, { origin });
+			data = Object.assign(
+				{ nonce: Order.DEFAULT_NONCE },
+				data,
+				{ origin });
 			return createOrder(data, context!);
 		},
 

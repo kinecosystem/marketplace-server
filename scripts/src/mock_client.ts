@@ -26,32 +26,22 @@ const API_KEY = process.env.API_KEY || Application.SAMPLE_API_KEY;  // get this 
 
 // TODO: should this be moved to the client?
 class SampleAppClient {
-	private static createJwtRequestUrl(base: string, params: { [key: string]: string | undefined | null }) {
-		const url = (JWT_SERVICE_BASE + "/" + base);
-		return url + "?" + Object.entries(params).reduce((previous: string, [key, value]) => {
-			if (value === null || value === undefined) {
-				return previous;
-			}
-
-			return previous + `&${ key }=${ value }`;
-		}, "").substring(1);
-	}
-
 	public async getRegisterJWT(userId: string): Promise<string> {
 		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + `/register/token?user_id=${ userId }`);
 		return res.data.jwt;
 	}
 
 	public async getSpendJWT(offerId: string, nonce?: string): Promise<string> {
-		const url = SampleAppClient.createJwtRequestUrl("spend/token", { offer_id: offerId, nonce });
-
-		const res = await axios.get<JWTPayload>(url);
+		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/spend/token", {
+			params: { offer_id: offerId, nonce }
+		});
 		return res.data.jwt;
 	}
 
 	public async getEarnJWT(userId: string, offerId: string, nonce?: string): Promise<string> {
-		const url = SampleAppClient.createJwtRequestUrl("earn/token", { user_id: userId, offer_id: offerId, nonce });
-		const res = await axios.get<JWTPayload>(url);
+		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/earn/token", {
+			params: { user_id: userId, offer_id: offerId, nonce }
+		});
 		return res.data.jwt;
 	}
 
@@ -65,8 +55,9 @@ class SampleAppClient {
 		recipient_description: string;
 		nonce?: string;
 	}) {
-		const url = SampleAppClient.createJwtRequestUrl("p2p/token", data as any);
-		const res = await axios.get<JWTPayload>(url);
+		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/p2p/token", {
+			params: data
+		});
 		return res.data.jwt;
 	}
 

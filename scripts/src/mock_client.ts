@@ -19,7 +19,6 @@ import {
 	PollPage,
 	Quiz,
 	QuizPage,
-	Tutorial
 } from "./public/services/offer_contents";
 
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
@@ -319,6 +318,21 @@ async function registerJWT() {
 	console.log("OK.\n");
 }
 
+async function updateWallet() {
+	console.log("===================================== updateWallet =====================================");
+
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+
+	const jwt = await appClient.getRegisterJWT(userId);
+	const client = await MarketplaceClient.create({ jwt });
+	console.log("Created client 1");
+	const client2 = await MarketplaceClient.create({ jwt });
+	console.log("Created client 2");
+	await client.updateWallet(client2.wallet.address);
+	console.log("OK.\n");
+}
+
 async function nativeSpendFlow() {
 	console.log("===================================== nativeSpendFlow =====================================");
 
@@ -561,6 +575,7 @@ async function userProfile() {
 
 async function main() {
 	await registerJWT();
+	await updateWallet();
 	await userProfile();
 	await earnPollFlow();
 	await earnTutorial();

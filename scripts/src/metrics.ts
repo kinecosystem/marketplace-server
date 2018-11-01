@@ -15,6 +15,10 @@ export function userRegister(newUser: boolean, newWallet: boolean) {
 	statsd.increment("user_register", 1, { new_user: newUser.toString(), new_wallet: newWallet.toString() });
 }
 
+export function walletAddressUpdate() {
+	statsd.increment("wallet_address_update_succeeded", 1);
+}
+
 export function userActivate(newUser: boolean) {
 	statsd.increment("user_activate", 1, { new_user: "true" });
 }

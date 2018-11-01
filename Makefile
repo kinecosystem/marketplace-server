@@ -1,3 +1,5 @@
+console_script = $(shell cat node-console.js)
+
 all:
 	trap 'kill %1' SIGINT; make run-internal & bash -c 'sleep 1 && make run'
 
@@ -30,6 +32,9 @@ test-system:
 db:
 	rm -f database.sqlite
 	npm run create-db -- data/apps data/offers
+
+con:
+	node -i --experimental-repl-await -e "require('./node-console')"
 
 # docker targets
 revision := $(shell git rev-parse --short HEAD)

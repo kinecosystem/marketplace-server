@@ -43,7 +43,7 @@ export async function createUser(options: { appId?: string } = {}): Promise<User
 
 async function orderFromOffer(offer: Offer, userId: string): Promise<MarketplaceOrder> {
 	const user = await User.findOneById(userId);
-	const order = MarketplaceOrder.new({
+	return MarketplaceOrder.new({
 		offerId: offer.id,
 		amount: offer.amount,
 		status: "pending",
@@ -57,8 +57,6 @@ async function orderFromOffer(offer: Offer, userId: string): Promise<Marketplace
 		type: offer.type,
 		meta: offer.meta.order_meta
 	}) as MarketplaceOrder;
-
-	return order;
 }
 
 export async function createOrders(userId: string): Promise<number> {

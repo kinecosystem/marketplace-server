@@ -1,5 +1,5 @@
 import { Request, RequestHandler, Response } from "express";
-import { NoSuchApp, UnknownSignInType } from "../../errors";
+import { InvalidWalletAddress, NoSuchApp, NoSuchUser, UnknownSignInType } from "../../errors";
 
 import {
 	activateUser as activateUserService,
@@ -7,14 +7,16 @@ import {
 	getUserProfile as getUserProfileService,
 	userExists as userExistsService
 } from "../services/users";
+import * as metrics from "../../metrics";
 import { SignInContext, validateRegisterJWT, validateWhitelist } from "../services/applications";
 import { Application, SignInType } from "../../models/applications";
 import { getConfig } from "../config";
 
-export type CommonSignInData = {
+export type WalletData = { wallet_address: string };
+
+export type CommonSignInData = WalletData & {
 	sign_in_type: "jwt" | "whitelist";
 	device_id: string;
-	wallet_address: string;
 };
 
 export type JwtSignInData = CommonSignInData & {
@@ -65,6 +67,24 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		req.logger);
 
 	res.status(200).send(authToken);
+} as any as RequestHandler;
+
+export type UpdateUserRequest = Request & { body: WalletData };
+
+export const updateUser = async function(req: UpdateUserRequest, res: Response) {
+	const context = req.context;
+	const walletAddress = req.body.wallet_address;
+	req.logger.info(`updating user ${ walletAddress }`, { walletAddress, userId: context.user!.id });
+
+	if (!walletAddress || walletAddress.length !== 56) {
+		throw InvalidWalletAddress(walletAddress);
+	}
+
+	context.user!.walletAddress = walletAddress;
+	await context.user!.save();
+
+	metrics.walletAddressUpdate();
+	res.status(204).send();
 } as any as RequestHandler;
 
 export type UserExistsRequest = Request & { query: { user_id: string; } };

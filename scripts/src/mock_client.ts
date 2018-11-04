@@ -419,13 +419,19 @@ async function tryToNativeSpendTwice() {
 	const offerJwt2 = await appClient.getSpendJWT(selectedOffer.id);
 	// should not allow to create a new order
 	console.log(`expecting error for new order`, selectedOffer.id);
+
+	let errorThrown: boolean;
 	try {
 		await client.createExternalOrder(offerJwt2);
-		throw new Error("should not allow to create more than one order");
+		errorThrown = false;
 	} catch (e) {
-		const err: ClientError = e;
-		expect(err.response!.headers.location).toEqual(`/v1/orders/${order.id}`);
+		errorThrown = true;
+		expect((e as ClientError).response!.headers.location).toEqual(`/v1/orders/${order.id}`);
 		// ok
+	}
+
+	if (!errorThrown) {
+		throw new Error("should not allow to create more than one order");
 	}
 
 	console.log("OK.\n");

@@ -182,7 +182,12 @@ export class Client {
 	}
 
 	public async activate() {
-		await this.requests.activate();
+		await this.requests
+			.activate()
+			.then(e => {
+				console.log("error while activating");
+				return e;
+			});
 	}
 
 	public async updateWallet(walletAddress: string) {
@@ -192,44 +197,93 @@ export class Client {
 
 	public async pay(recipient: string, amount: number, orderId: string) {
 		const memo = createMemo(this.appId, orderId);
-		return await this.wallet.pay(recipient, amount, memo);
+		return await this.wallet.pay(recipient, amount, memo).catch(e => {
+			console.log(`error while paying to ${ recipient }, amount ${ amount } and order ${ orderId }`);
+			return e;
+		});
 	}
 
 	public async getOffers(): Promise<OfferList> {
-		const res = await this.requests.request("/v1/offers").get<OfferList>();
+		const res = await this.requests
+			.request("/v1/offers")
+			.get<OfferList>()
+			.then(e => {
+				console.log("error while getting offers");
+				return e;
+			});
 		return res.data;
 	}
 
 	public async getOrder(orderId: string): Promise<Order> {
-		const res = await this.requests.request(`/v1/orders/${orderId}`).get<Order>();
+		const res = await this.requests
+			.request(`/v1/orders/${orderId}`)
+			.get<Order>()
+			.then(e => {
+				console.log(`error while getting order ${ orderId }`);
+				return e;
+			});
 		return res.data;
 	}
 
 	public async createOrder(offerId: string): Promise<OpenOrder> {
-		const res = await this.requests.request(`/v1/offers/${offerId}/orders`).post<OpenOrder>();
+		const res = await this.requests
+			.request(`/v1/offers/${offerId}/orders`)
+			.post<OpenOrder>()
+			.then(e => {
+				console.log(`error while creating order for offer ${ offerId }`);
+				return e;
+			});
 		return res.data;
 	}
 
 	public async cancelOrder(orderId: string): Promise<void> {
-		const res = await this.requests.request(`/v1/orders/${orderId}`).delete();
+		await this.requests
+			.request(`/v1/orders/${orderId}`)
+			.delete()
+			.then(e => {
+				console.log(`error while cancelling order ${ orderId }`);
+				return e;
+			});
 	}
 
 	public async changeOrder(orderId: string, data: Partial<Order>): Promise<Order> {
-		const res = await this.requests.request(`/v1/orders/${orderId}`, data).patch<Order>();
+		const res = await this.requests
+			.request(`/v1/orders/${orderId}`, data)
+			.patch<Order>()
+			.then(e => {
+				console.log(`error while changing order ${ orderId } and data: ${ JSON.stringify(data) }`);
+				return e;
+			});
 		return res.data;
 	}
 
 	public async changeOrderToFailed(orderId: string, error: string, code: number, message: string): Promise<Order> {
-		return await this.changeOrder(orderId, { error: { error, code, message } });
+		return await this.changeOrder(orderId, { error: { error, code, message } })
+			.then(e => {
+				console.log(`error while changing order ${ orderId } to failed`);
+				return e;
+			});
 	}
 
 	public async getOrders(): Promise<OrderList> {
-		const res = await this.requests.request("/v1/orders").get<OrderList>();
+		const res = await this.requests
+			.request("/v1/orders")
+			.get<OrderList>()
+			.then(e => {
+				console.log(`error while getting orders`);
+				return e;
+			});
 		return res.data;
 	}
 
 	public async submitOrder(orderId: string, content?: string): Promise<Order> {
-		const res = await this.requests.request(`/v1/orders/${orderId}`, { content }).post<Order>();
+		const res = await this.requests
+			.request(`/v1/orders/${orderId}`, { content })
+			.post<Order>()
+			.then(e => {
+				console.log(`error while submitting order ${ orderId } with content: "${ content }"`);
+				return e;
+			});
 		return res.data;
 	}
 

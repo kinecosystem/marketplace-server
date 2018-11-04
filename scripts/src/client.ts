@@ -184,7 +184,7 @@ export class Client {
 	public async activate() {
 		await this.requests
 			.activate()
-			.then(e => {
+			.catch(e => {
 				console.log("error while activating");
 				return e;
 			});
@@ -207,7 +207,7 @@ export class Client {
 		const res = await this.requests
 			.request("/v1/offers")
 			.get<OfferList>()
-			.then(e => {
+			.catch(e => {
 				console.log("error while getting offers");
 				return e;
 			});
@@ -218,7 +218,7 @@ export class Client {
 		const res = await this.requests
 			.request(`/v1/orders/${orderId}`)
 			.get<Order>()
-			.then(e => {
+			.catch(e => {
 				console.log(`error while getting order ${ orderId }`);
 				return e;
 			});
@@ -229,7 +229,7 @@ export class Client {
 		const res = await this.requests
 			.request(`/v1/offers/${offerId}/orders`)
 			.post<OpenOrder>()
-			.then(e => {
+			.catch(e => {
 				console.log(`error while creating order for offer ${ offerId }`);
 				return e;
 			});
@@ -240,7 +240,7 @@ export class Client {
 		await this.requests
 			.request(`/v1/orders/${orderId}`)
 			.delete()
-			.then(e => {
+			.catch(e => {
 				console.log(`error while cancelling order ${ orderId }`);
 				return e;
 			});
@@ -250,7 +250,7 @@ export class Client {
 		const res = await this.requests
 			.request(`/v1/orders/${orderId}`, data)
 			.patch<Order>()
-			.then(e => {
+			.catch(e => {
 				console.log(`error while changing order ${ orderId } and data: ${ JSON.stringify(data) }`);
 				return e;
 			});
@@ -259,7 +259,7 @@ export class Client {
 
 	public async changeOrderToFailed(orderId: string, error: string, code: number, message: string): Promise<Order> {
 		return await this.changeOrder(orderId, { error: { error, code, message } })
-			.then(e => {
+			.catch(e => {
 				console.log(`error while changing order ${ orderId } to failed`);
 				return e;
 			});
@@ -269,7 +269,7 @@ export class Client {
 		const res = await this.requests
 			.request("/v1/orders")
 			.get<OrderList>()
-			.then(e => {
+			.catch(e => {
 				console.log(`error while getting orders`);
 				return e;
 			});
@@ -280,7 +280,7 @@ export class Client {
 		const res = await this.requests
 			.request(`/v1/orders/${orderId}`, { content })
 			.post<Order>()
-			.then(e => {
+			.catch(e => {
 				console.log(`error while submitting order ${ orderId } with content: "${ content }"`);
 				return e;
 			});
@@ -288,12 +288,24 @@ export class Client {
 	}
 
 	public async createExternalOrder(jwt: string): Promise<OpenOrder> {
-		const res = await this.requests.request(`/v1/offers/external/orders`, { jwt }).post<OpenOrder>();
+		const res = await this.requests
+			.request(`/v1/offers/external/orders`, { jwt })
+			.post<OpenOrder>()
+			.catch(e => {
+				console.log(`error while creating external order with jwt: "${ jwt } "`);
+				return e;
+			});
 		return res.data;
 	}
 
 	public async getUserProfile(userId: string = "me"): Promise<UserProfile> {
-		const res = await this.requests.request(`/v1/users/${userId}`).get<UserProfile>();
+		const res = await this.requests
+			.request(`/v1/users/${userId}`)
+			.get<UserProfile>()
+			.catch(e => {
+				console.log(`error while getting user ${ userId } profile`);
+				return e;
+			});
 		return res.data;
 	}
 

@@ -5,7 +5,8 @@
 import { getConfig } from "./public/config"; // must be the first import
 import * as fs from "fs";
 import { join } from "path";
-import { Keypair } from "@kinecosystem/kin.js";
+// import { Keypair } from "@kinecosystem/kin.js";
+import { Keypair } from "./kinjs";
 
 import { close as closeModels, init as initModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";

@@ -74,6 +74,7 @@ export type GetOrderFilters = {
 
 export interface Order {
 	readonly id: string;
+	readonly nonce: string;
 	readonly createdDate: Date;
 	readonly origin: OrderOrigin;
 

@@ -49,6 +49,7 @@ export interface BaseOrder {
 	title: string;
 	description: string;
 	amount: number;
+	nonce: string;
 	blockchain_data: offerDb.BlockchainData;
 }
 
@@ -101,9 +102,11 @@ async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {
 	if (await appOffer.didExceedCap(user.id)) {
 		return undefined;
 	}
+
 	const orderMeta = appOffer.offer.meta.order_meta;
 	orderMeta.title = orderTranslations.orderTitle || orderMeta.title;
 	orderMeta.description = orderTranslations.orderDescription || orderMeta.description;
+
 	const order = db.MarketplaceOrder.new({
 		status: "opened",
 		offerId: appOffer.offer.id,
@@ -160,6 +163,7 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 		offerId: jwt.offer.id,
 		amount: jwt.offer.amount,
 		status: "opened",
+		nonce: jwt.nonce,
 		blockchainData: {
 			sender_address: sender.walletAddress,
 			recipient_address: recipient.walletAddress
@@ -185,6 +189,7 @@ async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnO
 	return db.ExternalOrder.new({
 		offerId: jwt.offer.id,
 		amount: jwt.offer.amount,
+		nonce: jwt.nonce,
 		status: "opened",
 		blockchainData: {
 			sender_address: app.walletAddresses.sender,
@@ -210,6 +215,7 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 		offerId: jwt.offer.id,
 		amount: jwt.offer.amount,
 		status: "opened",
+		nonce: jwt.nonce,
 		blockchainData: {
 			sender_address: sender.walletAddress,
 			recipient_address: app.walletAddresses.recipient
@@ -370,6 +376,7 @@ function openOrderDbToApi(order: db.Order, userId: string): OpenOrder {
 	const context = order.contextFor(userId)!;
 	return {
 		id: order.id,
+		nonce: order.nonce,
 		offer_id: order.offerId,
 		offer_type: context.type,
 		amount: order.amount,

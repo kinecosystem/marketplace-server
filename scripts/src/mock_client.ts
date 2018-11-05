@@ -5,6 +5,7 @@ import axios from "axios";
 import { JWTContent } from "./public/jwt";
 import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
+import { Order as DbOrder } from "./models/orders";
 import { Application } from "./models/applications";
 import { generateId, randomInteger, retry } from "./utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
@@ -386,6 +387,7 @@ async function nativeSpendFlow() {
 	expect(jwtPayload.payload.sender_user_id).toBe(userId);
 	expect(jwtPayload.header.kid).toBeDefined();
 	expect(jwtPayload.payload.iss).toEqual("kin");
+	expect(jwtPayload.payload.nonce).toEqual(DbOrder.DEFAULT_NONCE);
 	// verify using kin public key
 	expect(await appClient.isValidSignature(paymentJwt)).toBeTruthy();
 
@@ -450,7 +452,7 @@ async function tryToNativeSpendTwiceWithNonce() {
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
 	const offerJwt = await appClient.getSpendJWT(selectedOffer.id, "nonce:one");
 	const openOrder = await client.createExternalOrder(offerJwt);
-	console.log(`created order`, openOrder.id, `for offer`, selectedOffer.id);
+	console.log(`created order ${ openOrder.id } (nonce ${ openOrder.nonce }) for offer ${ selectedOffer.id }`);
 
 	// pay for the offer
 	const res = await client.pay(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
@@ -458,13 +460,27 @@ async function tryToNativeSpendTwiceWithNonce() {
 	await client.submitOrder(openOrder.id);
 
 	// poll on order payment
-	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	let order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	let payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+	expect(payment).toBeDefined();
+	expect(isValidPayment(order, client.appId, payment)).toBeTruthy();
+	let paymentJwt = (order.result! as JWTValue).jwt;
+	let jwtPayload = jsonwebtoken.decode(paymentJwt, { complete: true }) as JWTContent<JWTBodyPaymentConfirmation, "payment_confirmation">;
+	expect(jwtPayload.payload.nonce).toEqual("nonce:one");
 
 	console.log(`completed order`, order.id);
 	const offerJwt2 = await appClient.getSpendJWT(selectedOffer.id, "nonce:two");
 	// should allow to create a new order
 	const openOrder2 = await client.createExternalOrder(offerJwt2);
 	console.log(`created order`, openOrder.id, `for offer`, selectedOffer.id);
+
+	order = await retry(() => client.getOrder(openOrder2.id), order => order.status === "completed", "order did not turn completed");
+	payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+	expect(payment).toBeDefined();
+	expect(isValidPayment(order, client.appId, payment)).toBeTruthy();
+	paymentJwt = (order.result! as JWTValue).jwt;
+	jwtPayload = jsonwebtoken.decode(paymentJwt, { complete: true }) as JWTContent<JWTBodyPaymentConfirmation, "payment_confirmation">;
+	expect(jwtPayload.payload.nonce).toEqual("nonce:two");
 
 	console.log("OK.\n");
 }

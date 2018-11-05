@@ -617,7 +617,7 @@ async function userProfile() {
 }
 
 async function main() {
-	/*await registerJWT();
+	await registerJWT();
 	await updateWallet();
 	await userProfile();
 	await earnPollFlow();
@@ -629,7 +629,7 @@ async function main() {
 	await didNotApproveTOS();
 	await testRegisterNewUser();
 	await tryToNativeSpendTwice();
-	await tryToNativeSpendTwiceWithNonce();*/
+	await tryToNativeSpendTwiceWithNonce();
 	await p2p();
 }
 

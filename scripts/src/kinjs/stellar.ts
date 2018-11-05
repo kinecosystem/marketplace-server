@@ -193,6 +193,11 @@ export class Operations {
 		return await this.server.loadAccount(address);
 	}
 
+	@retry({ errorMessagePrefix: "failed to fetch payment operation record" })
+	public async getPaymentOperationRecord(hash: string): Promise<PaymentOperationRecord> {
+		return (await this.server.operations().forTransaction(hash).call()).records[0] as PaymentOperationRecord;
+	}
+
 	@retry()
 	private async checkKinBalance(address: string) {
 		const accountResponse = await this.server.loadAccount(address);

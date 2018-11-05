@@ -2,7 +2,7 @@ version: "3"
 
 services:
   payment-service:
-    image: kinecosystem/payment-service:76b7ad3
+    image: kinecosystem/payment-service:857e2af
     ports:
       - 3000
     links:
@@ -22,7 +22,7 @@ services:
       STELLAR_KIN_TOKEN_NAME: 'KIN'
 
   payment-worker:
-    image: kinecosystem/payment-service:76b7ad3
+    image: kinecosystem/payment-service:857e2af
     command: pipenv run python worker.py
     links:
       - redis
@@ -32,7 +32,7 @@ services:
       MAX_CHANNELS: 1
 
   payment-watcher:
-    image: kinecosystem/payment-service:76b7ad3
+    image: kinecosystem/payment-service:857e2af
     command: pipenv run python watcher.py
     links:
       - redis

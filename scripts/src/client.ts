@@ -1,7 +1,6 @@
 import * as uuid4 from "uuid4";
 import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse } from "axios";
-// import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "@kinecosystem/kin.js";
-import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "./kinjs";
+import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "@kinecosystem/kin.js";
 
 import { ApiError } from "./errors";
 import { AuthToken, UserProfile } from "./public/services/users";

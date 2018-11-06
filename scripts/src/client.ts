@@ -220,7 +220,7 @@ export class Client {
 	public async getOrder(orderId: string): Promise<Order> {
 		try {
 			const res = await this.requests
-				.request(`/v1/orders/${orderId}`)
+				.request(`/v1/orders/${ orderId }`)
 				.get<Order>();
 			return res.data;
 		} catch (e) {
@@ -232,7 +232,7 @@ export class Client {
 	public async createOrder(offerId: string): Promise<OpenOrder> {
 		try {
 			const res = await this.requests
-				.request(`/v1/offers/${offerId}/orders`)
+				.request(`/v1/offers/${ offerId }/orders`)
 				.post<OpenOrder>();
 			return res.data;
 		} catch (e) {
@@ -244,7 +244,7 @@ export class Client {
 	public async cancelOrder(orderId: string): Promise<void> {
 		try {
 			await this.requests
-				.request(`/v1/orders/${orderId}`)
+				.request(`/v1/orders/${ orderId }`)
 				.delete();
 		} catch (e) {
 			console.log(`error while cancelling order ${ orderId }`);
@@ -255,7 +255,7 @@ export class Client {
 	public async changeOrder(orderId: string, data: Partial<Order>): Promise<Order> {
 		try {
 			const res = await this.requests
-				.request(`/v1/orders/${orderId}`, data)
+				.request(`/v1/orders/${ orderId }`, data)
 				.patch<Order>();
 			return res.data;
 		} catch (e) {
@@ -288,7 +288,7 @@ export class Client {
 	public async submitOrder(orderId: string, content?: string): Promise<Order> {
 		try {
 			const res = await this.requests
-				.request(`/v1/orders/${orderId}`, { content })
+				.request(`/v1/orders/${ orderId }`, { content })
 				.post<Order>();
 			return res.data;
 		} catch (e) {
@@ -312,7 +312,7 @@ export class Client {
 	public async getUserProfile(userId: string = "me"): Promise<UserProfile> {
 		try {
 			const res = await this.requests
-				.request(`/v1/users/${userId}`)
+				.request(`/v1/users/${ userId }`)
 				.get<UserProfile>();
 			return res.data;
 		} catch (e) {

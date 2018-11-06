@@ -103,6 +103,7 @@ async function didNotApproveTOS() {
 
 	const offers = await client.getOffers();
 	await client.createOrder(offers.offers[0].id); // should not throw - we removed need of activate
+	console.log("OK.\n");
 }
 
 async function spendFlow() {
@@ -455,7 +456,7 @@ async function tryToNativeSpendTwiceWithNonce() {
 	console.log(`created order ${ openOrder.id } (nonce ${ openOrder.nonce }) for offer ${ selectedOffer.id }`);
 
 	// pay for the offer
-	const res = await client.pay(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
+	let res = await client.pay(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
 	console.log("pay result hash: " + res.hash);
 	await client.submitOrder(openOrder.id);
 
@@ -472,7 +473,12 @@ async function tryToNativeSpendTwiceWithNonce() {
 	const offerJwt2 = await appClient.getSpendJWT(selectedOffer.id, "nonce:two");
 	// should allow to create a new order
 	const openOrder2 = await client.createExternalOrder(offerJwt2);
-	console.log(`created order`, openOrder.id, `for offer`, selectedOffer.id);
+	console.log(`created order ${ openOrder2.id } (nonce ${ openOrder2.nonce }) for offer ${ selectedOffer.id }`);
+
+	// pay for the offer
+	res = await client.pay(openOrder2.blockchain_data.recipient_address!, selectedOffer.amount, openOrder2.id);
+	console.log("pay result hash: " + res.hash);
+	await client.submitOrder(openOrder2.id);
 
 	order = await retry(() => client.getOrder(openOrder2.id), order => order.status === "completed", "order did not turn completed");
 	payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;

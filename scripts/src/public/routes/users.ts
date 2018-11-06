@@ -11,6 +11,7 @@ import * as metrics from "../../metrics";
 import { SignInContext, validateRegisterJWT, validateWhitelist } from "../services/applications";
 import { Application, SignInType } from "../../models/applications";
 import { getConfig } from "../config";
+import { create as createWalletAddressUpdateSucceeded } from "../../analytics/events/wallet_address_update_succeeded";
 
 export type WalletData = { wallet_address: string };
 
@@ -74,7 +75,8 @@ export type UpdateUserRequest = Request & { body: WalletData };
 export const updateUser = async function(req: UpdateUserRequest, res: Response) {
 	const context = req.context;
 	const walletAddress = req.body.wallet_address;
-	req.logger.info(`updating user ${ walletAddress }`, { walletAddress, userId: context.user!.id });
+	const userId = context.user!.id;
+	req.logger.info(`updating user ${ walletAddress }`, { walletAddress, userId });
 
 	if (!walletAddress || walletAddress.length !== 56) {
 		throw InvalidWalletAddress(walletAddress);
@@ -83,6 +85,7 @@ export const updateUser = async function(req: UpdateUserRequest, res: Response) 
 	context.user!.walletAddress = walletAddress;
 	await context.user!.save();
 
+	createWalletAddressUpdateSucceeded(userId);
 	metrics.walletAddressUpdate();
 	res.status(204).send();
 } as any as RequestHandler;

@@ -15,7 +15,7 @@ export type Common = {
 
 export function create(userId: string): Common {
 	return {
-		schema_version: "e3bca9c484fd1b7aacba4839b57baa781d9caa3b",
+		schema_version: "8f20fa0048d59aca4cb0aac313729e7b8ecb1394",
 		event_id: uuid(),
 		version: getConfig().commit!,
 		user_id: userId,

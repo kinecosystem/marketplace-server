@@ -55,6 +55,7 @@ export interface FailedPayment {
 }
 
 export type JWTBodyPaymentConfirmation = {
+	nonce: string;
 	offer_id: string;
 	sender_user_id?: string;
 	recipient_user_id?: string;
@@ -67,6 +68,7 @@ export type JWTBodyPaymentConfirmation = {
 async function getPaymentJWT(order: db.Order, appId: string, userId: string): Promise<OrderValue> {
 	const loggedInContext = order.contextFor(userId)!;
 	const payload: JWTBodyPaymentConfirmation = {
+		nonce: order.nonce,
 		offer_id: order.offerId,
 		payment: {
 			blockchain: BLOCKCHAIN,

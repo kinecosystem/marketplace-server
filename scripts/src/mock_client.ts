@@ -5,6 +5,7 @@ import axios from "axios";
 import { JWTContent } from "./public/jwt";
 import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
+import { Order as DbOrder } from "./models/orders";
 import { Application } from "./models/applications";
 import { generateId, randomInteger, retry } from "./utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
@@ -31,13 +32,17 @@ class SampleAppClient {
 		return res.data.jwt;
 	}
 
-	public async getSpendJWT(offerId: string): Promise<string> {
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + `/spend/token?offer_id=${ offerId }`);
+	public async getSpendJWT(offerId: string, nonce?: string): Promise<string> {
+		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/spend/token", {
+			params: { offer_id: offerId, nonce }
+		});
 		return res.data.jwt;
 	}
 
-	public async getEarnJWT(userId: string, offerId: string): Promise<string> {
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + `/earn/token?user_id=${ userId }&offer_id=${ offerId }`);
+	public async getEarnJWT(userId: string, offerId: string, nonce?: string): Promise<string> {
+		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/earn/token", {
+			params: { user_id: userId, offer_id: offerId, nonce }
+		});
 		return res.data.jwt;
 	}
 
@@ -49,10 +54,11 @@ class SampleAppClient {
 		recipient_id: string;
 		recipient_title: string;
 		recipient_description: string;
+		nonce?: string;
 	}) {
-
-		const datastr = Object.keys(data).map(key => `${ key }=${ data[key as keyof typeof data] }`).join("&");
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/p2p/token?" + datastr);
+		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/p2p/token", {
+			params: data
+		});
 		return res.data.jwt;
 	}
 
@@ -97,6 +103,7 @@ async function didNotApproveTOS() {
 
 	const offers = await client.getOffers();
 	await client.createOrder(offers.offers[0].id); // should not throw - we removed need of activate
+	console.log("OK.\n");
 }
 
 async function spendFlow() {
@@ -381,6 +388,7 @@ async function nativeSpendFlow() {
 	expect(jwtPayload.payload.sender_user_id).toBe(userId);
 	expect(jwtPayload.header.kid).toBeDefined();
 	expect(jwtPayload.payload.iss).toEqual("kin");
+	expect(jwtPayload.payload.nonce).toEqual(DbOrder.DEFAULT_NONCE);
 	// verify using kin public key
 	expect(await appClient.isValidSignature(paymentJwt)).toBeTruthy();
 
@@ -414,14 +422,71 @@ async function tryToNativeSpendTwice() {
 	const offerJwt2 = await appClient.getSpendJWT(selectedOffer.id);
 	// should not allow to create a new order
 	console.log(`expecting error for new order`, selectedOffer.id);
+
+	let errorThrown: boolean;
 	try {
 		await client.createExternalOrder(offerJwt2);
-		throw new Error("should not allow to create more than one order");
+		errorThrown = false;
 	} catch (e) {
-		const err: ClientError = e;
-		expect(err.response!.headers.location).toEqual(`/v1/orders/${order.id}`);
+		errorThrown = true;
+		expect((e as ClientError).response!.headers.location).toEqual(`/v1/orders/${order.id}`);
 		// ok
 	}
+
+	if (!errorThrown) {
+		throw new Error("should not allow to create more than one order");
+	}
+
+	console.log("OK.\n");
+}
+
+async function tryToNativeSpendTwiceWithNonce() {
+	console.log("===================================== tryToNativeSpendTwiceWithNonce =====================================");
+
+	const userId = "rich_user:" + generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+
+	const client = await MarketplaceClient.create({ jwt }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.activate();
+
+	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
+	const offerJwt = await appClient.getSpendJWT(selectedOffer.id, "nonce:one");
+	const openOrder = await client.createExternalOrder(offerJwt);
+	console.log(`created order ${ openOrder.id } (nonce ${ openOrder.nonce }) for offer ${ selectedOffer.id }`);
+
+	// pay for the offer
+	let res = await client.pay(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
+	console.log("pay result hash: " + res.hash);
+	await client.submitOrder(openOrder.id);
+
+	// poll on order payment
+	let order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	let payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+	expect(payment).toBeDefined();
+	expect(isValidPayment(order, client.appId, payment)).toBeTruthy();
+	let paymentJwt = (order.result! as JWTValue).jwt;
+	let jwtPayload = jsonwebtoken.decode(paymentJwt, { complete: true }) as JWTContent<JWTBodyPaymentConfirmation, "payment_confirmation">;
+	expect(jwtPayload.payload.nonce).toEqual("nonce:one");
+
+	console.log(`completed order`, order.id);
+	const offerJwt2 = await appClient.getSpendJWT(selectedOffer.id, "nonce:two");
+	// should allow to create a new order
+	const openOrder2 = await client.createExternalOrder(offerJwt2);
+	console.log(`created order ${ openOrder2.id } (nonce ${ openOrder2.nonce }) for offer ${ selectedOffer.id }`);
+
+	// pay for the offer
+	res = await client.pay(openOrder2.blockchain_data.recipient_address!, selectedOffer.amount, openOrder2.id);
+	console.log("pay result hash: " + res.hash);
+	await client.submitOrder(openOrder2.id);
+
+	order = await retry(() => client.getOrder(openOrder2.id), order => order.status === "completed", "order did not turn completed");
+	payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+	expect(payment).toBeDefined();
+	expect(isValidPayment(order, client.appId, payment)).toBeTruthy();
+	paymentJwt = (order.result! as JWTValue).jwt;
+	jwtPayload = jsonwebtoken.decode(paymentJwt, { complete: true }) as JWTContent<JWTBodyPaymentConfirmation, "payment_confirmation">;
+	expect(jwtPayload.payload.nonce).toEqual("nonce:two");
 
 	console.log("OK.\n");
 }
@@ -586,6 +651,7 @@ async function main() {
 	await didNotApproveTOS();
 	await testRegisterNewUser();
 	await tryToNativeSpendTwice();
+	await tryToNativeSpendTwiceWithNonce();
 	await p2p();
 }
 

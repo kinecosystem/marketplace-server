@@ -17,7 +17,7 @@ import {
 } from "typeorm";
 
 import { ApiError } from "../errors";
-import { generateId, IdPrefix } from "../utils";
+import { generateId, IdPrefix, Mutable, isNothing } from "../utils";
 
 import { User } from "./users";
 import { BlockchainData, OfferType, OrderValue } from "./offers";
@@ -325,9 +325,13 @@ function extendedOrder(origin: OrderOrigin): (typeof Order) & OrderFactory {
 	return Object.assign({}, Order, {
 		"new"(data?: DeepPartial<Order>, ...context: Array<DeepPartial<OrderContext>>): Order {
 			data = Object.assign(
-				{ nonce: Order.DEFAULT_NONCE },
 				data,
 				{ origin });
+
+			if (isNothing(data.nonce)) {
+				(data as Mutable<Order>).nonce = Order.DEFAULT_NONCE;
+			}
+
 			return createOrder(data, context!);
 		},
 

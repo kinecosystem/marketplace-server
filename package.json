@@ -59,7 +59,7 @@
     "sqlite3": "^4.0.2",
     "tslint": "^5.9.1",
     "tslint-eslint-rules": "^4.1.1",
-    "typescript": "^2.7.2"
+    "typescript": "^2.8"
   },
   "scripts": {
     "clean": "rimraf scripts/bin",

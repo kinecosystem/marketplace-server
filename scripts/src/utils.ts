@@ -14,6 +14,8 @@ export function isSimpleObject(obj: any): obj is SimpleObject {
 
 export type Nothing = null | undefined;
 
+export type Mutable<T> = { -readonly [P in keyof T ]: T[P] };
+
 export function isNothing(obj: any): obj is Nothing {
 	return obj === null || obj === undefined;
 }

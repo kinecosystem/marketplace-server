@@ -201,7 +201,7 @@ function getStellarAddresses() {
 	}
 }
 
-initModels(true).then(async () => {
+initModels(process.env.CREATE_DB === "TRUE").then(async () => {
 	const appsDir = process.argv[2];
 	const offersDir = process.argv[3];
 	let appList: string[] = process.argv[4] ? process.argv[4].split(",") : [];

@@ -69,27 +69,25 @@ export function orderFailed(order: Order) {
 
 	const unknownError = { error: "unknown_error", message: "unknown error", code: -1 };
 	const unknownUser = { id: "no_id", appId: "no_id", appUserId: "no_id", walletAddress: "no_wallet" };
-
 	const error = order.error || unknownError;
+	const title = safeString(error.message);
+	const type = order.isP2P() ? "p2p" : order.contexts[0].type;
+	const appId = order.contexts[0].user.appId
+	let message = `## Order <${ order.id }> from ${ appId } failed:
+ID: <${ order.id }> | Type: ${ type } | Origin: ${ order.origin }
+Error: ${ title } | Code: ${ error.code }
+CreatedDate: ${order.createdDate.toISOString()} | LastDate: ${(order.currentStatusDate || order.createdDate).toISOString()}`;
 
 	order.forEachContext(context => {
-		const message = `
-## Order <${ order.id }> transitioned to failed state:
-ID: <${ order.id }> | Type: ${ context.type } | Origin: ${ order.origin }
-UserId: ${ context.user.id } | AppId: <${ context.user.appId }> | UserAppId: ${ context.user.appUserId }
-Wallet: ${ context.user.walletAddress }
-Error: ${ safeString(error.message) } | Code: ${ error.code }
-CreatedDate: ${order.createdDate.toISOString()} | LastDate: ${(order.currentStatusDate || order.createdDate).toISOString()}
-`;
-		const title = safeString(error.message);
-		statsd.event(title, message,
-			{ alert_type: "warning" },
-			{
-				order_type: context.type,
-				app_id: context.user.appId,
-				order_id: order.id,
-				order_origin: order.origin,
-				type: "failed_order"
-			});
+		message += `UserId: ${ context.user.id } | UserAppId: ${ context.user.appUserId } | Wallet: ${ context.user.walletAddress }`;
 	});
+	statsd.event(title, message,
+		{ alert_type: "warning" },
+		{
+			order_type: type,
+			app_id: appId,
+			order_id: order.id,
+			order_origin: order.origin,
+			type: "failed_order"
+		});
 }

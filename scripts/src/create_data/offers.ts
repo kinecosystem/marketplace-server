@@ -20,7 +20,8 @@ export async function createSpend(
 	couponImage: string, couponTitle: string, couponDescription: string,
 	couponConfirmImage: string, couponConfirmTitle: string, couponConfirmSubtitle: string,
 	orderContentImage: string, orderContentTitle: string, orderContentSubtitle: string, orderContentHyperLink: string,
-	couponCodes: string[]): Promise<Offer> {
+	couponCodes: string[],
+	appList: string[]): Promise<Offer> {
 
 	const existingOffer = await Offer.findOne({ name: offerName });
 	if (existingOffer) {
@@ -86,7 +87,7 @@ export async function createSpend(
 		await asset.save();
 	}
 
-	await saveAppOffers(offer, { total: capTotal, per_user: capPerUser }, walletAddress);
+	await saveAppOffers(offer, { total: capTotal, per_user: capPerUser }, walletAddress, appList);
 	return offer;
 }
 

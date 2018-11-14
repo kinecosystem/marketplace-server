@@ -135,7 +135,7 @@ export async function createEarn(
 }
 
 async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string, appList: string[]) {
-	appList.forEach( async appId => {
+	await Promise.all(appList.map( async appId => {
 		await AppOffer.create({ appId, offerId: offer.id, walletAddress, cap }).save();
-	});
+	}));
 }

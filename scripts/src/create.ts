@@ -204,15 +204,8 @@ function getStellarAddresses() {
 initModels(true).then(async () => {
 	const appsDir = process.argv[2];
 	const offersDir = process.argv[3];
-	let appList: string[] = process.argv[4].split(",");
+	let appList: string[] = process.argv[4] ? process.argv[4].split(",") : [];
 
-	if (!appList || !appList.length) {
-		throw Error("Application list must be given (Comma seperated strings in the third argument)");
-	}
-
-	if (appList[0] === "*") {
-		appList = (await Application.find({ select: ["id"] })).map(app => app.id);
-	}
 	for (const filename of fs.readdirSync(path(appsDir))) {
 		if (!filename.endsWith(".json")) {
 			console.info(`skipping non json file ${filename}`);
@@ -222,6 +215,21 @@ initModels(true).then(async () => {
 		await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config
 		);
 	}
+
+	if (!appList || !appList.length) {
+		throw Error("Application list must be given (Comma seperated strings in the third argument)");
+	}
+
+	if (appList[0] === "*") {
+		appList = (await Application.find({ select: ["id"] })).map(app => app.id);
+	}
+
+	// sanity on app ids
+	await Promise.all(appList.map(async appId => {
+		if (!await Application.findOneById(appId)) {
+			throw Error(`Application not found ${appId}`);
+		}
+	}));
 
 	// create offers from csv
 	const parseCsv = require("csv-parse/lib/sync");

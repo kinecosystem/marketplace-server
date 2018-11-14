@@ -43,7 +43,7 @@ async function createApp(appId: string, name: string, jwtPublicKeys: StringMap, 
 	return app;
 }
 
-function readTitle(title: string): string {
+export function readTitle(title: string): string {
 	// read until first space
 	return title.split(/ +/, 1)[0];
 }
@@ -62,10 +62,11 @@ function toMap(data: string[][]): Array<Map<string, string>> {
 	return list;
 }
 
-async function parseSpend(data: string[][]) {
+async function parseSpend(data: string[][], appList: string[]) {
 	const list = toMap(data);
+	const results: Offer[] = [];
 	for (const v of list) {
-		const offer = await createSpend(
+		results.push(await createSpend(
 			v.get("OfferName")!,
 			STELLAR_ADDRESS || v.get("WalletAddress")!,
 			v.get("Brand")!,
@@ -89,15 +90,18 @@ async function parseSpend(data: string[][]) {
 			v.get("OrderContentSubtitle")!,
 			v.get("OrderContentHyperLink")!,
 			v.get("CouponCodes")!.split(/\s+/),
-		);
+			appList));
 	}
+	return results;
 }
 
-async function parseEarn(data: string[][], contentType: ContentType) {
+async function parseEarn(data: string[][], contentType: ContentType, appList: string[]) {
 	const list = toMap(data);
 
 	const poll: Quiz | Poll | Tutorial = { pages: [] };
 	let offer: Map<string, string> | undefined;
+
+	const results: Offer[] = [];
 
 	async function createEarnInner(v: Map<string, string>, poll: Quiz | Poll | Tutorial): Promise<Offer> {
 		const offer = await createEarn(
@@ -113,14 +117,15 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 			v.get("OrderTitle")!,
 			v.get("OrderDescription")!,
 			contentType,
-			poll);
+			poll,
+			appList);
 		return offer;
 	}
 
 	for (const v of list) {
 		if (v.get("OfferName") !== "") {
 			if (offer) {
-				await createEarnInner(offer, poll);
+				results.push(await createEarnInner(offer, poll));
 			}
 			offer = v;
 			poll.pages = [];
@@ -182,8 +187,9 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 		}
 	}
 	if (offer) {
-		await createEarnInner(offer, poll);
+		results.push(await createEarnInner(offer, poll));
 	}
+	return results;
 }
 
 function getStellarAddresses() {
@@ -198,14 +204,23 @@ function getStellarAddresses() {
 initModels(true).then(async () => {
 	const appsDir = process.argv[2];
 	const offersDir = process.argv[3];
+	let appList: string[] = process.argv[4].split(",");
 
+	if (!appList || !appList.length) {
+		throw Error("Application list must be given (Comma seperated strings in the third argument)");
+	}
+
+	if (appList[0] === "*") {
+		appList = (await Application.find({ select: ["id"] })).map(app => app.id);
+	}
 	for (const filename of fs.readdirSync(path(appsDir))) {
 		if (!filename.endsWith(".json")) {
 			console.info(`skipping non json file ${filename}`);
 			continue;
 		}
 		const data: AppDef = JSON.parse(fs.readFileSync(path(join(appsDir, filename))).toString());
-		await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config);
+		await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config
+		);
 	}
 
 	// create offers from csv
@@ -216,11 +231,12 @@ initModels(true).then(async () => {
 
 		const title = readTitle(parsed[0][0]);
 		const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
+		let results = [];
 		if (title === "Spend") {
-			await parseSpend(parsed);
+			results = await parseSpend(parsed, appList);
 			console.log(`created spend:${contentType} offers`);
 		} else if (title === "Earn") {
-			await parseEarn(parsed, contentType);
+			results = await parseEarn(parsed, contentType, appList);
 			console.log(`created earn:${contentType} offers`);
 		} else {
 			throw new Error("Failed to parse " + parsed[0][0]);

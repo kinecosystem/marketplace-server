@@ -95,7 +95,8 @@ export async function createEarn(
 	brand: string, title: string, description: string, image: string, amount: number,
 	capTotal: number, capPerUser: number,
 	orderTitle: string, orderDescription: string, contentType: ContentType,
-	poll: Quiz | Poll | Tutorial): Promise<Offer> {
+	poll: Quiz | Poll | Tutorial,
+	appList: string[]): Promise<Offer> {
 
 	const existingOffer = await Offer.findOne({ name: offerName });
 	if (existingOffer) {
@@ -128,13 +129,12 @@ export async function createEarn(
 	});
 	await content.save();
 
-	await saveAppOffers(offer, { total: capTotal, per_user: capPerUser }, walletAddress);
+	await saveAppOffers(offer, { total: capTotal, per_user: capPerUser }, walletAddress, appList);
 	return offer;
 }
 
-async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string) {
-	await Promise.all(
-		(await Application.find()).map(app =>
-			AppOffer.create({ appId: app.id, offerId: offer.id, walletAddress, cap }).save()
-		));
+async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string, appList: string[]) {
+	appList.forEach( async appId => {
+		await AppOffer.create({ appId, offerId: offer.id, walletAddress, cap }).save();
+	});
 }

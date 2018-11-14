@@ -46,3 +46,4 @@ OrderContext = _orders.OrderContext;
 User = (r("models/users")).User;
 AuthToken = (r("models/users")).AuthToken;
 Application = (r("models/applications")).Application;
+AppOffer = r('models/applications').AppOffer;

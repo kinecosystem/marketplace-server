@@ -72,7 +72,7 @@ export function orderFailed(order: Order) {
 	const error = order.error || unknownError;
 	const title = safeString(error.message);
 	const type = order.isP2P() ? "p2p" : order.contexts[0].type;
-	const appId = order.contexts[0].user.appId
+	const appId = order.contexts[0].user.appId;
 	let message = `## Order <${ order.id }> from ${ appId } failed:
 ID: <${ order.id }> | Type: ${ type } | Origin: ${ order.origin }
 Error: ${ title } | Code: ${ error.code }

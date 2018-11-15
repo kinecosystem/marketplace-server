@@ -76,7 +76,12 @@ export async function getOrder(orderId: string, userId: string, logger: LoggerIn
 
 	checkIfTimedOut(order); // no need to wait for the promise
 
-	logger.debug("getOne returning", { orderId, status: order.status, offerId: order.offerId, contexts: order.contexts });
+	logger.debug("getOne returning", {
+		orderId,
+		status: order.status,
+		offerId: order.offerId,
+		contexts: order.contexts
+	});
 	return orderDbToApi(order, userId);
 }
 
@@ -129,7 +134,7 @@ async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {
 	return order;
 }
 
-export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance, orderTranslations?: OrderTranslations ): Promise<OpenOrder> {
+export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance, orderTranslations?: OrderTranslations): Promise<OpenOrder> {
 	logger.info("creating marketplace order for", { offerId, userId: user.id });
 
 	const appOffer = await AppOffer.findOne({ offerId, appId: user.appId });
@@ -228,6 +233,7 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 }
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
+	logger.info("createExternalOrder", { jwt });
 	const payload = await validateExternalOrderJWT(jwt, user.appUserId, logger);
 	const nonce = payload.nonce || db.Order.DEFAULT_NONCE;
 
@@ -269,6 +275,7 @@ export async function submitOrder(
 	logger: LoggerInstance,
 	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
 
+	logger.info("submitOrder", { orderId });
 	const order = await db.Order.getOne(orderId) as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {

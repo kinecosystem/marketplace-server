@@ -1,9 +1,16 @@
+import * as moment from "moment";
 import { LoggerInstance } from "winston";
 import * as jsonwebtoken from "jsonwebtoken";
 
 import { isNothing } from "../utils";
 import { Application } from "../models/applications";
-import { NoSuchApp, NoSuchPublicKey, JwtKidMissing, WrongJwtAlgorithm, InvalidJwtSignature } from "../errors";
+import {
+	NoSuchApp,
+	ExpiredJwt,
+	JwtKidMissing,
+	NoSuchPublicKey,
+	InvalidJwtSignature,
+	InvalidJwtIssuedTime } from "../errors";
 
 export type JWTClaims<SUB extends string> = {
 	iss: string; // issuer - the app_id
@@ -25,8 +32,17 @@ export type JWTContent<T, SUB extends string> = {
 export async function verify<T, SUB extends string>(token: string, logger: LoggerInstance): Promise<JWTContent<T, SUB>> {
 	const decoded = jsonwebtoken.decode(token, { complete: true }) as JWTContent<T, SUB>;
 	if (decoded.header.alg.toUpperCase() !== "ES256") {
-		logger.warn(`got JWT with wrong algorithm ${decoded.header.alg}. ignoring`);
+		logger.warn(`got JWT with wrong algorithm ${ decoded.header.alg }. ignoring`);
 		// throw WrongJWTAlgorithm(decoded.header.alg);  // TODO uncomment when we deprecate other algo support
+	}
+
+	const now = moment();
+	if (now.isBefore(decoded.payload.iat)) {
+		throw InvalidJwtIssuedTime(decoded.payload.iat);
+	}
+
+	if (now.isAfter(decoded.payload.exp)) {
+		throw ExpiredJwt(decoded.payload.exp);
 	}
 
 	const appId = decoded.payload.iss;

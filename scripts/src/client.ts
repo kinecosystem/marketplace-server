@@ -137,7 +137,6 @@ export class ClientRequests {
 export class Client {
 	public static async create(signInPayload: SignInPayload, walletAddress?: string, config?: { headers?: StringMap }): Promise<Client> {
 		if (!this.blockchainConfig) {
-			console.log("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX called config");
 			this.blockchainConfig = (await ClientRequests.getConfig()).blockchain;
 		}
 

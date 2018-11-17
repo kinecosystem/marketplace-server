@@ -651,12 +651,9 @@ async function userProfile() {
 
 async function main() {
 	await registerJWT();
-<<<<<<< HEAD
 	await updateWallet();
 	await userProfile();
-=======
 	await extraTrustlineIsOK();
->>>>>>> removing trustline with on system test with new kin.js
 	await earnPollFlow();
 	await earnTutorial();
 	await spendFlow();

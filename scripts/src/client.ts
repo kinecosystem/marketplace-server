@@ -60,7 +60,6 @@ export class ClientError extends Error {
 	public response?: AxiosResponse;
 }
 
-
 export class ClientRequests {
 
 	public static async create(data: { device_id: string; wallet_address: string; }, headers?: StringMap) {

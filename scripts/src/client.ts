@@ -9,6 +9,7 @@ import { CompletedPayment } from "./internal/services";
 import { ConfigResponse } from "./public/routes/config";
 import { BlockchainConfig } from "./public/services/payment";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
+import { StringMap } from "./models/applications";
 
 const MEMO_VERSION = "1";
 const MARKETPLACE_BASE = process.env.MARKETPLACE_BASE;
@@ -60,9 +61,15 @@ export class ClientError extends Error {
 }
 
 export class ClientRequests {
-	public static async create(data: { device_id: string; wallet_address: string; }) {
-		const res = await axios.post<AuthToken>(MARKETPLACE_BASE + "/v1/users", data);
+
+	public static async create(data: { device_id: string; wallet_address: string; }, headers?: StringMap) {
+		const res = await axios.post<AuthToken>(MARKETPLACE_BASE + "/v1/users", data, { headers });
 		return new ClientRequests(res.data);
+	}
+
+	public static async getConfig(): Promise<ConfigResponse> {
+		const res = await axios.get<ConfigResponse>(MARKETPLACE_BASE + "/v1/config");
+		return res.data;
 	}
 
 	public authToken: AuthToken;
@@ -127,15 +134,15 @@ export class ClientRequests {
 }
 
 export class Client {
-	public static async create(signInPayload: SignInPayload, walletAddress?: string): Promise<Client> {
-		if (!this.config) {
-			const res = await axios.get<ConfigResponse>(MARKETPLACE_BASE + "/v1/config");
-			this.config = res.data.blockchain;
+	public static async create(signInPayload: SignInPayload, walletAddress?: string, config?: { headers?: StringMap }): Promise<Client> {
+		if (!this.blockchainConfig) {
+			this.blockchainConfig = (await ClientRequests.getConfig()).blockchain;
 		}
+
 		const network = KinNetwork.from(
-			this.config.network_passphrase,
-			this.config.asset_issuer,
-			this.config.horizon_url);
+			this.blockchainConfig.network_passphrase,
+			this.blockchainConfig.asset_issuer,
+			this.blockchainConfig.horizon_url);
 
 		const keys = !walletAddress ?
 			Keypair.random() :
@@ -158,13 +165,13 @@ export class Client {
 			});
 		}
 
-		const requests = await ClientRequests.create(data);
+		const requests = await ClientRequests.create(data, config ? config.headers : {});
 		const wallet = await createWallet(network, keys);
 
 		return new Client(wallet, requests);
 	}
 
-	private static config: BlockchainConfig;
+	private static blockchainConfig: BlockchainConfig;
 
 	public readonly appId: string;
 
@@ -325,5 +332,9 @@ export class Client {
 		return (await this.wallet.getPayments())
 			.map(paymentFromTransaction)
 			.find(payment => payment !== undefined && payment.id === orderId);
+	}
+
+	public async trustKin() {
+		await this.wallet.trustKin();
 	}
 }

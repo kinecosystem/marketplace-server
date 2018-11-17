@@ -94,7 +94,7 @@ export async function createOrders(userId: string): Promise<number> {
 	return 6;
 }
 
-export async function createExternalOrders(userId: string): Promise<number> {
+export async function createExternalOrder(userId: string): Promise<Order> {
 	const user = await User.findOneById(userId);
 	const order = ExternalOrder.new({
 		amount: 65,
@@ -115,7 +115,7 @@ export async function createExternalOrders(userId: string): Promise<number> {
 	});
 	await order.save();
 
-	return 1;
+	return order;
 }
 
 export async function createOffers() {

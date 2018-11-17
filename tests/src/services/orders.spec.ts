@@ -66,9 +66,9 @@ describe("test orders", async () => {
 		orders = await Order.getAll({ userId: user.id, offerId }, 25);
 		expect(orders.length).toBe(ordersCount);
 
-		count = await helpers.createExternalOrders(user.id);
+		await helpers.createExternalOrder(user.id);
 		orders = await Order.getAll({ userId: user.id, origin: "external" }, 25);
-		expect(orders.length).toBe(count);
+		expect(orders.length).toBe(1);
 	});
 
 	test("offer list returns an offer with my open order", async () => {
@@ -99,7 +99,7 @@ describe("test orders", async () => {
 
 	test("countToday counts todays completed orders", async () => {
 		const user = await helpers.createUser();
-		expect(await Order.countToday(user.id, "earn")).toEqual(0);
+		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(0);
 
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		const offer = offers.offers.find(x => x.offer_type === "earn");
@@ -111,18 +111,24 @@ describe("test orders", async () => {
 		const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
 		await helpers.completePayment(order.id);
 
-		expect(await Order.countToday(user.id, "earn")).toEqual(1);
+		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(1);
 
 		const spendOffer = offers.offers.find(x => x.offer_type === "spend");
 		if (!spendOffer) {
 			throw Error("failed to find spend order");
 		}
 
-		const spendopenOrder = await createMarketplaceOrder(spendOffer.id, user, getDefaultLogger());
-		const spendOrder = await submitOrder(spendopenOrder.id, user.id, null, user.walletAddress, user.appId, getDefaultLogger());
+		const spendOpenOrder = await createMarketplaceOrder(spendOffer.id, user, getDefaultLogger());
+		const spendOrder = await submitOrder(spendOpenOrder.id, user.id, null, user.walletAddress, user.appId, getDefaultLogger());
 		await helpers.completePayment(spendOrder.id);
 
-		expect(await Order.countToday(user.id, "earn")).toEqual(1);
+		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(1);
+
+		const externalEarnOrder = await helpers.createExternalOrder(user.id);
+		const earnOrder = await submitOrder(externalEarnOrder.id, user.id, null, user.walletAddress, user.appId, getDefaultLogger());
+		await helpers.completePayment(earnOrder.id);
+
+		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(1);
 	});
 
 	test("return getOrder reduces cap", async () => {

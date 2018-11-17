@@ -61,6 +61,7 @@ export class Application extends CreationDateModel {
 @Register
 export class AppOffer extends BaseEntity {
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
+		// XXX add cache
 		return await AppOffer.createQueryBuilder("app_offer")
 			.leftJoinAndSelect("app_offer.offer", "offer")
 			.where("app_id = :appId", { appId })

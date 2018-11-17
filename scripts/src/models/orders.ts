@@ -135,6 +135,7 @@ export const Order = {
 	DEFAULT_NONCE: "default",
 	// count the number of orders completed/pending/opened per offer for a given user or all
 	async countAllByOffer(appId: string, options: { userId?: string, offerId?: string } = {}): Promise<Map<string, number>> {
+		// XXX add cache
 		const statuses = options.userId ? ["pending"] : ["opened", "pending"];
 
 		const query = OrderImpl.createQueryBuilder("ordr") // don't use 'order', it messed things up
@@ -171,12 +172,13 @@ export const Order = {
 		return map;
 	},
 
-	countToday(userId: string, type: OfferType): Promise<number> {
+	countToday(userId: string, type: OfferType, origin: OrderOrigin): Promise<number> {
 		const midnight = new Date((new Date()).setUTCHours(0, 0, 0, 0));
 		const query = OrderImpl.createQueryBuilder("ordr")
 			.leftJoinAndSelect("ordr.contexts", "context")
 			.andWhere("context.user_id = :userId", { userId })
 			.andWhere("context.type = :type", { type })
+			.andWhere("ordr.origin = :origin", { origin })
 			.andWhere("ordr.current_status_date > :midnight", { midnight })
 			.andWhere(new Brackets(qb => {
 				qb.where("ordr.status = :completed", { completed: "completed" })

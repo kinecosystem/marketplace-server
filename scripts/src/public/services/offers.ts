@@ -131,7 +131,7 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 			// global earn capping
 			const max_daily_earn_offers = getConfig().max_daily_earn_offers;
 			if (max_daily_earn_offers !== null) {
-				return offers.slice(0, Math.max(0, max_daily_earn_offers - await dbOrders.Order.countToday(userId, "earn")));
+				return offers.slice(0, Math.max(0, max_daily_earn_offers - await dbOrders.Order.countToday(userId, "earn", "marketplace")));
 			}
 			return offers;
 		}

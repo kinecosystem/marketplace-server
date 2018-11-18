@@ -2449,7 +2449,4 @@ poll,offer_contents:O2HFowZATIau1TdAOieA0:content:pages[3].question.answers[1],S
 poll,offer_contents:O2HFowZATIau1TdAOieA0:content:pages[3].question.answers[2],Features,Recursos,22
 poll,offer_contents:O2HFowZATIau1TdAOieA0:content:pages[3].question.answers[3],All of the above,Todas as opções acima,22
 poll,offer_contents:O2HFowZATIau1TdAOieA0:content:pages[4].description,${amount},${amount},24
-web,thank_you_page:title,Yay you'ev earned,Você ganhou,17
-web,thank_you_page:perfect,Perfect Score,Pontuação Perfeita,22
-web,thank_you_page:ok,Well Done,Muito bem,22
-web,thank_you_page:crappy,Better Luck Next Time!,Sorte da próxima vez!,22
+

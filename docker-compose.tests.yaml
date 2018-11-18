@@ -21,7 +21,7 @@ services:
       - .:/opt/app
     links:
       - postgres
-    command: npm run manage-db-data -- --apps-dir data/apps --offers-dir data/offers --app-list ALL --create-db
+    command: npm run create-db -- data/apps data/offers
     environment:
       APP_DB_TYPE: postgres
       APP_DB_USERNAME: user

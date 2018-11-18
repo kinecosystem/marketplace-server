@@ -191,6 +191,7 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		    to {bottom: 0; opacity: 0;}
 		}
 		</style>
+		<link href="http://cdn.kinmarketplace.com/admin/jsoneditor.min.css" rel="stylesheet" type="text/css">
 	</head>
 	<body>
 	
@@ -212,15 +213,18 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		<div id="content">${ content }</div>
 		<div id="footer"></div>
 	
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js" async></script>
+		<script src="http://cdn.kinmarketplace.com/admin/jsoneditor.min.js" async></script>
 		
-	<script>
+		<script>
 		let overlayElement;
 		let overlayTextElement;
 		let toastElemnt;
 		let previewElemnt;
 		let previewBtnElemnt;
 		let publishBtnElemnt;
+		var overlayJsonEditor;
+
 		document.addEventListener("DOMContentLoaded", function() {
 			overlayElement = document.querySelector(".overlay");
 			overlayTextElement = document.querySelector(".overlay .text");
@@ -232,6 +236,8 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 			previewBtnElemnt.addEventListener("click", refreshPreviewBtnHandler)
 			publishBtnElemnt.addEventListener("click", publishBtnHandler)
 		});
+		
+		
 		function toast(msg) {
 		    toastElemnt.innerText = msg;
 		    toastElemnt.className = "show";
@@ -245,7 +251,10 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		function overlayOn(text, offerId) {
 			overlayElement.style.display = "block";
 			overlayElement.dataset.offerId = offerId;
-			overlayTextElement.innerText = JSON.stringify(JSON.parse(unescape(text)), null,  2);
+			if (!overlayJsonEditor){
+				overlayJsonEditor = new JSONEditor(overlayTextElement, {});
+			}
+			overlayJsonEditor.set(JSON.stringify(JSON.parse(unescape(text)), null,  2));
 		}
 		function overlayOff() {
 			overlayElement.style.display = "none";

@@ -9,6 +9,8 @@ export type GetTranslationsCriteria = {
 	paths?: string[];
 };
 
+const CACHE = new Map<string, OfferTranslation[]>();
+
 @Entity({ name: "offer_content_translations" })
 @Register
 export class OfferTranslation extends BaseEntity {
@@ -18,9 +20,15 @@ export class OfferTranslation extends BaseEntity {
 
 	public static async getTranslations(criteria: GetTranslationsCriteria = {}): Promise<OfferTranslation[]> {
 		//  todo add cache
+		const cacheKey = JSON.stringify(criteria);
 		const languages = criteria.languages;
 		const offerId = criteria.offerId;
 		const paths = criteria.paths;
+
+		if (CACHE.has(cacheKey)) {
+			return CACHE.get(cacheKey) as OfferTranslation[];
+		}
+
 		const query = OfferTranslation.createQueryBuilder("translations");
 		if (languages) {
 			query.where("translations.language IN (:languages)", { languages });
@@ -31,7 +39,9 @@ export class OfferTranslation extends BaseEntity {
 		if (paths) {
 			query.andWhere("translations.path IN (:paths)", { paths });
 		}
-		return await query.getMany();
+		const results = await query.getMany();
+		CACHE.set(cacheKey, results);
+		return results;
 	}
 
 	public static async getSupportedLanguages(criteria: GetTranslationsCriteria = {}): Promise<[string[], OfferTranslation[]]> {

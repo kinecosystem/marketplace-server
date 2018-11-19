@@ -23,6 +23,8 @@ export type ApplicationConfig = {
 	sign_in_types: SignInType[];
 };
 
+const AppOffersCache = new Map<string, AppOffer[]>();
+
 @Entity({ name: "applications" })
 @Initializer("apiKey", () => generateId(IdPrefix.App))
 @Register
@@ -62,13 +64,20 @@ export class Application extends CreationDateModel {
 export class AppOffer extends BaseEntity {
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
 		// XXX add cache
-		return await AppOffer.createQueryBuilder("app_offer")
+		const cacheKey = "appOffers:${appId}:${type}";
+		if (AppOffersCache.has(cacheKey)) {
+			return AppOffersCache.get(cacheKey) as AppOffer[];
+		}
+
+		const results = await AppOffer.createQueryBuilder("app_offer")
 			.leftJoinAndSelect("app_offer.offer", "offer")
 			.where("app_id = :appId", { appId })
 			.andWhere("offer.type = :type", { type })
 			.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
 			.addOrderBy("offer.id", "ASC")
 			.getMany();
+		AppOffersCache.set(cacheKey, results);
+		return results;
 	}
 
 	@PrimaryColumn({ name: "app_id" })

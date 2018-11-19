@@ -1,9 +1,7 @@
 import * as express from "express";
 
 import * as db from "../../models/users";
-import { TOSMissingOrOldToken } from "../../errors";
-
-import { authenticate } from "../auth";
+import { authenticateAndGetUser } from "../auth";
 import { statusHandler } from "../middleware";
 
 import { getOffers } from "./offers";
@@ -61,17 +59,8 @@ function Router(): ExtendedRouter {
 				if (typeof name === "string" && AUTHENTICATED_METHODS.includes(name)) {
 					return proxyOverRouter(router, proxy, (path: string, handler: express.RequestHandler) => {
 						return (target as any)[name](path, async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-							const token = await authenticate(req);
-							const user = await db.User.findOneById(token.userId);
-
-							if (!user) {
-								// This error now defines an inconsistent state in the DB where a token exists but not user is found
-								// This should never happen as the token.user_id is a foreign key to the users table
-								throw TOSMissingOrOldToken();
-							}
-
+							const [token, user] = await authenticateAndGetUser(req.token);
 							req.context = { user, token };
-
 							return handler(req, res, next);
 						});
 					});

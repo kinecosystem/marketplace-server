@@ -11,6 +11,7 @@ import * as metrics from "../../../scripts/bin/metrics";
 import { AuthToken, User } from "../../../scripts/bin/models/users";
 import { Response } from "supertest";
 import mock = require("supertest");
+import { authenticateAndGetUser } from "../../../scripts/bin/public/auth";
 
 describe("api tests for /users", async () => {
 	beforeAll(async done => {
@@ -22,6 +23,18 @@ describe("api tests for /users", async () => {
 	afterAll(async () => {
 		await closeModels();
 		await metrics.destruct();
+	});
+
+	test("authenticateAndGetUser", async () => {
+		const user = await helpers.createUser();
+		const authToken = await AuthToken.findOne({ userId: user.id });
+		const [tokenDB, userDB] = await authenticateAndGetUser(authToken.id);
+		expect(tokenDB.deviceId).toEqual(authToken.deviceId);
+		expect(userDB.appUserId).toEqual(user.appUserId);
+
+		const [tokenCache, userCache] = await authenticateAndGetUser(authToken.id);
+		expect(tokenCache.deviceId).toEqual(authToken.deviceId);
+		expect(userCache.appUserId).toEqual(user.appUserId);
 	});
 
 	test("user profile test", async () => {
@@ -83,7 +96,7 @@ describe("api tests for /users", async () => {
 			.set("content-type", "application/json")
 			.set("Authorization", `Bearer ${token.id}`)
 			.expect(204);
-		let u1 = await User.findOne( { id: user1.id });
+		let u1 = await User.findOne({ id: user1.id });
 		expect(u1.walletAddress).toBe(newWalletAddress);
 		await mock(app)
 			.patch(`/v1/users`)
@@ -91,7 +104,7 @@ describe("api tests for /users", async () => {
 			.set("content-type", "applications/json")
 			.set("Authorization", `Bearer ${token.id}`)
 			.expect(400);
-		u1 = await User.findOne( { id: user1.id });
+		u1 = await User.findOne({ id: user1.id });
 		expect(u1.walletAddress).not.toBe(badAddress);
 		expect(u1.walletAddress).toBe(newWalletAddress);
 

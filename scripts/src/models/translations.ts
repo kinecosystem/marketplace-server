@@ -20,7 +20,7 @@ export class OfferTranslation extends BaseEntity {
 
 	public static async getTranslations(criteria: GetTranslationsCriteria = {}): Promise<OfferTranslation[]> {
 		//  todo add cache
-		const cacheKey = JSON.stringify(criteria);
+		const cacheKey = `${criteria.languages}:${criteria.offerId}:${criteria.paths}`;
 		const languages = criteria.languages;
 		const offerId = criteria.offerId;
 		const paths = criteria.paths;

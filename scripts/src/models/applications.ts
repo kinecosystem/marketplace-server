@@ -64,7 +64,7 @@ export class Application extends CreationDateModel {
 export class AppOffer extends BaseEntity {
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
 		// XXX add cache
-		const cacheKey = "appOffers:${appId}:${type}";
+		const cacheKey = `appOffers:${appId}:${type}`;
 		if (AppOffersCache.has(cacheKey)) {
 			return AppOffersCache.get(cacheKey) as AppOffer[];
 		}

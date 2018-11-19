@@ -87,6 +87,8 @@ export interface CouponOrderContent {
 	image: string;
 }
 
+let AllOfferContentsCache: Map<string, db.OfferContent> | null = null;
+
 /**
  * replace template variables in offer content or order contents
  */
@@ -102,12 +104,14 @@ export async function getOfferContent(offerId: string, logger: LoggerInstance): 
 }
 
 export async function getAllContents(): Promise<Map<string, db.OfferContent>> {
-	const results = await db.OfferContent.find();
-	const map = new Map<string, db.OfferContent>();
-	for (const res of results) {
-		map.set(res.offerId, res);
+	if (true) { // disable cache
+		const map = new Map<string, db.OfferContent>();
+		for (const res of await db.OfferContent.find()) {
+			map.set(res.offerId, res);
+		}
+		AllOfferContentsCache = map;
 	}
-	return map;
+	return AllOfferContentsCache;
 }
 
 export function isValid(offerContent: db.OfferContent, form: string | undefined): form is string {

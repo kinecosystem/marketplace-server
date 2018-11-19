@@ -65,9 +65,9 @@ export class AppOffer extends BaseEntity {
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
 		// XXX add cache
 		const cacheKey = `appOffers:${appId}:${type}`;
-		if (AppOffersCache.has(cacheKey)) {
-			return AppOffersCache.get(cacheKey) as AppOffer[];
-		}
+		// if (AppOffersCache.has(cacheKey)) {
+		// 	return AppOffersCache.get(cacheKey) as AppOffer[];
+		// }
 
 		const results = await AppOffer.createQueryBuilder("app_offer")
 			.leftJoinAndSelect("app_offer.offer", "offer")
@@ -76,7 +76,7 @@ export class AppOffer extends BaseEntity {
 			.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
 			.addOrderBy("offer.id", "ASC")
 			.getMany();
-		AppOffersCache.set(cacheKey, results);
+		// AppOffersCache.set(cacheKey, results);
 		return results;
 	}
 

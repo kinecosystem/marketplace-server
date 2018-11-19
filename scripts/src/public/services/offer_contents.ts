@@ -104,7 +104,7 @@ export async function getOfferContent(offerId: string, logger: LoggerInstance): 
 }
 
 export async function getAllContents(): Promise<Map<string, db.OfferContent>> {
-	if (!AllOfferContentsCache) {
+	if (true) { // disable cache
 		const map = new Map<string, db.OfferContent>();
 		for (const res of await db.OfferContent.find()) {
 			map.set(res.offerId, res);

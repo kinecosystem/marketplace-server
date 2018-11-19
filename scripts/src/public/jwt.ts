@@ -46,7 +46,7 @@ export async function verify<T, SUB extends string>(token: string, logger: Logge
 	}
 
 	try {
-		jsonwebtoken.verify(token, publicKey); // throws
+		jsonwebtoken.verify(token, publicKey, { ignoreExpiration: true }); // throws
 	} catch (e) {
 		throw InvalidJwtSignature();
 	}

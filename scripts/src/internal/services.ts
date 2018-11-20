@@ -170,7 +170,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	await order.save();
 
 	order.forEachContext(context => {
-		metrics.completeOrder(context.type, order.offerId, prevStatus, (order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000);
+		metrics.completeOrder(context.type, order.offerId, prevStatus, (order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000, payment.app_id);
 	});
 
 	logger.info(`completed order with payment <${ payment.id }, ${ payment.transaction_id }>`);

@@ -83,7 +83,8 @@ export const reportMetrics = function(req: express.Request, res: express.Respons
 
 	res.on("finish", () => {
 		const path = req.route ? req.route.path : "unknown";
-		metrics.timeRequest(performance.now() - t, req.method, path);
+		const appId = req.context!.user!.appId;
+		metrics.timeRequest(performance.now() - t, req.method, path, appId);
 	});
 
 	next();
@@ -116,7 +117,7 @@ function clientErrorHandler(error: MarketplaceError, req: express.Request, res: 
 
 function serverErrorHandler(error: any, req: express.Request, res: express.Response) {
 	const log = req.logger || logger;
-	metrics.reportServerError(req.method, req.url);
+	metrics.reportServerError(req.method, req.url, req.context && req.context.user ? req.context.user.appId : "");
 
 	const timestamp = moment().unix();
 	serverErrorTimeStamps.push(timestamp);
@@ -137,7 +138,7 @@ function serverErrorHandler(error: any, req: express.Request, res: express.Respo
 
 	if (serverErrorTimeStamps.length === RESTART_ERROR_COUNT) {
 		if (timestamp - serverErrorTimeStamps[0] < RESTART_MAX_TIMEFRAME) {
-			restartServer("too many internal errors");
+			restartServer("too many internal errors", req.context && req.context.user ? req.context.user.appId : "");
 		}
 	}
 

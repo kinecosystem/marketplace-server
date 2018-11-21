@@ -4,7 +4,7 @@ services:
 
   marketplace-server:
     image: kinecosystem/marketplace-server:latest
-    #command: ./tests/wait-for marketplace-internal:3000 -- npm run start
+    command: ./tests/wait-for marketplace-internal:3000 -- npm run start
     restart: "no"
     volumes:
       - .:/opt/app
@@ -13,7 +13,7 @@ services:
 
   marketplace-internal:
     image: kinecosystem/marketplace-server:latest
-    #command: ./tests/wait-for postgres:5432 -- npm run start-internal
+    command: ./tests/wait-for postgres:5432 -- npm run start-internal
     volumes:
       - .:/opt/app
     ports:
@@ -21,7 +21,7 @@ services:
 
   marketplace-admin:
     image: kinecosystem/marketplace-server:latest
-    #command: ./tests/wait-for marketplace-server:3000 -- npm run start-admin
+    command: ./tests/wait-for marketplace-server:3000 -- npm run start-admin
     volumes:
       - .:/opt/app
     ports:

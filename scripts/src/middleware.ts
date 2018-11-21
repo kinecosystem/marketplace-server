@@ -83,8 +83,7 @@ export const reportMetrics = function(req: express.Request, res: express.Respons
 
 	res.on("finish", () => {
 		const path = req.route ? req.route.path : "unknown";
-		const appId = req.context!.user!.appId;
-		metrics.timeRequest(performance.now() - t, req.method, path, appId);
+		metrics.timeRequest(performance.now() - t, req.method, path, req.context && req.context.user ? req.context.user.appId : "");
 	});
 
 	next();

@@ -1,6 +1,8 @@
 import * as _path from "path";
 import { join } from "path";
 import * as fs from "fs";
+import { express } from 'express'
+
 
 const fromProjectRoot = _path.join.bind(path, __dirname, "../../");
 
@@ -150,4 +152,8 @@ export function readUTCDate(date: string | Date): Date {
 		return new Date(date);
 	}
 	return new Date(date + "Z");
+}
+
+export function getAppIdFromRequest (req: express.Request): string {
+	return req.context && req.context.user ? req.context.user.appId : "";
 }

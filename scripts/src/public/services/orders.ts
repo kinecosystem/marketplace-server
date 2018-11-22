@@ -129,7 +129,7 @@ async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {
 	});
 	await order.save();
 
-	metrics.createOrder("marketplace", appOffer.offer.type, appOffer.offer.id);
+	metrics.createOrder("marketplace", appOffer.offer.type, appOffer.offer.id, user.appId);
 
 	return order;
 }
@@ -251,7 +251,7 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 		await order.save();
 
 		order.contexts.forEach(context => {
-			metrics.createOrder("external", context.type, payload.offer.id);
+			metrics.createOrder("external", context.type, payload.offer.id, user.appId);
 		});
 
 		logger.info("created new open external order", {
@@ -329,7 +329,7 @@ export async function submitOrder(
 	}
 
 	order.contexts.forEach(context => {
-		metrics.submitOrder(context.type, order.offerId);
+		metrics.submitOrder(context.type, order.offerId, appId);
 	});
 	return orderDbToApi(order, userId);
 }

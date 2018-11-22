@@ -55,7 +55,7 @@ export function onListening(server: Server) {
 /**
  *
  */
-export function abort(reason?: string) {
-	metrics.reportProcessAbort(reason);
+export function abort(reason?: string, appId?: string) {
+	metrics.reportProcessAbort(reason, appId);
 	process.exit(1);  // process manager should restart the process
 }

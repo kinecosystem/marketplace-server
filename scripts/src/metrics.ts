@@ -11,38 +11,39 @@ export function destruct() {
 	return new Promise(resolve => statsd.close(() => resolve()));
 }
 
-export function userRegister(newUser: boolean, newWallet: boolean) {
-	statsd.increment("user_register", 1, { new_user: newUser.toString(), new_wallet: newWallet.toString() });
+export function userRegister(newUser: boolean, newWallet: boolean, appId: string) {
+	statsd.increment("user_register", 1, { new_user: newUser.toString(), new_wallet: newWallet.toString(), app_id: appId });
 }
 
-export function walletAddressUpdate() {
-	statsd.increment("wallet_address_update_succeeded", 1);
+export function walletAddressUpdate(appId: string) {
+	statsd.increment("wallet_address_update_succeeded", 1, { app_id: appId });
 }
 
+// no use in /scripts or /tests
 export function userActivate(newUser: boolean) {
 	statsd.increment("user_activate", 1, { new_user: "true" });
 }
 
-export function maxWalletsExceeded() {
-	statsd.increment("max_wallets_exceeded", 1);
+export function maxWalletsExceeded(appId: string) {
+	statsd.increment("max_wallets_exceeded", 1, { app_id: appId });
 }
 
-export function timeRequest(time: number, method: string, path: string) {
-	statsd.timing("request", time, { method, path });
+export function timeRequest(time: number, method: string, path: string, appId: string) {
+	statsd.timing("request", time, { method, path, app_id: appId });
 }
 
-export function createOrder(orderType: "marketplace" | "external", offerType: "earn" | "spend", offerId: string) {
-	statsd.increment("create_order", 1, { order_type: orderType, offer_type: offerType, offer_id: offerId });
+export function createOrder(orderType: "marketplace" | "external", offerType: "earn" | "spend", offerId: string, appId: string) {
+	statsd.increment("create_order", 1, { order_type: orderType, offer_type: offerType, offer_id: offerId, app_id: appId });
 }
 
-export function submitOrder(offerType: "earn" | "spend", offerId: string) {
-	statsd.increment("submit_order", 1, { offer_type: offerType, offer_id: offerId });
+export function submitOrder(offerType: "earn" | "spend", offerId: string, appId: string) {
+	statsd.increment("submit_order", 1, { offer_type: offerType, offer_id: offerId, app_id: appId });
 }
 
-export function completeOrder(offerType: "earn" | "spend", offerId: string, prevStatus: string, time: number) {
-	statsd.increment("complete_order", 1, { offer_type: offerType, offer_id: offerId });
+export function completeOrder(offerType: "earn" | "spend", offerId: string, prevStatus: string, time: number, appId: string) {
+	statsd.increment("complete_order", 1, { offer_type: offerType, offer_id: offerId, app_id: appId });
 	// time from last status
-	statsd.timing("complete_order_time", time, { offer_type: offerType, prev_status: prevStatus });
+	statsd.timing("complete_order_time", time, { offer_type: offerType, prev_status: prevStatus, app_id: appId });
 }
 
 export function offersReturned(numOffers: number, appId: string) {
@@ -54,12 +55,12 @@ export function reportClientError(error: MarketplaceError, appId: string) {
 		{ status: error.status.toString(), title: error.title, code: error.code.toString(), app_id: appId });
 }
 
-export function reportServerError(method: string, path: string) {
-	statsd.increment("server_error", 1, { method, path });
+export function reportServerError(method: string, path: string, appId: string) {
+	statsd.increment("server_error", 1, { method, path, app_id: appId });
 }
 
-export function reportProcessAbort(reason: string = "") {
-	statsd.increment("process_abort", 1, { system: "exit", reason });
+export function reportProcessAbort(reason: string = "", appId: string = "") {
+	statsd.increment("process_abort", 1, { system: "exit", reason, app_id: appId });
 }
 
 export function orderFailed(order: Order) {

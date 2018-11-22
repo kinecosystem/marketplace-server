@@ -6,7 +6,7 @@ import { Request, Response } from "express-serve-static-core";
 
 import * as metrics from "./metrics";
 import { getConfig } from "./config";
-import { generateId, pick } from "./utils";
+import { generateId, pick, getAppIdFromRequest } from "./utils";
 import { MarketplaceError } from "./errors";
 import { getDefaultLogger } from "./logging";
 import { abort as restartServer } from "./server";
@@ -83,7 +83,7 @@ export const reportMetrics = function(req: express.Request, res: express.Respons
 
 	res.on("finish", () => {
 		const path = req.route ? req.route.path : "unknown";
-		metrics.timeRequest(performance.now() - t, req.method, path);
+		metrics.timeRequest(performance.now() - t, req.method, path, getAppIdFromRequest(req));
 	});
 
 	next();
@@ -108,7 +108,7 @@ function clientErrorHandler(error: MarketplaceError, req: express.Request, res: 
 	const log = req.logger || logger;
 
 	log.error(`client error (4xx)`, error);
-	metrics.reportClientError(error, req.context && req.context.user ? req.context.user.appId : "");
+	metrics.reportClientError(error, getAppIdFromRequest(req));
 	// set headers from the error if any
 	Object.keys(error.headers).forEach(key => res.setHeader(key, error.headers[key]));
 	res.status(error.status).send(error.toJson());
@@ -116,7 +116,7 @@ function clientErrorHandler(error: MarketplaceError, req: express.Request, res: 
 
 function serverErrorHandler(error: any, req: express.Request, res: express.Response) {
 	const log = req.logger || logger;
-	metrics.reportServerError(req.method, req.url);
+	metrics.reportServerError(req.method, req.url, getAppIdFromRequest(req));
 
 	const timestamp = moment().unix();
 	serverErrorTimeStamps.push(timestamp);
@@ -137,7 +137,7 @@ function serverErrorHandler(error: any, req: express.Request, res: express.Respo
 
 	if (serverErrorTimeStamps.length === RESTART_ERROR_COUNT) {
 		if (timestamp - serverErrorTimeStamps[0] < RESTART_MAX_TIMEFRAME) {
-			restartServer("too many internal errors");
+			restartServer("too many internal errors", getAppIdFromRequest(req));
 		}
 	}
 

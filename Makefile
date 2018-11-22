@@ -53,14 +53,12 @@ push-image:
 pull:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml pull
 
-up: db-docker
+up: up-dev
+up-dev: db-docker
 	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml up -d
 
-up-dev: db-docker
-	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml -f docker-compose.deps.yaml up -d
-
 logs:
-	docker-compose -f docker-compose.dev.yaml -f docker-compose.yaml -f docker-compose.deps.yaml logs 
+	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml logs 
 
 down:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml down
@@ -81,10 +79,10 @@ clear-redis:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm redis-cli del cursor
 
 test-system-docker: clear-db db-docker clear-redis
-	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml -f docker-compose.dev.yaml run --rm test-system
+	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm test-system
 
 generate-funding-address:
-	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml -f docker-compose.dev.yaml run generate-funding-address
+	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run generate-funding-address
 
 create-jwt-keys:
 	./operational/create_keys.sh .

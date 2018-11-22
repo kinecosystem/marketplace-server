@@ -36,10 +36,10 @@ services:
     volumes:
       - .:/opt/app
     links:
-      - marketplace-server
+      - marketplace-public
       - jwt-service
     environment:
-      MARKETPLACE_BASE: http://marketplace-server:3000
+      MARKETPLACE_BASE: http://marketplace-public:3000
       JWT_SERVICE_BASE: http://jwt-service:3000
     command: npm run test-system
 

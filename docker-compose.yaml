@@ -2,11 +2,14 @@ version: "3"
 
 services:
 
-  marketplace-server:
-    image: kinecosystem/marketplace-server:8de5772
-    restart: on-failure
+  marketplace-public:
+    image: kinecosystem/marketplace-server:latest
+    command: ./tests/wait-for marketplace-internal:3000 -- npm run start
+    restart: "no"
+    volumes:
+      - .:/opt/app
     ports:
-      - 3000
+      - 3000:3000
     links:
       - redis
       - payment-service
@@ -17,7 +20,7 @@ services:
       APP_DEBUG: 'True'
       APP_PORT: 3000
       APP_HOST: '0.0.0.0'
-      APP_NAME: 'marketplace-server'
+      APP_NAME: 'marketplace-public'
       APP_REDIS: redis://redis:6379/0
       APP_PAYMENT_SERVICE: http://payment-service:3000
       APP_INTERNAL_SERVICE: http://marketplace-internal:3000
@@ -30,29 +33,35 @@ services:
       APP_DB_DATABASE: ecosystem
 
   marketplace-admin:
-    image: kinecosystem/marketplace-server:6482b4c
-    command: npm run start-admin
+    image: kinecosystem/marketplace-server:latest
+    restart: "no"
+    command: ./tests/wait-for marketplace-public:3000 -- npm run start-admin
+    volumes:
+      - .:/opt/app
     ports:
-      - 3000
+      - 3002:3000
     links:
       - redis
       - payment-service
       - postgres
-      - marketplace-server # so I can wait for it
+      - marketplace-public # so I can wait for it
     environment:
       <<: *app_env_vars
       APP_NAME: 'marketplace-internal'
 
   marketplace-internal:
-    image: kinecosystem/marketplace-server:8de5772
-    command: npm run start-internal
+    image: kinecosystem/marketplace-server:latest
+    restart: "no"
+    command: ./tests/wait-for postgres:5432 -- npm run start-internal
+    volumes:
+      - .:/opt/app
     ports:
-      - 3000
+      - 3001:3000
     links:
       - redis
       - payment-service
       - postgres
-      - marketplace-server # so I can wait for it
+      - marketplace-public # so I can wait for it
     environment:
       <<: *app_env_vars
       APP_NAME: 'marketplace-internal'

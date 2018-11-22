@@ -101,13 +101,12 @@ export async function setWatcherEndpoint(addresses: string[]): Promise<Watcher> 
 	// What about native spend addresses?
 	// XXX should be called from the internal server api upon creation
 	const payload: Watcher = { wallet_addresses: addresses, callback: webhook };
-	const res = await client.put(`${config.payment_service}/watchers/${SERVICE_ID}`, payload);
+	const res = await client.put(`${config.payment_service}/services/${SERVICE_ID}`, payload);
 	return res.data;
 }
 
-export async function addWatcherEndpoint(addresses: string[]): Promise<Watcher> {
-	const payload: Watcher = { wallet_addresses: addresses, callback: webhook };
-	const res = await client.post(`${config.payment_service}/watchers/${SERVICE_ID}`, payload);
+export async function addWatcherEndpoint(address: string, paymentId: string): Promise<Watcher> {
+	const res = await client.put(`${config.payment_service}/services/${SERVICE_ID}/watchers/${address}/payments/${paymentId}`);
 	return res.data;
 }
 

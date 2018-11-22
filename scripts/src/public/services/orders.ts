@@ -34,7 +34,6 @@ import { ExternalEarnOrderJWT, ExternalPayToUserOrderJwt, ExternalSpendOrderJWT 
 import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
-import { OfferTranslation } from "../../models/translations";
 import { OrderTranslations } from "../routes/orders";
 
 export interface OrderList {
@@ -163,8 +162,7 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 		throw NoSuchUser(jwt.recipient.user_id);
 	}
 
-	await addWatcherEndpoint([recipient.walletAddress]);
-	return db.ExternalOrder.new({
+	const order = db.ExternalOrder.new({
 		offerId: jwt.offer.id,
 		amount: jwt.offer.amount,
 		status: "opened",
@@ -182,6 +180,9 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 		user: sender,
 		meta: pick(jwt.sender, "title", "description")
 	});
+
+	await addWatcherEndpoint(recipient.walletAddress, order.id);
+	return order;
 }
 
 async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
@@ -214,9 +215,7 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 		throw NoSuchApp(sender.appId);
 	}
 
-	await addWatcherEndpoint([app.walletAddresses.recipient]);
-
-	return db.ExternalOrder.new({
+	const order = db.ExternalOrder.new({
 		offerId: jwt.offer.id,
 		amount: jwt.offer.amount,
 		status: "opened",
@@ -230,6 +229,10 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 		user: sender,
 		meta: pick(jwt.sender, "title", "description")
 	});
+
+	await addWatcherEndpoint(app.walletAddresses.recipient, order.id);
+
+	return order;
 }
 
 export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {

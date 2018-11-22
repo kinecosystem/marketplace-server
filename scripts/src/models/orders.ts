@@ -34,6 +34,8 @@ export type OrderOrigin = "marketplace" | "external";
 export type OrderStatus = "completed" | "failed" | "pending";
 export type OpenOrderStatus = OrderStatus | "opened";
 export type OrderStatusAndNegation = OpenOrderStatus | "!opened" | "!completed" | "!failed" | "!pending";
+const PENDING_SECS = 5 * 60;
+const OPENED_SECS = 10 * 60;
 
 function updateQueryWithStatus(query: SelectQueryBuilder<any>, status?: OrderStatusAndNegation | null, alias?: string) {
 	if (!status) {
@@ -441,10 +443,10 @@ class OrderImpl extends CreationDateModel implements Order {
 		this.currentStatusDate = new Date();
 		switch (this.status) {
 			case "pending":
-				this.expirationDate = moment(this.currentStatusDate).add(45, "seconds").toDate();
+				this.expirationDate = moment(this.currentStatusDate).add(PENDING_SECS, "seconds").toDate();
 				break;
 			case "opened":
-				this.expirationDate = moment(this.currentStatusDate).add(10, "minutes").toDate();
+				this.expirationDate = moment(this.currentStatusDate).add(OPENED_SECS, "seconds").toDate();
 				break;
 			default:
 				this.expirationDate = null as any;

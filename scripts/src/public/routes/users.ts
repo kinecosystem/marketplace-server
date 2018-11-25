@@ -85,7 +85,7 @@ export const updateUser = async function(req: UpdateUserRequest, res: Response) 
 	context.user!.walletAddress = walletAddress;
 	await context.user!.save();
 
-	createWalletAddressUpdateSucceeded(userId);
+	createWalletAddressUpdateSucceeded(userId).report();
 	metrics.walletAddressUpdate(context.user!.appId);
 	res.status(204).send();
 } as any as RequestHandler;

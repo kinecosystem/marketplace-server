@@ -66,7 +66,7 @@ export interface Tutorial {
 
 export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
 
-export type Answers = { [key: string]: string };
+export type Answers = { [key: string]: number };
 
 export interface CouponInfo {
 	title: string;
@@ -153,17 +153,16 @@ export async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form:
 	}
 
 	const quiz: Quiz = JSON.parse(translatedContent || offerContent.content);  // this might fail if not valid json without replaceTemplateVars
-	let amountSum = 0;
+	// let amountSum = 0;
 
-	for (const page of quiz.pages) {
+	const amountSum = quiz.pages.reduce((sum: number, page: QuizPage | SuccessBasedThankYouPage): number => {
 		if (page.type === PageType.TimedFullPageMultiChoice) {
-			const p = (page as QuizPage);
-			const answerIndex = p.question.answers.indexOf(answers[p.question.id]) + 1;
-			if (answerIndex === p.rightAnswer) {
-				amountSum += p.amount;
-			}
-		}
-	}
+			if (answers[page.question.id] === page.rightAnswer) {
+				return sum + page.amount;
+			} else { return sum; }
+		} else { return sum; }
+	}, 0);
+
 	return amountSum;
 }
 

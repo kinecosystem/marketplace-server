@@ -98,7 +98,7 @@ async function didNotApproveTOS() {
 
 	const client = await MarketplaceClient.create({
 		apiKey: API_KEY,
-		userId: "new_user_123"
+		userId: "new_user:" + generateId()
 	}, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	const offers = await client.getOffers();
@@ -111,7 +111,7 @@ async function spendFlow() {
 
 	const client = await MarketplaceClient.create({
 		apiKey: API_KEY,
-		userId: "rich_user2"
+		userId: "new_user:" + generateId()
 	}, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
 	await client.activate();

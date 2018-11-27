@@ -23,7 +23,6 @@ import {
 } from "./public/services/offer_contents";
 
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
-const API_KEY = process.env.API_KEY || Application.SAMPLE_API_KEY;  // get this from JWT_SERVICE
 
 // TODO: should this be moved to the client?
 class SampleAppClient {
@@ -96,10 +95,10 @@ async function getOffer(client: MarketplaceClient, offerType: OfferType, content
 async function didNotApproveTOS() {
 	console.log("=====================================didNotApproveTOS=====================================");
 
-	const client = await MarketplaceClient.create({
-		apiKey: API_KEY,
-		userId: "new_user:" + generateId()
-	}, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+	const client = await MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	const offers = await client.getOffers();
 	await client.createOrder(offers.offers[0].id); // should not throw - we removed need of activate
@@ -109,10 +108,10 @@ async function didNotApproveTOS() {
 async function spendFlow() {
 	console.log("=====================================spend=====================================");
 
-	const client = await MarketplaceClient.create({
-		apiKey: API_KEY,
-		userId: "new_user:" + generateId()
-	}, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+	const client = await MarketplaceClient.create({ jwt }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
 	await client.activate();
 	const selectedOffer = await getOffer(client, "spend");
@@ -164,10 +163,10 @@ async function earnPollFlow() {
 
 	console.log("===================================== earn poll =====================================");
 
-	const client = await MarketplaceClient.create({
-		apiKey: API_KEY,
-		userId: "earn:" + generateId()
-	}, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+	const client = await MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	await client.activate();
 
@@ -223,10 +222,10 @@ async function earnQuizFlow() {
 
 	console.log("===================================== earn quiz =====================================");
 
-	const client = await MarketplaceClient.create({
-		apiKey: API_KEY,
-		userId: "quiz_user:" + generateId()
-	}, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+	const client = await MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	await client.activate();
 
@@ -268,10 +267,10 @@ async function earnQuizFlow() {
 
 async function earnTutorial() {
 	console.log("===================================== earnTutorial =====================================");
-	const client = await MarketplaceClient.create({
-		apiKey: API_KEY,
-		userId: "tutorial:" + generateId()
-	}, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+	const client = await MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	await client.activate();
 
@@ -295,23 +294,13 @@ async function earnTutorial() {
 
 async function testRegisterNewUser() {
 	console.log("===================================== testRegisterNewUser =====================================");
-	const client = await MarketplaceClient.create({
-		apiKey: API_KEY,
-		userId: "new_user:" + generateId()
-	});
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+	const client = await MarketplaceClient.create({ jwt });
 
 	console.log("OK.\n");
 }
-
-/*async function justPay() {
-	console.log("===================================== justPay =====================================");
-	const client = await MarketplaceClient.create({
-		apiKey: API_KEY,
-		userId: generateId() });
-
-	await client.pay("GCZ72HXIUSDXEEL2RVZR6PXHGYU7S3RMQQ4O6UVIXWOU4OUVNIQKQR2X", 1, "SOME_ORDER");
-
-}*/
 
 async function registerJWT() {
 	console.log("===================================== registerJWT =====================================");

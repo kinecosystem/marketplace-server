@@ -73,7 +73,7 @@
     "restart": "npm-run-all build start",
     "transpile-tests": "tsc -p tests",
     "test-system": "node scripts/bin/mock_client",
-    "test": "jest --forceExit --runInBand"
+    "test": "jest --forceExit --runInBand --detectOpenHandles"
   },
   "author": "",
   "license": "ISC",

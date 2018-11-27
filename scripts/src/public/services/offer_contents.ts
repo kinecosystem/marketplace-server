@@ -153,14 +153,14 @@ export async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form:
 	}
 
 	const quiz: Quiz = JSON.parse(translatedContent || offerContent.content);  // this might fail if not valid json without replaceTemplateVars
-	// let amountSum = 0;
 
 	const amountSum = quiz.pages.reduce((sum: number, page: QuizPage | SuccessBasedThankYouPage): number => {
 		if (page.type === PageType.TimedFullPageMultiChoice) {
 			if (answers[page.question.id] === page.rightAnswer) {
 				return sum + page.amount;
-			} else { return sum; }
-		} else { return sum; }
+			}
+		}
+		return sum;
 	}, 0);
 
 	return amountSum;

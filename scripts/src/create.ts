@@ -1,5 +1,5 @@
 /**
- * This file populates a demo database for the sole sake of mocking data to populate our SDK client.
+ * This script populates a demo database for the sole sake of mocking data to populate our SDK client.
  * All the names of companies, products and KIN values are completely made up and are used for TESTING only.
  */
 import { getConfig } from "./public/config"; // must be the first import

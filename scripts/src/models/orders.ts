@@ -59,9 +59,9 @@ function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, val
 	const fieldName = alias ? `${ alias }.${ name }` : name;
 
 	if (value.startsWith("!")) {
-		query.andWhere(`${ fieldName } != :value`, { value: value.substring(1) });
+		query.andWhere(`${ fieldName } != :${ fieldName }`, { [fieldName]: value.substring(1) });
 	} else {
-		query.andWhere(`${ fieldName } = :value`, { value });
+		query.andWhere(`${ fieldName } = :${ fieldName }`, { [fieldName]: value });
 	}
 }
 

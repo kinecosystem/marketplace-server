@@ -33,7 +33,7 @@
 		"no-empty": false,
 		"unified-signatures": false,
 		"ban-types": [false],
-		"variable-name": false,
+		"one-line": true,
 		"object-literal-key-quotes": [false]
 	}
 }

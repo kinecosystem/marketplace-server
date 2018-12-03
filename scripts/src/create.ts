@@ -9,7 +9,7 @@ import { Keypair } from "@kinecosystem/kin.js";
 
 import { close as closeModels, init as initModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
-import { createEarn, createSpend } from "./create_data/offers";
+import { createEarn, createSpend, EarnOptions } from "./create_data/offers";
 import { ContentType, Offer } from "./models/offers";
 import { Application, ApplicationConfig, StringMap } from "./models/applications";
 import { path } from "./utils";
@@ -22,13 +22,12 @@ getConfig();
 const STELLAR_ADDRESS = process.env.STELLAR_ADDRESS;  // address to use instead of the ones defined in the data
 type AppDef = { app_id: string, name: string, api_key: string, jwt_public_keys: StringMap, config: ApplicationConfig };
 
-async function createApp(appId: string, name: string, jwtPublicKeys: StringMap, apiKey: string, appConfig: ApplicationConfig): Promise<Application> {
+async function createApp(appId: string, name: string, jwtPublicKeys: StringMap, apiKey: string, appConfig: ApplicationConfig, dryRun?: boolean): Promise<Application> {
 	const existingApp = await Application.findOneById(appId);
 	if (existingApp) {
 		console.log(`existing app: ${appId}`);
 		return existingApp;
 	}
-
 	const app = Application.new({
 		name,
 		jwtPublicKeys,
@@ -39,7 +38,8 @@ async function createApp(appId: string, name: string, jwtPublicKeys: StringMap, 
 	if (apiKey) {
 		app.apiKey = apiKey;  // when apiKey given, run-over generated value
 	}
-	await app.save();
+	console.log("creating app: %s (id: %s)", name, appId, dryRun ? "(dry run)" : undefined);
+	await !dryRun && app.save();
 	return app;
 }
 
@@ -95,7 +95,7 @@ async function parseSpend(data: string[][], appList: string[]) {
 	return results;
 }
 
-async function parseEarn(data: string[][], contentType: ContentType, appList: string[]) {
+async function parseEarn(data: string[][], contentType: ContentType, appList: string[], config: EarnOptions) {
 	const list = toMap(data);
 
 	const poll: Quiz | Poll | Tutorial = { pages: [] };
@@ -104,21 +104,7 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 	const results: Offer[] = [];
 
 	async function createEarnInner(v: Map<string, string>, poll: Quiz | Poll | Tutorial): Promise<Offer> {
-		const offer = await createEarn(
-			v.get("OfferName")!,
-			STELLAR_ADDRESS || v.get("WalletAddress")!,
-			v.get("Brand")!,
-			v.get("Title")!,
-			v.get("Description")!,
-			v.get("Image")!,
-			parseInt(v.get("Amount")!, 10),
-			parseInt(v.get("CapTotal")!, 10),
-			parseInt(v.get("CapPerUser")!, 10),
-			v.get("OrderTitle")!,
-			v.get("OrderDescription")!,
-			contentType,
-			poll,
-			appList);
+		const offer = await createEarn(v.get("OfferName")!, STELLAR_ADDRESS || v.get("WalletAddress")!, v.get("Brand")!, v.get("Title")!, v.get("Description")!, v.get("Image")!, parseInt(v.get("Amount")!, 10), parseInt(v.get("CapTotal")!, 10), parseInt(v.get("CapPerUser")!, 10), v.get("OrderTitle")!, v.get("OrderDescription")!, contentType, poll, appList, config);
 		return offer;
 	}
 
@@ -201,53 +187,119 @@ function getStellarAddresses() {
 	}
 }
 
+type Config = {
+	apps_dir: string | null;
+	offers_dir: string | null;
+	app_list: string[];
+	no_update: boolean | null;
+	dry_run: boolean | null;
+	require_update_confirm: boolean | null
+};
+
+function initArgsParser(): Config {
+	const ArgumentParser = require("argparse").ArgumentParser;
+	const parser = new ArgumentParser({
+		version: "2.0.0",
+		addHelp: true,
+		description: "DB initializer script for Apps and Offers. Apps configuration come as JSON files and offers as CSV files.",
+		argumentDefault: {}
+	});
+	parser.addArgument(["--apps-dir"], {
+		help: "Location (directory) of app config json files"
+	});
+	parser.addArgument(["--offers-dir"], {
+		help: "Location (directory) of offers csv files"
+	});
+	parser.addArgument(["--app-list"], {
+		help: "Comma separated list of apps (i.e smpl, swel, kik, test, p365...) to have the earn offers added to (ALL, in caps, to add to all apps)",
+		// choices: ["smpl", "swel", "kik", "test", "p365", "*"]
+	});
+	parser.addArgument(["--no-update"], {
+		help: "Don't update existing earn offers, only create new ones.",
+		action: "storeTrue"
+	});
+	parser.addArgument(["--dry-run"], {
+		help: "Process the data but don't touch the DB",
+		action: "storeTrue"
+	});
+
+	// parser.addArgument(["-c", "--require-update-confirm"], {
+	// 	help: "Ask for confirmation before updating earn offers",
+	// 	action: "storeTrue"
+	// });
+	const parsed = parser.parseArgs();
+	parsed.app_list = parsed.app_list ? parsed.app_list.split(" ") : [];
+	return parsed as Config;
+}
+
+function confirmPrompt(message) {
+	const readline = require("readline");
+	const prompt = readline.createInterface(process.stdin, process.stdout);
+	return new Promise(resolve => {
+		prompt.question(message + "\n", answer => {
+			prompt.close();
+			resolve(answer);
+		});
+	});
+}
+
 initModels(process.env.CREATE_DB === "TRUE").then(async () => {
-	const appsDir = process.argv[2];
-	const offersDir = process.argv[3];
-	let appList: string[] = process.argv[4] ? process.argv[4].split(",") : [];
-
-	for (const filename of fs.readdirSync(path(appsDir))) {
-		if (!filename.endsWith(".json")) {
-			console.info(`skipping non json file ${filename}`);
-			continue;
+	const config = initArgsParser();
+	console.log(config);
+	// const appsDir = process.argv[2];
+	// const offersDir = process.argv[3];
+	// let appList: string[] = process.argv[4] ? process.argv[4].split(",") : [];
+	const appsDir = config.apps_dir;
+	if (appsDir) {
+		for (const filename of fs.readdirSync(path(appsDir))) {
+			if (!filename.endsWith(".json")) {
+				console.info(`skipping non json file ${filename}`);
+				continue;
+			}
+			const data: AppDef = JSON.parse(fs.readFileSync(path(join(appsDir, filename))).toString());
+			await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config, config.dry_run);
 		}
-		const data: AppDef = JSON.parse(fs.readFileSync(path(join(appsDir, filename))).toString());
-		await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config
-		);
 	}
-
-	if (!appList || !appList.length) {
-		throw Error("Application list must be given (Comma seperated strings in the third argument)");
-	}
-
-	if (appList[0] === "*") {
-		appList = (await Application.find({ select: ["id"] })).map(app => app.id);
-	}
-
-	// sanity on app ids
-	await Promise.all(appList.map(async appId => {
-		if (!await Application.findOneById(appId)) {
-			throw Error(`Application not found ${appId}`);
+	const offersDir = config.offers_dir;
+	if (offersDir) {
+		let appList = config.app_list;
+		if (!appList || !appList.length) {
+			throw Error("Application list must be given. See help (--help)");
 		}
-	}));
+		if (appList[0] === "ALL") {
+			appList = (await Application.find({ select: ["id"] })).map(app => app.id);
+		}
 
-	// create offers from csv
-	const parseCsv = require("csv-parse/lib/sync");
-	for (const filename of fs.readdirSync(path(offersDir))) {
-		const offersCsv = fs.readFileSync(path(join(offersDir, filename)));
-		const parsed = parseCsv(offersCsv);
+		// sanity on app ids
+		await Promise.all(appList.map(async appId => {
+			if (!await Application.findOneById(appId)) {
+				throw Error(`Application not found ${appId}`);
+			}
+		}));
 
-		const title = readTitle(parsed[0][0]);
-		const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
-		let results = [];
-		if (title === "Spend") {
-			results = await parseSpend(parsed, appList);
-			console.log(`created spend:${contentType} offers`);
-		} else if (title === "Earn") {
-			results = await parseEarn(parsed, contentType, appList);
-			console.log(`created earn:${contentType} offers`);
-		} else {
-			throw new Error("Failed to parse " + parsed[0][0]);
+		// create offers from csv
+		const parseCsv = require("csv-parse/lib/sync");
+		const createOfferOptions: EarnOptions = {
+			doNotUpdateExiting: config.no_update!,
+			dryRun: config.dry_run!,
+			confirmUpdate: config.require_update_confirm!
+		};
+		for (const filename of fs.readdirSync(path(offersDir))) {
+			const offersCsv = fs.readFileSync(path(join(offersDir, filename)));
+			const parsed = parseCsv(offersCsv);
+
+			const title = readTitle(parsed[0][0]);
+			const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
+			let results = [];
+			if (title === "Spend") {
+				results = await parseSpend(parsed, appList);
+				console.log(`created spend:${contentType} offers`);
+			} else if (title === "Earn") {
+				results = await parseEarn(parsed, contentType, appList, createOfferOptions);
+				console.log(`created earn:${contentType} offers`);
+			} else {
+				throw new Error("Failed to parse " + parsed[0][0]);
+			}
 		}
 	}
 	await closeModels();

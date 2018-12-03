@@ -34,7 +34,11 @@
     "winston": "^2.4.0"
   },
   "devDependencies": {
+<<<<<<< HEAD
     "@kinecosystem/kin.js": "^1.0.6",
+=======
+    "@types/argparse": "^1.0.35",
+>>>>>>> ECO-760 create script can update and do dry run and stuff
     "@types/body-parser": "^1.16.8",
     "@types/csv-parse": "^1.1.11",
     "@types/expect": "^1.20.3",

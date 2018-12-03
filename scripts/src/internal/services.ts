@@ -105,7 +105,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 
 	order.forEachContext(context => {
 		if (context.type === "earn") {
-			if (order.isP2P()) {
+			if (!order.isP2P()) {
 				createEarnTransactionBroadcastToBlockchainSucceeded(context.user.id, payment.transaction_id, order.offerId, order.id).report();
 			}
 		} else {

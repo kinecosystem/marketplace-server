@@ -115,12 +115,12 @@ export async function createEarn(
 			return existingOffer;
 		}
 		offer = existingOffer;
-		console.log("Updating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : undefined);
+		console.log("Updating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : "");
 		content = await OfferContent.findOne({ offerId: offer.id });
 	} else {
 		const owner = await getOrCreateOwner(brand);
 		offer = Offer.new({ name: offerName, ownerId: owner.id, type: "earn" });
-		console.log("Creating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : undefined);
+		console.log("Creating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : "");
 	}
 
 	if (!content) {
@@ -147,13 +147,13 @@ export async function createEarn(
 	return offer;
 }
 
-async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string, appList: string[], options: EarnOptions) {
+async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string, appList: string[], options: EarnOptions = {}) {
 	await Promise.all(appList.map(async appId => {
 		let appOffer = await AppOffer.findOne({ appId, offerId: offer.id });
-		appOffer && console.log("Updating AppOffer for offer %s id %s, App: ", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : undefined);
+		appOffer && console.log("Updating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
 
 		if (!appOffer) {
-			console.log("Creating AppOffer for offer %s id %s, App: ", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : undefined);
+			console.log("Creating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
 			appOffer = await AppOffer.create({ appId, offerId: offer.id });
 		}
 		appOffer.walletAddress = walletAddress;

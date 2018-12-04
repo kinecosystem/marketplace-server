@@ -18,6 +18,7 @@ import "./models/orders";
 import "./models/users";
 
 getConfig();
+let config;
 
 const STELLAR_ADDRESS = process.env.STELLAR_ADDRESS;  // address to use instead of the ones defined in the data
 type AppDef = { app_id: string, name: string, api_key: string, jwt_public_keys: StringMap, config: ApplicationConfig };
@@ -194,6 +195,7 @@ type Config = {
 	no_update: boolean | null;
 	dry_run: boolean | null;
 	require_update_confirm: boolean | null
+	create_db: boolean | null
 };
 
 function initArgsParser(): Config {
@@ -202,7 +204,7 @@ function initArgsParser(): Config {
 		version: "2.0.0",
 		addHelp: true,
 		description: "DB initializer script for Apps and Offers. Apps configuration come as JSON files and offers as CSV files.",
-		argumentDefault: {}
+		argumentDefault: undefined  // Normalizing defaults, otherwise they're set to {}
 	});
 	parser.addArgument(["--apps-dir"], {
 		help: "Location (directory) of app config json files"
@@ -218,8 +220,12 @@ function initArgsParser(): Config {
 		help: "Don't update existing earn offers, only create new ones.",
 		action: "storeTrue"
 	});
-	parser.addArgument(["--dry-run"], {
+	parser.addArgument(["-d", "--dry-run"], {
 		help: "Process the data but don't touch the DB",
+		action: "storeTrue"
+	});
+	parser.addArgument(["-c", "--create-db"], {
+		help: `Create tables/schemes if needed. ${"\x1b[41m" /* red */} USUALLY SHOULD BE NOT RUN IN PRODUCTION${"\x1b[0m" /* reset */}`,
 		action: "storeTrue"
 	});
 
@@ -232,23 +238,20 @@ function initArgsParser(): Config {
 	return parsed as Config;
 }
 
-function confirmPrompt(message) {
+function confirmPrompt(message: string) {
 	const readline = require("readline");
 	const prompt = readline.createInterface(process.stdin, process.stdout);
 	return new Promise(resolve => {
-		prompt.question(message + "\n", answer => {
+		prompt.question(message + "\n", (answer: string) => {
 			prompt.close();
 			resolve(answer);
 		});
 	});
 }
 
-initModels(process.env.CREATE_DB === "TRUE").then(async () => {
-	const config = initArgsParser();
-	console.log(config);
-	// const appsDir = process.argv[2];
-	// const offersDir = process.argv[3];
-	// let appList: string[] = process.argv[4] ? process.argv[4].split(",") : [];
+config = initArgsParser();
+console.log(config);
+initModels(config.create_db).then(async () => {
 	const appsDir = config.apps_dir;
 	if (appsDir) {
 		for (const filename of fs.readdirSync(path(appsDir))) {
@@ -257,14 +260,14 @@ initModels(process.env.CREATE_DB === "TRUE").then(async () => {
 				continue;
 			}
 			const data: AppDef = JSON.parse(fs.readFileSync(path(join(appsDir, filename))).toString());
-			await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config, config.dry_run);
+			await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config, config.dry_run!);
 		}
 	}
 	const offersDir = config.offers_dir;
 	if (offersDir) {
 		let appList = config.app_list;
 		if (!appList || !appList.length) {
-			throw Error("Application list must be given. See help (--help)");
+			throw Error("Application list must be given via `--app-list`. See help (--help)");
 		}
 		if (appList[0] === "ALL") {
 			appList = (await Application.find({ select: ["id"] })).map(app => app.id);

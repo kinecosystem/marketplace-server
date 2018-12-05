@@ -17,8 +17,18 @@ import { path } from "./utils";
 import "./models/orders";
 import "./models/users";
 
-getConfig();
-let config;
+getConfig();  // App Config
+
+type ScriptConfig = {
+	apps_dir: string | null;
+	offers_dir: string | null;
+	app_list: string[];
+	no_update: boolean;
+	dry_run: boolean;
+	require_update_confirm: boolean;
+	create_db: boolean;
+};
+let scriptConfig: ScriptConfig;
 
 const STELLAR_ADDRESS = process.env.STELLAR_ADDRESS;  // address to use instead of the ones defined in the data
 type AppDef = { app_id: string, name: string, api_key: string, jwt_public_keys: StringMap, config: ApplicationConfig };
@@ -105,8 +115,17 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 	const results: Offer[] = [];
 
 	async function createEarnInner(v: Map<string, string>, poll: Quiz | Poll | Tutorial): Promise<Offer> {
-		const offer = await createEarn(v.get("OfferName")!, STELLAR_ADDRESS || v.get("WalletAddress")!, v.get("Brand")!, v.get("Title")!, v.get("Description")!, v.get("Image")!, parseInt(v.get("Amount")!, 10), parseInt(v.get("CapTotal")!, 10), parseInt(v.get("CapPerUser")!, 10), v.get("OrderTitle")!, v.get("OrderDescription")!, contentType, poll, appList, config);
-		return offer;
+		return await createEarn(
+			v.get("OfferName")!,
+			STELLAR_ADDRESS || v.get("WalletAddress")!,
+			v.get("Brand")!, v.get("Title")!,
+			v.get("Description")!,
+			v.get("Image")!,
+			parseInt(v.get("Amount")!, 10),
+			parseInt(v.get("CapTotal")!, 10),
+			parseInt(v.get("CapPerUser")!, 10),
+			v.get("OrderTitle")!,
+			v.get("OrderDescription")!, contentType, poll, appList, config);
 	}
 
 	for (const v of list) {
@@ -188,17 +207,7 @@ function getStellarAddresses() {
 	}
 }
 
-type Config = {
-	apps_dir: string | null;
-	offers_dir: string | null;
-	app_list: string[];
-	no_update: boolean | null;
-	dry_run: boolean | null;
-	require_update_confirm: boolean | null
-	create_db: boolean | null
-};
-
-function initArgsParser(): Config {
+function initArgsParser(): ScriptConfig {
 	const ArgumentParser = require("argparse").ArgumentParser;
 	const parser = new ArgumentParser({
 		version: "2.0.0",
@@ -214,14 +223,13 @@ function initArgsParser(): Config {
 	});
 	parser.addArgument(["--app-list"], {
 		help: "Comma separated list of apps (i.e smpl, swel, kik, test, p365...) to have the earn offers added to (ALL, in caps, to add to all apps)",
-		// choices: ["smpl", "swel", "kik", "test", "p365", "*"]
 	});
 	parser.addArgument(["--no-update"], {
 		help: "Don't update existing earn offers, only create new ones.",
 		action: "storeTrue"
 	});
 	parser.addArgument(["-d", "--dry-run"], {
-		help: "Process the data but don't touch the DB",
+		help: "Process the data but don't touch the DB (doesn't apply to spend offers)",
 		action: "storeTrue"
 	});
 	parser.addArgument(["-c", "--create-db"], {
@@ -234,8 +242,9 @@ function initArgsParser(): Config {
 	// 	action: "storeTrue"
 	// });
 	const parsed = parser.parseArgs();
+	console.log(parsed);
 	parsed.app_list = parsed.app_list ? parsed.app_list.split(" ") : [];
-	return parsed as Config;
+	return parsed as ScriptConfig;
 }
 
 function confirmPrompt(message: string) {
@@ -249,10 +258,10 @@ function confirmPrompt(message: string) {
 	});
 }
 
-config = initArgsParser();
-console.log(config);
-initModels(config.create_db).then(async () => {
-	const appsDir = config.apps_dir;
+scriptConfig = initArgsParser();
+
+initModels(scriptConfig.create_db).then(async () => {
+	const appsDir = scriptConfig.apps_dir;
 	if (appsDir) {
 		for (const filename of fs.readdirSync(path(appsDir))) {
 			if (!filename.endsWith(".json")) {
@@ -260,12 +269,12 @@ initModels(config.create_db).then(async () => {
 				continue;
 			}
 			const data: AppDef = JSON.parse(fs.readFileSync(path(join(appsDir, filename))).toString());
-			await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config, config.dry_run!);
+			await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config, scriptConfig.dry_run!);
 		}
 	}
-	const offersDir = config.offers_dir;
+	const offersDir = scriptConfig.offers_dir;
 	if (offersDir) {
-		let appList = config.app_list;
+		let appList = scriptConfig.app_list;
 		if (!appList || !appList.length) {
 			throw Error("Application list must be given via `--app-list`. See help (--help)");
 		}
@@ -283,9 +292,9 @@ initModels(config.create_db).then(async () => {
 		// create offers from csv
 		const parseCsv = require("csv-parse/lib/sync");
 		const createOfferOptions: EarnOptions = {
-			doNotUpdateExiting: config.no_update!,
-			dryRun: config.dry_run!,
-			confirmUpdate: config.require_update_confirm!
+			doNotUpdateExiting: scriptConfig.no_update!,
+			dryRun: scriptConfig.dry_run!,
+			confirmUpdate: scriptConfig.require_update_confirm!
 		};
 		for (const filename of fs.readdirSync(path(offersDir))) {
 			const offersCsv = fs.readFileSync(path(join(offersDir, filename)));

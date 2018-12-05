@@ -49,7 +49,7 @@ async function createApp(appId: string, name: string, jwtPublicKeys: StringMap, 
 	if (apiKey) {
 		app.apiKey = apiKey;  // when apiKey given, run-over generated value
 	}
-	console.log("creating app: %s (id: %s)", name, appId, dryRun ? "(dry run)" : undefined);
+	console.log("creating app: %s (id: %s)", name, appId, dryRun ? "(dry run)" : "");
 	await !dryRun && app.save();
 	return app;
 }
@@ -242,7 +242,6 @@ function initArgsParser(): ScriptConfig {
 	// 	action: "storeTrue"
 	// });
 	const parsed = parser.parseArgs();
-	console.log(parsed);
 	parsed.app_list = parsed.app_list ? parsed.app_list.split(" ") : [];
 	return parsed as ScriptConfig;
 }
@@ -280,12 +279,13 @@ initModels(scriptConfig.create_db).then(async () => {
 		}
 
 		// sanity on app ids
-		await Promise.all(appList.map(async appId => {
-			if (!await Application.findOneById(appId)) {
-				throw Error(`Application not found ${appId}`);
-			}
-		}));
-
+		if (!(appList[0] === "ALL")) {
+			await Promise.all(appList.map(async appId => {
+				if (!await Application.findOneById(appId)) {
+					throw Error(`Application not found ${appId}`);
+				}
+			}));
+		}
 		// create offers from csv
 		const parseCsv = require("csv-parse/lib/sync");
 		const createOfferOptions: EarnOptions = {

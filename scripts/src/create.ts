@@ -278,9 +278,6 @@ initModels(scriptConfig.create_db).then(async () => {
 		if (!appList || !appList.length) {
 			throw Error("Application list must be given via `--app-list`. See help (--help)");
 		}
-		if (appList[0] === "ALL") {
-			appList = (await Application.find({ select: ["id"] })).map(app => app.id);
-		}
 
 		// sanity on app ids
 		await Promise.all(appList.map(async appId => {

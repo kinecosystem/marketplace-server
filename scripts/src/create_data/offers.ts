@@ -1,5 +1,5 @@
 import { Asset, Cap, ContentType, Offer, OfferContent, OfferOwner } from "../models/offers";
-import { CouponInfo, CouponOrderContent, Poll, Quiz, Tutorial } from "../public/services/offer_contents";
+import { CouponOrderContent, Poll, Quiz, Tutorial } from "../public/services/offer_contents";
 import { Application, AppOffer } from "../models/applications";
 
 async function getOrCreateOwner(brandName: string): Promise<OfferOwner> {
@@ -21,7 +21,7 @@ export async function createSpend(
 	couponConfirmImage: string, couponConfirmTitle: string, couponConfirmSubtitle: string,
 	orderContentImage: string, orderContentTitle: string, orderContentSubtitle: string, orderContentHyperLink: string,
 	couponCodes: string[],
-	appList: string[]): Promise<Offer> {
+	appList?: string[]): Promise<Offer> {
 
 	const existingOffer = await Offer.findOne({ name: offerName });
 	if (existingOffer) {
@@ -103,8 +103,8 @@ export async function createEarn(
 	capTotal: number, capPerUser: number,
 	orderTitle: string, orderDescription: string, contentType: ContentType,
 	poll: Quiz | Poll | Tutorial,
-	appList: string[],
-	options: EarnOptions): Promise<Offer> {
+	appList: string[] = [],
+	options: EarnOptions = {}): Promise<Offer> {
 
 	const existingOffer = await Offer.findOne({ name: offerName });
 	let offer;
@@ -147,7 +147,10 @@ export async function createEarn(
 	return offer;
 }
 
-async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string, appList: string[], options: EarnOptions = {}) {
+async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string, appList: string[] = [], options: EarnOptions = {}) {
+	if (appList[0] === "ALL") {
+		appList = (await Application.find({ select: ["id"] })).map(app => app.id);
+	}
 	await Promise.all(appList.map(async appId => {
 		let appOffer = await AppOffer.findOne({ appId, offerId: offer.id });
 		appOffer && console.log("Updating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");

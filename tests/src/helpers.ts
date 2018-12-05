@@ -4,14 +4,12 @@ import * as StellarSdk from "stellar-sdk";
 import { generateId } from "../../scripts/bin/utils";
 import { getDefaultLogger } from "../../scripts/bin/logging";
 import { Asset, Offer } from "../../scripts/bin/models/offers";
-import { AuthToken, User } from "../../scripts/bin/models/users";
+import { User, AuthToken } from "../../scripts/bin/models/users";
 import { Application } from "../../scripts/bin/models/applications";
 import { createEarn, createSpend } from "../../scripts/bin/create_data/offers";
-import { PageType, Poll } from "../../scripts/bin/public/services/offer_contents";
+import { Poll, PageType } from "../../scripts/bin/public/services/offer_contents";
 import { CompletedPayment, paymentComplete } from "../../scripts/bin/internal/services";
-import { ExternalOrder, MarketplaceOrder, Order } from "../../scripts/bin/models/orders";
-import * as payment from "../../scripts/bin/public/services/payment";
-import { Event } from "../../scripts/bin/analytics";
+import { MarketplaceOrder, ExternalOrder, Order, OrderContext } from "../../scripts/bin/models/orders";
 
 const animalPoll: Poll = {
 	pages: [{
@@ -28,16 +26,16 @@ const animalPoll: Poll = {
 export async function createUser(options: { appId?: string } = {}): Promise<User> {
 	const uniqueId = generateId();
 	const userData = {
-		appUserId: `test_${ uniqueId }`,
+		appUserId: `test_${uniqueId}`,
 		appId: options.appId || (await Application.findOne())!.id,
-		walletAddress: `test_${ uniqueId }`
+		walletAddress: `test_${uniqueId}`
 	} as User;
 
 	const user = await (User.new(userData)).save();
 
 	const authToken = await (AuthToken.new({
 		userId: user.id,
-		deviceId: `test_${ uniqueId }`
+		deviceId: `test_${uniqueId}`
 	})).save();
 
 	return user;
@@ -125,33 +123,33 @@ export async function createOffers() {
 
 	for (let i = 0; i < 5; i += 1) {
 		await createEarn(
-			`${ uniqueId }_earn${ i }`,
+			`${uniqueId}_earn${i}`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
-			`earn${ i }`, `earn${ i }`, `earn${ i }`, `earn${ i }`, 100, 30, 1, `earn${ i }`, `earn${ i }`, "poll", animalPoll
+			`earn${ i }`, `earn${ i }`, `earn${ i }`, `earn${ i }`, 100, 30, 1, `earn${ i }`, `earn${ i }`, "poll", animalPoll, ["ALL"]
 		);
 	}
 
 	for (let i = 0; i < 5; i += 1) {
 		await createSpend(
-			`${ uniqueId }_spend${ i }`,
+			`${uniqueId}_spend${i}`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
 			`spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, 100, 30, 3, `spend${ i }`, `spend${ i }`,
 			`spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`,
 			`spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`,
-			[`spend${ i }_1`, `spend${ i }_2`, `spend${ i }_3`, `spend${ i }_4`, `spend${ i }_5`]
+			[`spend${ i }_1`, `spend${ i }_2`, `spend${ i }_3`, `spend${ i }_4`, `spend${ i }_5`], ["ALL"]
 		);
 	}
 }
 
 export async function completePayment(orderId: string) {
-	const order = (await Order.getOne(orderId))!;
+	const order = await Order.getOne(orderId);
 	const user = order.contexts[0].user;
 	const payment: CompletedPayment = {
 		id: order.id,
 		app_id: user.appId,
 		transaction_id: "fake:" + order.id,
-		recipient_address: order.blockchainData.recipient_address!,
-		sender_address: order.blockchainData.sender_address!,
+		recipient_address: order.blockchainData.recipient_address,
+		sender_address: order.blockchainData.sender_address,
 		amount: order.amount,
 		timestamp: (new Date()).toISOString()
 	};
@@ -159,19 +157,18 @@ export async function completePayment(orderId: string) {
 }
 
 const TABLES = ["application_offers", "orders_contexts", "orders", "offers", "users", "assets", "auth_tokens"];
-
 export async function clearDatabase() {
 	try { // TODO: get this list dynamically
 		for (const tableName of TABLES) {
-			await getManager().query(`DELETE FROM ${ tableName };`);
+			await getManager().query(`DELETE FROM ${tableName};`);
 		}
 	} catch (error) {
-		throw new Error(`ERROR: Cleaning test db: ${ error }`);
+		throw new Error(`ERROR: Cleaning test db: ${error}`);
 	}
 }
 
 export async function createApp(appId: string): Promise<Application> {
-	const address = getKeyPair().public;
+	const address = StellarSdk.Keypair.random().publicKey();
 	const app = Application.new({
 		id: appId,
 		name: appId,
@@ -181,17 +178,4 @@ export async function createApp(appId: string): Promise<Application> {
 	});
 	await app.save();
 	return app;
-}
-
-export function getKeyPair(): {private: string, public: string} {
-	const keypair = StellarSdk.Keypair.random();
-	return { public: keypair.publicKey(), private: keypair.secret() };
-}
-
-export function patchDependencies() {
-	(payment.payTo as any) = () => 1; // XXX use a patching library
-	(payment.getBlockchainConfig as any) = () => 1; // XXX use a patching library
-	(payment.setWatcherEndpoint as any) = () => 1; // XXX use a patching library
-	(payment.createWallet as any) = () => 1; // XXX use a patching library
-	Event.prototype.report = () => Promise.resolve();
 }

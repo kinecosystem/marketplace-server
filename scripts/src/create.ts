@@ -274,7 +274,7 @@ initModels(scriptConfig.create_db).then(async () => {
 	}
 	const offersDir = scriptConfig.offers_dir;
 	if (offersDir) {
-		let appList = scriptConfig.app_list;
+		const appList = scriptConfig.app_list;
 		if (!appList || !appList.length) {
 			throw Error("Application list must be given via `--app-list`. See help (--help)");
 		}

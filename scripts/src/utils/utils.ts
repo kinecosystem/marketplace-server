@@ -4,6 +4,7 @@ import * as fs from "fs";
 
 import { Express } from "express";
 import { Context } from "../public/routes";
+
 import { path } from "./path";
 
 export interface RequestWithContext extends Express.Request {
@@ -158,3 +159,23 @@ export function readUTCDate(date: string | Date): Date {
 export function getAppIdFromRequest(req: RequestWithContext): string {
 	return req.context && req.context.user ? req.context.user.appId : "";
 }
+<<<<<<< HEAD
+=======
+
+export async function throwOnRateLimit(appId: string, type: string, limit: number, duration: Duration) {
+	const rateLimitPrefix: string = "rate_limit";
+	const bucketPrefix: string = `${rateLimitPrefix}:${appId}:${type}:`;
+	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);
+	if (await rateLimit.checkRate()) {
+		throw TooManyRegistrations(`app: ${appId}, type: ${type} exceeded the limit: ${limit}`);
+	}
+}
+export async function checkAppEarnLimit(appId: string, type: string, limit: number, duration: Duration, amount: number) {
+	const rateLimitPrefix: string = "maount_limit";
+	const bucketPrefix: string = `${rateLimitPrefix}:${appId}:${type}:`;
+	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);
+	if (await rateLimit.checkAmount(amount)) {
+		throw TooMuchEarnOrdered(`app: ${appId}, type: ${type} exceeded the limit: ${limit}`);
+	}
+}
+>>>>>>> amount limit added; limit should be taken from app.config.limits.minute_earn

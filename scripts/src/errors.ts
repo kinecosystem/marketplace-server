@@ -254,11 +254,11 @@ export function TransactionTimeout() {
 	return TransactionFailed(CODES.TransactionFailed.TransactionTimeout, "Transaction Timeout");
 }
 
-function TooManyRequests(index: number, message: string) {
+function TooManyRequests(index: number, message: string): MarketplaceError {
 	return new MarketplaceError(429, index, "Too Many Requests", message);
 }
 
-export function TooManyRegistrations(message: string) {
+export function TooManyRegistrations(message: string): MarketplaceError {
 	return TooManyRequests(CODES.TooManyRequests.Registrations, message);
 }
 

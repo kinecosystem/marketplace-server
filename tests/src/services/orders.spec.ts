@@ -12,7 +12,7 @@ import { close as closeModels, init as initModels } from "../../../scripts/bin/m
 import {
 	changeOrder,
 	createMarketplaceOrder,
-	getOrder,
+	getOrder, getOrderHistory,
 	setFailedOrder,
 	submitOrder
 } from "../../../scripts/bin/public/services/orders";
@@ -22,6 +22,10 @@ import { JWTContent } from "../../../scripts/bin/public/jwt";
 
 import * as helpers from "../helpers";
 import * as jsonwebtoken from "jsonwebtoken";
+import { app } from "../../../scripts/bin/public/app";
+import * as db from "../../../scripts/src/models/orders";
+import { LoggerInstance } from "winston";
+import { OrderList } from "../../../scripts/src/public/services/orders";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
@@ -51,7 +55,7 @@ describe("test orders", async () => {
 
 	test("getAll and filters", async () => {
 		const user = await helpers.createUser();
-		let count = await helpers.createOrders(user.id);
+		const count = await helpers.createOrders(user.id);
 
 		let orders = await Order.getAll({ userId: user.id, status: "!opened" }, 25);
 		expect(orders.length).toBe(count);
@@ -86,6 +90,36 @@ describe("test orders", async () => {
 		const foundOffer = offers2.offers.find(x => x.id === offer.id);
 
 		expect(foundOffer).toBeTruthy();
+	});
+
+	test("filter order by offer_id", async () => {
+		const user = await helpers.createUser();
+		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
+		for (let i = 0; i < offers.offers.length && i < 4; i++) {
+			const offerId = offers.offers[i].id;
+			const openOrder = await createMarketplaceOrder(offerId, user, getDefaultLogger());
+			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
+			await helpers.completePayment(order.id);
+		}
+		const offerId = offers.offers[0].id;
+		const history = await getOrderHistory(user.id, { offerId }, getDefaultLogger());
+		expect(history.orders.length).toEqual(1);
+		expect(history.orders[0].offer_id).toEqual(offerId);
+	});
+
+	test("getOrderHistory limit", async () => {
+		const user = await helpers.createUser();
+		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
+		for (let i = 0; i < offers.offers.length && i < 4; i++) {
+			const offerId = offers.offers[i].id;
+			const openOrder = await createMarketplaceOrder(offerId, user, getDefaultLogger());
+			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
+			await helpers.completePayment(order.id);
+		}
+		const history = await getOrderHistory(user.id, {}, getDefaultLogger(), 2);
+		expect(history.orders.length).toEqual(2);
+		expect(history.orders[0].offer_id).toEqual(offers.offers[3].id);
+		expect(history.orders[1].offer_id).toEqual(offers.offers[2].id);
 	});
 
 	test("return same order when one is open", async () => {

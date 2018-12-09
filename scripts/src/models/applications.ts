@@ -26,7 +26,7 @@ export type ApplicationConfig = {
 		minute_registration: number,
 		hourly_total_earn: number,
 		minute_total_earn: number,
-		hourly_user_earn: number
+		hourly_user_earn: number,
 	}
 };
 

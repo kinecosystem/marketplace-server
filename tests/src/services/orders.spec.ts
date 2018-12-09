@@ -116,7 +116,7 @@ describe("test orders", async () => {
 			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
 			await helpers.completePayment(order.id);
 		}
-		const history = await getOrderHistory(user.id, {}, getDefaultLogger(), 2);
+ 		const history = await getOrderHistory(user.id, {}, getDefaultLogger(), 2);
 		expect(history.orders.length).toEqual(2);
 		expect(history.orders[0].offer_id).toEqual(offers.offers[3].id);
 		expect(history.orders[1].offer_id).toEqual(offers.offers[2].id);

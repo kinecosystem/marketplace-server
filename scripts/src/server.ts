@@ -48,7 +48,7 @@ export function onListening(server: Server) {
 		const handler = cleanup.bind(null, server);
 		process.on("SIGINT", handler);
 		process.on("SIGTERM", handler);
-		logger.debug(`Listening on ${ addr.port }`);
+		logger.debug(`Listening on ${ addr }`);
 	};
 }
 

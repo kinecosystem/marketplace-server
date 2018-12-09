@@ -16,6 +16,7 @@
     "@types/redis": "^2.8.6",
     "@types/redis-mock": "^0.17.0",
     "@types/supertest": "^2.0.4",
+    "@types/uuid": "^3.4.4",
     "axios": "^0.18.0",
     "axios-retry": "^3.1.1",
     "body-parser": "^1.18.2",
@@ -43,7 +44,6 @@
     "typeorm": "^0.1.12",
     "update": "^0.7.4",
     "uuid": "^3.2.1",
-    "uuid4": "^1.0.0",
     "winston": "^2.4.0"
   },
   "devDependencies": {
@@ -53,6 +53,7 @@
     "@types/jsonwebtoken": "^7.2.5",
     "@types/redlock": "^3.0.1",
     "@types/sequelize": "^4.27.4",
+    "@types/stellar-sdk": "^0.10.4",
     "@types/winston": "^2.3.7",
     "npm-run-all": "^4.0.1",
     "rimraf": "2.6.1",

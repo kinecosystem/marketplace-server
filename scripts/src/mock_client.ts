@@ -1,6 +1,7 @@
+import axios from "axios";
+import * as moment from "moment";
 import * as expect from "expect";
 import * as jsonwebtoken from "jsonwebtoken";
-import axios from "axios";
 
 import { JWTContent } from "./public/jwt";
 import { Order } from "./public/services/orders";
@@ -26,8 +27,16 @@ const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
 
 // TODO: should this be moved to the client?
 class SampleAppClient {
-	public async getRegisterJWT(userId: string): Promise<string> {
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + `/register/token?user_id=${ userId }`);
+	public async getRegisterJWT(userId: string, iat?: number, exp?: number): Promise<string> {
+		const params: any = { user_id: userId };
+		if (iat) {
+			params.iat = iat;
+		}
+		if (exp) {
+			params.exp = exp;
+		}
+
+		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/register/token", { params });
 		return res.data.jwt;
 	}
 
@@ -57,6 +66,13 @@ class SampleAppClient {
 	}) {
 		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/p2p/token", {
 			params: data
+		});
+		return res.data.jwt;
+	}
+
+	public async getArbitraryJWT(subject: string, payload: { [key: string]: any }): Promise<string> {
+		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/sign", {
+			params: { subject, payload }
 		});
 		return res.data.jwt;
 	}
@@ -326,6 +342,27 @@ async function extraTrustlineIsOK() {
 	console.log("OK.\n");
 }
 
+async function outdatedJWT() {
+	console.log("===================================== outdatedJWT =====================================");
+
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+
+	let jwt = await appClient.getRegisterJWT(userId, moment().add(1, "days").unix());
+	try {
+		const client = await MarketplaceClient.create({ jwt });
+		throw new Error("shouldn't be able to register with JWT with iat in the future");
+	} catch (e) {}
+
+	jwt = await appClient.getRegisterJWT(userId, moment().unix(), moment().subtract(1, "days").unix());
+	try {
+		const client = await MarketplaceClient.create({ jwt });
+		throw new Error("shouldn't be able to register with JWT with exp in the past");
+	} catch (e) {}
+
+	console.log("OK.\n");
+}
+
 async function updateWallet() {
 	console.log("===================================== updateWallet =====================================");
 	const userId = generateId();
@@ -429,7 +466,7 @@ async function tryToNativeSpendTwice() {
 		errorThrown = false;
 	} catch (e) {
 		errorThrown = true;
-		expect((e as ClientError).response!.headers.location).toEqual(`/v1/orders/${order.id}`);
+		expect((e as ClientError).response!.headers.location).toEqual(`/v1/orders/${ order.id }`);
 		// ok
 	}
 
@@ -640,6 +677,7 @@ async function userProfile() {
 
 async function main() {
 	await registerJWT();
+	await outdatedJWT();
 	await updateWallet();
 	await userProfile();
 	await extraTrustlineIsOK();

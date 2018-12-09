@@ -61,7 +61,6 @@ export class ClientError extends Error {
 }
 
 export class ClientRequests {
-
 	public static async create(data: { device_id: string; wallet_address: string; }, headers?: StringMap) {
 		const res = await axios.post<AuthToken>(MARKETPLACE_BASE + "/v1/users", data, { headers });
 		return new ClientRequests(res.data);

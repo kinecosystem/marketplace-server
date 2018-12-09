@@ -315,8 +315,6 @@ initModels(scriptConfig.create_db).then(async () => {
 	console.log(`done.`);
 }).catch(async (error: Error) => {
 	console.log("error: " + error.message + "\n" + error.stack);
-	try {
-		await closeModels();
-	} catch (err) { console.log(err); }
+	await closeModels();
 	console.log(`done.`);
 });

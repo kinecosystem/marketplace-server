@@ -1,6 +1,6 @@
 import * as moment from "moment";
 import * as metrics from "../../../scripts/bin/metrics";
-import { generateId, random, IdPrefix } from "../../../scripts/bin/utils";
+import { generateId, IdPrefix, random } from "../../../scripts/bin/utils";
 import { Event } from "../../../scripts/bin/analytics";
 import { User } from "../../../scripts/bin/models/users";
 import { JWTValue, Offer } from "../../../scripts/bin/models/offers";
@@ -12,7 +12,8 @@ import { close as closeModels, init as initModels } from "../../../scripts/bin/m
 import {
 	changeOrder,
 	createMarketplaceOrder,
-	getOrder, getOrderHistory,
+	getOrder,
+	getOrderHistory,
 	setFailedOrder,
 	submitOrder
 } from "../../../scripts/bin/public/services/orders";
@@ -22,10 +23,6 @@ import { JWTContent } from "../../../scripts/bin/public/jwt";
 
 import * as helpers from "../helpers";
 import * as jsonwebtoken from "jsonwebtoken";
-import { app } from "../../../scripts/bin/public/app";
-import * as db from "../../../scripts/src/models/orders";
-import { LoggerInstance } from "winston";
-import { OrderList } from "../../../scripts/src/public/services/orders";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
@@ -63,7 +60,7 @@ describe("test orders", async () => {
 
 		const offers = new Map<string, number>();
 		(await Order.getAll({ userId: user.id })).forEach(order => {
-			offers.set(order.offerId, offers.has(order.offerId) ? offers.get(order.offerId) + 1 : 1);
+			offers.set(order.offerId, offers.has(order.offerId) ? offers.get(order.offerId)! + 1 : 1);
 		});
 
 		const [offerId, ordersCount] = random(offers);
@@ -116,7 +113,7 @@ describe("test orders", async () => {
 			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
 			await helpers.completePayment(order.id);
 		}
- 		const history = await getOrderHistory(user.id, {}, getDefaultLogger(), 2);
+		const history = await getOrderHistory(user.id, {}, getDefaultLogger(), 2);
 		expect(history.orders.length).toEqual(2);
 		expect(history.orders[0].offer_id).toEqual(offers.offers[3].id);
 		expect(history.orders[1].offer_id).toEqual(offers.offers[2].id);
@@ -153,13 +150,13 @@ describe("test orders", async () => {
 		}
 
 		const spendOpenOrder = await createMarketplaceOrder(spendOffer.id, user, getDefaultLogger());
-		const spendOrder = await submitOrder(spendOpenOrder.id, user.id, null, user.walletAddress, user.appId, getDefaultLogger());
+		const spendOrder = await submitOrder(spendOpenOrder.id, user.id, undefined, user.walletAddress, user.appId, getDefaultLogger());
 		await helpers.completePayment(spendOrder.id);
 
 		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(1);
 
 		const externalEarnOrder = await helpers.createExternalOrder(user.id);
-		const earnOrder = await submitOrder(externalEarnOrder.id, user.id, null, user.walletAddress, user.appId, getDefaultLogger());
+		const earnOrder = await submitOrder(externalEarnOrder.id, user.id, undefined, user.walletAddress, user.appId, getDefaultLogger());
 		await helpers.completePayment(earnOrder.id);
 
 		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(1);
@@ -168,7 +165,7 @@ describe("test orders", async () => {
 	test("return getOrder reduces cap", async () => {
 		const user = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
-		const appOffer = await AppOffer.findOne({ offerId: offers.offers[0].id, appId: user.appId });
+		const appOffer = (await AppOffer.findOne({ offerId: offers.offers[0].id, appId: user.appId }))!;
 
 		for (let i = 0; i < appOffer.cap.per_user && i < appOffer.cap.total; i++) {
 			const openOrder = await createMarketplaceOrder(appOffer.offerId, user, getDefaultLogger());
@@ -201,8 +198,8 @@ describe("test orders", async () => {
 			await order.save();
 			await helpers.completePayment(order.id);
 
-			const completedOrder = await Order.getOne(order.id);
-			expect(completedOrder.value.type).toBe("payment_confirmation");
+			const completedOrder = (await Order.getOne(order.id))!;
+			expect(completedOrder.value!.type).toBe("payment_confirmation");
 			return jsonwebtoken.decode(
 				(completedOrder.value as JWTValue).jwt, { complete: true }
 			) as JWTContent<any, "payment_confirmation">;
@@ -228,7 +225,7 @@ describe("test orders", async () => {
 	test("expiration on openOrder is 10 minutes", async () => {
 		const user: User = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
-		const offer = await Offer.findOneById(offers.offers[0].id);
+		const offer = (await Offer.findOneById(offers.offers[0].id))!;
 		const now = moment();
 		const openOrder = await createMarketplaceOrder(offer.id, user, getDefaultLogger());
 		expect(moment(openOrder.expiration_date).diff(now, "minutes")).toBe(10);
@@ -266,10 +263,10 @@ describe("test orders", async () => {
 		{
 			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
 			await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
-			const dbOrder = await Order.getOne(openOrder.id);
-			const expDate = dbOrder.expirationDate;
+			const dbOrder = (await Order.getOne(openOrder.id))!;
+			const expDate = dbOrder.expirationDate!;
 			await setFailedOrder(dbOrder, TransactionTimeout());
-			const dbOrder2 = await Order.getOne(openOrder.id);
+			const dbOrder2 = (await Order.getOne(openOrder.id))!;
 			expect(expDate.getTime()).toBeGreaterThan(dbOrder2.currentStatusDate.getTime());
 		}
 
@@ -277,10 +274,10 @@ describe("test orders", async () => {
 		{
 			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, getDefaultLogger());
 			await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
-			const dbOrder = await Order.getOne(openOrder.id);
-			const expDate = dbOrder.expirationDate;
+			const dbOrder = (await Order.getOne(openOrder.id))!;
+			const expDate = dbOrder.expirationDate!;
 			await setFailedOrder(dbOrder, TransactionTimeout(), expDate);
-			const dbOrder2 = await Order.getOne(openOrder.id);
+			const dbOrder2 = (await Order.getOne(openOrder.id))!;
 			expect(expDate.getTime()).toEqual(dbOrder2.currentStatusDate.getTime());
 		}
 	});
@@ -317,7 +314,7 @@ describe("test orders", async () => {
 	});
 
 	test("offer cap is not shared between apps", async () => {
-		const offer = await Offer.findOne();
+		const offer = (await Offer.findOne())!;
 
 		async function createAppUser(offer: Offer, appId: string): Promise<User> {
 			const app = await helpers.createApp(appId);

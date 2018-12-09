@@ -1,8 +1,10 @@
+import mock = require("supertest");
+
 import * as moment from "moment";
 import * as metrics from "../../../scripts/bin/metrics";
 import { generateId, IdPrefix, random } from "../../../scripts/bin/utils";
 import { Event } from "../../../scripts/bin/analytics";
-import { User } from "../../../scripts/bin/models/users";
+import { AuthToken, User } from "../../../scripts/bin/models/users";
 import { JWTValue, Offer } from "../../../scripts/bin/models/offers";
 import * as payment from "../../../scripts/bin/public/services/payment";
 import { getOffers } from "../../../scripts/bin/public/services/offers";
@@ -23,6 +25,8 @@ import { JWTContent } from "../../../scripts/bin/public/jwt";
 
 import * as helpers from "../helpers";
 import * as jsonwebtoken from "jsonwebtoken";
+import { app } from "../../../scripts/bin/public/app";
+import { OrderList } from "../../../scripts/src/public/services/orders";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
@@ -102,6 +106,17 @@ describe("test orders", async () => {
 		const history = await getOrderHistory(user.id, { offerId }, getDefaultLogger());
 		expect(history.orders.length).toEqual(1);
 		expect(history.orders[0].offer_id).toEqual(offerId);
+
+		// test with the API
+		const token: AuthToken = (await AuthToken.findOne({ userId: user.id }))!;
+		const res = await mock(app)
+			.get(`/v1/orders?offer_id=${ offerId }`)
+			.set("x-request-id", "123")
+			.set("Authorization", `Bearer ${ token.id }`);
+
+		const orderHistory: OrderList = res.body;
+		expect(orderHistory.orders.length).toEqual(1);
+		expect(orderHistory.orders[0].offer_id).toEqual(offerId);
 	});
 
 	test("getOrderHistory limit", async () => {
@@ -113,10 +128,21 @@ describe("test orders", async () => {
 			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId, getDefaultLogger());
 			await helpers.completePayment(order.id);
 		}
-		const history = await getOrderHistory(user.id, {}, getDefaultLogger(), 2);
-		expect(history.orders.length).toEqual(2);
+		const limit = 2;
+		const history = await getOrderHistory(user.id, {}, getDefaultLogger(), limit);
+		expect(history.orders.length).toEqual(limit);
 		expect(history.orders[0].offer_id).toEqual(offers.offers[3].id);
 		expect(history.orders[1].offer_id).toEqual(offers.offers[2].id);
+
+		// test with the API
+		const token: AuthToken = (await AuthToken.findOne({ userId: user.id }))!;
+		const res = await mock(app)
+			.get(`/v1/orders?limit=${ limit }`)
+			.set("x-request-id", "123")
+			.set("Authorization", `Bearer ${ token.id }`);
+
+		const orderHistory: OrderList = res.body;
+		expect(orderHistory.orders.length).toEqual(limit);
 	});
 
 	test("return same order when one is open", async () => {

@@ -13,7 +13,6 @@
     "skipLibCheck": true,
     "removeComments": true,
     "skipDefaultLibCheck": true,
-
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true

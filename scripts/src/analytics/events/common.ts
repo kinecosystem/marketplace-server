@@ -1,4 +1,4 @@
-import { sync as uuid } from "uuid4";
+import * as uuid from "uuid";
 import { getConfig } from "../../config";
 
 /**

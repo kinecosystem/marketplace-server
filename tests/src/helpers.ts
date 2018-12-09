@@ -142,14 +142,14 @@ export async function createOffers() {
 }
 
 export async function completePayment(orderId: string) {
-	const order = await Order.getOne(orderId);
+	const order = (await Order.getOne(orderId))!;
 	const user = order.contexts[0].user;
 	const payment: CompletedPayment = {
 		id: order.id,
 		app_id: user.appId,
 		transaction_id: "fake:" + order.id,
-		recipient_address: order.blockchainData.recipient_address,
-		sender_address: order.blockchainData.sender_address,
+		recipient_address: order.blockchainData.recipient_address!,
+		sender_address: order.blockchainData.sender_address!,
 		amount: order.amount,
 		timestamp: (new Date()).toISOString()
 	};

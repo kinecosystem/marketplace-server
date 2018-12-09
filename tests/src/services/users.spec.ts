@@ -28,7 +28,7 @@ describe("api tests for /users", async () => {
 		const appId = generateId(IdPrefix.App);
 		const user1 = await helpers.createUser({ appId });
 		const user2 = await helpers.createUser({ appId });
-		const token: AuthToken = await AuthToken.findOne({ userId: user1.id });
+		const token: AuthToken = (await AuthToken.findOne({ userId: user1.id }))!;
 
 		await mock(app)
 			.get(`/v1/users/non_user`)
@@ -75,7 +75,7 @@ describe("api tests for /users", async () => {
 		const user1 = await helpers.createUser({ appId });
 		const newWalletAddress = "new_address_must_be_56_characters____bla___bla___bla____";
 		const badAddress = "new_address_not_56_chars";
-		const token: AuthToken = await AuthToken.findOne({ userId: user1.id });
+		const token: AuthToken = (await AuthToken.findOne({ userId: user1.id }))!;
 
 		await mock(app)
 			.patch(`/v1/users`)
@@ -83,7 +83,7 @@ describe("api tests for /users", async () => {
 			.set("content-type", "application/json")
 			.set("Authorization", `Bearer ${token.id}`)
 			.expect(204);
-		let u1 = await User.findOne( { id: user1.id });
+		let u1 = (await User.findOne( { id: user1.id }))!;
 		expect(u1.walletAddress).toBe(newWalletAddress);
 		await mock(app)
 			.patch(`/v1/users`)
@@ -91,7 +91,7 @@ describe("api tests for /users", async () => {
 			.set("content-type", "applications/json")
 			.set("Authorization", `Bearer ${token.id}`)
 			.expect(400);
-		u1 = await User.findOne( { id: user1.id });
+		u1 = (await User.findOne( { id: user1.id }))!;
 		expect(u1.walletAddress).not.toBe(badAddress);
 		expect(u1.walletAddress).toBe(newWalletAddress);
 

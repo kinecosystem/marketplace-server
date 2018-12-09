@@ -39,7 +39,7 @@ describe("util functions", () => {
 				k3: [1, 2, 3]
 			};
 			const [key, value] = utils.random(obj);
-			expect(obj[key]).toEqual(value);
+			expect((obj as any)[key]).toEqual(value);
 		});
 
 		test("random(Map{ ... } should return a random item from the map", () => {

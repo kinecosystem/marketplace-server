@@ -2,15 +2,18 @@
   "compilerOptions": {
     "target": "ES6",
     "module": "commonjs",
-    "sourceMap": true,
     "lib": ["dom","es2017"],
 
+    "strict": true,
+    "sourceMap": true,
+    "declaration": true,
+    "alwaysStrict": true,
     "skipLibCheck": true,
     "removeComments": true,
     "skipDefaultLibCheck": true,
-    
     "emitDecoratorMetadata": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true
   },
   "exclude": [
     "bin",

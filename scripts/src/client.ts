@@ -1,4 +1,4 @@
-import * as uuid4 from "uuid4";
+import * as uuid from "uuid";
 import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse } from "axios";
 import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "@kinecosystem/kin.js";
 
@@ -126,7 +126,7 @@ export class ClientRequests {
 	private getConfig() {
 		return {
 			headers: {
-				"x-request-id": uuid4(),
+				"x-request-id": uuid(),
 				"Authorization": this.auth ? `Bearer ${ this.auth.token }` : "",
 			},
 		};

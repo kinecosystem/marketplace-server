@@ -215,7 +215,7 @@ async function earnQuizFlow() {
 			if (choice === p.rightAnswer) {
 				sum += p.amount;
 			}
-			answers[p.question.id] = choice > 0 ? choice - 1 : 0;
+			answers[p.question.id] = choice;
 		}
 		return [answers, sum || 1]; // server will give 1 kin for failed quizes
 	}

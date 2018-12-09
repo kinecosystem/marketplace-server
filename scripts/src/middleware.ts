@@ -1,4 +1,5 @@
 import * as express from "express";
+import * as cluster from "cluster";
 import * as moment from "moment";
 import { performance } from "perf_hooks";
 import { LoggerInstance } from "winston";
@@ -6,7 +7,7 @@ import { Request, Response } from "express-serve-static-core";
 
 import * as metrics from "./metrics";
 import { getConfig } from "./config";
-import { generateId, pick, getAppIdFromRequest } from "./utils";
+import { randomInteger, generateId, pick, getAppIdFromRequest } from "./utils";
 import { MarketplaceError } from "./errors";
 import { getDefaultLogger } from "./logging";
 import { abort as restartServer } from "./server";
@@ -61,6 +62,10 @@ export const requestLogger = function(req: express.Request, res: express.Respons
 	next();
 } as express.RequestHandler;
 
+function getWorkerId() {
+	return cluster.worker ? cluster.worker.id : undefined;
+}
+
 export const logRequest = function(req: express.Request, res: express.Response, next: express.NextFunction) {
 	const t = performance.now();
 	const data = Object.assign({}, req.headers);
@@ -69,10 +74,10 @@ export const logRequest = function(req: express.Request, res: express.Response, 
 		data.querystring = req.query;
 	}
 
-	req.logger.info(`start handling request ${ req.id }: ${ req.method } ${ req.path }`, data);
+	req.logger.info(`worker ${getWorkerId()}: start handling request ${ req.id }: ${ req.method } ${ req.path }`, data);
 
 	res.on("finish", () => {
-		req.logger.info(`finished handling request ${ req.id }`, { time: performance.now() - t });
+		req.logger.info(`worker ${getWorkerId()}: finished handling request ${ req.id }`, { time: performance.now() - t });
 	});
 
 	next();

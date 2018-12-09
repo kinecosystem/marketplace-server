@@ -44,11 +44,11 @@ export function onError(error: ServerError) {
  */
 export function onListening(server: Server) {
 	return () => {
-		const addr = server.address();
+		const addr = server.address() as { port: number };
 		const handler = cleanup.bind(null, server);
 		process.on("SIGINT", handler);
 		process.on("SIGTERM", handler);
-		logger.debug(`Listening on ${ addr }`);
+		logger.debug(`Listening on ${ addr.port }`);
 	};
 }
 

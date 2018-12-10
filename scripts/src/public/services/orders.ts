@@ -1,4 +1,5 @@
 import { LoggerInstance } from "winston";
+import * as moment from "moment";
 import { Request as ExpressRequest } from "express-serve-static-core";
 
 import { pick } from "../../utils/utils";
@@ -35,6 +36,8 @@ import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
+
+import { throwAppEarnLimit, throwUserEarnLimit } from "../../utils/RateLimit";
 
 export interface OrderList {
 	orders: Order[];
@@ -105,7 +108,9 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {} as OrderTranslations) {
 	const app = (await Application.findOneById(user.appId))!;
 	if (appOffer.offer.type === "earn") {
-		// rateOnAmount(limit=app.config.limits.minute_earn, app_id=app.id, "total_earn", amount=appOffer.offer.amount);
+		throwAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), appOffer.offer.amount);
+		throwAppEarnLimit(app.id, "total_earn", app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
+		throwUserEarnLimit(user.id, "user_earn", app.config.limits.hourly_user_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
 	}
 
 	if (await appOffer.didExceedCap(user.id)) {
@@ -192,7 +197,8 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 
 async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
 	const app = await Application.findOneById(recipient.appId);
-	// rateOnAmount(limit=app.config.limits.minute_earn, app_id=app.id, "total_earn", amount=jwt.offer.amount);
+
+	throwUserEarnLimit(recipient.id, "total_earn", app!.config.limits.hourly_user_earn, moment.duration({ minutes: 1 }), jwt.offer.amount);
 
 	if (!app) {
 		throw NoSuchApp(recipient.appId);

@@ -60,7 +60,7 @@ export async function throwOnRateLimit(appId: string, type: string, limit: numbe
 	}
 }
 
-export async function checkAppEarnLimit(appId: string, type: string, limit: number, duration: moment.Duration, amount: number) {
+export async function throwAppEarnLimit(appId: string, type: string, limit: number, duration: moment.Duration, amount: number) {
 	const rateLimitPrefix: string = "amount_limit";
 	const bucketPrefix: string = `${rateLimitPrefix}:${appId}:${type}:`;
 	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);
@@ -69,7 +69,7 @@ export async function checkAppEarnLimit(appId: string, type: string, limit: numb
 	}
 }
 
-export async function checkUserEarnLimit(userId: string, type: string, limit: number, duration: moment.Duration, amount: number) {
+export async function throwUserEarnLimit(userId: string, type: string, limit: number, duration: moment.Duration, amount: number) {
 	const rateLimitPrefix: string = "amount_limit";
 	const bucketPrefix: string = `${rateLimitPrefix}:${userId}:${type}:`;
 	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);

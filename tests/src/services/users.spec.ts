@@ -34,7 +34,6 @@ describe("api tests for /users", async () => {
 			user_id: "my_app_user_id",
 			wallet_address: helpers.getKeyPair().public
 		};
-		console.log("signInData", signInData);
 
 		const res = await mock(app)
 			.post(`/v1/users/`)
@@ -42,8 +41,6 @@ describe("api tests for /users", async () => {
 			.set("x-request-id", "123");
 
 		const token: ApiAuthToken = res.body;
-		console.log("res.body", res.body);
-		console.log("myApp", myApp);
 		expect(token.app_id).toEqual(myApp.id);
 		const lastCreatedToken = (await AuthToken.findOne({ order: { createdDate: "DESC" } }))!;
 		expect(token.token).toEqual(lastCreatedToken.id);

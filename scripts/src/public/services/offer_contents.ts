@@ -66,7 +66,7 @@ export interface Tutorial {
 
 export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
 
-export type Answers = { [key: string]: number };
+export type Answers = { [key: string]: string };
 
 export interface CouponInfo {
 	title: string;
@@ -140,34 +140,31 @@ export async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form:
 	} catch (e) {
 		return 0;
 	}
-
-	const translatedContent = await getTranslatedQuizContent(offerContent, acceptsLanguagesFunc);
+	let translatedContent;
+	if (acceptsLanguagesFunc && acceptsLanguagesFunc().length) {
+		const [supportedLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({
+			paths: ["content"],
+			offerId: offerContent.offerId,
+			languages: acceptsLanguagesFunc(),
+		});
+		const language = acceptsLanguagesFunc(supportedLanguages);
+		const translations = availableTranslations.filter(translation => translation.language === language);
+		translatedContent = translations.length ? translations[0].translation : null;
+	}
 
 	const quiz: Quiz = JSON.parse(translatedContent || offerContent.content);  // this might fail if not valid json without replaceTemplateVars
+	let amountSum = 0;
 
-	return quiz.pages.reduce(sumQuizRightAnswersAmount.bind(null, answers), 0);
-}
-
-function sumQuizRightAnswersAmount(answers: Answers, sum: number, page: QuizPage | SuccessBasedThankYouPage) {
-	if (page.type === PageType.TimedFullPageMultiChoice) {
-		if (answers[page.question.id] === page.rightAnswer) {
-			return sum + page.amount;
+	for (const page of quiz.pages) {
+		if (page.type === PageType.TimedFullPageMultiChoice) {
+			const p = (page as QuizPage);
+			const answerIndex = p.question.answers.indexOf(answers[p.question.id]) + 1;
+			if (answerIndex === p.rightAnswer) {
+				amountSum += p.amount;
+			}
 		}
 	}
-	return sum;
-}
-
-async function getTranslatedQuizContent(offerContent: db.OfferContent, acceptsLanguagesFunc: ExpressRequest["acceptsLanguages"] | undefined) {
-	if (!(acceptsLanguagesFunc && acceptsLanguagesFunc().length)) { return null; }
-
-	const [supportedLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({
-		paths: ["content"],
-		offerId: offerContent.offerId,
-		languages: acceptsLanguagesFunc(),
-	});
-	const language = acceptsLanguagesFunc(supportedLanguages);
-	const translations = availableTranslations.filter(translation => translation.language === language);
-	return translations.length ? translations[0].translation : null;
+	return amountSum;
 }
 
 export async function savePollAnswers(userId: string, offerId: string, orderId: string, content: string): Promise<void> {

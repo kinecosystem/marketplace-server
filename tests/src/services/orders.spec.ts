@@ -36,11 +36,7 @@ describe("test orders", async () => {
 		await initModels();
 		await helpers.clearDatabase();
 		await helpers.createOffers();
-		(payment.payTo as any) = () => 1; // XXX use a patching library
-		(payment.getBlockchainConfig as any) = () => 1; // XXX use a patching library
-		(payment.setWatcherEndpoint as any) = () => 1; // XXX use a patching library
-		(payment.createWallet as any) = () => 1; // XXX use a patching library
-		Event.prototype.report = () => Promise.resolve();
+		helpers.patchDependencies();
 
 		done();
 	});

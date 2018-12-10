@@ -76,7 +76,7 @@ export async function createWallet(walletAddress: string, appId: string, id: str
 		callback: webhook,
 	};
 	const t = performance.now();
-	await client.post(`${config.payment_service}/wallets`, payload);
+	await client.post(`${config.payment_service}/wallets`, payload); // TODO if this fails throw exception
 	logger.info("wallet creation took " + (performance.now() - t) + "ms");
 }
 

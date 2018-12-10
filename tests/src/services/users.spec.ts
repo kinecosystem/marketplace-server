@@ -3,7 +3,7 @@ import * as expect from "expect";
 import { app } from "../../../scripts/bin/public/app";
 import { AuthToken as ApiAuthToken, userExists } from "../../../scripts/bin/public/services/users";
 import { close as closeModels, init as initModels } from "../../../scripts/bin/models/index";
-import { generateId, IdPrefix } from "../../../scripts/bin/utils";
+import { generateId, IdPrefix } from "../../../scripts/bin/utils/utils";
 
 import * as helpers from "../helpers";
 import * as metrics from "../../../scripts/bin/metrics";
@@ -34,6 +34,7 @@ describe("api tests for /users", async () => {
 			user_id: "my_app_user_id",
 			wallet_address: helpers.getKeyPair().public
 		};
+		console.log("signInData", signInData);
 
 		const res = await mock(app)
 			.post(`/v1/users/`)
@@ -41,6 +42,8 @@ describe("api tests for /users", async () => {
 			.set("x-request-id", "123");
 
 		const token: ApiAuthToken = res.body;
+		console.log("res.body", res.body);
+		console.log("myApp", myApp);
 		expect(token.app_id).toEqual(myApp.id);
 		const lastCreatedToken = (await AuthToken.findOne({ order: { createdDate: "DESC" } }))!;
 		expect(token.token).toEqual(lastCreatedToken.id);

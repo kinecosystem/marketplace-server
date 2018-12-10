@@ -2,7 +2,7 @@ import { Server } from "http";
 
 import * as metrics from "./metrics";
 import { getConfig } from "./config";
-import { ServerError } from "./utils";
+import { ServerError } from "./utils/utils";
 import { getDefaultLogger } from "./logging";
 
 const config = getConfig();

@@ -8,7 +8,7 @@ import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
 import { Order as DbOrder } from "./models/orders";
 import { Application } from "./models/applications";
-import { generateId, randomInteger, retry } from "./utils";
+import { generateId, randomInteger, retry } from "./utils/utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { Client as MarketplaceClient, ClientError, JWTPayload } from "./client";

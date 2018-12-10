@@ -1,7 +1,7 @@
 import * as moment from "moment";
 import { Column, Entity, OneToMany } from "typeorm";
 
-import { generateId, IdPrefix } from "../utils";
+import { generateId, IdPrefix } from "../utils/utils";
 
 import { OrderContext } from "./orders";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";

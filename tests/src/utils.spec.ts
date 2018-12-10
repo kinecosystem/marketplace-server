@@ -1,11 +1,12 @@
 import * as path from "path";
 
-import * as utils from "../../scripts/bin/utils";
+import * as utils from "../../scripts/bin/utils/utils";
+import { path as _path } from "../../scripts/bin/utils/path";
 import * as metrics from "../../scripts/bin/metrics";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {
-		expect(utils.path("my.file")).toEqual(path.resolve(__dirname, "../../", "my.file"));
+		expect(_path("my.file")).toEqual(path.resolve(__dirname, "../../", "my.file"));
 	});
 
 	afterAll(async () => {

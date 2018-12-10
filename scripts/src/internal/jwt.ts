@@ -1,6 +1,6 @@
 import * as moment from "moment";
 import * as jsonwebtoken from "jsonwebtoken";
-import { readKeysDir } from "../utils";
+import { readKeysDir } from "../utils/utils";
 import { getConfig } from "./config";
 import * as path from "path";
 

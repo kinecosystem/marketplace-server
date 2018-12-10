@@ -55,6 +55,10 @@ const CODES = {
 		AssetUnavailable: 4,
 		BlockchainError: 5,
 		TransactionTimeout: 6
+	},
+	TooManyRequests: {
+		Registrations: 1,
+		Amounts: 2
 	}
 };
 
@@ -248,4 +252,16 @@ export function BlockchainError(message?: string) {
 
 export function TransactionTimeout() {
 	return TransactionFailed(CODES.TransactionFailed.TransactionTimeout, "Transaction Timeout");
+}
+
+function TooManyRequests(index: number, message: string) {
+	return new MarketplaceError(429, index, "Too Many Requests", message);
+}
+
+export function TooManyRegistrations(message: string) {
+	return TooManyRequests(CODES.TooManyRequests.Registrations, message);
+}
+
+export function TooMuchEarnOrdered(message: string): MarketplaceError {
+	return TooManyRequests(CODES.TooManyRequests.Amounts, message);
 }

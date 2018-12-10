@@ -1,4 +1,4 @@
-import { KeyMap } from "../../utils";
+import { KeyMap } from "../../utils/utils";
 import { getConfig } from "../config";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import { BlockchainConfig, getBlockchainConfig } from "../services/payment";

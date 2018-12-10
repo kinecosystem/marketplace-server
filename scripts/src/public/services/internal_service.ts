@@ -1,6 +1,6 @@
 import axios from "axios";
 import { getConfig } from "../config";
-import { KeyMap } from "../../utils";
+import { KeyMap } from "../../utils/utils";
 const axiosRetry = require("axios-retry");
 
 const config = getConfig();

@@ -3,7 +3,9 @@ import { join } from "path";
 import * as fs from "fs";
 
 import { Express } from "express";
-import { Context } from "./public/routes";
+import { Context } from "../public/routes";
+import { path } from "./path";
+
 export interface RequestWithContext extends Express.Request {
 	context?: Context;
 }
@@ -24,13 +26,6 @@ export type Mutable<T> = { -readonly [P in keyof T ]: T[P] };
 
 export function isNothing(obj: any): obj is Nothing {
 	return obj === null || obj === undefined;
-}
-
-export function path(path: string): string {
-	if (path.startsWith("/")) {
-		return path;
-	}
-	return fromProjectRoot(path);
 }
 
 export function random(): number;

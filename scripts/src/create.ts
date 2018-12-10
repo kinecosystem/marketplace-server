@@ -12,7 +12,7 @@ import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents
 import { createEarn, createSpend, EarnOptions } from "./create_data/offers";
 import { ContentType, Offer } from "./models/offers";
 import { Application, ApplicationConfig, StringMap } from "./models/applications";
-import { path } from "./utils";
+import { path } from "./utils/path";
 
 import "./models/orders";
 import "./models/users";

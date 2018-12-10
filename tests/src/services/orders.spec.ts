@@ -2,7 +2,7 @@ import mock = require("supertest");
 
 import * as moment from "moment";
 import * as metrics from "../../../scripts/bin/metrics";
-import { generateId, IdPrefix, random } from "../../../scripts/bin/utils";
+import { generateId, random, IdPrefix } from "../../../scripts/bin/utils/utils";
 import { Event } from "../../../scripts/bin/analytics";
 import { AuthToken, User } from "../../../scripts/bin/models/users";
 import { JWTValue, Offer } from "../../../scripts/bin/models/offers";

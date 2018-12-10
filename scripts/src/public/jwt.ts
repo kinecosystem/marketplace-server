@@ -2,7 +2,7 @@ import * as moment from "moment";
 import { LoggerInstance } from "winston";
 import * as jsonwebtoken from "jsonwebtoken";
 
-import { isNothing } from "../utils";
+import { isNothing } from "../utils/utils";
 import { Application } from "../models/applications";
 import {
 	NoSuchApp,

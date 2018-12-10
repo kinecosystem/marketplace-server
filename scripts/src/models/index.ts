@@ -4,7 +4,8 @@ import { DeepPartial } from "typeorm/common/DeepPartial";
 import { BaseEntity, Column, Connection, ConnectionOptions, createConnection, PrimaryColumn } from "typeorm";
 
 import { getConfig } from "../config";
-import { generateId, IdPrefix, path } from "../utils";
+import { generateId, IdPrefix } from "../utils/utils";
+import { path } from "../utils/path";
 
 const entities: ModelConstructor[] = [];
 

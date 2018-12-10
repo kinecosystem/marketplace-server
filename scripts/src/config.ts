@@ -1,7 +1,7 @@
 import { ConnectionOptions } from "typeorm";
 import "source-map-support/register";
 
-import { path } from "./utils";
+import { path } from "./utils/path";
 
 import { LogTarget } from "./logging";
 

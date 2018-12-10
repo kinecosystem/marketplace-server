@@ -1,7 +1,7 @@
 import { LoggerInstance } from "winston";
 import { Request as ExpressRequest } from "express-serve-static-core";
 
-import { pick } from "../../utils";
+import { pick } from "../../utils/utils";
 import { lock } from "../../redis";
 import * as metrics from "../../metrics";
 import { User } from "../../models/users";
@@ -103,6 +103,11 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 }
 
 async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {} as OrderTranslations) {
+	const app = (await Application.findOneById(user.appId))!;
+	if (appOffer.offer.type === "earn") {
+		// rateOnAmount(limit=app.config.limits.minute_earn, app_id=app.id, "total_earn", amount=appOffer.offer.amount);
+	}
+
 	if (await appOffer.didExceedCap(user.id)) {
 		return undefined;
 	}
@@ -187,6 +192,7 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 
 async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
 	const app = await Application.findOneById(recipient.appId);
+	// rateOnAmount(limit=app.config.limits.minute_earn, app_id=app.id, "total_earn", amount=jwt.offer.amount);
 
 	if (!app) {
 		throw NoSuchApp(recipient.appId);

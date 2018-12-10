@@ -7,7 +7,7 @@ import { Application } from "../../models/applications";
 import { User, AuthToken as DbAuthToken } from "../../models/users";
 
 import * as payment from "./payment";
-import { readUTCDate } from "../../utils";
+import { readUTCDate } from "../../utils/utils";
 import { Brackets } from "typeorm";
 
 export type AuthToken = {

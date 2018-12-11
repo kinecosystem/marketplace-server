@@ -1,4 +1,4 @@
-import { Config as BaseConfig, init as baseInit, getConfig as baseGetConfig } from "../config";
+import { Config as BaseConfig, init as baseInit, getConfig as baseGetConfig, LimitConfig } from "../config";
 
 export interface Config extends BaseConfig {
 	assets_base: string;
@@ -8,13 +8,7 @@ export interface Config extends BaseConfig {
 	max_daily_earn_offers: null | number; // null marks no limit
 	internal_service: string;
 	sign_in_types: string[];
-	limits: {
-		hourly_registration: number,
-		minute_registration: number,
-		hourly_total_earn: number,
-		minute_total_earn: number,
-		hourly_user_earn: number,
-	};
+	limits: LimitConfig;
 }
 
 export function getConfig(): Config {

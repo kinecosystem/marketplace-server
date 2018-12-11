@@ -1,6 +1,7 @@
 .idea
 node_modules
 scripts/bin
+scripts/src/**/*.js
 scripts/src/**/*.d.ts
 scripts/src/**/*.js.map
 tests/src/**/*.d.ts

@@ -16,18 +16,14 @@ import { Cap, Offer, OfferType } from "./offers";
 import { Model } from "sequelize";
 import { Order, OrderContext } from "./orders";
 
+import { LimitConfig } from "../config";
+
 export type StringMap = { [key: string]: string; };  // key => value pairs
 export type SignInType = "jwt" | "whitelist";
 export type ApplicationConfig = {
 	max_user_wallets: number | null;
 	sign_in_types: SignInType[];
-	limits: {
-		hourly_registration: number,
-		minute_registration: number,
-		hourly_total_earn: number,
-		minute_total_earn: number,
-		hourly_user_earn: number,
-	}
+	limits: LimitConfig
 };
 
 const AppOffersCache = new Map<string, AppOffer[]>();

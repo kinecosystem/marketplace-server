@@ -4,10 +4,10 @@ import * as StellarSdk from "stellar-sdk";
 import { generateId } from "../../scripts/bin/utils";
 import { getDefaultLogger } from "../../scripts/bin/logging";
 import { Asset, Offer } from "../../scripts/bin/models/offers";
-import { AuthToken, User } from "../../scripts/bin/models/users";
+import { User, AuthToken } from "../../scripts/bin/models/users";
 import { Application } from "../../scripts/bin/models/applications";
 import { createEarn, createSpend } from "../../scripts/bin/create_data/offers";
-import { PageType, Poll } from "../../scripts/bin/public/services/offer_contents";
+import { Poll, PageType } from "../../scripts/bin/public/services/offer_contents";
 import { CompletedPayment, paymentComplete } from "../../scripts/bin/internal/services";
 import { ExternalOrder, MarketplaceOrder, Order } from "../../scripts/bin/models/orders";
 import * as payment from "../../scripts/bin/public/services/payment";
@@ -127,7 +127,7 @@ export async function createOffers() {
 		await createEarn(
 			`${ uniqueId }_earn${ i }`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
-			`earn${ i }`, `earn${ i }`, `earn${ i }`, `earn${ i }`, 100, 30, 1, `earn${ i }`, `earn${ i }`, "poll", animalPoll
+			`earn${ i }`, `earn${ i }`, `earn${ i }`, `earn${ i }`, 100, 30, 1, `earn${ i }`, `earn${ i }`, "poll", animalPoll, ["ALL"]
 		);
 	}
 
@@ -138,7 +138,7 @@ export async function createOffers() {
 			`spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, 100, 30, 3, `spend${ i }`, `spend${ i }`,
 			`spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`,
 			`spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`,
-			[`spend${ i }_1`, `spend${ i }_2`, `spend${ i }_3`, `spend${ i }_4`, `spend${ i }_5`]
+			[`spend${ i }_1`, `spend${ i }_2`, `spend${ i }_3`, `spend${ i }_4`, `spend${ i }_5`], ["ALL"]
 		);
 	}
 }
@@ -183,7 +183,7 @@ export async function createApp(appId: string): Promise<Application> {
 	return app;
 }
 
-export function getKeyPair(): {private: string, public: string} {
+export function getKeyPair(): { private: string, public: string } {
 	const keypair = StellarSdk.Keypair.random();
 	return { public: keypair.publicKey(), private: keypair.secret() };
 }

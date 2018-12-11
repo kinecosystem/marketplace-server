@@ -1,5 +1,5 @@
 import { Asset, Cap, ContentType, Offer, OfferContent, OfferOwner } from "../models/offers";
-import { CouponInfo, CouponOrderContent, Poll, Quiz, Tutorial } from "../public/services/offer_contents";
+import { CouponOrderContent, Poll, Quiz, Tutorial } from "../public/services/offer_contents";
 import { Application, AppOffer } from "../models/applications";
 
 async function getOrCreateOwner(brandName: string): Promise<OfferOwner> {
@@ -20,7 +20,8 @@ export async function createSpend(
 	couponImage: string, couponTitle: string, couponDescription: string,
 	couponConfirmImage: string, couponConfirmTitle: string, couponConfirmSubtitle: string,
 	orderContentImage: string, orderContentTitle: string, orderContentSubtitle: string, orderContentHyperLink: string,
-	couponCodes: string[]): Promise<Offer> {
+	couponCodes: string[],
+	appList?: string[]): Promise<Offer> {
 
 	const existingOffer = await Offer.findOne({ name: offerName });
 	if (existingOffer) {
@@ -86,55 +87,80 @@ export async function createSpend(
 		await asset.save();
 	}
 
-	await saveAppOffers(offer, { total: capTotal, per_user: capPerUser }, walletAddress);
+	await saveAppOffers(offer, { total: capTotal, per_user: capPerUser }, walletAddress, appList);
 	return offer;
 }
+
+export type EarnOptions = {
+	doNotUpdateExiting?: boolean; // Should existing offers be updated
+	dryRun?: boolean;  // if true, only process data, don't change/insert into the DB
+	confirmUpdate?: boolean;  //
+};
 
 export async function createEarn(
 	offerName: string, walletAddress: string,
 	brand: string, title: string, description: string, image: string, amount: number,
 	capTotal: number, capPerUser: number,
 	orderTitle: string, orderDescription: string, contentType: ContentType,
-	poll: Quiz | Poll | Tutorial): Promise<Offer> {
+	poll: Quiz | Poll | Tutorial,
+	appList: string[] = [],
+	options: EarnOptions = {}): Promise<Offer> {
 
 	const existingOffer = await Offer.findOne({ name: offerName });
+	let offer;
+	let content;
 	if (existingOffer) {
-		console.log(`existing offer: ${offerName}`);
-		return existingOffer;
+		if (options.doNotUpdateExiting) {
+			console.log(`existing offer: ${offerName}`);
+			return existingOffer;
+		}
+		offer = existingOffer;
+		console.log("Updating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : "");
+		content = await OfferContent.findOne({ offerId: offer.id });
+	} else {
+		const owner = await getOrCreateOwner(brand);
+		offer = Offer.new({ name: offerName, ownerId: owner.id, type: "earn" });
+		console.log("Creating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : "");
 	}
 
-	const owner = await getOrCreateOwner(brand);
+	if (!content) {
+		content = OfferContent.new({
+			contentType,
+			offerId: offer.id
+		});
+	}
 
-	const offer = Offer.new({
-		name: offerName,
-		amount,
-		type: "earn",
-		ownerId: owner.id,
-		meta: {
-			title, image, description,
-			order_meta: {
-				title: orderTitle,
-				description: orderDescription,
-			}
-		},
-	});
+	offer.amount = amount;
+	offer.meta = {
+		title, image, description,
+		order_meta: {
+			title: orderTitle,
+			description: orderDescription,
+		}
+	};
+	!options.dryRun && await offer.save();
 
-	await offer.save();
+	content.content = JSON.stringify(poll);
+	await !options.dryRun && content.save();
 
-	const content = OfferContent.new({
-		contentType,
-		offerId: offer.id,
-		content: JSON.stringify(poll)
-	});
-	await content.save();
-
-	await saveAppOffers(offer, { total: capTotal, per_user: capPerUser }, walletAddress);
+	await saveAppOffers(offer, { total: capTotal, per_user: capPerUser }, walletAddress, appList, options);
 	return offer;
 }
 
-async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string) {
-	await Promise.all(
-		(await Application.find()).map(app =>
-			AppOffer.create({ appId: app.id, offerId: offer.id, walletAddress, cap }).save()
-		));
+async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string, appList: string[] = [], options: EarnOptions = {}) {
+	if (appList[0] === "ALL") {
+		appList = (await Application.find({ select: ["id"] })).map(app => app.id);
+	}
+	await Promise.all(appList.map(async appId => {
+		let appOffer = await AppOffer.findOne({ appId, offerId: offer.id });
+		appOffer && console.log("Updating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
+
+		if (!appOffer) {
+			console.log("Creating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
+			appOffer = await AppOffer.create({ appId, offerId: offer.id });
+		}
+		appOffer.walletAddress = walletAddress;
+		appOffer.cap = cap;
+		await !options.dryRun && appOffer.save();
+	}));
 }

@@ -1,5 +1,5 @@
 /**
- * This file populates a demo database for the sole sake of mocking data to populate our SDK client.
+ * This script populates a demo database for the sole sake of mocking data to populate our SDK client.
  * All the names of companies, products and KIN values are completely made up and are used for TESTING only.
  */
 import { getConfig } from "./public/config"; // must be the first import
@@ -9,7 +9,7 @@ import { Keypair } from "@kinecosystem/kin.js";
 
 import { close as closeModels, init as initModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
-import { createEarn, createSpend } from "./create_data/offers";
+import { createEarn, createSpend, EarnOptions } from "./create_data/offers";
 import { ContentType, Offer } from "./models/offers";
 import { Application, ApplicationConfig, StringMap } from "./models/applications";
 import { path } from "./utils";
@@ -17,18 +17,28 @@ import { path } from "./utils";
 import "./models/orders";
 import "./models/users";
 
-getConfig();
+getConfig();  // App Config
+
+type ScriptConfig = {
+	apps_dir: string | null;
+	offers_dir: string | null;
+	app_list: string[];
+	no_update: boolean;
+	dry_run: boolean;
+	require_update_confirm: boolean;
+	create_db: boolean;
+};
+let scriptConfig: ScriptConfig;
 
 const STELLAR_ADDRESS = process.env.STELLAR_ADDRESS;  // address to use instead of the ones defined in the data
 type AppDef = { app_id: string, name: string, api_key: string, jwt_public_keys: StringMap, config: ApplicationConfig };
 
-async function createApp(appId: string, name: string, jwtPublicKeys: StringMap, apiKey: string, appConfig: ApplicationConfig): Promise<Application> {
+async function createApp(appId: string, name: string, jwtPublicKeys: StringMap, apiKey: string, appConfig: ApplicationConfig, dryRun?: boolean): Promise<Application> {
 	const existingApp = await Application.findOneById(appId);
 	if (existingApp) {
 		console.log(`existing app: ${appId}`);
 		return existingApp;
 	}
-
 	const app = Application.new({
 		name,
 		jwtPublicKeys,
@@ -39,11 +49,12 @@ async function createApp(appId: string, name: string, jwtPublicKeys: StringMap, 
 	if (apiKey) {
 		app.apiKey = apiKey;  // when apiKey given, run-over generated value
 	}
-	await app.save();
+	console.log("creating app: %s (id: %s)", name, appId, dryRun ? "(dry run)" : "");
+	await !dryRun && app.save();
 	return app;
 }
 
-function readTitle(title: string): string {
+export function readTitle(title: string): string {
 	// read until first space
 	return title.split(/ +/, 1)[0];
 }
@@ -62,10 +73,11 @@ function toMap(data: string[][]): Array<Map<string, string>> {
 	return list;
 }
 
-async function parseSpend(data: string[][]) {
+async function parseSpend(data: string[][], appList: string[]) {
 	const list = toMap(data);
+	const results: Offer[] = [];
 	for (const v of list) {
-		const offer = await createSpend(
+		results.push(await createSpend(
 			v.get("OfferName")!,
 			STELLAR_ADDRESS || v.get("WalletAddress")!,
 			v.get("Brand")!,
@@ -89,38 +101,37 @@ async function parseSpend(data: string[][]) {
 			v.get("OrderContentSubtitle")!,
 			v.get("OrderContentHyperLink")!,
 			v.get("CouponCodes")!.split(/\s+/),
-		);
+			appList));
 	}
+	return results;
 }
 
-async function parseEarn(data: string[][], contentType: ContentType) {
+async function parseEarn(data: string[][], contentType: ContentType, appList: string[], config: EarnOptions) {
 	const list = toMap(data);
 
 	const poll: Quiz | Poll | Tutorial = { pages: [] };
 	let offer: Map<string, string> | undefined;
 
+	const results: Offer[] = [];
+
 	async function createEarnInner(v: Map<string, string>, poll: Quiz | Poll | Tutorial): Promise<Offer> {
-		const offer = await createEarn(
+		return await createEarn(
 			v.get("OfferName")!,
 			STELLAR_ADDRESS || v.get("WalletAddress")!,
-			v.get("Brand")!,
-			v.get("Title")!,
+			v.get("Brand")!, v.get("Title")!,
 			v.get("Description")!,
 			v.get("Image")!,
 			parseInt(v.get("Amount")!, 10),
 			parseInt(v.get("CapTotal")!, 10),
 			parseInt(v.get("CapPerUser")!, 10),
 			v.get("OrderTitle")!,
-			v.get("OrderDescription")!,
-			contentType,
-			poll);
-		return offer;
+			v.get("OrderDescription")!, contentType, poll, appList, config);
 	}
 
 	for (const v of list) {
 		if (v.get("OfferName") !== "") {
 			if (offer) {
-				await createEarnInner(offer, poll);
+				results.push(await createEarnInner(offer, poll));
 			}
 			offer = v;
 			poll.pages = [];
@@ -182,8 +193,9 @@ async function parseEarn(data: string[][], contentType: ContentType) {
 		}
 	}
 	if (offer) {
-		await createEarnInner(offer, poll);
+		results.push(await createEarnInner(offer, poll));
 	}
+	return results;
 }
 
 function getStellarAddresses() {
@@ -195,35 +207,108 @@ function getStellarAddresses() {
 	}
 }
 
-initModels(true).then(async () => {
-	const appsDir = process.argv[2];
-	const offersDir = process.argv[3];
+function initArgsParser(): ScriptConfig {
+	const ArgumentParser = require("argparse").ArgumentParser;
+	const parser = new ArgumentParser({
+		version: "2.0.0",
+		addHelp: true,
+		description: "DB initializer script for Apps and Offers. Apps configuration come as JSON files and offers as CSV files.",
+		argumentDefault: undefined  // Normalizing defaults, otherwise they're set to {}
+	});
+	parser.addArgument(["--apps-dir"], {
+		help: "Location (directory) of app config json files"
+	});
+	parser.addArgument(["--offers-dir"], {
+		help: "Location (directory) of offers csv files"
+	});
+	parser.addArgument(["--app-list"], {
+		help: "Comma separated list of apps (i.e smpl, swel, kik, test, p365...) to have the earn offers added to (ALL, in caps, to add to all apps)",
+	});
+	parser.addArgument(["--no-update"], {
+		help: "Don't update existing earn offers, only create new ones.",
+		action: "storeTrue"
+	});
+	parser.addArgument(["-d", "--dry-run"], {
+		help: "Process the data but don't touch the DB (doesn't apply to spend offers)",
+		action: "storeTrue"
+	});
+	parser.addArgument(["-c", "--create-db"], {
+		help: `Create tables/schemes if needed. ${"\x1b[41m" /* red */} USUALLY SHOULD BE NOT RUN IN PRODUCTION${"\x1b[0m" /* reset */}`,
+		action: "storeTrue"
+	});
 
-	for (const filename of fs.readdirSync(path(appsDir))) {
-		if (!filename.endsWith(".json")) {
-			console.info(`skipping non json file ${filename}`);
-			continue;
+	// parser.addArgument(["-c", "--require-update-confirm"], {
+	// 	help: "Ask for confirmation before updating earn offers",
+	// 	action: "storeTrue"
+	// });
+	const parsed = parser.parseArgs();
+	parsed.app_list = parsed.app_list ? parsed.app_list.split(" ") : [];
+	return parsed as ScriptConfig;
+}
+
+function confirmPrompt(message: string) {
+	const readline = require("readline");
+	const prompt = readline.createInterface(process.stdin, process.stdout);
+	return new Promise(resolve => {
+		prompt.question(message + "\n", (answer: string) => {
+			prompt.close();
+			resolve(answer);
+		});
+	});
+}
+
+scriptConfig = initArgsParser();
+
+initModels(scriptConfig.create_db).then(async () => {
+	const appsDir = scriptConfig.apps_dir;
+	if (appsDir) {
+		for (const filename of fs.readdirSync(path(appsDir))) {
+			if (!filename.endsWith(".json")) {
+				console.info(`skipping non json file ${filename}`);
+				continue;
+			}
+			const data: AppDef = JSON.parse(fs.readFileSync(path(join(appsDir, filename))).toString());
+			await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config, scriptConfig.dry_run!);
 		}
-		const data: AppDef = JSON.parse(fs.readFileSync(path(join(appsDir, filename))).toString());
-		await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config);
 	}
+	const offersDir = scriptConfig.offers_dir;
+	if (offersDir) {
+		const appList = scriptConfig.app_list;
+		if (!appList || !appList.length) {
+			throw Error("Application list must be given via `--app-list`. See help (--help)");
+		}
 
-	// create offers from csv
-	const parseCsv = require("csv-parse/lib/sync");
-	for (const filename of fs.readdirSync(path(offersDir))) {
-		const offersCsv = fs.readFileSync(path(join(offersDir, filename)));
-		const parsed = parseCsv(offersCsv);
+		// sanity on app ids
+		if (!(appList[0] === "ALL")) {
+			await Promise.all(appList.map(async appId => {
+				if (!await Application.findOneById(appId)) {
+					throw Error(`Application not found ${appId}`);
+				}
+			}));
+		}
+		// create offers from csv
+		const parseCsv = require("csv-parse/lib/sync");
+		const createOfferOptions: EarnOptions = {
+			doNotUpdateExiting: scriptConfig.no_update!,
+			dryRun: scriptConfig.dry_run!,
+			confirmUpdate: scriptConfig.require_update_confirm!
+		};
+		for (const filename of fs.readdirSync(path(offersDir))) {
+			const offersCsv = fs.readFileSync(path(join(offersDir, filename)));
+			const parsed = parseCsv(offersCsv);
 
-		const title = readTitle(parsed[0][0]);
-		const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
-		if (title === "Spend") {
-			await parseSpend(parsed);
-			console.log(`created spend:${contentType} offers`);
-		} else if (title === "Earn") {
-			await parseEarn(parsed, contentType);
-			console.log(`created earn:${contentType} offers`);
-		} else {
-			throw new Error("Failed to parse " + parsed[0][0]);
+			const title = readTitle(parsed[0][0]);
+			const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
+			let results = [];
+			if (title === "Spend") {
+				results = await parseSpend(parsed, appList);
+				console.log(`created spend:${contentType} offers`);
+			} else if (title === "Earn") {
+				results = await parseEarn(parsed, contentType, appList, createOfferOptions);
+				console.log(`created earn:${contentType} offers`);
+			} else {
+				throw new Error("Failed to parse " + parsed[0][0]);
+			}
 		}
 	}
 	await closeModels();

@@ -19,6 +19,3 @@ script:
 
 after_failure:
   - make logs
-
-after_script:
-  - make down

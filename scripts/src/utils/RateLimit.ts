@@ -21,6 +21,7 @@ class RateLimit {
 	public async checkRate(): Promise<boolean> {
 		return await this.check(1);
 	}
+
 	public async checkAmount(amount: number): Promise<boolean> {
 		return await this.check(amount);
 	}

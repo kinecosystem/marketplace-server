@@ -3,18 +3,18 @@ import { getRedisClient, RedisAsyncClient } from "../redis";
 import { TooManyRegistrations, TooMuchEarnOrdered } from "../errors";
 
 class RateLimit {
-	private bucketPrefix: string;
-	private rateLimitValue: number;
-	private redis: RedisAsyncClient;
-	private windowSize: number;
-	private ttl: number;
+	private readonly bucketPrefix: string;
+	private readonly rateLimitValue: number;
+	private readonly redis: RedisAsyncClient;
+	private windowSize: number = 0;
+	private ttl: number = 0;
+	private readonly ttlWindowRatio: number = 10;
 
 	constructor(bucketPrefix: string, rateLimitValue: number, windowSizeMomentObject: moment.Duration) {
 		this.bucketPrefix = bucketPrefix;
 		this.rateLimitValue = rateLimitValue;
-		this.windowSize = 0;
-		this.ttl = 0;
-		this.setWindowSizeAndTTL(moment.duration(windowSizeMomentObject));
+		this.windowSize = windowSizeMomentObject.asSeconds();
+		this.ttl = this.ttl * this.ttlWindowRatio;
 		this.redis = getRedisClient();
 	}
 
@@ -43,11 +43,6 @@ class RateLimit {
 			.reduce((sum: number, val: string) => sum + Number(val), 0);
 
 		return rateSum >= this.rateLimitValue;
-	}
-
-	private setWindowSizeAndTTL(duration: moment.Duration) {
-		this.windowSize = duration.asSeconds();
-		this.ttl = this.windowSize * 10;
 	}
 }
 

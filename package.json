@@ -67,7 +67,7 @@
 		"build": "npm-run-all clean lint transpile",
 		"start": "node scripts/bin/public/index",
 		"start-internal": "node scripts/bin/internal/index",
-		"create-db": "node scripts/bin/create",
+		"create-db": "node scripts/bin/db_data",
 		"start-admin": "node scripts/bin/admin/index",
 		"restart": "npm-run-all build start",
 		"transpile-tests": "tsc -p tests",

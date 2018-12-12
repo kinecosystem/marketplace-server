@@ -95,6 +95,7 @@ export type EarnOptions = {
 	doNotUpdateExiting?: boolean; // Should existing offers be updated
 	dryRun?: boolean;  // if true, only process data, don't change/insert into the DB
 	confirmUpdate?: boolean;  //
+	onlyUpdateMetaImage?: boolean;
 };
 
 export async function createEarn(
@@ -130,18 +131,24 @@ export async function createEarn(
 		});
 	}
 
-	offer.amount = amount;
-	offer.meta = {
-		title, image, description,
-		order_meta: {
-			title: orderTitle,
-			description: orderDescription,
-		}
-	};
-	!options.dryRun && await offer.save();
+	if (options.onlyUpdateMetaImage) {
+		offer.meta.image = image;
+	} else {
+		offer.amount = amount;
+		offer.meta = {
+			title, image, description,
+			order_meta: {
+				title: orderTitle,
+				description: orderDescription,
+			}
+		};
+		content.content = JSON.stringify(poll);
+	}
 
-	content.content = JSON.stringify(poll);
-	await !options.dryRun && content.save();
+	if (!options.dryRun) {
+		await offer.save();
+		await content.save();
+	}
 
 	await saveAppOffers(offer, { total: capTotal, per_user: capPerUser }, walletAddress, appList, options);
 	return offer;

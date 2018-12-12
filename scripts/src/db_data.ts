@@ -23,6 +23,7 @@ type ScriptConfig = {
 	apps_dir: string | null;
 	offers_dir: string | null;
 	app_list: string[];
+	update_earn_thumbnails: boolean;
 	no_update: boolean;
 	dry_run: boolean;
 	require_update_confirm: boolean;
@@ -222,10 +223,14 @@ function initArgsParser(): ScriptConfig {
 		help: "Location (directory) of offers csv files"
 	});
 	parser.addArgument(["--app-list"], {
-		help: "Comma separated list of apps (i.e smpl, swel, kik, test, p365...) to have the earn offers added to (ALL, in caps, to add to all apps)",
+		help: "Comma separated list of apps (i.e smpl, test...) to have the earn offers added to (ALL, in caps, to add to all apps)",
 	});
 	parser.addArgument(["--no-update"], {
 		help: "Don't update existing earn offers, only create new ones.",
+		action: "storeTrue"
+	});
+	parser.addArgument(["--update-earn-thumbnails"], {
+		help: "Update only earn offers thumbnail images (that is offer.meta.image)",
 		action: "storeTrue"
 	});
 	parser.addArgument(["-d", "--dry-run"], {
@@ -233,7 +238,7 @@ function initArgsParser(): ScriptConfig {
 		action: "storeTrue"
 	});
 	parser.addArgument(["-c", "--create-db"], {
-		help: `Create tables/schemes if needed. ${"\x1b[41m" /* red */} USUALLY SHOULD BE NOT RUN IN PRODUCTION${"\x1b[0m" /* reset */}`,
+		help: `Create tables/schemes if needed. ${"\x1b[41m" /* red */}USUALLY SHOULD NOT BE RUN IN PRODUCTION${"\x1b[0m" /* reset */}`,
 		action: "storeTrue"
 	});
 
@@ -242,20 +247,20 @@ function initArgsParser(): ScriptConfig {
 	// 	action: "storeTrue"
 	// });
 	const parsed = parser.parseArgs();
-	parsed.app_list = parsed.app_list ? parsed.app_list.split(" ") : [];
+	parsed.app_list = parsed.app_list ? parsed.app_list.split(",") : [];
 	return parsed as ScriptConfig;
 }
 
-function confirmPrompt(message: string) {
-	const readline = require("readline");
-	const prompt = readline.createInterface(process.stdin, process.stdout);
-	return new Promise(resolve => {
-		prompt.question(message + "\n", (answer: string) => {
-			prompt.close();
-			resolve(answer);
-		});
-	});
-}
+// function confirmPrompt(message: string) {
+// 	const readline = require("readline");
+// 	const prompt = readline.createInterface(process.stdin, process.stdout);
+// 	return new Promise(resolve => {
+// 		prompt.question(message + "\n", (answer: string) => {
+// 			prompt.close();
+// 			resolve(answer);
+// 		});
+// 	});
+// }
 
 scriptConfig = initArgsParser();
 
@@ -291,7 +296,8 @@ initModels(scriptConfig.create_db).then(async () => {
 		const createOfferOptions: EarnOptions = {
 			doNotUpdateExiting: scriptConfig.no_update!,
 			dryRun: scriptConfig.dry_run!,
-			confirmUpdate: scriptConfig.require_update_confirm!
+			confirmUpdate: scriptConfig.require_update_confirm!,
+			onlyUpdateMetaImage: scriptConfig.update_earn_thumbnails,
 		};
 		for (const filename of fs.readdirSync(path(offersDir))) {
 			const offersCsv = fs.readFileSync(path(join(offersDir, filename)));

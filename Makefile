@@ -87,4 +87,12 @@ generate-funding-address:
 create-jwt-keys:
 	./operational/create_keys.sh .
 
+clear-source:
+	find ./scripts/src -name "*.d.ts" -exec rm {} \;
+	find ./scripts/src -name "*.js" -exec rm {} \;
+	find ./scripts/src -name "*.js.map" -exec rm {} \;
+
+	find ./tests/src -name "*.d.ts" -exec rm {} \;
+	find ./tests/src -name "*.js.map" -exec rm {} \;
+
 .PHONY: build-image push-image up down psql db-docker test-system-docker generate-funding-address test run build install db all split run-internal test-system

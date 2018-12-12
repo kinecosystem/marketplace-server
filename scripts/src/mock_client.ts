@@ -350,13 +350,13 @@ async function outdatedJWT() {
 
 	let jwt = await appClient.getRegisterJWT(userId, moment().add(1, "days").unix());
 	try {
-		const client = await MarketplaceClient.create({ jwt });
+		await MarketplaceClient.create({ jwt });
 		throw new Error("shouldn't be able to register with JWT with iat in the future");
 	} catch (e) {}
 
 	jwt = await appClient.getRegisterJWT(userId, moment().unix(), moment().subtract(1, "days").unix());
 	try {
-		const client = await MarketplaceClient.create({ jwt });
+		await MarketplaceClient.create({ jwt });
 		throw new Error("shouldn't be able to register with JWT with exp in the past");
 	} catch (e) {}
 

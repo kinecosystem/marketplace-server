@@ -194,7 +194,7 @@ export function InvalidJwtSignature() {
 }
 
 export function ExpiredJwt(exp: number) {
-	return BadRequestError(CODES.BadRequest.ExpiredJwt, `The JWT 'exp' field (${ exp }) has expired`);
+	return BadRequestError(CODES.BadRequest.ExpiredJwt, `The JWT 'exp' field (${ exp }) is in the past`);
 }
 
 export function InvalidJwtIssuedTime(iat: number) {

@@ -45,6 +45,8 @@ const CODES = {
 		JwtKidMissing: 6,
 		MaxWalletsExceeded: 7,
 		InvalidWalletAddress: 8,
+		ExpiredJwt: 9,
+		InvalidJwtIssuedTime: 10
 	},
 	TransactionFailed: {
 		WrongSender: 1,
@@ -189,6 +191,14 @@ export function WrongJwtAlgorithm(type: string) {
 
 export function InvalidJwtSignature() {
 	return BadRequestError(CODES.BadRequest.InvalidJwtSignature, "The JWT failed to verify");
+}
+
+export function ExpiredJwt(exp: number) {
+	return BadRequestError(CODES.BadRequest.ExpiredJwt, `The JWT 'exp' field (${ exp }) is in the past`);
+}
+
+export function InvalidJwtIssuedTime(iat: number) {
+	return BadRequestError(CODES.BadRequest.InvalidJwtIssuedTime, `The JWT 'iat' field (${ iat }) is in the future`);
 }
 
 export function InvalidPollAnswers() {

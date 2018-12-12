@@ -201,8 +201,8 @@ describe("test orders", async () => {
 		expect(offers2.offers.length).toBeLessThan(offers.offers.length);
 	});
 
-	test("payment jwt for non test apps is es256", async () => {
-		async function getPaymentJWT(appId: string) {
+	test("payment confirmation jwt for non test apps is es256", async () => {
+		async function getPaymentConfirmationJWTFor(appId: string) {
 			const user = await helpers.createUser({ appId });
 			const order = ExternalOrder.new({
 				offerId: "offer",
@@ -227,25 +227,25 @@ describe("test orders", async () => {
 			) as JWTContent<any, "payment_confirmation">;
 		}
 
-		const kikJWT = await getPaymentJWT("kik");
+		const kikJWT = await getPaymentConfirmationJWTFor("kik");
 		expect(kikJWT.header.alg.toLowerCase()).toBe("es256");
 		expect(kikJWT.header.kid).toBe("es256_0");
 
-		const smplJWT = await getPaymentJWT("smpl");
+		const smplJWT = await getPaymentConfirmationJWTFor("smpl");
 		expect(smplJWT.header.alg.toLowerCase()).not.toBe("es256");
 		expect(smplJWT.header.kid).not.toBe("es256_0");
 
-		const otherAppJWT = await getPaymentJWT("othr");
+		const otherAppJWT = await getPaymentConfirmationJWTFor("othr");
 		expect(otherAppJWT.header.alg.toLowerCase()).toBe("es256");
 		expect(otherAppJWT.header.kid).toBe("es256_0");
 
-		const testJWT = await getPaymentJWT("test");
-		expect(smplJWT.header.alg.toLowerCase()).not.toBe("es256");
-		expect(smplJWT.header.kid).not.toBe("es256_0");
+		const testJWT = await getPaymentConfirmationJWTFor("test");
+		expect(testJWT.header.alg.toLowerCase()).not.toBe("es256");
+		expect(testJWT.header.kid).not.toBe("es256_0");
 	});
 
 	test("expiration on openOrder is 10 minutes", async () => {
-		const user: User = await helpers.createUser();
+		const user = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, {}, getDefaultLogger());
 		const offer = (await Offer.findOneById(offers.offers[0].id))!;
 		const now = moment();

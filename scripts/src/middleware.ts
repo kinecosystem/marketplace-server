@@ -114,6 +114,7 @@ function clientErrorHandler(error: MarketplaceError, req: express.Request, res: 
 
 	log.error(`client error (4xx)`, error);
 	metrics.reportClientError(error, getAppIdFromRequest(req));
+
 	// set headers from the error if any
 	Object.keys(error.headers).forEach(key => res.setHeader(key, error.headers[key]));
 	res.status(error.status).send(error.toJson());

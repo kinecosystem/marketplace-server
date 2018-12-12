@@ -137,6 +137,7 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 		}
 		return [];
 	}
+
 	async function getSpend() {
 		if (!filters.type || filters.type === "spend") {
 			return await filterOffers(

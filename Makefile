@@ -87,7 +87,7 @@ generate-funding-address:
 create-jwt-keys:
 	./operational/create_keys.sh .
 
-clear-source:
+clean-source:
 	find ./scripts/src -name "*.d.ts" -exec rm {} \;
 	find ./scripts/src -name "*.js" -exec rm {} \;
 	find ./scripts/src -name "*.js.map" -exec rm {} \;

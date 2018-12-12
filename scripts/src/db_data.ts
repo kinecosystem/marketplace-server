@@ -25,6 +25,7 @@ type ScriptConfig = {
 	app_list: string[];
 	update_earn_thumbnails: boolean;
 	no_update: boolean;
+	only_update: boolean;
 	dry_run: boolean;
 	require_update_confirm: boolean;
 	create_db: boolean;
@@ -113,9 +114,9 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 	const poll: Quiz | Poll | Tutorial = { pages: [] };
 	let offer: Map<string, string> | undefined;
 
-	const results: Offer[] = [];
+	const results: Array<Offer | null> = [];
 
-	async function createEarnInner(v: Map<string, string>, poll: Quiz | Poll | Tutorial): Promise<Offer> {
+	async function createEarnInner(v: Map<string, string>, poll: Quiz | Poll | Tutorial): Promise<Offer | null> {
 		return await createEarn(
 			v.get("OfferName")!,
 			STELLAR_ADDRESS || v.get("WalletAddress")!,
@@ -196,7 +197,7 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 	if (offer) {
 		results.push(await createEarnInner(offer, poll));
 	}
-	return results;
+	return results.filter(v => !!v);
 }
 
 function getStellarAddresses() {
@@ -227,6 +228,10 @@ function initArgsParser(): ScriptConfig {
 	});
 	parser.addArgument(["--no-update"], {
 		help: "Don't update existing earn offers, only create new ones.",
+		action: "storeTrue"
+	});
+	parser.addArgument(["--only-update"], {
+		help: "Don't create new earn offers, only update existing ones.",
 		action: "storeTrue"
 	});
 	parser.addArgument(["--update-earn-thumbnails"], {
@@ -298,6 +303,7 @@ initModels(scriptConfig.create_db).then(async () => {
 			dryRun: scriptConfig.dry_run!,
 			confirmUpdate: scriptConfig.require_update_confirm!,
 			onlyUpdateMetaImage: scriptConfig.update_earn_thumbnails,
+			onlyUpdate: scriptConfig.only_update,
 		};
 		for (const filename of fs.readdirSync(path(offersDir))) {
 			const offersCsv = fs.readFileSync(path(join(offersDir, filename)));

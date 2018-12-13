@@ -247,25 +247,31 @@ function initArgsParser(): ScriptConfig {
 		action: "storeTrue"
 	});
 
-	// parser.addArgument(["-c", "--require-update-confirm"], {
-	// 	help: "Ask for confirmation before updating earn offers",
-	// 	action: "storeTrue"
-	// });
+/*
+//  implementation of a confirmation prompt function is below
+	parser.addArgument(["-c", "--require-update-confirm"], {
+		help: "Ask for confirmation before updating earn offers",
+		action: "storeTrue"
+	});
+*/
 	const parsed = parser.parseArgs();
 	parsed.app_list = parsed.app_list ? parsed.app_list.split(",") : [];
 	return parsed as ScriptConfig;
 }
 
-// function confirmPrompt(message: string) {
-// 	const readline = require("readline");
-// 	const prompt = readline.createInterface(process.stdin, process.stdout);
-// 	return new Promise(resolve => {
-// 		prompt.question(message + "\n", (answer: string) => {
-// 			prompt.close();
-// 			resolve(answer);
-// 		});
-// 	});
-// }
+/*
+//  When we decide to add this capability we should uncomment this
+function confirmPrompt(message: string) {
+	const readline = require("readline");
+	const prompt = readline.createInterface(process.stdin, process.stdout);
+	return new Promise(resolve => {
+		prompt.question(message + "\n", (answer: string) => {
+			prompt.close();
+			resolve(answer);
+		});
+	});
+}
+*/
 
 scriptConfig = initArgsParser();
 

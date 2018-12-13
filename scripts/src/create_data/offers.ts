@@ -121,7 +121,7 @@ export async function createEarn(
 		content = await OfferContent.findOne({ offerId: offer.id });
 	} else {
 		if (options.onlyUpdate) {
-			console.log(`Skipping offer creation for offer: ${offerName}`);
+			console.log(`Skipping offer creation for offer: ${ offerName }`);
 			return Promise.resolve(null);
 		}
 		const owner = await getOrCreateOwner(brand);

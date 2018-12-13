@@ -37,7 +37,7 @@ import {
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
 
-import { throwAppEarnLimit, throwUserEarnLimit } from "../../utils/RateLimit";
+import { throwOnAppEarnLimit, throwOnUserEarnLimit } from "../../utils/RateLimit";
 
 export interface OrderList {
 	orders: Order[];
@@ -108,9 +108,9 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {} as OrderTranslations) {
 	const app = (await Application.findOneById(user.appId))!;
 	if (appOffer.offer.type === "earn") {
-		throwAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), appOffer.offer.amount);
-		throwAppEarnLimit(app.id, "total_earn", app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
-		throwUserEarnLimit(user.id, "user_earn", app.config.limits.hourly_user_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
+		throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), appOffer.offer.amount);
+		throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
+		throwOnUserEarnLimit(user.id, "user_earn", app.config.limits.hourly_user_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
 	}
 
 	if (await appOffer.didExceedCap(user.id)) {
@@ -198,7 +198,7 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
 	const app = await Application.findOneById(recipient.appId);
 
-	throwUserEarnLimit(recipient.id, "total_earn", app!.config.limits.hourly_user_earn, moment.duration({ minutes: 1 }), jwt.offer.amount);
+	throwOnUserEarnLimit(recipient.id, "total_earn", app!.config.limits.hourly_user_earn, moment.duration({ hours: 1 }), jwt.offer.amount);
 
 	if (!app) {
 		throw NoSuchApp(recipient.appId);

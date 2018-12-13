@@ -1,8 +1,14 @@
 import * as path from "path";
+import * as moment from "moment";
 
 import * as utils from "../../scripts/bin/utils/utils";
+import { Application } from "../../scripts/bin/models/applications";
+
+import { TooManyRegistrations } from "../../scripts/bin/errors";
 import { path as _path } from "../../scripts/bin/utils/path";
 import * as metrics from "../../scripts/bin/metrics";
+import { throwOnAppEarnLimit } from "../../scripts/bin/utils/RateLimit";
+import { createApp } from "./helpers";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {
@@ -23,6 +29,16 @@ describe("util functions", () => {
 			expect(Number.isInteger(num)).toBeTruthy();
 			testRandomNumber(num, min, max);
 		}
+
+		test("throwOnAppEarnLimit should fail on 4th request if limit is set to 3 queries", async () => {
+			const app: Application = await createApp(utils.generateId());
+			const testFailingFunction = () => {
+				for (let i = 0; i < 4; i++) {
+					throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
+				}
+			};
+			expect(testFailingFunction).toThrowError(TooManyRegistrations(`app: ${app.id}, type: registration exceeded the limit: ${app.config.limits.minute_total_earn}`));
+		});
 
 		test("random() should return a new number [0, 1) for each invocation", () => {
 			testRandomNumber(utils.random(), 0, 1);

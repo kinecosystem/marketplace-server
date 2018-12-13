@@ -23,7 +23,7 @@ export type SignInType = "jwt" | "whitelist";
 export type ApplicationConfig = {
 	max_user_wallets: number | null;
 	sign_in_types: SignInType[];
-	limits: LimitConfig
+	limits: LimitConfig;
 };
 
 const AppOffersCache = new Map<string, AppOffer[]>();

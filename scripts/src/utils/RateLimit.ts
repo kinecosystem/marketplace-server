@@ -7,14 +7,13 @@ class RateLimit {
 	private readonly rateLimitValue: number;
 	private readonly redis: RedisAsyncClient;
 	private windowSize: number = 0;
-	private ttl: number = 0;
+	private ttl: number = 172800; // two days in seconds
 	private readonly ttlWindowRatio: number = 10;
 
 	constructor(bucketPrefix: string, rateLimitValue: number, windowSizeMomentObject: moment.Duration) {
 		this.bucketPrefix = bucketPrefix;
 		this.rateLimitValue = rateLimitValue;
 		this.windowSize = windowSizeMomentObject.asSeconds();
-		this.ttl = this.ttl * this.ttlWindowRatio;
 		this.redis = getRedisClient();
 	}
 
@@ -34,16 +33,17 @@ class RateLimit {
 		await this.redis.async.incrby(currentBucketName, step);
 		this.redis.expire(currentBucketName, this.ttl);
 
-		const windowKeys: string[] = [currentTimestampSeconds.toString()];
+		const windowKeys: string[] = [this.bucketPrefix + currentTimestampSeconds.toString()];
 		for (let i = 0; i < this.windowSize; i += bucketSize) {
 			windowKeys.push(this.bucketPrefix + (currentTimestampSeconds - i));
 		}
 
 		const rateSum: number = (await this.redis.async.mget(...windowKeys))
-			.filter((val: string) => val)
+			.filter((val: string) => val) // windowKeys consists of all possible keys even not existed, mget returns nulls for non-existing keys
+			.map(v => { console.log(v); return v; } )
 			.reduce((sum: number, val: string) => sum + Number(val), 0);
 
-		return rateSum >= this.rateLimitValue;
+		return rateSum > this.rateLimitValue;
 	}
 }
 
@@ -56,7 +56,7 @@ export async function throwOnRateLimit(appId: string, type: string, limit: numbe
 	}
 }
 
-export async function throwAppEarnLimit(appId: string, type: string, limit: number, duration: moment.Duration, amount: number) {
+export async function throwOnAppEarnLimit(appId: string, type: string, limit: number, duration: moment.Duration, amount: number) {
 	const rateLimitPrefix: string = "amount_limit";
 	const bucketPrefix: string = `${rateLimitPrefix}:${appId}:${type}:`;
 	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);
@@ -65,7 +65,7 @@ export async function throwAppEarnLimit(appId: string, type: string, limit: numb
 	}
 }
 
-export async function throwUserEarnLimit(userId: string, type: string, limit: number, duration: moment.Duration, amount: number) {
+export async function throwOnUserEarnLimit(userId: string, type: string, limit: number, duration: moment.Duration, amount: number) {
 	const rateLimitPrefix: string = "amount_limit";
 	const bucketPrefix: string = `${rateLimitPrefix}:${userId}:${type}:`;
 	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);

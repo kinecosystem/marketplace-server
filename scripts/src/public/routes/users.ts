@@ -1,6 +1,7 @@
 import * as moment from "moment";
 import { Request, RequestHandler, Response } from "express";
 import { InvalidWalletAddress, NoSuchApp, NoSuchUser, UnknownSignInType } from "../../errors";
+import { getDefaultLogger as log } from "../../logging";
 
 import {
 	activateUser as activateUserService,
@@ -44,12 +45,12 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	let context: SignInContext;
 	const data: WhitelistSignInData | JwtSignInData = req.body;
 
-	req.logger.info("signing in user", { data });
+	log().info("signing in user", { data });
 	// XXX should also check which sign in types does the application allow
 	if (data.sign_in_type === "jwt") {
-		context = await validateRegisterJWT(data.jwt!, req.logger);
+		context = await validateRegisterJWT(data.jwt!, log());
 	} else if (data.sign_in_type === "whitelist") {
-		context = await validateWhitelist(data.user_id, data.api_key, req.logger);
+		context = await validateWhitelist(data.user_id, data.api_key, log());
 	} else {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
@@ -71,7 +72,7 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		context.appId,
 		data.wallet_address,
 		data.device_id,
-		req.logger);
+		log());
 
 	res.status(200).send(authToken);
 } as any as RequestHandler;
@@ -82,7 +83,7 @@ export const updateUser = async function(req: UpdateUserRequest, res: Response) 
 	const context = req.context;
 	const walletAddress = req.body.wallet_address;
 	const userId = context.user!.id;
-	req.logger.info(`updating user ${ walletAddress }`, { walletAddress, userId });
+	log().info(`updating user ${ walletAddress }`, { walletAddress, userId });
 
 	if (!walletAddress || walletAddress.length !== 56) {
 		throw InvalidWalletAddress(walletAddress);
@@ -100,9 +101,9 @@ export type UserExistsRequest = Request & { query: { user_id: string; } };
 
 export const userExists = async function(req: UserExistsRequest, res: Response) {
 	const appId = req.context.user!.appId;
-	req.logger.debug(`userExists appId: ${ appId }`);
+	log().debug(`userExists appId: ${ appId }`);
 
-	const userFound = await userExistsService(appId, req.query.user_id, req.logger);
+	const userFound = await userExistsService(appId, req.query.user_id, log());
 	res.status(200).send(userFound);
 } as any as RequestHandler;
 
@@ -110,17 +111,17 @@ export const userExists = async function(req: UserExistsRequest, res: Response) 
  * user activates by approving TOS
  */
 export const activateUser = async function(req: Request, res: Response) {
-	const authToken = await activateUserService(req.context.token!, req.context.user!, req.logger);
+	const authToken = await activateUserService(req.context.token!, req.context.user!, log());
 	res.status(200).send(authToken);
 } as any as RequestHandler;
 
 export type UserInfoRequest = Request & { params: { user_id: string; } };
 
 export const userInfo = async function(req: UserInfoRequest, res: Response) {
-	req.logger.debug(`userInfo userId: ${ req.params.user_id }`);
+	log().debug(`userInfo userId: ${ req.params.user_id }`);
 
 	if (req.context.user!.appUserId !== req.params.user_id) {
-		const userFound = await userExistsService(req.context.user!.appId, req.params.user_id, req.logger);
+		const userFound = await userExistsService(req.context.user!.appId, req.params.user_id, log());
 		if (userFound) {
 			res.status(200).send({});
 		} else {

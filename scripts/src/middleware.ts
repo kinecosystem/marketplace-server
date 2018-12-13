@@ -3,14 +3,13 @@ import * as cluster from "cluster";
 import * as httpContext from "express-http-context";
 import * as moment from "moment";
 import { performance } from "perf_hooks";
-import { LoggerInstance } from "winston";
 import { Request, Response } from "express-serve-static-core";
 
 import * as metrics from "./metrics";
 import { getConfig } from "./config";
 import { generateId, getAppIdFromRequest } from "./utils/utils";
 import { MarketplaceError } from "./errors";
-import { getDefaultLogger } from "./logging";
+import { getDefaultLogger as log } from "./logging";
 import { abort as restartServer } from "./server";
 
 const START_TIME = (new Date()).toISOString();
@@ -19,26 +18,12 @@ const RESTART_ERROR_COUNT = 5;  // Amount of errors to occur in time frame to tr
 const RESTART_MAX_TIMEFRAME = 20;  // In seconds
 let serverErrorTimeStamps: number[] = [];
 
-let logger: LoggerInstance;
-
-export function init() {
-	logger = getDefaultLogger();
-}
-
-declare module "express" {
-	interface Request {
-		readonly id: string;
-		readonly logger: LoggerInstance;
-	}
-}
-
 /**
  * augments the request object with a request-id and a logger.
  * the logger should be then used when logging inside request handlers, which will then add some more info per log
  */
 export const requestLogger = function(req: express.Request, res: express.Response, next: express.NextFunction) {
 	httpContext.set("reqId", req.header("x-request-id") || generateId());
-	(req.logger as any) = getDefaultLogger();
 	next();
 } as express.RequestHandler;
 
@@ -54,10 +39,10 @@ export const logRequest = function(req: express.Request, res: express.Response, 
 		data.querystring = req.query;
 	}
 
-	req.logger.info(`worker ${ getWorkerId() }: start handling request ${ req.id }: ${ req.method } ${ req.path }`, data);
+	log().info(`worker ${ getWorkerId() }: start handling request: ${ req.method } ${ req.path }`, data);
 
 	res.on("finish", () => {
-		req.logger.info(`worker ${ getWorkerId() }: finished handling request ${ req.id }`, { time: performance.now() - t });
+		log().info(`worker ${ getWorkerId() }: finished handling request`, { time: performance.now() - t });
 	});
 
 	next();
@@ -90,9 +75,7 @@ export function generalErrorHandler(err: any, req: Request, res: Response, next:
 }
 
 function clientErrorHandler(error: MarketplaceError, req: express.Request, res: express.Response) {
-	const log = req.logger || logger;
-
-	log.error(`client error (4xx)`, { error: error.toJson() });
+	log().error(`client error (4xx)`, { error: error.toJson() });
 	metrics.reportClientError(error, getAppIdFromRequest(req));
 
 	// set headers from the error if any
@@ -101,7 +84,6 @@ function clientErrorHandler(error: MarketplaceError, req: express.Request, res: 
 }
 
 function serverErrorHandler(error: any, req: express.Request, res: express.Response) {
-	const log = req.logger || logger;
 	metrics.reportServerError(req.method, req.url, getAppIdFromRequest(req));
 
 	const timestamp = moment().unix();
@@ -127,13 +109,13 @@ function serverErrorHandler(error: any, req: express.Request, res: express.Respo
 		}
 	}
 
-	log.error(`server error (5xx)`, message);
+	log().error(`server error (5xx)`, message);
 
 	res.status(500).send({ code: 500, error: error.message || "Server error", message: error.message });
 }
 
 export const statusHandler = async function(req: express.Request, res: express.Response) {
-	logger.info(`status called`, { blah: req.context });
+	log().info(`status called`, { blah: req.context });
 	res.status(200).send(
 		{
 			status: "ok",

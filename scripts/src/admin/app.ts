@@ -9,7 +9,7 @@ const logger = initLogger(...config.loggers!);
 
 import { createRoutes } from "./routes";
 import { init as initModels } from "../models/index";
-import { notFoundHandler, generalErrorHandler, init as initMiddleware } from "../middleware";
+import { notFoundHandler, generalErrorHandler } from "../middleware";
 
 function createApp() {
 	const app = express();
@@ -18,8 +18,6 @@ function createApp() {
 	const bodyParser = require("body-parser");
 	app.use(bodyParser.json());
 	app.use(bodyParser.urlencoded({ extended: false }));
-
-	initMiddleware();
 
 	return app;
 }

@@ -9,6 +9,7 @@ import {
 	WalletCreationSuccessData,
 	WalletCreationFailureData, FailedPayment,
 } from "./services";
+import { getDefaultLogger as log } from "../logging";
 
 import { statusHandler } from "./middleware";
 import { PUBLIC_KEYS } from "./jwt";
@@ -51,27 +52,27 @@ export const webhookHandler = async function(req: WebHookRequest, res: Response)
 	if (body.object === "payment") {
 		if (body.action === "send" || body.action === "receive") {
 			if (body.state === "success") {
-				await paymentCompleteService(body.value, req.logger);
+				await paymentCompleteService(body.value, log());
 			} else {
-				await paymentFailedService(body.value, req.logger);
+				await paymentFailedService(body.value, log());
 			}
 		} else {
-			req.logger.error(`unknown action ("${ (body as any).action }" for payment webhook)`);
+			log().error(`unknown action ("${ (body as any).action }" for payment webhook)`);
 			res.status(400).send({ status: "error", error: "what?" });
 		}
 	} else if (body.object === "wallet") {
 		if (body.action === "create") {
 			if (body.state === "success") {
-				await walletCreationSuccessService(body.value, req.logger);
+				await walletCreationSuccessService(body.value, log());
 			} else {
-				await walletCreationFailureService(body.value, req.logger);
+				await walletCreationFailureService(body.value, log());
 			}
 		} else {
-			req.logger.error(`unknown action ("${ (body as any).action }" for wallet webhook)`);
+			log().error(`unknown action ("${ (body as any).action }" for wallet webhook)`);
 			res.status(400).send({ status: "error", error: "what?" });
 		}
 	} else {
-		req.logger.error(`unknown object ("${ (body as any).object }" for webhooks)`);
+		log().error(`unknown object ("${ (body as any).object }" for webhooks)`);
 		res.status(400).send({ status: "error", error: "what?" });
 	}
 

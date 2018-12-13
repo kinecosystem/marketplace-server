@@ -109,7 +109,7 @@ function serverErrorHandler(error: any, req: express.Request, res: express.Respo
 		}
 	}
 
-	log().error(`server error (5xx)`, message);
+	log().error(`server error (5xx)`, { error: message });
 
 	res.status(500).send({ code: 500, error: error.message || "Server error", message: error.message });
 }

@@ -78,38 +78,51 @@ function getLogContext() {
 	return { reqId, userId, deviceId };
 }
 
-let defaultLogger: winston.LoggerInstance;
+export interface BasicLogger {
+	log(level: string, message: string, options?: object): void;
 
-export function initLogger(...targets: LogTarget[]): winston.LoggerInstance {
+	error(message: string, options?: object): void;
+
+	warn(message: string, options?: object): void;
+
+	verbose(message: string, options?: object): void;
+
+	info(message: string, options?: object): void;
+
+	debug(message: string, options?: object): void;
+}
+
+let defaultLogger: BasicLogger;
+
+export function initLogger(...targets: LogTarget[]): BasicLogger {
 	const options: winston.LoggerOptions = {};
 	options.transports = targets.map(target => createTarget(target));
 	const winstonLogger = new winston.Logger(options);
 
-	const logger = {
-		log: (level: string, message: string, options: object) => {
+	defaultLogger = {
+		log: (level: string, message: string, options?: object) => {
 			winstonLogger.log(level, message, { ...options, ...getLogContext() });
 		},
-		error: (message: string, options: object) => {
-			winstonLogger.error( message, { ...options, ...getLogContext() });
+		error: (message: string, options?: object) => {
+			winstonLogger.error(message, { ...options, ...getLogContext() });
 		},
-		warn: (message: string, options: object) => {
-			winstonLogger.warn( message, { ...options, ...getLogContext() });
+		warn: (message: string, options?: object) => {
+			winstonLogger.warn(message, { ...options, ...getLogContext() });
 		},
-		verbose: (message: string, options: object) => {
-			winstonLogger.verbose( message, { ...options, ...getLogContext() });
+		verbose: (message: string, options?: object) => {
+			winstonLogger.verbose(message, { ...options, ...getLogContext() });
 		},
-		info: (message: string, options: object) => {
-			winstonLogger.info( message, { ...options, ...getLogContext() });
+		info: (message: string, options?: object) => {
+			winstonLogger.info(message, { ...options, ...getLogContext() });
 		},
-		debug: (message: string, options: object) => {
-			winstonLogger.debug( message, { ...options, ...getLogContext() });
+		debug: (message: string, options?: object) => {
+			winstonLogger.debug(message, { ...options, ...getLogContext() });
 		}
 	};
 
-	defaultLogger = logger as winston.LoggerInstance;
 	return defaultLogger;
 }
 
-export function getDefaultLogger(): winston.LoggerInstance {
+export function getDefaultLogger(): BasicLogger {
 	return defaultLogger;
 }

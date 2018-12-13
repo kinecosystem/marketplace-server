@@ -141,7 +141,9 @@ export async function createEarn(
 	} else {
 		offer.amount = amount;
 		offer.meta = {
-			title, image, description,
+			title,
+			image,
+			description,
 			order_meta: {
 				title: orderTitle,
 				description: orderDescription,

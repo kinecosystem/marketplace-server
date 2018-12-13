@@ -1,5 +1,6 @@
 import * as express from "express";
 import * as cluster from "cluster";
+import * as httpContext from "express-http-context";
 import * as moment from "moment";
 import { performance } from "perf_hooks";
 import { LoggerInstance } from "winston";
@@ -7,10 +8,12 @@ import { Request, Response } from "express-serve-static-core";
 
 import * as metrics from "./metrics";
 import { getConfig } from "./config";
-import { generateId, pick, getAppIdFromRequest } from "./utils/utils";
+import { generateId, getAppIdFromRequest } from "./utils/utils";
 import { MarketplaceError } from "./errors";
 import { getDefaultLogger } from "./logging";
 import { abort as restartServer } from "./server";
+import { authenticate } from "./public/auth";
+import * as db from "./models/users";
 
 const START_TIME = (new Date()).toISOString();
 
@@ -36,29 +39,8 @@ declare module "express" {
  * the logger should be then used when logging inside request handlers, which will then add some more info per log
  */
 export const requestLogger = function(req: express.Request, res: express.Response, next: express.NextFunction) {
-	const methods = ["debug", "info", "warn", "error"];
-	const id = generateId();
-	const proxy = new Proxy(logger, {
-		get(target, name: keyof LoggerInstance) {
-			if (typeof name === "string" && methods.includes(name)) {
-				return function(...args: any[]) {
-					if (typeof args[args.length - 1] === "object") {
-						args[args.length - 1] = Object.assign({}, args[args.length - 1], { reqId: id });
-					} else {
-						args = [...args, { reqId: id }];
-					}
-
-					(target[name] as (...args: any[]) => void)(...args);
-				};
-			}
-
-			return target[name];
-		}
-	});
-
-	// id & logger are readonly and so cannot be assigned, unless cast to any
-	(req as any).id = id;
-	(req as any).logger = proxy;
+	httpContext.set("reqId", req.header("x-request-id") || generateId());
+	(req.logger as any) = getDefaultLogger();
 	next();
 } as express.RequestHandler;
 
@@ -153,6 +135,7 @@ function serverErrorHandler(error: any, req: express.Request, res: express.Respo
 }
 
 export const statusHandler = async function(req: express.Request, res: express.Response) {
+	logger.info(`status called`, { blah: req.context });
 	res.status(200).send(
 		{
 			status: "ok",

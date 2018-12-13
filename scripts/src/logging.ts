@@ -21,22 +21,10 @@ export interface FileTarget extends LogTarget {
 	file: string;
 }
 
-let defaultLogger: winston.LoggerInstance;
-
-export function initLogger(...targets: LogTarget[]): winston.LoggerInstance {
-	const options: winston.LoggerOptions = {};
-	options.transports = targets.map(target => createTarget(target));
-	defaultLogger = new winston.Logger(options);
-	return defaultLogger;
-}
-
-export function getDefaultLogger(): winston.LoggerInstance {
-	return defaultLogger;
-}
-
 type WinstonTransportOptions = GenericTransportOptions & GenericTextTransportOptions & { stringify?: boolean };
+
 function createTarget(target: LogTarget): winston.TransportInstance {
-	let cls: { new (options: WinstonTransportOptions): winston.TransportInstance };
+	let cls: { new(options: WinstonTransportOptions): winston.TransportInstance };
 	const defaults: WinstonTransportOptions = {
 		timestamp: true,
 	};
@@ -63,11 +51,6 @@ function createTarget(target: LogTarget): winston.TransportInstance {
 			defaults.level = "error";
 			(options as FileTransportOptions).filename = (target as FileTarget).file;
 			cls = winston.transports.File;
-			/*return new winston.transports.File({
-				filename: (target as FileTarget).file,
-				level: target.level,
-				timestamp: true
-			});*/
 			break;
 
 		default:
@@ -78,6 +61,7 @@ function createTarget(target: LogTarget): winston.TransportInstance {
 }
 
 type OptionsKey = keyof WinstonTransportOptions;
+
 function mergeOptions(defaults: WinstonTransportOptions, options: WinstonTransportOptions): WinstonTransportOptions {
 	const result = Object.assign({}, defaults);
 
@@ -86,4 +70,49 @@ function mergeOptions(defaults: WinstonTransportOptions, options: WinstonTranspo
 		.forEach(key => result[key] = options[key]);
 
 	return result;
+}
+
+import * as httpContext from "express-http-context";
+
+function getLogContext() {
+	const reqId = httpContext.get("reqId");
+	const userId = httpContext.get("userId");
+	const deviceId = httpContext.get("deviceId");
+	return { reqId, userId, deviceId };
+}
+
+let defaultLogger: winston.LoggerInstance;
+
+export function initLogger(...targets: LogTarget[]): winston.LoggerInstance {
+	const options: winston.LoggerOptions = {};
+	options.transports = targets.map(target => createTarget(target));
+	const winstonLogger = new winston.Logger(options);
+
+	const logger = {
+		log: (level: string, message: string, options: object) => {
+			winstonLogger.log(level, message, { ...options, ...getLogContext() });
+		},
+		error: (message: string, options: object) => {
+			winstonLogger.error( message, { ...options, ...getLogContext() });
+		},
+		warn: (message: string, options: object) => {
+			winstonLogger.warn( message, { ...options, ...getLogContext() });
+		},
+		verbose: (message: string, options: object) => {
+			winstonLogger.verbose( message, { ...options, ...getLogContext() });
+		},
+		info: (message: string, options: object) => {
+			winstonLogger.info( message, { ...options, ...getLogContext() });
+		},
+		debug: (message: string, options: object) => {
+			winstonLogger.debug( message, { ...options, ...getLogContext() });
+		}
+	};
+
+	defaultLogger = logger as winston.LoggerInstance;
+	return defaultLogger;
+}
+
+export function getDefaultLogger(): winston.LoggerInstance {
+	return defaultLogger;
 }

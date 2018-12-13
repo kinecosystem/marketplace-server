@@ -1,7 +1,6 @@
 import * as winston from "winston";
-import { GenericTextTransportOptions } from "winston";
-import { GenericTransportOptions } from "winston";
-import { FileTransportOptions } from "winston";
+import { FileTransportOptions, GenericTextTransportOptions, GenericTransportOptions } from "winston";
+import * as httpContext from "express-http-context";
 
 export interface LogTarget {
 	name: string;
@@ -71,8 +70,6 @@ function mergeOptions(defaults: WinstonTransportOptions, options: WinstonTranspo
 
 	return result;
 }
-
-import * as httpContext from "express-http-context";
 
 function getLogContext() {
 	const reqId = httpContext.get("reqId");

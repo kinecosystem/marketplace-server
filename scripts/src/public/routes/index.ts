@@ -1,24 +1,21 @@
 import * as express from "express";
 
 import * as db from "../../models/users";
-import { TOSMissingOrOldToken } from "../../errors";
-
-import { authenticate } from "../auth";
 import { statusHandler } from "../middleware";
 
 import { getOffers } from "./offers";
 import { getConfigHandler } from "./config";
-import { signInUser, userInfo, myUserInfo, userExists, activateUser, updateUser } from "./users";
+import { activateUser, myUserInfo, signInUser, updateUser, userExists, userInfo } from "./users";
 import {
-	getOrder,
 	cancelOrder,
-	getOrderHistory,
-	submitOrder,
 	changeOrder,
+	createExternalOrder,
 	createMarketplaceOrder,
-	createExternalOrder
+	getOrder,
+	getOrderHistory,
+	submitOrder
 } from "./orders";
-import { authenticateUser } from "../../../bin/public/auth";
+import { authenticateUser } from "../auth";
 
 export type Context = {
 	user: db.User | undefined;
@@ -31,22 +28,6 @@ declare module "express" {
 		token: string;
 		context: Context;
 	}
-}
-
-type ExtendedRouter = express.Router & {
-	authenticated(...scopes: AuthScopes[]): express.Router;
-};
-
-function proxyOverRouter(router: express.Router, proxy: ExtendedRouter, obj: any): typeof obj {
-	if (typeof obj === "function") {
-		return function(...args: any[]) {
-			const result = obj(...args);
-			// const result = obj.apply(null, args);
-			return result === router ? proxy : result;
-		};
-	}
-
-	return obj === router ? proxy : obj;
 }
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {

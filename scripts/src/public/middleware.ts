@@ -2,8 +2,7 @@ import * as express from "express";
 import * as bearerToken from "express-bearer-token";
 import * as httpContext from "express-http-context";
 
-import { init as baseInit, requestLogger, logRequest, reportMetrics } from "../middleware";
-import { authenticateUser } from "./auth";
+import { init as baseInit, logRequest, reportMetrics, requestLogger } from "../middleware";
 
 export * from "../middleware";
 

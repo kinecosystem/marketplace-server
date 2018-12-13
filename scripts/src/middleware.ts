@@ -12,8 +12,6 @@ import { generateId, getAppIdFromRequest } from "./utils/utils";
 import { MarketplaceError } from "./errors";
 import { getDefaultLogger } from "./logging";
 import { abort as restartServer } from "./server";
-import { authenticate } from "./public/auth";
-import * as db from "./models/users";
 
 const START_TIME = (new Date()).toISOString();
 

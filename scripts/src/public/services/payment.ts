@@ -1,12 +1,12 @@
 // wrapper for the payment service
 // TODO: this is used by both public and internal so should move to shared dir
 import axios from "axios";
-
-const axiosRetry = require("axios-retry"); // TODO: nitzan this fails the tests: import axiosRetry from "axios-retry";
 import { LoggerInstance } from "winston";
 import { performance } from "perf_hooks";
 
 import { getConfig } from "../config";
+
+const axiosRetry = require("axios-retry"); // TODO: nitzan this fails the tests: import axiosRetry from "axios-retry";
 
 const config = getConfig();
 const webhook = `${config.internal_service}/v1/internal/webhook`;

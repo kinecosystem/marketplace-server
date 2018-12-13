@@ -3,15 +3,14 @@ import { Server } from "http";
 import * as metrics from "./metrics";
 import { getConfig } from "./config";
 import { ServerError } from "./utils/utils";
-import { getDefaultLogger } from "./logging";
+import { getDefaultLogger as log } from "./logging";
 
 const config = getConfig();
-const logger = getDefaultLogger();
 
 function cleanup(server: Server) {
-	logger.info("Shutting down");
+	log().info("Shutting down");
 	server.close(() => {
-		logger.info("Done, have a great day!");
+		log().info("Done, have a great day!");
 		process.exit(0);
 	});
 }
@@ -27,11 +26,11 @@ export function onError(error: ServerError) {
 	// handle specific listen errors with friendly messages
 	switch (error.code) {
 		case "EACCES":
-			logger.error(`${ config.port } requires elevated privileges`);
+			log().error(`${ config.port } requires elevated privileges`);
 			process.exit(1);
 			break;
 		case "EADDRINUSE":
-			logger.error(`${ config.port } is already in use`);
+			log().error(`${ config.port } is already in use`);
 			process.exit(1);
 			break;
 		default:
@@ -48,7 +47,7 @@ export function onListening(server: Server) {
 		const handler = cleanup.bind(null, server);
 		process.on("SIGINT", handler);
 		process.on("SIGTERM", handler);
-		logger.debug(`Listening on ${ addr.port }`);
+		log().debug(`Listening on ${ addr.port }`);
 	};
 }
 

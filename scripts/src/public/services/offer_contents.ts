@@ -1,4 +1,4 @@
-import { LoggerInstance } from "winston";
+import { getDefaultLogger as log } from "../../logging";
 import { Request as ExpressRequest } from "express-serve-static-core";
 
 import { isNothing } from "../../utils/utils";
@@ -100,7 +100,7 @@ export function replaceTemplateVars(args: { amount: number }, template: string) 
 		.replace(/\${amount.raw}/g, args.amount.toString());
 }
 
-export async function getOfferContent(offerId: string, logger: LoggerInstance): Promise<db.OfferContent | undefined> {
+export async function getOfferContent(offerId: string): Promise<db.OfferContent | undefined> {
 	return await db.OfferContent.findOne({ offerId });
 }
 

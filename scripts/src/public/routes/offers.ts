@@ -15,7 +15,7 @@ export type GetOffersRequest = Request & {
 };
 export const getOffers = async function(req: GetOffersRequest, res: Response, next: NextFunction) {
 	try {
-		const data = await getOffersService(req.context.user!.id, req.context.user!.appId, req.query, log(), req.acceptsLanguages.bind(req));
+		const data = await getOffersService(req.context.user!.id, req.context.user!.appId, req.query, req.acceptsLanguages.bind(req));
 		res.status(200).send(data);
 	} catch (err) {
 		next(err);

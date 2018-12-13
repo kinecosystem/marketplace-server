@@ -1,6 +1,6 @@
-import { LoggerInstance } from "winston";
 import * as moment from "moment";
 import { Request as ExpressRequest } from "express-serve-static-core";
+import { getDefaultLogger as log } from "../../logging";
 
 import { pick } from "../../utils/utils";
 import { lock } from "../../redis";
@@ -69,7 +69,7 @@ export interface Order extends BaseOrder {
 	origin: db.OrderOrigin;
 }
 
-export async function getOrder(orderId: string, userId: string, logger: LoggerInstance): Promise<Order> {
+export async function getOrder(orderId: string, userId: string): Promise<Order> {
 	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
@@ -78,7 +78,7 @@ export async function getOrder(orderId: string, userId: string, logger: LoggerIn
 
 	checkIfTimedOut(order); // no need to wait for the promise
 
-	logger.debug("getOne returning", {
+	log().debug("getOne returning", {
 		orderId,
 		status: order.status,
 		offerId: order.offerId,
@@ -87,7 +87,7 @@ export async function getOrder(orderId: string, userId: string, logger: LoggerIn
 	return orderDbToApi(order, userId);
 }
 
-export async function changeOrder(orderId: string, userId: string, change: Partial<Order>, logger: LoggerInstance): Promise<Order> {
+export async function changeOrder(orderId: string, userId: string, change: Partial<Order>): Promise<Order> {
 	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
@@ -101,7 +101,7 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 	order.status = "failed";
 	await order.save();
 
-	logger.debug("order patched with error", { orderId, contexts: order.contexts, error: change.error });
+	log().debug("order patched with error", { orderId, contexts: order.contexts, error: change.error });
 	return orderDbToApi(order, userId);
 }
 
@@ -143,8 +143,8 @@ async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {
 	return order;
 }
 
-export async function createMarketplaceOrder(offerId: string, user: User, logger: LoggerInstance, orderTranslations?: OrderTranslations): Promise<OpenOrder> {
-	logger.info("creating marketplace order for", { offerId, userId: user.id });
+export async function createMarketplaceOrder(offerId: string, user: User, orderTranslations?: OrderTranslations): Promise<OpenOrder> {
+	log().info("creating marketplace order for", { offerId, userId: user.id });
 
 	const appOffer = await AppOffer.findOne({ offerId, appId: user.appId });
 	if (!appOffer) {
@@ -160,7 +160,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, logger
 		throw OfferCapReached(offerId);
 	}
 
-	logger.info("created new open marketplace order", order);
+	log().info("created new open marketplace order", order);
 
 	return openOrderDbToApi(order, user.id);
 }
@@ -247,9 +247,9 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 	return order;
 }
 
-export async function createExternalOrder(jwt: string, user: User, logger: LoggerInstance): Promise<OpenOrder> {
-	logger.info("createExternalOrder", { jwt });
-	const payload = await validateExternalOrderJWT(jwt, user.appUserId, logger);
+export async function createExternalOrder(jwt: string, user: User): Promise<OpenOrder> {
+	log().info("createExternalOrder", { jwt });
+	const payload = await validateExternalOrderJWT(jwt, user.appUserId);
 	const nonce = payload.nonce || db.Order.DEFAULT_NONCE;
 
 	let order = await db.Order.findBy({ offerId: payload.offer.id, userId: user.id, nonce });
@@ -269,7 +269,7 @@ export async function createExternalOrder(jwt: string, user: User, logger: Logge
 			metrics.createOrder("external", context.type, payload.offer.id, user.appId);
 		});
 
-		logger.info("created new open external order", {
+		log().info("created new open external order", {
 			offerId: payload.offer.id,
 			userId: user.id,
 			orderId: order.id
@@ -287,10 +287,9 @@ export async function submitOrder(
 	form: string | undefined,
 	walletAddress: string,
 	appId: string,
-	logger: LoggerInstance,
 	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
 
-	logger.info("submitOrder", { orderId });
+	log().info("submitOrder", { orderId });
 	const order = await db.Order.getOne(orderId) as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
@@ -310,7 +309,7 @@ export async function submitOrder(
 		}
 
 		if (order.type === "earn") {
-			const offerContent = (await offerContents.getOfferContent(order.offerId, logger))!;
+			const offerContent = (await offerContents.getOfferContent(order.offerId))!;
 
 			switch (offerContent.contentType) {
 				// TODO this switch-case should be inside the offerContents module
@@ -329,17 +328,17 @@ export async function submitOrder(
 					// nothing
 					break;
 				default:
-					logger.warn(`unexpected content type ${offerContent.contentType}`);
+					log().warn(`unexpected content type ${offerContent.contentType}`);
 			}
 		}
 	}
 
 	order.setStatus("pending");
 	await order.save();
-	logger.info("order changed to pending", { orderId });
+	log().info("order changed to pending", { orderId });
 
 	if (order.isEarn()) {
-		await payment.payTo(walletAddress, appId, order.amount, order.id, logger);
+		await payment.payTo(walletAddress, appId, order.amount, order.id);
 		createEarnTransactionBroadcastToBlockchainSubmitted(order.contexts[0].user.id, order.offerId, order.id).report();
 	}
 
@@ -349,7 +348,7 @@ export async function submitOrder(
 	return orderDbToApi(order, userId);
 }
 
-export async function cancelOrder(orderId: string, logger: LoggerInstance): Promise<void> {
+export async function cancelOrder(orderId: string): Promise<void> {
 	// you can only delete an open order - not a pending order
 	const order = await db.Order.getOne(orderId, "opened");
 	if (!order) {
@@ -362,7 +361,6 @@ export async function cancelOrder(orderId: string, logger: LoggerInstance): Prom
 export async function getOrderHistory(
 	userId: string,
 	filters: { origin?: db.OrderOrigin; offerId?: string; },
-	logger: LoggerInstance,
 	limit: number = 25,
 	before?: string,
 	after?: string): Promise<OrderList> {

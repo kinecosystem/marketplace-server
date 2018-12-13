@@ -11,7 +11,7 @@ let JWT_KEYS: KeyMap;
 let BLOCKCHAIN: BlockchainConfig;
 
 export async function init() {
-	BLOCKCHAIN = await getBlockchainConfig(log());
+	BLOCKCHAIN = await getBlockchainConfig();
 	JWT_KEYS = await getJwtKeys();
 }
 
@@ -27,7 +27,7 @@ export type ConfigResponse = {
 export const getConfigHandler = async function(req: Request, res: Response, next: NextFunction) {
 	const data: ConfigResponse = {
 		jwt_keys: await getJwtKeys(),
-		blockchain: await getBlockchainConfig(log()),
+		blockchain: await getBlockchainConfig(),
 		bi_service: CONFIG.bi_service,
 		webview: CONFIG.webview,
 		environment_name: CONFIG.environment_name,

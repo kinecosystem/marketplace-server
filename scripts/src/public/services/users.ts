@@ -1,6 +1,5 @@
-import { LoggerInstance } from "winston";
-
 import * as metrics from "../../metrics";
+import { getDefaultLogger as log } from "../../logging";
 import { MaxWalletsExceeded } from "../../errors";
 import { Order } from "../../models/orders";
 import { Application } from "../../models/applications";
@@ -19,7 +18,7 @@ export type AuthToken = {
 	ecosystem_user_id: string;
 };
 
-function AuthTokenDbToApi(authToken: DbAuthToken, user: User, logger: LoggerInstance): AuthToken {
+function AuthTokenDbToApi(authToken: DbAuthToken, user: User): AuthToken {
 	return {
 		token: authToken.id,
 		activated: true, // always true - activation not needed
@@ -35,12 +34,12 @@ export async function getOrCreateUserCredentials(
 	appUserId: string,
 	appId: string,
 	walletAddress: string,
-	deviceId: string, logger: LoggerInstance): Promise<AuthToken> {
+	deviceId: string): Promise<AuthToken> {
 
 	async function handleExistingUser(existingUser: User) {
-		logger.info("found existing user", { appId, appUserId, userId: existingUser.id });
+		log().info("found existing user", { appId, appUserId, userId: existingUser.id });
 		if (existingUser.walletAddress !== walletAddress) {
-			logger.warn(`existing user registered with new wallet ${existingUser.walletAddress} !== ${walletAddress}`);
+			log().warn(`existing user registered with new wallet ${existingUser.walletAddress} !== ${walletAddress}`);
 			if (!app.allowsNewWallet(existingUser.walletCount)) {
 				metrics.maxWalletsExceeded(appId);
 				throw MaxWalletsExceeded();
@@ -48,28 +47,28 @@ export async function getOrCreateUserCredentials(
 			existingUser.walletCount += 1;
 			existingUser.walletAddress = walletAddress;
 			await existingUser.save();
-			await payment.createWallet(existingUser.walletAddress, existingUser.appId, existingUser.id, logger);
+			await payment.createWallet(existingUser.walletAddress, existingUser.appId, existingUser.id);
 			metrics.userRegister(false, true, appId);
 		} else {
 			metrics.userRegister(false, false, appId);
 		}
-		logger.info(`returning existing user ${existingUser.id}`);
+		log().info(`returning existing user ${existingUser.id}`);
 	}
 
 	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
 		try {
-			logger.info("creating a new user", { appId, appUserId });
+			log().info("creating a new user", { appId, appUserId });
 			user = User.new({ appUserId, appId, walletAddress });
 			await user.save();
-			logger.info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
-			await payment.createWallet(user.walletAddress, user.appId, user.id, logger);
+			log().info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
+			await payment.createWallet(user.walletAddress, user.appId, user.id);
 			metrics.userRegister(true, true, appId);
 		} catch (e) {
 			// maybe caught a "violates unique constraint" error, check by finding the user again
 			user = await User.findOne({ appId, appUserId });
 			if (user) {
-				logger.warn("solved user registration race condition");
+				log().warn("solved user registration race condition");
 				await handleExistingUser(user);
 			} else {
 				throw e; // some other error
@@ -88,18 +87,18 @@ export async function getOrCreateUserCredentials(
 		authToken = await (DbAuthToken.new({ userId: user.id, deviceId }).save());
 	}
 
-	return AuthTokenDbToApi(authToken, user, logger);
+	return AuthTokenDbToApi(authToken, user);
 }
 
 export async function activateUser(
-	authToken: DbAuthToken, user: User, logger: LoggerInstance): Promise<AuthToken> {
+	authToken: DbAuthToken, user: User): Promise<AuthToken> {
 	// no activation needed anymore
-	return AuthTokenDbToApi(authToken, user, logger);
+	return AuthTokenDbToApi(authToken, user);
 }
 
-export async function userExists(appId: string, appUserId: string, logger?: LoggerInstance): Promise<boolean> {
+export async function userExists(appId: string, appUserId: string): Promise<boolean> {
 	const user = await User.findOne({ appId, appUserId });
-	logger && logger.debug(`userExists service appId: ${ appId }, appUserId: ${ appUserId }, user: `, user);
+	log().debug(`userExists service appId: ${ appId }, appUserId: ${ appUserId }, user: `, user);
 	return user !== undefined;
 }
 

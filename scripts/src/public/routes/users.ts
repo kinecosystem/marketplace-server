@@ -48,9 +48,9 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	log().info("signing in user", { data });
 	// XXX should also check which sign in types does the application allow
 	if (data.sign_in_type === "jwt") {
-		context = await validateRegisterJWT(data.jwt!, log());
+		context = await validateRegisterJWT(data.jwt!);
 	} else if (data.sign_in_type === "whitelist") {
-		context = await validateWhitelist(data.user_id, data.api_key, log());
+		context = await validateWhitelist(data.user_id, data.api_key);
 	} else {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
@@ -71,8 +71,7 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		context.appUserId,
 		context.appId,
 		data.wallet_address,
-		data.device_id,
-		log());
+		data.device_id);
 
 	res.status(200).send(authToken);
 } as any as RequestHandler;
@@ -103,7 +102,7 @@ export const userExists = async function(req: UserExistsRequest, res: Response) 
 	const appId = req.context.user!.appId;
 	log().debug(`userExists appId: ${ appId }`);
 
-	const userFound = await userExistsService(appId, req.query.user_id, log());
+	const userFound = await userExistsService(appId, req.query.user_id);
 	res.status(200).send(userFound);
 } as any as RequestHandler;
 
@@ -111,7 +110,7 @@ export const userExists = async function(req: UserExistsRequest, res: Response) 
  * user activates by approving TOS
  */
 export const activateUser = async function(req: Request, res: Response) {
-	const authToken = await activateUserService(req.context.token!, req.context.user!, log());
+	const authToken = await activateUserService(req.context.token!, req.context.user!);
 	res.status(200).send(authToken);
 } as any as RequestHandler;
 
@@ -121,7 +120,7 @@ export const userInfo = async function(req: UserInfoRequest, res: Response) {
 	log().debug(`userInfo userId: ${ req.params.user_id }`);
 
 	if (req.context.user!.appUserId !== req.params.user_id) {
-		const userFound = await userExistsService(req.context.user!.appId, req.params.user_id, log());
+		const userFound = await userExistsService(req.context.user!.appId, req.params.user_id);
 		if (userFound) {
 			res.status(200).send({});
 		} else {

@@ -1,4 +1,4 @@
-import { LoggerInstance } from "winston";
+import { getDefaultLogger as log } from "../../logging";
 import { Request as ExpressRequest } from "express-serve-static-core";
 
 import * as metrics from "../../metrics";
@@ -83,7 +83,7 @@ async function getLanguage(acceptsLanguagesFunc?: ExpressRequest["acceptsLanguag
 /**
  * return the sublist of offers from this app that the user can complete due to capping
  */
-async function filterOffers(userId: string, appId: string, appOffers: AppOffer[], logger: LoggerInstance, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Offer[]> {
+async function filterOffers(userId: string, appId: string, appOffers: AppOffer[], acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Offer[]> {
 	if (!appOffers) { // special case as most partners don't hanve spend offers
 		return [];
 	}
@@ -117,14 +117,13 @@ async function filterOffers(userId: string, appId: string, appOffers: AppOffer[]
 	)).filter(offer => offer !== null) as Offer[];
 }
 
-export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, logger: LoggerInstance, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<OfferList> {
+export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<OfferList> {
 	async function getEarn() {
 		if (!filters.type || filters.type === "earn") {
 			const offers = await filterOffers(
 				userId,
 				appId,
 				await AppOffer.getAppOffers(appId, "earn"),
-				logger,
 				acceptsLanguagesFunc
 			);
 			// TODO we might want to add a rate limit/ daily cap globally per app
@@ -144,7 +143,6 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 				userId,
 				appId,
 				await AppOffer.getAppOffers(appId, "spend"),
-				logger,
 				acceptsLanguagesFunc
 			);
 		}

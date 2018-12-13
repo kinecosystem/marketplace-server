@@ -52,9 +52,9 @@ export const webhookHandler = async function(req: WebHookRequest, res: Response)
 	if (body.object === "payment") {
 		if (body.action === "send" || body.action === "receive") {
 			if (body.state === "success") {
-				await paymentCompleteService(body.value, log());
+				await paymentCompleteService(body.value);
 			} else {
-				await paymentFailedService(body.value, log());
+				await paymentFailedService(body.value);
 			}
 		} else {
 			log().error(`unknown action ("${ (body as any).action }" for payment webhook)`);
@@ -63,9 +63,9 @@ export const webhookHandler = async function(req: WebHookRequest, res: Response)
 	} else if (body.object === "wallet") {
 		if (body.action === "create") {
 			if (body.state === "success") {
-				await walletCreationSuccessService(body.value, log());
+				await walletCreationSuccessService(body.value);
 			} else {
-				await walletCreationFailureService(body.value, log());
+				await walletCreationFailureService(body.value);
 			}
 		} else {
 			log().error(`unknown action ("${ (body as any).action }" for wallet webhook)`);

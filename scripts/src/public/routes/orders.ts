@@ -38,7 +38,7 @@ export const createMarketplaceOrder = async function(req: CreateMarketplaceOrder
 		}
 		return dict;
 	}, {} as OrderTranslations);
-	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!, log(), orderTranslations);
+	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!, orderTranslations);
 	res.status(201).send(order);
 } as any as RequestHandler;
 
@@ -51,7 +51,7 @@ export type CreateExternalOrderRequest = Request & {
  * create an order for a native offer
  */
 export const createExternalOrder = async function(req: CreateExternalOrderRequest, res: Response) {
-	const order = await createExternalOrderService(req.body.jwt, req.context.user!, log());
+	const order = await createExternalOrderService(req.body.jwt, req.context.user!);
 	res.status(201).send(order);
 } as any as RequestHandler;
 
@@ -64,7 +64,7 @@ export type GetOrderRequest = Request & {
  * get an order
  */
 export const getOrder = async function(req: GetOrderRequest, res: Response) {
-	const order = await getOrderService(req.params.order_id, req.context.user!.id, log());
+	const order = await getOrderService(req.params.order_id, req.context.user!.id);
 	res.status(200).send(order);
 } as any as RequestHandler;
 
@@ -90,7 +90,6 @@ export const submitOrder = async function(req: SubmitOrderRequest, res: Response
 		req.body.content,
 		req.context.user!.walletAddress,
 		req.context.user!.appId,
-		log(),
 		req.acceptsLanguages.bind(req));
 	res.status(200).send(order);
 } as any as RequestHandler;
@@ -99,7 +98,7 @@ export const submitOrder = async function(req: SubmitOrderRequest, res: Response
  * cancel an order
  */
 export const cancelOrder = async function(req: GetOrderRequest, res: Response) {
-	await cancelOrderService(req.params.order_id, log());
+	await cancelOrderService(req.params.order_id);
 	res.status(204).send();
 } as any as RequestHandler;
 
@@ -113,7 +112,7 @@ export type changeOrderRequest = Request & {
  * change an order - add an error
  */
 export const changeOrder = async function(req: changeOrderRequest, res: Response) {
-	const order = await changeOrderService(req.params.order_id, req.context.user!.id, req.body, log());
+	const order = await changeOrderService(req.params.order_id, req.context.user!.id, req.body);
 	res.status(200).send(order);
 } as any as RequestHandler;
 
@@ -132,6 +131,6 @@ export const getOrderHistory = async function(req: GetOrderHistoryRequest, res: 
 		origin: req.query.origin,
 		offerId: req.query.offer_id
 	};
-	const orderList = await getOrderHistoryService(req.context.user!.id, filters, log(), req.query.limit);
+	const orderList = await getOrderHistoryService(req.context.user!.id, filters, req.query.limit);
 	res.status(200).send(orderList);
 } as any as RequestHandler;

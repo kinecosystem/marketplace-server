@@ -1,8 +1,8 @@
 // wrapper for the payment service
 // TODO: this is used by both public and internal so should move to shared dir
 import axios from "axios";
-import { LoggerInstance } from "winston";
 import { performance } from "perf_hooks";
+import { getDefaultLogger as log } from "../../logging";
 
 import { getConfig } from "../config";
 
@@ -54,8 +54,8 @@ export interface Watcher {
 const SERVICE_ID = "marketplace";
 
 export async function payTo(
-	walletAddress: string, appId: string, amount: number, orderId: string, logger: LoggerInstance) {
-	logger.info(`paying ${amount} to ${walletAddress} with orderId ${orderId}`);
+	walletAddress: string, appId: string, amount: number, orderId: string) {
+	log().info(`paying ${amount} to ${walletAddress} with orderId ${orderId}`);
 	const payload: PaymentRequest = {
 		amount,
 		app_id: appId,
@@ -68,7 +68,7 @@ export async function payTo(
 	console.log("pay to took " + (performance.now() - t) + "ms");
 }
 
-export async function createWallet(walletAddress: string, appId: string, id: string, logger: LoggerInstance) {
+export async function createWallet(walletAddress: string, appId: string, id: string) {
 	const payload: WalletRequest = {
 		id,
 		wallet_address: walletAddress,
@@ -77,22 +77,22 @@ export async function createWallet(walletAddress: string, appId: string, id: str
 	};
 	const t = performance.now();
 	await client.post(`${config.payment_service}/wallets`, payload); // TODO if this fails throw exception
-	logger.info("wallet creation took " + (performance.now() - t) + "ms");
+	log().info("wallet creation took " + (performance.now() - t) + "ms");
 }
 
-export async function getWalletData(walletAddress: string, logger: LoggerInstance, options?: { timeout?: number }): Promise<Wallet> {
+export async function getWalletData(walletAddress: string, options?: { timeout?: number }): Promise<Wallet> {
 	options = options || {};
 	const res = await client.get(`${config.payment_service}/wallets/${walletAddress}`, { timeout: options.timeout || DEFAULT_TIMEOUT });
 	return res.data;
 }
 
-export async function getPayments(walletAddress: string, logger: LoggerInstance, options?: { timeout?: number }): Promise<{ payments: Payment[] }> {
+export async function getPayments(walletAddress: string, options?: { timeout?: number }): Promise<{ payments: Payment[] }> {
 	options = options || {};
 	const res = await client.get(`${config.payment_service}/wallets/${walletAddress}/payments`, { timeout: options.timeout || DEFAULT_TIMEOUT });
 	return res.data;
 }
 
-export async function getPayment(orderId: string, logger: LoggerInstance): Promise<Payment> {
+export async function getPayment(orderId: string): Promise<Payment> {
 	const res = await client.get(`${config.payment_service}/payments/${orderId}`);
 	return res.data;
 }
@@ -117,7 +117,7 @@ export type BlockchainConfig = {
 	asset_code: string;
 };
 
-export async function getBlockchainConfig(logger: LoggerInstance): Promise<BlockchainConfig> {
+export async function getBlockchainConfig(): Promise<BlockchainConfig> {
 	const res = await client.get(`${config.payment_service}/config`);
 	return res.data;
 }

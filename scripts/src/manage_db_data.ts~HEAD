@@ -23,7 +23,9 @@ type ScriptConfig = {
 	apps_dir: string | null;
 	offers_dir: string | null;
 	app_list: string[];
+	update_earn_thumbnails: boolean;
 	no_update: boolean;
+	only_update: boolean;
 	dry_run: boolean;
 	require_update_confirm: boolean;
 	create_db: boolean;
@@ -112,9 +114,9 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 	const poll: Quiz | Poll | Tutorial = { pages: [] };
 	let offer: Map<string, string> | undefined;
 
-	const results: Offer[] = [];
+	const results: Array<Offer | null> = [];
 
-	async function createEarnInner(v: Map<string, string>, poll: Quiz | Poll | Tutorial): Promise<Offer> {
+	async function createEarnInner(v: Map<string, string>, poll: Quiz | Poll | Tutorial): Promise<Offer | null> {
 		return await createEarn(
 			v.get("OfferName")!,
 			STELLAR_ADDRESS || v.get("WalletAddress")!,
@@ -195,7 +197,7 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 	if (offer) {
 		results.push(await createEarnInner(offer, poll));
 	}
-	return results;
+	return results.filter(v => !!v);
 }
 
 function getStellarAddresses() {
@@ -222,10 +224,18 @@ function initArgsParser(): ScriptConfig {
 		help: "Location (directory) of offers csv files"
 	});
 	parser.addArgument(["--app-list"], {
-		help: "Comma separated list of apps (i.e smpl, swel, kik, test, p365...) to have the earn offers added to (ALL, in caps, to add to all apps)",
+		help: "Comma separated list of apps (i.e smpl, test...) to have the earn offers added to (ALL, in caps, to add to all apps)",
 	});
 	parser.addArgument(["--no-update"], {
 		help: "Don't update existing earn offers, only create new ones.",
+		action: "storeTrue"
+	});
+	parser.addArgument(["--only-update"], {
+		help: "Don't create new earn offers, only update existing ones.",
+		action: "storeTrue"
+	});
+	parser.addArgument(["--update-earn-thumbnails"], {
+		help: "Update only earn offers thumbnail images (that is offer.meta.image)",
 		action: "storeTrue"
 	});
 	parser.addArgument(["-d", "--dry-run"], {
@@ -233,19 +243,24 @@ function initArgsParser(): ScriptConfig {
 		action: "storeTrue"
 	});
 	parser.addArgument(["-c", "--create-db"], {
-		help: `Create tables/schemes if needed. ${"\x1b[41m" /* red */} USUALLY SHOULD BE NOT RUN IN PRODUCTION${"\x1b[0m" /* reset */}`,
+		help: `Create tables/schemes if needed. ${"\x1b[41m" /* red */}USUALLY SHOULD NOT BE RUN IN PRODUCTION${"\x1b[0m" /* reset */}`,
 		action: "storeTrue"
 	});
 
-	// parser.addArgument(["-c", "--require-update-confirm"], {
-	// 	help: "Ask for confirmation before updating earn offers",
-	// 	action: "storeTrue"
-	// });
+/*
+//  implementation of a confirmation prompt function is below
+	parser.addArgument(["-c", "--require-update-confirm"], {
+		help: "Ask for confirmation before updating earn offers",
+		action: "storeTrue"
+	});
+*/
 	const parsed = parser.parseArgs();
-	parsed.app_list = parsed.app_list ? parsed.app_list.split(" ") : [];
+	parsed.app_list = parsed.app_list ? parsed.app_list.split(",") : [];
 	return parsed as ScriptConfig;
 }
 
+/*
+//  When we decide to add this capability we should uncomment this
 function confirmPrompt(message: string) {
 	const readline = require("readline");
 	const prompt = readline.createInterface(process.stdin, process.stdout);
@@ -256,6 +271,7 @@ function confirmPrompt(message: string) {
 		});
 	});
 }
+*/
 
 scriptConfig = initArgsParser();
 
@@ -291,7 +307,9 @@ initModels(scriptConfig.create_db).then(async () => {
 		const createOfferOptions: EarnOptions = {
 			doNotUpdateExiting: scriptConfig.no_update!,
 			dryRun: scriptConfig.dry_run!,
-			confirmUpdate: scriptConfig.require_update_confirm!
+			confirmUpdate: scriptConfig.require_update_confirm!,
+			onlyUpdateMetaImage: scriptConfig.update_earn_thumbnails,
+			onlyUpdate: scriptConfig.only_update,
 		};
 		for (const filename of fs.readdirSync(path(offersDir))) {
 			const offersCsv = fs.readFileSync(path(join(offersDir, filename)));

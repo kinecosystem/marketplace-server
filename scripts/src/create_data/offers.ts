@@ -93,8 +93,10 @@ export async function createSpend(
 
 export type EarnOptions = {
 	doNotUpdateExiting?: boolean; // Should existing offers be updated
+	onlyUpdate?: boolean; // Don't create new offers, only update existing.
 	dryRun?: boolean;  // if true, only process data, don't change/insert into the DB
 	confirmUpdate?: boolean;  //
+	onlyUpdateMetaImage?: boolean;
 };
 
 export async function createEarn(
@@ -104,7 +106,7 @@ export async function createEarn(
 	orderTitle: string, orderDescription: string, contentType: ContentType,
 	poll: Quiz | Poll | Tutorial,
 	appList: string[] = [],
-	options: EarnOptions = {}): Promise<Offer> {
+	options: EarnOptions = {}): Promise<Offer | null> {
 
 	const existingOffer = await Offer.findOne({ name: offerName });
 	let offer;
@@ -118,6 +120,10 @@ export async function createEarn(
 		console.log("Updating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : "");
 		content = await OfferContent.findOne({ offerId: offer.id });
 	} else {
+		if (options.onlyUpdate) {
+			console.log(`Skipping offer creation for offer: ${ offerName }`);
+			return Promise.resolve(null);
+		}
 		const owner = await getOrCreateOwner(brand);
 		offer = Offer.new({ name: offerName, ownerId: owner.id, type: "earn" });
 		console.log("Creating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : "");
@@ -130,18 +136,26 @@ export async function createEarn(
 		});
 	}
 
-	offer.amount = amount;
-	offer.meta = {
-		title, image, description,
-		order_meta: {
-			title: orderTitle,
-			description: orderDescription,
-		}
-	};
-	!options.dryRun && await offer.save();
+	if (options.onlyUpdateMetaImage) {
+		offer.meta.image = image;
+	} else {
+		offer.amount = amount;
+		offer.meta = {
+			title,
+			image,
+			description,
+			order_meta: {
+				title: orderTitle,
+				description: orderDescription,
+			}
+		};
+		content.content = JSON.stringify(poll);
+	}
 
-	content.content = JSON.stringify(poll);
-	await !options.dryRun && content.save();
+	if (!options.dryRun) {
+		await offer.save();
+		await content.save();
+	}
 
 	await saveAppOffers(offer, { total: capTotal, per_user: capPerUser }, walletAddress, appList, options);
 	return offer;

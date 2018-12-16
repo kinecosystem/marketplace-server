@@ -31,7 +31,7 @@ test-system:
 
 db:
 	rm -f database.sqlite
-	npm run create-db -- --apps-dir data/apps --offers-dir data/offers --app-list ALL --create-db
+	npm run manage-db-data -- --apps-dir data/apps --offers-dir data/offers --app-list ALL --create-db
 
 con:
 	node -i --experimental-repl-await -e "require('./node-console')"

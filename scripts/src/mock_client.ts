@@ -22,6 +22,7 @@ import {
 	Quiz,
 	QuizPage,
 } from "./public/services/offer_contents";
+import { AnswersBackwardSupport } from "./public/services/offer_contents";
 
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
 
@@ -103,7 +104,7 @@ async function getOffer(client: MarketplaceClient, offerType: OfferType, content
 		}
 	}
 	if (!selectedOffer) {
-		throw new Error(`did not find a ${offerType}:${contentType} offer`);
+		throw new Error(`did not find a ${ offerType }:${ contentType } offer`);
 	}
 	return selectedOffer;
 }
@@ -135,7 +136,7 @@ async function spendFlow() {
 
 	expect(couponInfo.amount).toEqual(selectedOffer.amount);
 
-	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got open order`, openOrder);
 
@@ -147,7 +148,7 @@ async function spendFlow() {
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
-	console.log(`completion date: ${order.completion_date}`);
+	console.log(`completion date: ${ order.completion_date }`);
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 
@@ -188,7 +189,7 @@ async function earnPollFlow() {
 
 	const selectedOffer = await getOffer(client, "earn", "poll");
 
-	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got open order`, openOrder);
 
@@ -204,7 +205,68 @@ async function earnPollFlow() {
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
-	console.log(`completion date: ${order.completion_date}`);
+	console.log(`completion date: ${ order.completion_date }`);
+
+	// check order on blockchain
+	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+	console.log(`payment on blockchain:`, payment);
+
+	if (!isValidPayment(order, client.appId, payment)) {
+		throw new Error("payment is not valid - different than order");
+	}
+
+	console.log("OK.\n");
+}
+
+async function earnQuizFlowBackwardSupport() {
+	// return answers and expected amount
+	function chooseAnswers(quiz: Quiz): [AnswersBackwardSupport, number] {
+		const answers: AnswersBackwardSupport = {};
+		let sum = 0;
+		for (const page of quiz.pages.slice(0, quiz.pages.length - 1)) {
+			const p = (page as QuizPage);
+			const choice = randomInteger(0, p.question.answers.length + 1);  // 0 marks unanswered
+			if (choice === p.rightAnswer) {
+				sum += p.amount;
+			}
+			answers[p.question.id] = choice > 0 ? p.question.answers[choice - 1] : "";
+		}
+		return [answers, sum || 1]; // server will give 1 kin for failed quizes
+	}
+
+	console.log("===================================== earn quiz =====================================");
+
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+	const client = await MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+
+	await client.activate();
+
+	const selectedOffer = await getOffer(client, "earn", "quiz");
+
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
+	const openOrder = await client.createOrder(selectedOffer.id);
+	console.log(`got open order`, openOrder);
+
+	// answer the quiz
+	console.log("quiz " + selectedOffer.content);
+	const quiz: Quiz = JSON.parse(selectedOffer.content);
+
+	// TODO write a function to choose the right/ wrong answers
+	const [answers, expectedSum] = chooseAnswers(quiz);
+	const content = JSON.stringify(answers);
+	console.log("answers " + content, " expected sum " + expectedSum);
+
+	await client.submitOrder(openOrder.id, content);
+
+	// poll on order payment
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	console.log(`completion date: ${ order.completion_date }`);
+	expect(order.amount).toEqual(expectedSum);
 
 	// check order on blockchain
 	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
@@ -247,7 +309,7 @@ async function earnQuizFlow() {
 
 	const selectedOffer = await getOffer(client, "earn", "quiz");
 
-	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got open order`, openOrder);
 
@@ -264,7 +326,7 @@ async function earnQuizFlow() {
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
-	console.log(`completion date: ${order.completion_date}`);
+	console.log(`completion date: ${ order.completion_date }`);
 	expect(order.amount).toEqual(expectedSum);
 
 	// check order on blockchain
@@ -292,16 +354,16 @@ async function earnTutorial() {
 
 	const selectedOffer = await getOffer(client, "earn", "tutorial");
 
-	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content.slice(0, 100)}`);
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content.slice(0, 100) }`);
 	const openOrder = await client.createOrder(selectedOffer.id);
-	console.log(`got order ${openOrder.id}`);
+	console.log(`got order ${ openOrder.id }`);
 
 	const content = JSON.stringify({});
 
 	await client.submitOrder(openOrder.id, content);
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
-	console.log(`completion date: ${order.completion_date}`);
+	console.log(`completion date: ${ order.completion_date }`);
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 
@@ -352,13 +414,15 @@ async function outdatedJWT() {
 	try {
 		await MarketplaceClient.create({ jwt });
 		throw new Error("shouldn't be able to register with JWT with iat in the future");
-	} catch (e) {}
+	} catch (e) {
+	}
 
 	jwt = await appClient.getRegisterJWT(userId, moment().unix(), moment().subtract(1, "days").unix());
 	try {
 		await MarketplaceClient.create({ jwt });
 		throw new Error("shouldn't be able to register with JWT with exp in the past");
-	} catch (e) {}
+	} catch (e) {
+	}
 
 	console.log("OK.\n");
 }
@@ -407,7 +471,7 @@ async function nativeSpendFlow() {
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
-	console.log(`completion date: ${order.completion_date}`);
+	console.log(`completion date: ${ order.completion_date }`);
 
 	// find payment on blockchain
 	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
@@ -556,7 +620,7 @@ async function nativeEarnFlow() {
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
-	console.log(`completion date: ${order.completion_date}`);
+	console.log(`completion date: ${ order.completion_date }`);
 
 	// find payment on blockchain
 	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
@@ -619,7 +683,7 @@ async function p2p() {
 
 	// poll on order payment
 	const order = await retry(() => senderClient.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
-	console.log(`completion date: ${order.completion_date}`);
+	console.log(`completion date: ${ order.completion_date }`);
 
 	// find payment on blockchain
 	const payment = (await retry(() => senderClient.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
@@ -662,9 +726,9 @@ async function userProfile() {
 
 	// start an order
 	const selectedOffer = await getOffer(client, "earn", "tutorial");
-	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content.slice(0, 100)}`);
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content.slice(0, 100) }`);
 	const openOrder = await client.createOrder(selectedOffer.id);
-	console.log(`got order ${openOrder.id}`);
+	console.log(`got order ${ openOrder.id }`);
 
 	profile = await client.getUserProfile();
 

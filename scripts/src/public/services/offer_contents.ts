@@ -67,6 +67,7 @@ export interface Tutorial {
 export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
 
 export type Answers = { [key: string]: number };
+export type AnswersBackwardSupport = { [key: string]: string };
 
 export interface CouponInfo {
 	title: string;
@@ -141,24 +142,31 @@ export async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form:
 		return 0;
 	}
 
+	// backward support check - when answer values are string, use the old sum function
+	if (typeof Object.values(answers)[0] === "string") {
+		return sumCorrectQuizAnswersBackwardSupport(offerContent, form, acceptsLanguagesFunc);
+	}
+
 	const translatedContent = await getTranslatedQuizContent(offerContent, acceptsLanguagesFunc);
 
 	const quiz: Quiz = JSON.parse(translatedContent || offerContent.content);  // this might fail if not valid json without replaceTemplateVars
 
-	return quiz.pages.reduce(sumQuizRightAnswersAmount.bind(null, answers), 0);
-}
-
-function sumQuizRightAnswersAmount(answers: Answers, sum: number, page: QuizPage | SuccessBasedThankYouPage) {
-	if (page.type === PageType.TimedFullPageMultiChoice) {
-		if (answers[page.question.id] === page.rightAnswer) {
-			return sum + page.amount;
+	function sumQuizRightAnswersAmount(sum: number, page: QuizPage | SuccessBasedThankYouPage) {
+		if (page.type === PageType.TimedFullPageMultiChoice) {
+			if (answers[page.question.id] === page.rightAnswer) {
+				return sum + page.amount;
+			}
 		}
+		return sum;
 	}
-	return sum;
+
+	return quiz.pages.reduce(sumQuizRightAnswersAmount, 0);
 }
 
 async function getTranslatedQuizContent(offerContent: db.OfferContent, acceptsLanguagesFunc: ExpressRequest["acceptsLanguages"] | undefined) {
-	if (!(acceptsLanguagesFunc && acceptsLanguagesFunc().length)) { return null; }
+	if (!(acceptsLanguagesFunc && acceptsLanguagesFunc().length)) {
+		return null;
+	}
 
 	const [supportedLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({
 		paths: ["content"],
@@ -183,7 +191,8 @@ export async function sumCorrectQuizAnswersBackwardSupport(offerContent: db.Offe
 		return 0;
 	}
 
-	let answers: Answers;
+	let answers: AnswersBackwardSupport;
+
 	try {
 		answers = JSON.parse(form);
 	} catch (e) {

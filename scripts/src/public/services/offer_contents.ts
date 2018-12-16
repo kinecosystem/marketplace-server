@@ -66,7 +66,8 @@ export interface Tutorial {
 
 export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
 
-export type Answers = { [key: string]: string };
+export type Answers = { [key: string]: number };
+export type AnswersBackwardSupport = { [key: string]: string };
 
 export interface CouponInfo {
 	title: string;
@@ -140,6 +141,63 @@ export async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form:
 	} catch (e) {
 		return 0;
 	}
+
+	// backward support check - when answer values are string, use the old sum function
+	if (typeof Object.values(answers)[0] === "string") {
+		return sumCorrectQuizAnswersBackwardSupport(offerContent, form, acceptsLanguagesFunc);
+	}
+
+	const translatedContent = await getTranslatedQuizContent(offerContent, acceptsLanguagesFunc);
+
+	const quiz: Quiz = JSON.parse(translatedContent || offerContent.content);  // this might fail if not valid json without replaceTemplateVars
+
+	function sumQuizRightAnswersAmount(sum: number, page: QuizPage | SuccessBasedThankYouPage) {
+		if (page.type === PageType.TimedFullPageMultiChoice) {
+			if (answers[page.question.id] === page.rightAnswer) {
+				return sum + page.amount;
+			}
+		}
+		return sum;
+	}
+
+	return quiz.pages.reduce(sumQuizRightAnswersAmount, 0);
+}
+
+async function getTranslatedQuizContent(offerContent: db.OfferContent, acceptsLanguagesFunc: ExpressRequest["acceptsLanguages"] | undefined) {
+	if (!(acceptsLanguagesFunc && acceptsLanguagesFunc().length)) {
+		return null;
+	}
+
+	const [supportedLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({
+		paths: ["content"],
+		offerId: offerContent.offerId,
+		languages: acceptsLanguagesFunc(),
+	});
+	const language = acceptsLanguagesFunc(supportedLanguages);
+	const translations = availableTranslations.filter(translation => translation.language === language);
+	return translations.length ? translations[0].translation : null;
+}
+
+export async function savePollAnswers(userId: string, offerId: string, orderId: string, content: string): Promise<void> {
+	const answers = db.PollAnswer.new({
+		userId, offerId, orderId, content
+	});
+
+	await answers.save();
+}
+
+export async function sumCorrectQuizAnswersBackwardSupport(offerContent: db.OfferContent, form: string | undefined, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<number> {
+	if (isNothing(form)) {
+		return 0;
+	}
+
+	let answers: AnswersBackwardSupport;
+
+	try {
+		answers = JSON.parse(form);
+	} catch (e) {
+		return 0;
+	}
 	let translatedContent;
 	if (acceptsLanguagesFunc && acceptsLanguagesFunc().length) {
 		const [supportedLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({
@@ -165,12 +223,4 @@ export async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form:
 		}
 	}
 	return amountSum;
-}
-
-export async function savePollAnswers(userId: string, offerId: string, orderId: string, content: string): Promise<void> {
-	const answers = db.PollAnswer.new({
-		userId, offerId, orderId, content
-	});
-
-	await answers.save();
 }

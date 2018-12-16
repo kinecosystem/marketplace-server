@@ -172,7 +172,7 @@ async function earnPollFlow() {
 		for (const page of poll.pages.slice(0, poll.pages.length - 1)) {
 			const p = (page as PollPage);
 			const choice = randomInteger(0, p.question.answers.length);
-			answers[p.question.id] = p.question.answers[choice];
+			answers[p.question.id] = choice;
 		}
 		return answers;
 	}
@@ -231,7 +231,7 @@ async function earnQuizFlow() {
 			if (choice === p.rightAnswer) {
 				sum += p.amount;
 			}
-			answers[p.question.id] = choice > 0 ? p.question.answers[choice - 1] : "";
+			answers[p.question.id] = choice;
 		}
 		return [answers, sum || 1]; // server will give 1 kin for failed quizes
 	}

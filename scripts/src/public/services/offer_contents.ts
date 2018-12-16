@@ -174,3 +174,41 @@ export async function savePollAnswers(userId: string, offerId: string, orderId: 
 
 	await answers.save();
 }
+
+export async function sumCorrectQuizAnswersBackwardSupport(offerContent: db.OfferContent, form: string | undefined, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<number> {
+	if (isNothing(form)) {
+		return 0;
+	}
+
+	let answers: Answers;
+	try {
+		answers = JSON.parse(form);
+	} catch (e) {
+		return 0;
+	}
+	let translatedContent;
+	if (acceptsLanguagesFunc && acceptsLanguagesFunc().length) {
+		const [supportedLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({
+			paths: ["content"],
+			offerId: offerContent.offerId,
+			languages: acceptsLanguagesFunc(),
+		});
+		const language = acceptsLanguagesFunc(supportedLanguages);
+		const translations = availableTranslations.filter(translation => translation.language === language);
+		translatedContent = translations.length ? translations[0].translation : null;
+	}
+
+	const quiz: Quiz = JSON.parse(translatedContent || offerContent.content);  // this might fail if not valid json without replaceTemplateVars
+	let amountSum = 0;
+
+	for (const page of quiz.pages) {
+		if (page.type === PageType.TimedFullPageMultiChoice) {
+			const p = (page as QuizPage);
+			const answerIndex = p.question.answers.indexOf(answers[p.question.id]) + 1;
+			if (answerIndex === p.rightAnswer) {
+				amountSum += p.amount;
+			}
+		}
+	}
+	return amountSum;
+}

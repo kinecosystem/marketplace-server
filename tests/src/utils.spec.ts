@@ -4,17 +4,32 @@ import * as moment from "moment";
 import * as utils from "../../scripts/bin/utils/utils";
 import { Application } from "../../scripts/bin/models/applications";
 
-import { TooManyRegistrations } from "../../scripts/bin/errors";
+import { TooMuchEarnOrdered } from "../../scripts/bin/errors";
 import { path as _path } from "../../scripts/bin/utils/path";
 import * as metrics from "../../scripts/bin/metrics";
 import { throwOnAppEarnLimit } from "../../scripts/bin/utils/RateLimit";
-import { createApp } from "./helpers";
+import * as helpers from "./helpers";
+import { initLogger } from "../../scripts/bin/logging";
+import { MarketplaceError } from "../../scripts/bin/errors";
+import { close as closeModels, init as initModels } from "../../scripts/bin/models/index";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {
 		expect(_path("my.file")).toEqual(path.resolve(__dirname, "../../", "my.file"));
 	});
+	beforeEach(async done => {
+		initLogger();
+		await initModels();
+		await helpers.clearDatabase();
+		await helpers.createOffers();
+		helpers.patchDependencies();
 
+		done();
+	});
+	afterEach(async done => {
+		await closeModels();
+		done();
+	});
 	afterAll(async () => {
 		await metrics.destruct();
 	});
@@ -31,13 +46,29 @@ describe("util functions", () => {
 		}
 
 		test("throwOnAppEarnLimit should fail on 4th request if limit is set to 3 queries", async () => {
-			const app: Application = await createApp(utils.generateId());
-			const testFailingFunction = () => {
-				for (let i = 0; i < 4; i++) {
-					throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
+			const app: Application = await helpers.createApp(utils.generateId(), {
+				hourly_registration: 20000,
+				minute_registration: 1000,
+				hourly_total_earn: 500000,
+				minute_total_earn: 300,
+				hourly_user_earn: 500
+			});
+			for (let i = 0; i < 3; i++) {
+				await throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
+			}
+
+			try {
+				await throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
+				expect(true).toBeFalsy(); // should throw and not get here
+			} catch (e) {
+				if (e instanceof MarketplaceError) {
+					const err: MarketplaceError = e;
+					expect(err.code).toBe(4292);
+				} else {
+					throw e;
 				}
-			};
-			expect(testFailingFunction).toThrowError(TooManyRegistrations(`app: ${app.id}, type: registration exceeded the limit: ${app.config.limits.minute_total_earn}`));
+			}
+			await app.remove();
 		});
 
 		test("random() should return a new number [0, 1) for each invocation", () => {

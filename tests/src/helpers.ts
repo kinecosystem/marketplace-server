@@ -6,6 +6,7 @@ import { getDefaultLogger } from "../../scripts/bin/logging";
 import { Asset, Offer } from "../../scripts/bin/models/offers";
 import { User, AuthToken } from "../../scripts/bin/models/users";
 import { Application, ApplicationConfig } from "../../scripts/bin/models/applications";
+import { LimitConfig } from "../../scripts/bin/config";
 import { createEarn, createSpend } from "../../scripts/bin/create_data/offers";
 import { Poll, PageType } from "../../scripts/bin/public/services/offer_contents";
 import { CompletedPayment, paymentComplete } from "../../scripts/bin/internal/services";
@@ -170,19 +171,22 @@ export async function clearDatabase() {
 	}
 }
 
-export async function createApp(appId: string): Promise<Application> {
+export async function createApp(appId: string, limits?: LimitConfig): Promise<Application> {
 	const address = getKeyPair().public;
 	const appConfig: ApplicationConfig = {
 		max_user_wallets: null,
 		sign_in_types: ["jwt", "whitelist"],
 		limits: {
-			hourly_registration: 20000,
-			minute_registration: 1000,
-			hourly_total_earn: 500000,
-			minute_total_earn: 8500,
-			hourly_user_earn: 500
+			hourly_registration: 200000,
+			minute_registration: 10000,
+			hourly_total_earn: 5000000,
+			minute_total_earn: 85000,
+			hourly_user_earn: 5000
 		}
 	};
+	if (limits) { // for RateLimits tests passed limits has low value
+		appConfig.limits = limits;
+	}
 
 	const app = Application.new({
 		id: appId,

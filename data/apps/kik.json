@@ -8,11 +8,11 @@
     "max_user_wallets": null,
     "sign_in_types": ["jwt"],
     "limits": {
-      "hourly_registration": 20000,
-      "minute_registration": 1000,
-      "hourly_total_earn": 500000,
-      "minute_total_earn": 8500,
-      "hourly_user_earn": 500
+      "hourly_registration": 200000,
+      "minute_registration": 10000,
+      "hourly_total_earn": 5000000,
+      "minute_total_earn": 85000,
+      "hourly_user_earn": 5000
     }
   },
   "app_id": "kik",

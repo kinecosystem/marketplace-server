@@ -1,4 +1,5 @@
 import * as moment from "moment";
+
 import { getRedisClient, RedisAsyncClient } from "../redis";
 import { TooManyRegistrations, TooMuchEarnOrdered } from "../errors";
 
@@ -7,43 +8,65 @@ class RateLimit {
 	private readonly rateLimitValue: number;
 	private readonly redis: RedisAsyncClient;
 	private windowSize: number = 0;
+	private bucketSize: number = 0;
+	private currentTimestampSeconds: number = 0;
 	private ttl: number = 172800; // two days in seconds
 	private readonly ttlWindowRatio: number = 10;
 
+	/**
+	 * @param      {string}  bucketPrefix
+	 * @param      {number}  rateLimitValue
+	 * @param      {moment.Duration}  windowSizeMomentObject
+	 *
+	 * this.windowSize = windowSizeMomentObject in seconds
+	 * this.bucketSize = size of one bucket in seconds (at least 1 seconds)
+	 */
 	constructor(bucketPrefix: string, rateLimitValue: number, windowSizeMomentObject: moment.Duration) {
 		this.bucketPrefix = bucketPrefix;
 		this.rateLimitValue = rateLimitValue;
 		this.windowSize = windowSizeMomentObject.asSeconds();
+		this.bucketSize = Math.max(this.windowSize / 60, 1); // resolution
+		this.currentTimestampSeconds = Math.trunc(Date.now() / 1000);
 		this.redis = getRedisClient();
 	}
 
-	public async checkRate(): Promise<boolean> {
-		return await this.check(1);
+	public async checkRate(): Promise<number> {
+		return await this.getSum(1);
 	}
 
-	public async checkAmount(amount: number): Promise<boolean> {
-		return await this.check(amount);
+	public async checkAmount(amount: number): Promise<number> {
+		return await this.getSum(amount);
 	}
 
-	private async check(step: number) {
-		const bucketSize = Math.max(this.windowSize / 60, 1); // resolution
-		const currentTimestampSeconds = Math.floor((Date.now() / 1000) / bucketSize) * bucketSize; // int(currentTimestampSeconds / 60) * 60
-		const currentBucketName = this.bucketPrefix + currentTimestampSeconds;
+	private async createOrUpdateBucket(step: number): Promise<void> {
+		const currentBucketName = this.bucketPrefix + this.currentTimestampSeconds;
 
 		await this.redis.async.incrby(currentBucketName, step);
 		this.redis.expire(currentBucketName, this.ttl);
+	}
 
-		const windowKeys: string[] = [this.bucketPrefix + currentTimestampSeconds.toString()];
-		for (let i = 0; i < this.windowSize; i += bucketSize) {
-			windowKeys.push(this.bucketPrefix + (currentTimestampSeconds - i));
+	/**
+	 * calculates possible Redis keys for this.windowSize every step (in seconds)
+	 * Redis mget returns values for all these keys
+	 * filter it and sum
+	 *
+	 * @param      {number}  step    step in seconds
+	 * @return     {number}  sum
+	 */
+	private async getSum(step: number) {
+		this.createOrUpdateBucket(step);
+
+		const windowKeys: string[] = [];
+		for (let i = 0; i < this.windowSize; i += this.bucketSize) {
+			windowKeys.push(this.bucketPrefix + (this.currentTimestampSeconds - i));
 		}
+		const bucketValues = await this.redis.async.mget(...windowKeys);
 
-		const rateSum: number = (await this.redis.async.mget(...windowKeys))
+		const rateSum: number = bucketValues
 			.filter((val: string) => val) // windowKeys consists of all possible keys even not existed, mget returns nulls for non-existing keys
-			.map(v => { console.log(v); return v; } )
 			.reduce((sum: number, val: string) => sum + Number(val), 0);
 
-		return rateSum > this.rateLimitValue;
+		return rateSum;
 	}
 }
 
@@ -51,8 +74,9 @@ export async function throwOnRateLimit(appId: string, type: string, limit: numbe
 	const rateLimitPrefix: string = "rate_limit";
 	const bucketPrefix: string = `${rateLimitPrefix}:${appId}:${type}:`;
 	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);
-	if (await rateLimit.checkRate()) {
-		throw TooManyRegistrations(`app: ${appId}, type: ${type} exceeded the limit: ${limit}`);
+	const rateCount = await rateLimit.checkRate();
+	if (rateCount > limit) {
+		throw TooManyRegistrations(`app: ${appId}, type: ${type} exceeded the limit: ${limit} with: ${rateLimit}`);
 	}
 }
 
@@ -60,8 +84,9 @@ export async function throwOnAppEarnLimit(appId: string, type: string, limit: nu
 	const rateLimitPrefix: string = "amount_limit";
 	const bucketPrefix: string = `${rateLimitPrefix}:${appId}:${type}:`;
 	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);
-	if (await rateLimit.checkAmount(amount)) {
-		throw TooMuchEarnOrdered(`app: ${appId}, type: ${type} exceeded the limit: ${limit}, amount: ${amount}`);
+	const appEarnSum = await rateLimit.checkAmount(amount);
+	if (appEarnSum > limit) {
+		throw TooMuchEarnOrdered(`app: ${appId}, type: ${type} exceeded the limit: ${limit} with: ${appEarnSum}`);
 	}
 }
 
@@ -69,7 +94,8 @@ export async function throwOnUserEarnLimit(userId: string, type: string, limit: 
 	const rateLimitPrefix: string = "amount_limit";
 	const bucketPrefix: string = `${rateLimitPrefix}:${userId}:${type}:`;
 	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);
-	if (await rateLimit.checkAmount(amount)) {
-		throw TooMuchEarnOrdered(`user: ${userId}, type: ${type} exceeded the limit: ${limit}, amount: ${amount}`);
+	const userEarnSum = await rateLimit.checkAmount(amount);
+	if (userEarnSum > limit) {
+		throw TooMuchEarnOrdered(`user: ${userId}, type: ${type} exceeded the limit: ${limit} with: ${userEarnSum}`);
 	}
 }

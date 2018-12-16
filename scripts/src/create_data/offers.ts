@@ -120,7 +120,7 @@ export async function createEarn(
 	} else {
 		const owner = await getOrCreateOwner(brand);
 		offer = Offer.new({ name: offerName, ownerId: owner.id, type: "earn" });
-		// console.log("Creating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : "");
+		console.log("Creating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : "");
 	}
 
 	if (!content) {
@@ -156,7 +156,7 @@ async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string, appL
 		appOffer && console.log("Updating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
 
 		if (!appOffer) {
-			// console.log("Creating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
+			console.log("Creating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
 			appOffer = await AppOffer.create({ appId, offerId: offer.id });
 		}
 		appOffer.walletAddress = walletAddress;

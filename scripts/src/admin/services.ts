@@ -254,7 +254,8 @@ async function appToHtml(app: Application): Promise<string> {
 <td><a href="/applications/${ app.id }/offers/stats">offer stats</a></td>
 <td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.sender }">sender wallet (earn)</a></td>
 <td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.recipient }">recipient wallet (spend)</a></td>
-<td><pre class="wide">${ JSON.stringify(app.jwtPublicKeys, null, 2) }</pre></td>
+<td><pre>${ JSON.stringify(app.jwtPublicKeys, null, 2) }</pre></td>
+<td><pre>${ JSON.stringify(app.config, null, 2) }</pre></td>
 </tr>`;
 }
 

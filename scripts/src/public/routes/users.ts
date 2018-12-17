@@ -56,8 +56,8 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	if (!app) {
 		throw NoSuchApp(context.appId);
 	}
-	if (!app.supportsSignInType(data.sign_in_type, getConfig().sign_in_types as SignInType[])) {
-		throw UnknownSignInType((data as any).sign_in_type);
+	if (!app.supportsSignInType(data.sign_in_type)) {
+		throw UnknownSignInType(data.sign_in_type);
 	}
 
 	const authToken = await getOrCreateUserCredentials(

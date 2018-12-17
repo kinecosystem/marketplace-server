@@ -5,9 +5,7 @@ export interface Config extends BaseConfig {
 	webview: string;
 	environment_name: string;
 	ecosystem_service: string;
-	max_daily_earn_offers: null | number; // null marks no limit
 	internal_service: string;
-	sign_in_types: string[];
 	limits: LimitConfig;
 }
 

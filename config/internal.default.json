@@ -20,6 +20,5 @@
 	"payment_service": "http://localhost:5000",
 	"internal_service": "http://localhost:3001",
 	"jwt_keys_dir": "jwt",
-	"sign_in_types": ["jwt", "whitelist"],
 	"bi_service": "https://kin-bi.appspot.com/eco_"
 }

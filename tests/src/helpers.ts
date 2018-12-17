@@ -175,6 +175,7 @@ export async function createApp(appId: string, limits?: LimitConfig): Promise<Ap
 	const appConfig: ApplicationConfig = {
 		max_user_wallets: null,
 		sign_in_types: ["jwt", "whitelist"],
+		daily_earn_offers: 4,
 		limits: {
 			hourly_registration: 200000,
 			minute_registration: 10000,

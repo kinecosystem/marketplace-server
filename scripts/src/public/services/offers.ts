@@ -7,11 +7,12 @@ import { ModelFilters } from "../../models";
 import * as dbOrders from "../../models/orders";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
-import { AppOffer } from "../../models/applications";
+import { Application, AppOffer } from "../../models/applications";
 import { ContentType, OfferType } from "../../models/offers";
 import { getConfig } from "../config";
 import { Order } from "../../models/orders";
 import { OfferTranslation } from "../../models/translations";
+import { NoSuchApp } from "../../errors";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -118,6 +119,11 @@ async function filterOffers(userId: string, appId: string, appOffers: AppOffer[]
 }
 
 export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<OfferList> {
+	const app = await Application.findOneById(appId);
+	if (!app) {
+		throw NoSuchApp(appId);
+	}
+
 	async function getEarn() {
 		if (!filters.type || filters.type === "earn") {
 			const offers = await filterOffers(
@@ -126,13 +132,9 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 				await AppOffer.getAppOffers(appId, "earn"),
 				acceptsLanguagesFunc
 			);
-			// TODO we might want to add a rate limit/ daily cap globally per app
-			// global earn capping
-			const max_daily_earn_offers = getConfig().max_daily_earn_offers;
-			if (max_daily_earn_offers !== null) {
-				return offers.slice(0, Math.max(0, max_daily_earn_offers - await dbOrders.Order.countToday(userId, "earn", "marketplace")));
-			}
-			return offers;
+			const daily_earn_offers = app!.config.daily_earn_offers;
+			const completedToday = await dbOrders.Order.countToday(userId, "earn", "marketplace");
+			return offers.slice(0, Math.max(0, daily_earn_offers - completedToday));
 		}
 		return [];
 	}

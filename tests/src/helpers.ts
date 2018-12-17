@@ -181,7 +181,7 @@ export async function createApp(appId: string, limits?: LimitConfig): Promise<Ap
 			minute_registration: 10000,
 			hourly_total_earn: 5000000,
 			minute_total_earn: 85000,
-			hourly_user_earn: 5000
+			daily_user_earn: 5000
 		}
 	};
 	if (limits) { // for RateLimits tests passed limits has low value

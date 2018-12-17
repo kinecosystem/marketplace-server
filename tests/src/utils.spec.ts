@@ -9,6 +9,7 @@ import { path as _path } from "../../scripts/bin/utils/path";
 import * as metrics from "../../scripts/bin/metrics";
 import { throwOnAppEarnLimit } from "../../scripts/bin/utils/RateLimit";
 import * as helpers from "./helpers";
+import { LimitConfig } from "../../scripts/bin/config";
 import { initLogger } from "../../scripts/bin/logging";
 import { MarketplaceError } from "../../scripts/bin/errors";
 import { close as closeModels, init as initModels } from "../../scripts/bin/models/index";
@@ -46,13 +47,14 @@ describe("util functions", () => {
 		}
 
 		test("throwOnAppEarnLimit should fail on 4th request if limit is set to 3 queries", async () => {
-			const app: Application = await helpers.createApp(utils.generateId(), {
+			const limits: LimitConfig = {
 				hourly_registration: 20000,
 				minute_registration: 1000,
 				hourly_total_earn: 500000,
 				minute_total_earn: 300,
-				hourly_user_earn: 500
-			});
+				daily_user_earn: 500
+			};
+			const app: Application = await helpers.createApp(utils.generateId(), limits);
 			for (let i = 0; i < 3; i++) {
 				await throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
 			}

@@ -1,5 +1,5 @@
 import * as moment from "moment";
-import { getDefaultLogger as log } from "../logging";
+import { getDefaultLogger as logger } from "../logging";
 import * as jsonwebtoken from "jsonwebtoken";
 
 import { isNothing } from "../utils/utils";
@@ -32,7 +32,7 @@ export type JWTContent<T, SUB extends string> = {
 export async function verify<T, SUB extends string>(token: string): Promise<JWTContent<T, SUB>> {
 	const decoded = jsonwebtoken.decode(token, { complete: true }) as JWTContent<T, SUB>;
 	if (decoded.header.alg.toUpperCase() !== "ES256") {
-		log().warn(`got JWT with wrong algorithm ${ decoded.header.alg }. ignoring`);
+		logger().warn(`got JWT with wrong algorithm ${ decoded.header.alg }. ignoring`);
 		// throw WrongJWTAlgorithm(decoded.header.alg);  // TODO uncomment when we deprecate other algo support
 	}
 

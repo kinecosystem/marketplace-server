@@ -1,5 +1,5 @@
 import { Request, Response, Router, Express, RequestHandler } from "express";
-import { getDefaultLogger as log } from "../logging";
+import { getDefaultLogger as logger } from "../logging";
 
 import {
 	getApplications, getApplication, getOffers,
@@ -182,5 +182,5 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 
 	app.use("", router);
 	app.get("/status", statusHandler);
-	log().info("created routes");
+	logger().info("created routes");
 }

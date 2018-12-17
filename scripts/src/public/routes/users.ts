@@ -1,7 +1,7 @@
 import * as moment from "moment";
 import { Request, RequestHandler, Response } from "express";
 import { InvalidWalletAddress, NoSuchApp, NoSuchUser, UnknownSignInType } from "../../errors";
-import { getDefaultLogger as log } from "../../logging";
+import { getDefaultLogger as logger } from "../../logging";
 
 import {
 	activateUser as activateUserService,
@@ -45,7 +45,7 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	let context: SignInContext;
 	const data: WhitelistSignInData | JwtSignInData = req.body;
 
-	log().info("signing in user", { data });
+	logger().info("signing in user", { data });
 	// XXX should also check which sign in types does the application allow
 	if (data.sign_in_type === "jwt") {
 		context = await validateRegisterJWT(data.jwt!);
@@ -82,7 +82,7 @@ export const updateUser = async function(req: UpdateUserRequest, res: Response) 
 	const context = req.context;
 	const walletAddress = req.body.wallet_address;
 	const userId = context.user!.id;
-	log().info(`updating user ${ walletAddress }`, { walletAddress, userId });
+	logger().info(`updating user ${ walletAddress }`, { walletAddress, userId });
 
 	if (!walletAddress || walletAddress.length !== 56) {
 		throw InvalidWalletAddress(walletAddress);
@@ -100,7 +100,7 @@ export type UserExistsRequest = Request & { query: { user_id: string; } };
 
 export const userExists = async function(req: UserExistsRequest, res: Response) {
 	const appId = req.context.user!.appId;
-	log().debug(`userExists appId: ${ appId }`);
+	logger().debug(`userExists appId: ${ appId }`);
 
 	const userFound = await userExistsService(appId, req.query.user_id);
 	res.status(200).send(userFound);
@@ -117,7 +117,7 @@ export const activateUser = async function(req: Request, res: Response) {
 export type UserInfoRequest = Request & { params: { user_id: string; } };
 
 export const userInfo = async function(req: UserInfoRequest, res: Response) {
-	log().debug(`userInfo userId: ${ req.params.user_id }`);
+	logger().debug(`userInfo userId: ${ req.params.user_id }`);
 
 	if (req.context.user!.appUserId !== req.params.user_id) {
 		const userFound = await userExistsService(req.context.user!.appId, req.params.user_id);

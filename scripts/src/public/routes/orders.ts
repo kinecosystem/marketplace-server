@@ -1,5 +1,5 @@
 import { Request, RequestHandler, Response } from "express";
-import { getDefaultLogger as log } from "../../logging";
+import { getDefaultLogger as logger } from "../../logging";
 
 import {
 	Order,
@@ -82,7 +82,7 @@ export type SubmitOrderRequest = Request & {
  * check that order hasn't passed expiration + grace period
  */
 export const submitOrder = async function(req: SubmitOrderRequest, res: Response) {
-	log().info("submit order", { userId: req.context.user!.id, orderId: req.params.order_id });
+	logger().info("submit order", { userId: req.context.user!.id, orderId: req.params.order_id });
 
 	const order = await submitOrderService(
 		req.params.order_id,

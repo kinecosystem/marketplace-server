@@ -1,6 +1,6 @@
 import * as moment from "moment";
 import { Request as ExpressRequest } from "express-serve-static-core";
-import { getDefaultLogger as log } from "../../logging";
+import { getDefaultLogger as logger } from "../../logging";
 
 import { pick } from "../../utils/utils";
 import { lock } from "../../redis";
@@ -78,7 +78,7 @@ export async function getOrder(orderId: string, userId: string): Promise<Order> 
 
 	checkIfTimedOut(order); // no need to wait for the promise
 
-	log().debug("getOne returning", {
+	logger().debug("getOne returning", {
 		orderId,
 		status: order.status,
 		offerId: order.offerId,
@@ -101,7 +101,7 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 	order.status = "failed";
 	await order.save();
 
-	log().debug("order patched with error", { orderId, contexts: order.contexts, error: change.error });
+	logger().debug("order patched with error", { orderId, contexts: order.contexts, error: change.error });
 	return orderDbToApi(order, userId);
 }
 
@@ -144,7 +144,7 @@ async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {
 }
 
 export async function createMarketplaceOrder(offerId: string, user: User, orderTranslations?: OrderTranslations): Promise<OpenOrder> {
-	log().info("creating marketplace order for", { offerId, userId: user.id });
+	logger().info("creating marketplace order for", { offerId, userId: user.id });
 
 	const appOffer = await AppOffer.findOne({ offerId, appId: user.appId });
 	if (!appOffer) {
@@ -160,7 +160,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, orderT
 		throw OfferCapReached(offerId);
 	}
 
-	log().info("created new open marketplace order", order);
+	logger().info("created new open marketplace order", order);
 
 	return openOrderDbToApi(order, user.id);
 }
@@ -248,7 +248,7 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 }
 
 export async function createExternalOrder(jwt: string, user: User): Promise<OpenOrder> {
-	log().info("createExternalOrder", { jwt });
+	logger().info("createExternalOrder", { jwt });
 	const payload = await validateExternalOrderJWT(jwt, user.appUserId);
 	const nonce = payload.nonce || db.Order.DEFAULT_NONCE;
 
@@ -269,7 +269,7 @@ export async function createExternalOrder(jwt: string, user: User): Promise<Open
 			metrics.createOrder("external", context.type, payload.offer.id, user.appId);
 		});
 
-		log().info("created new open external order", {
+		logger().info("created new open external order", {
 			offerId: payload.offer.id,
 			userId: user.id,
 			orderId: order.id
@@ -289,7 +289,7 @@ export async function submitOrder(
 	appId: string,
 	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
 
-	log().info("submitOrder", { orderId });
+	logger().info("submitOrder", { orderId });
 	const order = await db.Order.getOne(orderId) as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
@@ -328,14 +328,14 @@ export async function submitOrder(
 					// nothing
 					break;
 				default:
-					log().warn(`unexpected content type ${offerContent.contentType}`);
+					logger().warn(`unexpected content type ${offerContent.contentType}`);
 			}
 		}
 	}
 
 	order.setStatus("pending");
 	await order.save();
-	log().info("order changed to pending", { orderId });
+	logger().info("order changed to pending", { orderId });
 
 	if (order.isEarn()) {
 		await payment.payTo(walletAddress, appId, order.amount, order.id);

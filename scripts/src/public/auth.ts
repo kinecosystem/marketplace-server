@@ -21,8 +21,10 @@ export const authenticateUser = async function(req: express.Request, res: expres
 	const token = await authenticate(req);
 	httpContext.set("userId", token.userId);
 	httpContext.set("deviceId", token.deviceId);
+	httpContext.set("token", token.deviceId);
 
 	const user = await db.User.findOneById(token.userId);
+	httpContext.set("user", token.deviceId);
 
 	if (!user) {
 		// This error now defines an inconsistent state in the DB where a token exists but not user is found
@@ -30,6 +32,13 @@ export const authenticateUser = async function(req: express.Request, res: expres
 		throw TOSMissingOrOldToken();
 	}
 
-	req.context = { user, token };
+	req.context = {
+		get user() {
+			return httpContext.get("user");
+		},
+		get token() {
+			return httpContext.get("token");
+		}
+	};
 	next();
 } as express.RequestHandler;

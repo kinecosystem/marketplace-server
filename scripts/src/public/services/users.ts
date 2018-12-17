@@ -1,5 +1,5 @@
 import * as metrics from "../../metrics";
-import { getDefaultLogger as log } from "../../logging";
+import { getDefaultLogger as logger } from "../../logging";
 import { MaxWalletsExceeded } from "../../errors";
 import { Order } from "../../models/orders";
 import { Application } from "../../models/applications";
@@ -37,9 +37,9 @@ export async function getOrCreateUserCredentials(
 	deviceId: string): Promise<AuthToken> {
 
 	async function handleExistingUser(existingUser: User) {
-		log().info("found existing user", { appId, appUserId, userId: existingUser.id });
+		logger().info("found existing user", { appId, appUserId, userId: existingUser.id });
 		if (existingUser.walletAddress !== walletAddress) {
-			log().warn(`existing user registered with new wallet ${existingUser.walletAddress} !== ${walletAddress}`);
+			logger().warn(`existing user registered with new wallet ${existingUser.walletAddress} !== ${walletAddress}`);
 			if (!app.allowsNewWallet(existingUser.walletCount)) {
 				metrics.maxWalletsExceeded(appId);
 				throw MaxWalletsExceeded();
@@ -52,23 +52,23 @@ export async function getOrCreateUserCredentials(
 		} else {
 			metrics.userRegister(false, false, appId);
 		}
-		log().info(`returning existing user ${existingUser.id}`);
+		logger().info(`returning existing user ${existingUser.id}`);
 	}
 
 	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
 		try {
-			log().info("creating a new user", { appId, appUserId });
+			logger().info("creating a new user", { appId, appUserId });
 			user = User.new({ appUserId, appId, walletAddress });
 			await user.save();
-			log().info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
+			logger().info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
 			await payment.createWallet(user.walletAddress, user.appId, user.id);
 			metrics.userRegister(true, true, appId);
 		} catch (e) {
 			// maybe caught a "violates unique constraint" error, check by finding the user again
 			user = await User.findOne({ appId, appUserId });
 			if (user) {
-				log().warn("solved user registration race condition");
+				logger().warn("solved user registration race condition");
 				await handleExistingUser(user);
 			} else {
 				throw e; // some other error
@@ -98,7 +98,7 @@ export async function activateUser(
 
 export async function userExists(appId: string, appUserId: string): Promise<boolean> {
 	const user = await User.findOne({ appId, appUserId });
-	log().debug(`userExists service appId: ${ appId }, appUserId: ${ appUserId }, user: `, user);
+	logger().debug(`userExists service appId: ${ appId }, appUserId: ${ appUserId }, user: `, user);
 	return user !== undefined;
 }
 

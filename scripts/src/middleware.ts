@@ -9,7 +9,7 @@ import * as metrics from "./metrics";
 import { getConfig } from "./config";
 import { generateId, getAppIdFromRequest } from "./utils/utils";
 import { MarketplaceError } from "./errors";
-import { getDefaultLogger as log } from "./logging";
+import { getDefaultLogger as logger } from "./logging";
 import { abort as restartServer } from "./server";
 
 const START_TIME = (new Date()).toISOString();
@@ -20,7 +20,7 @@ let serverErrorTimeStamps: number[] = [];
 
 /**
  * augments the request object with a request-id and a logger.
- * the logger should be then used when logging inside request handlers, which will then add some more info per log
+ * the logger should be then used when logging inside request handlers, which will then add some more info per logger
  */
 export const requestLogger = function(req: express.Request, res: express.Response, next: express.NextFunction) {
 	httpContext.set("reqId", req.header("x-request-id") || generateId());
@@ -39,10 +39,10 @@ export const logRequest = function(req: express.Request, res: express.Response, 
 		data.querystring = req.query;
 	}
 
-	log().info(`worker ${ getWorkerId() }: start handling request: ${ req.method } ${ req.path }`, data);
+	logger().info(`worker ${ getWorkerId() }: start handling request: ${ req.method } ${ req.path }`, data);
 
 	res.on("finish", () => {
-		log().info(`worker ${ getWorkerId() }: finished handling request`, { time: performance.now() - t });
+		logger().info(`worker ${ getWorkerId() }: finished handling request`, { time: performance.now() - t });
 	});
 
 	next();
@@ -75,7 +75,7 @@ export function generalErrorHandler(err: any, req: Request, res: Response, next:
 }
 
 function clientErrorHandler(error: MarketplaceError, req: express.Request, res: express.Response) {
-	log().error(`client error (4xx)`, { error: error.toJson() });
+	logger().error(`client error (4xx)`, { error: error.toJson() });
 	metrics.reportClientError(error, getAppIdFromRequest(req));
 
 	// set headers from the error if any
@@ -109,13 +109,13 @@ function serverErrorHandler(error: any, req: express.Request, res: express.Respo
 		}
 	}
 
-	log().error(`server error (5xx)`, { error: message });
+	logger().error(`server error (5xx)`, { error: message });
 
 	res.status(500).send({ code: 500, error: error.message || "Server error", message: error.message });
 }
 
 export const statusHandler = async function(req: express.Request, res: express.Response) {
-	log().info(`status called`, { blah: req.context });
+	logger().info(`status called`, { blah: req.context });
 	res.status(200).send(
 		{
 			status: "ok",

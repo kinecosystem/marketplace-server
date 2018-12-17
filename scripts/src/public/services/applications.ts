@@ -1,4 +1,4 @@
-import { getDefaultLogger as log } from "../../logging";
+import { getDefaultLogger as logger } from "../../logging";
 
 import { verify as verifyJwt } from "../jwt";
 import { InvalidApiKey } from "../../errors";
@@ -30,13 +30,13 @@ export async function validateWhitelist(
 	}
 
 	// check if userId is whitelisted in app
-	log().info(`checking if ${ appUserId } is whitelisted for ${ app.id }`);
+	logger().info(`checking if ${ appUserId } is whitelisted for ${ app.id }`);
 	const result = await AppWhitelists.findOne({ appUserId, appId: app.id });
 	if (result) {
 		return { appUserId, appId: app.id };
 	}
 	// XXX raise an exception
-	log().warn(`user ${appUserId} not found in whitelist for app ${ app.id }`);
+	logger().warn(`user ${appUserId} not found in whitelist for app ${ app.id }`);
 
 	return { appUserId, appId: app.id };
 }

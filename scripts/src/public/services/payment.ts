@@ -2,7 +2,7 @@
 // TODO: this is used by both public and internal so should move to shared dir
 import axios from "axios";
 import { performance } from "perf_hooks";
-import { getDefaultLogger as log } from "../../logging";
+import { getDefaultLogger as logger } from "../../logging";
 
 import { getConfig } from "../config";
 
@@ -55,7 +55,7 @@ const SERVICE_ID = "marketplace";
 
 export async function payTo(
 	walletAddress: string, appId: string, amount: number, orderId: string) {
-	log().info(`paying ${amount} to ${walletAddress} with orderId ${orderId}`);
+	logger().info(`paying ${amount} to ${walletAddress} with orderId ${orderId}`);
 	const payload: PaymentRequest = {
 		amount,
 		app_id: appId,
@@ -65,7 +65,7 @@ export async function payTo(
 	};
 	const t = performance.now();
 	await client.post(`${config.payment_service}/payments`, payload);
-	console.log("pay to took " + (performance.now() - t) + "ms");
+	logger().info("pay to took " + (performance.now() - t) + "ms");
 }
 
 export async function createWallet(walletAddress: string, appId: string, id: string) {
@@ -77,7 +77,7 @@ export async function createWallet(walletAddress: string, appId: string, id: str
 	};
 	const t = performance.now();
 	await client.post(`${config.payment_service}/wallets`, payload); // TODO if this fails throw exception
-	log().info("wallet creation took " + (performance.now() - t) + "ms");
+	logger().info("wallet creation took " + (performance.now() - t) + "ms");
 }
 
 export async function getWalletData(walletAddress: string, options?: { timeout?: number }): Promise<Wallet> {

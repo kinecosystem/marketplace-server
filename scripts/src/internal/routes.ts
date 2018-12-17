@@ -9,7 +9,7 @@ import {
 	WalletCreationSuccessData,
 	WalletCreationFailureData, FailedPayment,
 } from "./services";
-import { getDefaultLogger as log } from "../logging";
+import { getDefaultLogger as logger } from "../logging";
 
 import { statusHandler } from "./middleware";
 import { PUBLIC_KEYS } from "./jwt";
@@ -57,7 +57,7 @@ export const webhookHandler = async function(req: WebHookRequest, res: Response)
 				await paymentFailedService(body.value);
 			}
 		} else {
-			log().error(`unknown action ("${ (body as any).action }" for payment webhook)`);
+			logger().error(`unknown action ("${ (body as any).action }" for payment webhook)`);
 			res.status(400).send({ status: "error", error: "what?" });
 		}
 	} else if (body.object === "wallet") {
@@ -68,11 +68,11 @@ export const webhookHandler = async function(req: WebHookRequest, res: Response)
 				await walletCreationFailureService(body.value);
 			}
 		} else {
-			log().error(`unknown action ("${ (body as any).action }" for wallet webhook)`);
+			logger().error(`unknown action ("${ (body as any).action }" for wallet webhook)`);
 			res.status(400).send({ status: "error", error: "what?" });
 		}
 	} else {
-		log().error(`unknown object ("${ (body as any).object }" for webhooks)`);
+		logger().error(`unknown object ("${ (body as any).object }" for webhooks)`);
 		res.status(400).send({ status: "error", error: "what?" });
 	}
 

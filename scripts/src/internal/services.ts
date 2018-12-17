@@ -1,4 +1,4 @@
-import { getDefaultLogger as log } from "../logging";
+import { getDefaultLogger as logger } from "../logging";
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
 import { User } from "../models/users";
@@ -25,7 +25,7 @@ export type WalletCreationSuccessData = {
 
 export async function walletCreationSuccess(data: WalletCreationSuccessData) {
 	createStellarAccountCreationSucceeded(data.id).report();
-	log().info("wallet created", { userId: data.id });
+	logger().info("wallet created", { userId: data.id });
 }
 
 export type WalletCreationFailureData = {
@@ -35,7 +35,7 @@ export type WalletCreationFailureData = {
 
 export async function walletCreationFailure(data: WalletCreationFailureData) {
 	createStellarAccountCreationFailed(data.id, data.reason).report();
-	log().warn("wallet failed to create", { userId: data.id, reason: data.reason });
+	logger().warn("wallet failed to create", { userId: data.id, reason: data.reason });
 }
 
 export interface CompletedPayment {
@@ -93,12 +93,12 @@ async function getPaymentJWT(order: db.Order, appId: string, userId: string): Pr
 export async function paymentComplete(payment: CompletedPayment) {
 	const order = await db.Order.getOne(payment.id);
 	if (!order) {
-		log().error(`received payment for unknown order id ${ payment.id }`);
+		logger().error(`received payment for unknown order id ${ payment.id }`);
 		return;
 	}
 
 	if (order.status === "completed") {
-		log().warn(`received payment callback for already completed order ${ payment.id }`);
+		logger().warn(`received payment callback for already completed order ${ payment.id }`);
 		return;
 	}
 
@@ -114,7 +114,7 @@ export async function paymentComplete(payment: CompletedPayment) {
 
 	// validate payment
 	if (order.amount !== payment.amount) {
-		log().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
 			`amount mismatch ${ order.amount } !== ${ payment.amount }`);
 		// 2. don't complete the transaction? complete only if the server got more than expected?
 
@@ -123,7 +123,7 @@ export async function paymentComplete(payment: CompletedPayment) {
 	}
 
 	if (order.blockchainData!.recipient_address !== payment.recipient_address) {
-		log().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
 			`addresses recipient mismatch ${ order.blockchainData!.recipient_address } !== ${ payment.recipient_address }`);
 
 		await setFailedOrder(order, WrongRecipient());
@@ -131,7 +131,7 @@ export async function paymentComplete(payment: CompletedPayment) {
 	}
 
 	if (order.blockchainData!.sender_address !== payment.sender_address) {
-		log().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
 			`addresses sender mismatch ${ order.blockchainData!.sender_address } !== ${ payment.sender_address }`);
 
 		await setFailedOrder(order, WrongSender());
@@ -161,7 +161,7 @@ export async function paymentComplete(payment: CompletedPayment) {
 
 	if (order.status !== "pending") {
 		// can be either failed or opened
-		log().info("a non pending order turned completed", { order, status: order.status });
+		logger().info("a non pending order turned completed", { order, status: order.status });
 		order.error = null;
 	}
 
@@ -174,13 +174,13 @@ export async function paymentComplete(payment: CompletedPayment) {
 		metrics.completeOrder(context.type, order.offerId, prevStatus, (order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000, payment.app_id);
 	});
 
-	log().info(`completed order with payment <${ payment.id }, ${ payment.transaction_id }>`);
+	logger().info(`completed order with payment <${ payment.id }, ${ payment.transaction_id }>`);
 }
 
 export async function paymentFailed(payment: FailedPayment) {
 	const order = await db.Order.getOne(payment.id);
 	if (!order) {
-		log().error(`received payment for unknown order id ${ payment.id }`);
+		logger().error(`received payment for unknown order id ${ payment.id }`);
 		return;
 	}
 
@@ -191,7 +191,7 @@ export async function paymentFailed(payment: FailedPayment) {
 	}
 
 	await setFailedOrder(order, BlockchainError(payment.reason));
-	log().info(`failed order with payment <${payment.id}>`);
+	logger().info(`failed order with payment <${payment.id}>`);
 }
 
 /**
@@ -209,6 +209,6 @@ export async function initPaymentCallbacks(): Promise<Watcher> {
 		]
 	);
 
-	log().info("setting payment watching addresses", { addresses });
+	logger().info("setting payment watching addresses", { addresses });
 	return await setWatcherEndpoint(addresses);
 }

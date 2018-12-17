@@ -79,8 +79,6 @@ function getLogContext() {
 }
 
 export interface BasicLogger {
-	log(level: string, message: string, options?: object): void;
-
 	error(message: string, options?: object): void;
 
 	warn(message: string, options?: object): void;
@@ -95,14 +93,15 @@ export interface BasicLogger {
 let defaultLogger: BasicLogger;
 
 export function initLogger(...targets: LogTarget[]): BasicLogger {
-	const options: winston.LoggerOptions = {};
-	options.transports = targets.map(target => createTarget(target));
-	const winstonLogger = new winston.Logger(options);
+	if (defaultLogger) {
+		return defaultLogger;
+	}
+
+	const winstonLogger = new winston.Logger({
+		transports: targets.map(target => createTarget(target))
+	});
 
 	defaultLogger = {
-		log: (level: string, message: string, options?: object) => {
-			winstonLogger.log(level, message, { ...options, ...getLogContext() });
-		},
 		error: (message: string, options?: object) => {
 			winstonLogger.error(message, { ...options, ...getLogContext() });
 		},

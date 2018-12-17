@@ -99,7 +99,7 @@ export class ClientRequests {
 				return await promise;
 			} catch (e) {
 				const apiError: ApiError = e.response!.data;
-				const error = new ClientError(`server error for "${ url }" ${ e.response!.status }(${ apiError.code }): ${ apiError.error }`);
+				const error = new ClientError(`server error for "${ url }" ${ e.response!.status }(${ apiError.code }): ${ apiError.error }, ${ apiError.message }`);
 				error.response = e.response;
 
 				throw error;

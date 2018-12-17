@@ -12,7 +12,7 @@
       "minute_registration": 0,
       "hourly_total_earn": 6000,
       "minute_total_earn": 100,
-      "hourly_user_earn": 500
+      "daily_user_earn": 500
     }
   },
   "app_id": "test",

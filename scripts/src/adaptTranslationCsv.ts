@@ -3,7 +3,7 @@ import { ExportToCsv, Options as ExportCsvOptions } from "export-to-csv";
 
 import { readFileSync, writeFile } from "fs";
 
-import { path } from "./utils";
+import { path } from "./utils/path";
 import { CsvParse, TranslationData } from "./admin/translations";
 
 function getOfferTranslation(inputCsv: TranslationData) {

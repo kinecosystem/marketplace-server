@@ -1,9 +1,12 @@
 .idea
-scripts/bin
 node_modules
+scripts/bin
+scripts/src/**/*.js
+scripts/src/**/*.d.ts
+scripts/src/**/*.js.map
+tests/src/**/*.d.ts
 tests/src/**/*.js
 tests/src/**/*.js.map
-scripts/src/**/*.js
 database.sqlite
 .tags
 .DS_Store

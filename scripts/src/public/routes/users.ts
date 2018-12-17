@@ -1,3 +1,4 @@
+import * as moment from "moment";
 import { Request, RequestHandler, Response } from "express";
 import { InvalidWalletAddress, NoSuchApp, NoSuchUser, UnknownSignInType } from "../../errors";
 
@@ -12,6 +13,8 @@ import { SignInContext, validateRegisterJWT, validateWhitelist } from "../servic
 import { Application, SignInType } from "../../models/applications";
 import { getConfig } from "../config";
 import { create as createWalletAddressUpdateSucceeded } from "../../analytics/events/wallet_address_update_succeeded";
+
+import { throwOnRateLimit } from "../../utils/RateLimit";
 
 export type WalletData = { wallet_address: string };
 
@@ -58,6 +61,9 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	if (!app.supportsSignInType(data.sign_in_type, getConfig().sign_in_types as SignInType[])) {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
+
+	throwOnRateLimit(app.id, "registration", app.config.limits.hourly_registration, moment.duration({ hours: 1 }));
+	throwOnRateLimit(app.id, "registration", app.config.limits.minute_registration, moment.duration({ minutes: 1 }));
 
 	const authToken = await getOrCreateUserCredentials(
 		app,

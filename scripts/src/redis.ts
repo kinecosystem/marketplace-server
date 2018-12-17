@@ -10,8 +10,10 @@ let client: RedisAsyncClient;
 
 export type RedisAsyncFunctions = {
 	get(key: string): Promise<string>;
+	mget(...key: string[]): Promise<string[]>;
 	set(key: string, value: string): Promise<"OK">;
 	del(key: string): Promise<number>;
+	incrby(key: string, incValue: number): Promise<number>;
 };
 
 export type RedisAsyncClient = RedisClient & {
@@ -28,10 +30,9 @@ export function getRedisClient(): RedisAsyncClient {
 
 	client.async = {} as RedisAsyncFunctions;
 
-	["get", "set", "del"].forEach(name => {
+	["get", "mget", "set", "del", "incrby"].forEach(name => {
 		(client.async as any)[name] =  promisify((client as any)[name]).bind(client);
 	});
-
 	return client;
 }
 

@@ -3,7 +3,7 @@ import { LoggerInstance } from "winston";
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
 import { User } from "../models/users";
-import { pick, removeDuplicates } from "../utils";
+import { pick, removeDuplicates } from "../utils/utils";
 import { Asset, Offer, OrderValue } from "../models/offers";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
 import { create as createSpendOrderPaymentConfirmed } from "../analytics/events/spend_order_payment_confirmed";

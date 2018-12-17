@@ -1,7 +1,7 @@
 import { Column, Entity, OneToMany, PrimaryColumn } from "typeorm";
 
 import { CreationDateModel, initializer as Initializer, Model, register as Register } from "./index";
-import { generateId, IdPrefix } from "../utils";
+import { generateId, IdPrefix } from "../utils/utils";
 import { OrderMeta } from "./orders";
 import { OfferTranslation } from "./translations";
 import { AppOffer } from "./applications";

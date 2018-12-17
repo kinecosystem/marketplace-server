@@ -1,13 +1,36 @@
 import * as path from "path";
+import * as moment from "moment";
 
-import * as utils from "../../scripts/bin/utils";
+import * as utils from "../../scripts/bin/utils/utils";
+import { Application } from "../../scripts/bin/models/applications";
+
+import { TooMuchEarnOrdered } from "../../scripts/bin/errors";
+import { path as _path } from "../../scripts/bin/utils/path";
 import * as metrics from "../../scripts/bin/metrics";
+import { throwOnAppEarnLimit } from "../../scripts/bin/utils/RateLimit";
+import * as helpers from "./helpers";
+import { LimitConfig } from "../../scripts/bin/config";
+import { initLogger } from "../../scripts/bin/logging";
+import { MarketplaceError } from "../../scripts/bin/errors";
+import { close as closeModels, init as initModels } from "../../scripts/bin/models/index";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {
-		expect(utils.path("my.file")).toEqual(path.resolve(__dirname, "../../", "my.file"));
+		expect(_path("my.file")).toEqual(path.resolve(__dirname, "../../", "my.file"));
 	});
+	beforeEach(async done => {
+		initLogger();
+		await initModels();
+		await helpers.clearDatabase();
+		await helpers.createOffers();
+		helpers.patchDependencies();
 
+		done();
+	});
+	afterEach(async done => {
+		await closeModels();
+		done();
+	});
 	afterAll(async () => {
 		await metrics.destruct();
 	});
@@ -22,6 +45,33 @@ describe("util functions", () => {
 			expect(Number.isInteger(num)).toBeTruthy();
 			testRandomNumber(num, min, max);
 		}
+
+		test("throwOnAppEarnLimit should fail on 4th request if limit is set to 3 queries", async () => {
+			const limits: LimitConfig = {
+				hourly_registration: 20000,
+				minute_registration: 1000,
+				hourly_total_earn: 500000,
+				minute_total_earn: 300,
+				daily_user_earn: 500
+			};
+			const app: Application = await helpers.createApp(utils.generateId(), limits);
+			for (let i = 0; i < 3; i++) {
+				await throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
+			}
+
+			try {
+				await throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
+				expect(true).toBeFalsy(); // should throw and not get here
+			} catch (e) {
+				if (e instanceof MarketplaceError) {
+					const err: MarketplaceError = e;
+					expect(err.code).toBe(4292);
+				} else {
+					throw e;
+				}
+			}
+			await app.remove();
+		});
 
 		test("random() should return a new number [0, 1) for each invocation", () => {
 			testRandomNumber(utils.random(), 0, 1);

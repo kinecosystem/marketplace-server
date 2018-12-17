@@ -7,7 +7,7 @@ import { Request, Response } from "express-serve-static-core";
 
 import * as metrics from "./metrics";
 import { getConfig } from "./config";
-import { randomInteger, generateId, pick, getAppIdFromRequest } from "./utils";
+import { generateId, pick, getAppIdFromRequest } from "./utils/utils";
 import { MarketplaceError } from "./errors";
 import { getDefaultLogger } from "./logging";
 import { abort as restartServer } from "./server";

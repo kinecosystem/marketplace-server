@@ -8,9 +8,9 @@
 		"url": "https://github.com/kinfoundation/marketplace-server"
 	},
 	"dependencies": {
+		"argparse": "^1.0.10",
 		"axios": "^0.18.0",
 		"axios-retry": "^3.1.1",
-		"argparse": "^1.0.10",
 		"body-parser": "^1.18.2",
 		"cookie-parser": "^1.4.3",
 		"csv-parse": "^2.0.4",

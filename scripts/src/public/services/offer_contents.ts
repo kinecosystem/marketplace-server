@@ -1,7 +1,7 @@
 import { LoggerInstance } from "winston";
 import { Request as ExpressRequest } from "express-serve-static-core";
 
-import { isNothing } from "../../utils";
+import { isNothing } from "../../utils/utils";
 import * as db from "../../models/offers";
 import { OfferTranslation } from "../../models/translations";
 

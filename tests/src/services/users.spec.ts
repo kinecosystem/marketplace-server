@@ -3,7 +3,7 @@ import * as expect from "expect";
 import { app } from "../../../scripts/bin/public/app";
 import { AuthToken as ApiAuthToken, userExists } from "../../../scripts/bin/public/services/users";
 import { close as closeModels, init as initModels } from "../../../scripts/bin/models/index";
-import { generateId, IdPrefix } from "../../../scripts/bin/utils";
+import { generateId, IdPrefix } from "../../../scripts/bin/utils/utils";
 
 import * as helpers from "../helpers";
 import * as metrics from "../../../scripts/bin/metrics";

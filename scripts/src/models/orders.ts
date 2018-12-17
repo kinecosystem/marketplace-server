@@ -17,7 +17,7 @@ import {
 } from "typeorm";
 
 import { ApiError } from "../errors";
-import { generateId, IdPrefix, Mutable, isNothing } from "../utils";
+import { generateId, IdPrefix, Mutable, isNothing } from "../utils/utils";
 
 import { User } from "./users";
 import { BlockchainData, OfferType, OrderValue } from "./offers";

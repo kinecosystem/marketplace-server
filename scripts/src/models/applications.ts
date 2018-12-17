@@ -1,4 +1,4 @@
-import { generateId, IdPrefix } from "../utils";
+import { generateId, IdPrefix } from "../utils/utils";
 import {
 	BaseEntity,
 	Column,
@@ -16,11 +16,14 @@ import { Cap, Offer, OfferType } from "./offers";
 import { Model } from "sequelize";
 import { Order, OrderContext } from "./orders";
 
+import { LimitConfig } from "../config";
+
 export type StringMap = { [key: string]: string; };  // key => value pairs
 export type SignInType = "jwt" | "whitelist";
 export type ApplicationConfig = {
 	max_user_wallets: number | null;
 	sign_in_types: SignInType[];
+	limits: LimitConfig;
 };
 
 const AppOffersCache = new Map<string, AppOffer[]>();

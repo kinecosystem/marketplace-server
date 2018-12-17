@@ -3,7 +3,7 @@ import { Cap, Offer, PollAnswer } from "../models/offers";
 import { getManager } from "typeorm";
 import { User } from "../models/users";
 import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
-import { IdPrefix, isNothing } from "../utils";
+import { IdPrefix, isNothing } from "../utils/utils";
 import * as payment from "../public/services/payment";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getDefaultLogger } from "../logging";

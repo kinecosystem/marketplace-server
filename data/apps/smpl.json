@@ -7,7 +7,14 @@
   },
   "config": {
     "max_user_wallets": 5,
-    "sign_in_types": ["jwt", "whitelist"]
+    "sign_in_types": ["jwt", "whitelist"],
+    "limits": {
+      "hourly_registration": 10,
+      "minute_registration": 0,
+      "hourly_total_earn": 60000,
+      "minute_total_earn": 1000,
+      "daily_user_earn": 5000
+    }
   },
   "app_id": "smpl",
   "name": "Sample App"

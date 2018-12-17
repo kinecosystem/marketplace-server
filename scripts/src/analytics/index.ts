@@ -2,7 +2,7 @@ import axios from "axios";
 const axiosRetry = require("axios-retry");
 
 import { getConfig } from "../config";
-import { normalizeError } from "../utils";
+import { normalizeError } from "../utils/utils";
 import { getDefaultLogger } from "../logging";
 
 const client = axios.create( { timeout: 500 });

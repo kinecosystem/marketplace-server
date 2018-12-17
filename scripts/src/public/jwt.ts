@@ -41,9 +41,9 @@ export async function verify<T, SUB extends string>(token: string, logger: Logge
 		throw InvalidJwtIssuedTime(decoded.payload.iat);
 	}
 
-	if (now.isAfter(moment.unix(decoded.payload.exp))) {
-		throw ExpiredJwt(decoded.payload.exp);
-	}
+	// if (now.isAfter(moment.unix(decoded.payload.exp))) {
+	// 	throw ExpiredJwt(decoded.payload.exp);
+	// }
 
 	const appId = decoded.payload.iss;
 	const app = await Application.findOneById(appId);

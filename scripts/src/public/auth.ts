@@ -3,6 +3,7 @@ import * as express from "express";
 import * as db from "../models/users";
 import { MissingToken, InvalidToken, TOSMissingOrOldToken } from "../errors";
 import * as httpContext from "express-http-context";
+import { AuthToken, User } from "../models/users";
 
 export async function authenticate(req: express.Request): Promise<db.AuthToken> {
 	if (!req.token) {
@@ -21,10 +22,10 @@ export const authenticateUser = async function(req: express.Request, res: expres
 	const token = await authenticate(req);
 	httpContext.set("userId", token.userId);
 	httpContext.set("deviceId", token.deviceId);
-	httpContext.set("token", token.deviceId);
+	httpContext.set("token", token);
 
 	const user = await db.User.findOneById(token.userId);
-	httpContext.set("user", token.deviceId);
+	httpContext.set("user", user);
 
 	if (!user) {
 		// This error now defines an inconsistent state in the DB where a token exists but not user is found
@@ -33,10 +34,10 @@ export const authenticateUser = async function(req: express.Request, res: expres
 	}
 
 	req.context = {
-		get user() {
+		get user(): User {
 			return httpContext.get("user");
 		},
-		get token() {
+		get token(): AuthToken {
 			return httpContext.get("token");
 		}
 	};

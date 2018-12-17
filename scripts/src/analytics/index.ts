@@ -21,10 +21,10 @@ export class Event<T extends EventData = EventData> {
 	public report(): Promise<void> {
 		try {
 			return client.post(getConfig().bi_service, this.data)
-				.catch(e => getDefaultLogger().warn(`failed to report to bi ${ normalizeError(e) }`, e)) as any;
+				.catch(e => getDefaultLogger().warn(`failed to report to bi ${ normalizeError(e) }`)) as any;
 		} catch (e) {
 			// nothing to do
-			getDefaultLogger().warn(`failed to report to bi: ${ normalizeError(e) }`, e);
+			getDefaultLogger().warn(`failed to report to bi: ${ normalizeError(e) }`);
 			return Promise.resolve();
 		}
 	}

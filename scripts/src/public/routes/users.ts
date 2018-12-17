@@ -62,8 +62,8 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
 
-	throwOnRateLimit(app.id, "registration", app.config.limits.hourly_registration, moment.duration({ hours: 1 }));
-	throwOnRateLimit(app.id, "registration", app.config.limits.minute_registration, moment.duration({ minutes: 1 }));
+	await throwOnRateLimit(app.id, "registration", app.config.limits.hourly_registration, moment.duration({ hours: 1 }));
+	await throwOnRateLimit(app.id, "registration", app.config.limits.minute_registration, moment.duration({ minutes: 1 }));
 
 	const authToken = await getOrCreateUserCredentials(
 		app,

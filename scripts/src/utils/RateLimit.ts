@@ -76,7 +76,7 @@ export async function throwOnRateLimit(appId: string, type: string, limit: numbe
 	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);
 	const rateCount = await rateLimit.checkRate();
 	if (rateCount > limit) {
-		throw TooManyRegistrations(`app: ${appId}, type: ${type} exceeded the limit: ${limit} with: ${rateLimit}`);
+		throw TooManyRegistrations(`app: ${appId}, type: ${type} exceeded the limit: ${limit} with: ${rateCount}`);
 	}
 }
 

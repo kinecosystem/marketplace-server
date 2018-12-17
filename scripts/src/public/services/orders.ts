@@ -37,7 +37,7 @@ import {
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
 
-import { throwOnAppEarnLimit, throwOnUserEarnLimit } from "../../utils/RateLimit";
+import { throwOnAppEarnLimit, throwOnUserEarnLimit } from "../../utils/rate_limit";
 
 export interface OrderList {
 	orders: Order[];

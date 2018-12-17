@@ -7,11 +7,10 @@ class RateLimit {
 	private readonly bucketPrefix: string;
 	private readonly rateLimitValue: number;
 	private readonly redis: RedisAsyncClient;
-	private windowSize: number = 0;
-	private bucketSize: number = 0;
-	private currentTimestampSeconds: number = 0;
-	private ttl: number = moment.duration({ days: 2 }).asSeconds(); // two days in seconds
-	private readonly ttlWindowRatio: number = 10;
+	private readonly windowSize: number = 0;
+	private readonly bucketSize: number = 0;
+	private readonly currentTimestampSeconds: number = 0;
+	private readonly ttl: number = moment.duration({ days: 2 }).asSeconds(); // two days in seconds
 
 	/**
 	 * @param      {string}  bucketPrefix
@@ -31,16 +30,17 @@ class RateLimit {
 	}
 
 	public async checkRate(): Promise<number> {
-		return await this.getSum(1);
+		this.createOrUpdateBucket(1);
+		return await this.getSum();
 	}
 
 	public async checkAmount(amount: number): Promise<number> {
-		return await this.getSum(amount);
+		this.createOrUpdateBucket(amount);
+		return await this.getSum();
 	}
 
 	private async createOrUpdateBucket(step: number): Promise<void> {
 		const currentBucketName = this.bucketPrefix + this.currentTimestampSeconds;
-
 		await this.redis.async.incrby(currentBucketName, step);
 		this.redis.expire(currentBucketName, this.ttl);
 	}
@@ -53,9 +53,7 @@ class RateLimit {
 	 * @param      {number}  step    step in seconds
 	 * @return     {number}  sum
 	 */
-	private async getSum(step: number) {
-		this.createOrUpdateBucket(step);
-
+	private async getSum() {
 		const windowKeys: string[] = [];
 		for (let i = 0; i < this.windowSize; i += this.bucketSize) {
 			windowKeys.push(this.bucketPrefix + (this.currentTimestampSeconds - i));
@@ -72,30 +70,30 @@ class RateLimit {
 
 export async function throwOnRateLimit(appId: string, type: string, limit: number, duration: moment.Duration) {
 	const rateLimitPrefix: string = "rate_limit";
-	const bucketPrefix: string = `${rateLimitPrefix}:${appId}:${type}:`;
+	const bucketPrefix: string = `${ rateLimitPrefix }:${ appId }:${ type }:`;
 	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);
 	const rateCount = await rateLimit.checkRate();
 	if (rateCount > limit) {
-		throw TooManyRegistrations(`app: ${appId}, type: ${type} exceeded the limit: ${limit} with: ${rateCount}`);
+		throw TooManyRegistrations(`app: ${ appId }, type: ${ type } exceeded the limit: ${ limit } with: ${ rateCount }`);
 	}
 }
 
 export async function throwOnAppEarnLimit(appId: string, type: string, limit: number, duration: moment.Duration, amount: number) {
 	const rateLimitPrefix: string = "amount_limit";
-	const bucketPrefix: string = `${rateLimitPrefix}:${appId}:${type}:`;
+	const bucketPrefix: string = `${ rateLimitPrefix }:${ appId }:${ type }:`;
 	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);
 	const appEarnSum = await rateLimit.checkAmount(amount);
 	if (appEarnSum > limit) {
-		throw TooMuchEarnOrdered(`app: ${appId}, type: ${type} exceeded the limit: ${limit} with: ${appEarnSum}`);
+		throw TooMuchEarnOrdered(`app: ${ appId }, type: ${ type } exceeded the limit: ${ limit } with: ${ appEarnSum }`);
 	}
 }
 
 export async function throwOnUserEarnLimit(userId: string, type: string, limit: number, duration: moment.Duration, amount: number) {
 	const rateLimitPrefix: string = "amount_limit";
-	const bucketPrefix: string = `${rateLimitPrefix}:${userId}:${type}:`;
+	const bucketPrefix: string = `${ rateLimitPrefix }:${ userId }:${ type }:`;
 	const rateLimit: RateLimit = new RateLimit(bucketPrefix, limit, duration);
 	const userEarnSum = await rateLimit.checkAmount(amount);
 	if (userEarnSum > limit) {
-		throw TooMuchEarnOrdered(`user: ${userId}, type: ${type} exceeded the limit: ${limit} with: ${userEarnSum}`);
+		throw TooMuchEarnOrdered(`user: ${ userId }, type: ${ type } exceeded the limit: ${ limit } with: ${ userEarnSum }`);
 	}
 }

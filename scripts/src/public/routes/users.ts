@@ -14,7 +14,7 @@ import { Application, SignInType } from "../../models/applications";
 import { getConfig } from "../config";
 import { create as createWalletAddressUpdateSucceeded } from "../../analytics/events/wallet_address_update_succeeded";
 
-import { throwOnRateLimit } from "../../utils/RateLimit";
+import { throwOnRateLimit } from "../../utils/rate_limit";
 
 export type WalletData = { wallet_address: string };
 

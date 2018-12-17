@@ -1,5 +1,4 @@
 import * as _path from "path";
-import { join } from "path";
 import * as fs from "fs";
 
 import { Express } from "express";
@@ -10,8 +9,6 @@ import { path } from "./path";
 export interface RequestWithContext extends Express.Request {
 	context?: Context;
 }
-
-const fromProjectRoot = _path.join.bind(path, __dirname, "../../");
 
 export type ServerError = Error & { syscall: string; code: string; };
 
@@ -141,7 +138,7 @@ export function readKeysDir(dir: string): KeyMap {
 		const algorithm = filename.split("_")[0].toUpperCase();
 		keys[keyid] = {
 			algorithm,
-			key: fs.readFileSync(path(join(dir, filename))).toString()
+			key: fs.readFileSync(path(_path.join(dir, filename))).toString()
 		};
 	});
 	return keys;

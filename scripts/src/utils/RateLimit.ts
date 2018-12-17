@@ -10,7 +10,7 @@ class RateLimit {
 	private windowSize: number = 0;
 	private bucketSize: number = 0;
 	private currentTimestampSeconds: number = 0;
-	private ttl: number = 172800; // two days in seconds
+	private ttl: number = moment.duration({ days: 2 }).asSeconds(); // two days in seconds
 	private readonly ttlWindowRatio: number = 10;
 
 	/**

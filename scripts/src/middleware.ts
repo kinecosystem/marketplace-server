@@ -74,10 +74,10 @@ export const logRequest = function(req: express.Request, res: express.Response, 
 		data.querystring = req.query;
 	}
 
-	req.logger.info(`worker ${getWorkerId()}: start handling request ${ req.id }: ${ req.method } ${ req.path }`, data);
+	req.logger.info(`worker ${ getWorkerId() }: start handling request ${ req.id }: ${ req.method } ${ req.path }`, data);
 
 	res.on("finish", () => {
-		req.logger.info(`worker ${getWorkerId()}: finished handling request ${ req.id }`, { time: performance.now() - t });
+		req.logger.info(`worker ${ getWorkerId() }: finished handling request ${ req.id }`, { time: performance.now() - t });
 	});
 
 	next();
@@ -112,7 +112,7 @@ export function generalErrorHandler(err: any, req: Request, res: Response, next:
 function clientErrorHandler(error: MarketplaceError, req: express.Request, res: express.Response) {
 	const log = req.logger || logger;
 
-	log.error(`client error (4xx)`, error);
+	log.error(`client error (4xx)`, { error: error.toJson() });
 	metrics.reportClientError(error, getAppIdFromRequest(req));
 
 	// set headers from the error if any

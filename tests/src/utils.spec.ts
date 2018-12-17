@@ -7,7 +7,7 @@ import { Application } from "../../scripts/bin/models/applications";
 import { TooMuchEarnOrdered } from "../../scripts/bin/errors";
 import { path as _path } from "../../scripts/bin/utils/path";
 import * as metrics from "../../scripts/bin/metrics";
-import { throwOnAppEarnLimit } from "../../scripts/bin/utils/RateLimit";
+import { throwOnAppEarnLimit } from "../../scripts/bin/utils/rate_limit";
 import * as helpers from "./helpers";
 import { LimitConfig } from "../../scripts/bin/config";
 import { initLogger } from "../../scripts/bin/logging";

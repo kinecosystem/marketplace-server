@@ -1,15 +1,19 @@
 import mock = require("supertest");
-
 import * as moment from "moment";
+import * as jsonwebtoken from "jsonwebtoken";
+
+import { app } from "../../../scripts/bin/public/app";
 import * as metrics from "../../../scripts/bin/metrics";
-import { generateId, random, IdPrefix } from "../../../scripts/bin/utils/utils";
-import { Event } from "../../../scripts/bin/analytics";
+import { initLogger } from "../../../scripts/bin/logging";
+import { JWTContent } from "../../../scripts/bin/public/jwt";
+import { TransactionTimeout } from "../../../scripts/bin/errors";
+import { AppOffer } from "../../../scripts/bin/models/applications";
 import { AuthToken, User } from "../../../scripts/bin/models/users";
 import { JWTValue, Offer } from "../../../scripts/bin/models/offers";
-import * as payment from "../../../scripts/bin/public/services/payment";
 import { getOffers } from "../../../scripts/bin/public/services/offers";
-import { initLogger } from "../../../scripts/bin/logging";
+import { OrderList } from "../../../scripts/bin/public/services/orders";
 import { ExternalOrder, Order } from "../../../scripts/bin/models/orders";
+import { generateId, random, IdPrefix } from "../../../scripts/bin/utils/utils";
 import { close as closeModels, init as initModels } from "../../../scripts/bin/models/index";
 import {
 	changeOrder,
@@ -19,14 +23,8 @@ import {
 	setFailedOrder,
 	submitOrder
 } from "../../../scripts/bin/public/services/orders";
-import { TransactionTimeout } from "../../../scripts/bin/errors";
-import { AppOffer } from "../../../scripts/bin/models/applications";
-import { JWTContent } from "../../../scripts/bin/public/jwt";
 
 import * as helpers from "../helpers";
-import * as jsonwebtoken from "jsonwebtoken";
-import { app } from "../../../scripts/bin/public/app";
-import { OrderList } from "../../../scripts/src/public/services/orders";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
@@ -73,7 +71,8 @@ describe("test orders", async () => {
 	});
 
 	test("offer list returns an offer with my open order", async () => {
-		const user = await helpers.createUser();
+		const deviceId = "test_device_id";
+		const user = await helpers.createUser({ deviceId });
 		const offers = await getOffers(user.id, user.appId, {});
 		const offer = offers.offers.find(x => x.offer_type === "earn");
 
@@ -81,7 +80,7 @@ describe("test orders", async () => {
 			throw Error("failed to find earn order");
 		}
 
-		const order = await createMarketplaceOrder(offer.id, user);
+		const order = await createMarketplaceOrder(offer.id, user, deviceId);
 
 		const offers2 = await getOffers(user.id, user.appId, {});
 		const foundOffer = offers2.offers.find(x => x.id === offer.id);
@@ -90,12 +89,13 @@ describe("test orders", async () => {
 	});
 
 	test("filter order by offer_id", async () => {
-		const user = await helpers.createUser();
+		const deviceId = "test_device_id";
+		const user = await helpers.createUser({ deviceId });
 		const offers = await getOffers(user.id, user.appId, {});
 		for (let i = 0; i < offers.offers.length && i < 4; i++) {
 			const offerId = offers.offers[i].id;
-			const openOrder = await createMarketplaceOrder(offerId, user);
-			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+			const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
+			const order = await submitOrder(openOrder.id, user, deviceId, "{}", user.appId);
 			await helpers.completePayment(order.id);
 		}
 		const offerId = offers.offers[0].id;
@@ -116,12 +116,13 @@ describe("test orders", async () => {
 	});
 
 	test("getOrderHistory limit", async () => {
-		const user = await helpers.createUser();
+		const deviceId = "test_device_id";
+		const user = await helpers.createUser({ deviceId });
 		const offers = await getOffers(user.id, user.appId, {});
 		for (let i = 0; i < offers.offers.length && i < 4; i++) {
 			const offerId = offers.offers[i].id;
-			const openOrder = await createMarketplaceOrder(offerId, user);
-			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+			const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
+			const order = await submitOrder(openOrder.id, user, deviceId, "{}", user.appId);
 			await helpers.completePayment(order.id);
 		}
 		const limit = 2;
@@ -142,16 +143,18 @@ describe("test orders", async () => {
 	});
 
 	test("return same order when one is open", async () => {
-		const user = await helpers.createUser();
+		const deviceId = "test_device_id";
+		const user = await helpers.createUser({ deviceId });
 		const offers = await getOffers(user.id, user.appId, {});
-		const order = await createMarketplaceOrder(offers.offers[0].id, user);
-		const order2 = await createMarketplaceOrder(offers.offers[0].id, user);
+		const order = await createMarketplaceOrder(offers.offers[0].id, user, deviceId);
+		const order2 = await createMarketplaceOrder(offers.offers[0].id, user, deviceId);
 
 		expect(order.id).toBe(order2.id);
 	});
 
 	test("countToday counts todays completed orders", async () => {
-		const user = await helpers.createUser();
+		const deviceId = "test_device_id";
+		const user = await helpers.createUser({ deviceId });
 		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(0);
 
 		const offers = await getOffers(user.id, user.appId, {});
@@ -160,8 +163,8 @@ describe("test orders", async () => {
 			throw Error("failed to find earn order");
 		}
 
-		const openOrder = await createMarketplaceOrder(offer.id, user);
-		const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+		const openOrder = await createMarketplaceOrder(offer.id, user, deviceId);
+		const order = await submitOrder(openOrder.id, user, deviceId, "{}", user.appId);
 		await helpers.completePayment(order.id);
 
 		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(1);
@@ -171,27 +174,28 @@ describe("test orders", async () => {
 			throw Error("failed to find spend order");
 		}
 
-		const spendOpenOrder = await createMarketplaceOrder(spendOffer.id, user);
-		const spendOrder = await submitOrder(spendOpenOrder.id, user.id, undefined, user.walletAddress, user.appId);
+		const spendOpenOrder = await createMarketplaceOrder(spendOffer.id, user, deviceId);
+		const spendOrder = await submitOrder(spendOpenOrder.id, user, deviceId, undefined, user.appId);
 		await helpers.completePayment(spendOrder.id);
 
 		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(1);
 
 		const externalEarnOrder = await helpers.createExternalOrder(user.id);
-		const earnOrder = await submitOrder(externalEarnOrder.id, user.id, undefined, user.walletAddress, user.appId);
+		const earnOrder = await submitOrder(externalEarnOrder.id, user, deviceId, undefined, user.appId);
 		await helpers.completePayment(earnOrder.id);
 
 		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(1);
 	});
 
 	test("return getOrder reduces cap", async () => {
-		const user = await helpers.createUser();
+		const deviceId = "test_device_id";
+		const user = await helpers.createUser({ deviceId });
 		const offers = await getOffers(user.id, user.appId, {});
 		const appOffer = (await AppOffer.findOne({ offerId: offers.offers[0].id, appId: user.appId }))!;
 
 		for (let i = 0; i < appOffer.cap.per_user && i < appOffer.cap.total; i++) {
-			const openOrder = await createMarketplaceOrder(appOffer.offerId, user);
-			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+			const openOrder = await createMarketplaceOrder(appOffer.offerId, user, deviceId);
+			const order = await submitOrder(openOrder.id, user, deviceId, "{}", user.appId);
 			await helpers.completePayment(order.id);
 		}
 
@@ -245,19 +249,21 @@ describe("test orders", async () => {
 	});
 
 	test("expiration on openOrder is 10 minutes", async () => {
-		const user = await helpers.createUser();
+		const deviceId = "test_device_id";
+		const user = await helpers.createUser({ deviceId });
 		const offers = await getOffers(user.id, user.appId, {});
 		const offer = (await Offer.findOneById(offers.offers[0].id))!;
 		const now = moment();
-		const openOrder = await createMarketplaceOrder(offer.id, user);
+		const openOrder = await createMarketplaceOrder(offer.id, user, deviceId);
 		expect(moment(openOrder.expiration_date).diff(now, "minutes")).toBe(10);
 	});
 
 	test("changeOrder adds error and changes to fail", async () => {
-		const user = await helpers.createUser();
+		const deviceId = "test_device_id";
+		const user = await helpers.createUser({ deviceId });
 		const offers = await getOffers(user.id, user.appId, { type: "spend" });
-		const openOrder = await createMarketplaceOrder(offers.offers[0].id, user);
-		await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+		const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, deviceId);
+		await submitOrder(openOrder.id, user, deviceId, "{}", user.appId);
 		// failed to pay to blockchain
 		const error = {
 			message: "failed to submit to blockchain",
@@ -277,13 +283,14 @@ describe("test orders", async () => {
 	});
 
 	test("order setFailure date", async () => {
-		const user = await helpers.createUser();
+		const deviceId = "test_device_id";
+		const user = await helpers.createUser({ deviceId });
 		const offers = await getOffers(user.id, user.appId, { type: "spend" });
 
 		// not passing failureDate
 		{
-			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user);
-			await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, deviceId);
+			await submitOrder(openOrder.id, user, deviceId, "{}", user.appId);
 			const dbOrder = (await Order.getOne(openOrder.id))!;
 			const expDate = dbOrder.expirationDate!;
 			await setFailedOrder(dbOrder, TransactionTimeout());
@@ -293,8 +300,8 @@ describe("test orders", async () => {
 
 		// passing expDate as failureDate
 		{
-			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user);
-			await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, deviceId);
+			await submitOrder(openOrder.id, user, deviceId, "{}", user.appId);
 			const dbOrder = (await Order.getOne(openOrder.id))!;
 			const expDate = dbOrder.expirationDate!;
 			await setFailedOrder(dbOrder, TransactionTimeout(), expDate);
@@ -337,9 +344,10 @@ describe("test orders", async () => {
 	test("offer cap is not shared between apps", async () => {
 		const offer = (await Offer.findOne())!;
 
-		async function createAppUser(offer: Offer, appId: string): Promise<User> {
+		async function createAppUser(offer: Offer, appId: string): Promise<[User, string]> {
+			const deviceId = generateId();
 			const app = await helpers.createApp(appId);
-			const user = await helpers.createUser({ appId: app.id });
+			const user = await helpers.createUser({ appId: app.id, deviceId });
 			await AppOffer.create({
 				appId: app.id,
 				offerId: offer.id,
@@ -347,20 +355,20 @@ describe("test orders", async () => {
 				walletAddress: "some_address"
 			}).save();
 
-			return user;
+			return [user, deviceId];
 		}
 
-		const user1 = await createAppUser(offer, generateId(IdPrefix.App));
-		const user2 = await createAppUser(offer, generateId(IdPrefix.App));
+		const [user1, deviceId1] = await createAppUser(offer, generateId(IdPrefix.App));
+		const [user2, deviceId2] = await createAppUser(offer, generateId(IdPrefix.App));
 
-		const openOrder = await createMarketplaceOrder(offer.id, user1);
-		const order = await submitOrder(openOrder.id, user1.id, "{}", user1.walletAddress, user1.appId);
+		const openOrder = await createMarketplaceOrder(offer.id, user1, deviceId1);
+		const order = await submitOrder(openOrder.id, user1, deviceId1, "{}", user1.appId);
 		await helpers.completePayment(order.id);
 
 		// user1 should receive an error
-		await expect(createMarketplaceOrder(offer.id, user1)).rejects.toThrow();
+		await expect(createMarketplaceOrder(offer.id, user1, deviceId1)).rejects.toThrow();
 
 		// user2 should be able to open an order
-		await expect(createMarketplaceOrder(offer.id, user2)).resolves.toBeDefined();
+		await expect(createMarketplaceOrder(offer.id, user2, deviceId2)).resolves.toBeDefined();
 	});
 });

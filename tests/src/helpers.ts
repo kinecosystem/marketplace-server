@@ -25,15 +25,16 @@ const animalPoll: Poll = {
 	}],
 };
 
-export async function createUser(options: { appId?: string } = {}): Promise<User> {
+export async function createUser(options: { appId?: string; deviceId?: string; } = {}): Promise<User> {
 	const uniqueId = generateId();
+	const deviceId = options.deviceId || `test_device_${ uniqueId }`;
 	const userData = {
-		appUserId: `test_${ uniqueId }`,
-		appId: options.appId || (await Application.findOne())!.id,
-		walletAddress: `test_${ uniqueId }`
+		appUserId: `test_user_${ uniqueId }`,
+		appId: options.appId || (await Application.findOne())!.id
 	} as User;
 
 	const user = await (User.new(userData)).save();
+	await user.updateWallet(deviceId, `test_wallet_${ uniqueId }`);
 
 	const authToken = await (AuthToken.new({
 		userId: user.id,
@@ -44,7 +45,9 @@ export async function createUser(options: { appId?: string } = {}): Promise<User
 }
 
 async function orderFromOffer(offer: Offer, userId: string): Promise<MarketplaceOrder> {
-	const user = await User.findOneById(userId);
+	const user = (await User.findOneById(userId))!;
+	const wallet = (await user.getWallets()).all()[0];
+
 	return MarketplaceOrder.new({
 		offerId: offer.id,
 		amount: offer.amount,
@@ -57,6 +60,7 @@ async function orderFromOffer(offer: Offer, userId: string): Promise<Marketplace
 	}, {
 		user,
 		type: offer.type,
+		wallet: wallet.address,
 		meta: offer.meta.order_meta
 	}) as MarketplaceOrder;
 }

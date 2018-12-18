@@ -38,7 +38,8 @@ export const createMarketplaceOrder = async function(req: CreateMarketplaceOrder
 		}
 		return dict;
 	}, {} as OrderTranslations);
-	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!, orderTranslations);
+
+	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!, req.context.token!.deviceId, orderTranslations);
 	res.status(201).send(order);
 } as any as RequestHandler;
 
@@ -51,7 +52,7 @@ export type CreateExternalOrderRequest = Request & {
  * create an order for a native offer
  */
 export const createExternalOrder = async function(req: CreateExternalOrderRequest, res: Response) {
-	const order = await createExternalOrderService(req.body.jwt, req.context.user!);
+	const order = await createExternalOrderService(req.body.jwt, req.context.user!, req.context.token!.deviceId);
 	res.status(201).send(order);
 } as any as RequestHandler;
 
@@ -86,9 +87,9 @@ export const submitOrder = async function(req: SubmitOrderRequest, res: Response
 
 	const order = await submitOrderService(
 		req.params.order_id,
-		req.context.user!.id,
+		req.context.user!,
+		req.context.token!.deviceId,
 		req.body.content,
-		req.context.user!.walletAddress,
 		req.context.user!.appId,
 		req.acceptsLanguages.bind(req));
 	res.status(200).send(order);

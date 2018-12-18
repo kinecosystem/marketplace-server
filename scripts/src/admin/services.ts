@@ -337,20 +337,24 @@ async function orderToHtml(order: Order): Promise<string> {
 }
 
 async function userToHtml(user: User): Promise<string> {
+	const accounts = (await user.getWallets()).all().map(wallet => {
+		return `
+		<a href="${ BLOCKCHAIN.horizon_url}/accounts/${ wallet.address }">${ wallet.address }</a>
+		<a href="/wallets/${ wallet.address }">balance</a>
+		<a href="/wallets/${ wallet.address }/payments">kin transactions</a>
+		`;
+	}).join("<br/>");
+
 	return `
 <ul>
-<li>ecosystem id: <a href="/users/${ user.id }">${ user.id }</a></li>
-<li>appId: ${ user.appId }</li>
-<li>appUserId: ${ user.appUserId }</li>
-<li>stellar account:
-<a href="${ BLOCKCHAIN.horizon_url }/accounts/${ user.walletAddress }">${ user.walletAddress }</a>
-<a href="/wallets/${ user.walletAddress }">balance</a>
-<a href="/wallets/${ user.walletAddress }/payments">kin transactions</a>
-</li>
-<li>created: ${ user.createdDate }</li>
-<li><a href="/orders?user_id=${ user.id }">orders</a></li>
-<li><a href="/users/${ user.id }/offers">offers</a></li>
-<li><a href="https://analytics.amplitude.com/kinecosystem/project/204515/search/${ user.id }">client events</a></li>
+	<li>ecosystem id: <a href="/users/${ user.id }">${ user.id }</a></li>
+	<li>appId: ${ user.appId }</li>
+	<li>appUserId: ${ user.appUserId }</li>
+	<li>stellar accounts:<br/>${ accounts }</li>
+	<li>created: ${ user.createdDate }</li>
+	<li><a href="/orders?user_id=${ user.id }">orders</a></li>
+	<li><a href="/users/${ user.id }/offers">offers</a></li>
+	<li><a href="https://analytics.amplitude.com/kinecosystem/project/204515/search/${ user.id }">client events</a></li>
 </ul>`;
 }
 
@@ -532,7 +536,8 @@ window.setTimeout(function(){
 </div>`;
 }
 
-export async function retryUserWallet(params: { user_id: string }, query: any): Promise<string> {
+// ECO-754: what should this do now that there's no single user.walletAddress
+/*export async function retryUserWallet(params: { user_id: string }, query: any): Promise<string> {
 	const user = await User.findOneById(params.user_id);
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
@@ -547,7 +552,7 @@ window.setTimeout(function(){
     }, 5000);
 </script>
 </div>`;
-}
+}*/
 
 export async function getOrder(params: { order_id: string }, query: any): Promise<string> {
 	const orders = await Order.queryBuilder("order")

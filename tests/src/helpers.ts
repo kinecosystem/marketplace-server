@@ -60,6 +60,7 @@ async function orderFromOffer(offer: Offer, userId: string): Promise<Marketplace
 	}, {
 		user,
 		type: offer.type,
+		wallet: wallet.address,
 		meta: offer.meta.order_meta
 	}) as MarketplaceOrder;
 }

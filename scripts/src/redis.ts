@@ -3,7 +3,7 @@ import { RedisClient } from "redis";
 import Redlock = require("redlock");
 
 import { getConfig } from "./config";
-import { getDefaultLogger } from "./logging";
+import { getDefaultLogger as logger } from "./logging";
 
 let isMocked = false;
 let client: RedisAsyncClient;
@@ -36,7 +36,6 @@ export function getRedisClient(): RedisAsyncClient {
 	return client;
 }
 
-const logger = getDefaultLogger();
 const redlock = new Redlock(
 	[getRedisClient()],
 	{
@@ -58,7 +57,7 @@ const redlock = new Redlock(
 	}
 );
 redlock.on("clientError", error => {
-	logger.error("redis lock client error: ", error);
+	logger().error("redis lock client error: ", error);
 });
 
 export function acquireLock(resource: string, ttl: number = 1000): PromiseLike<Redlock.Lock> {

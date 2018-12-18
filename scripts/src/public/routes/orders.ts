@@ -1,4 +1,5 @@
 import { Request, RequestHandler, Response } from "express";
+import { getDefaultLogger as logger } from "../../logging";
 
 import {
 	Order,
@@ -37,7 +38,7 @@ export const createMarketplaceOrder = async function(req: CreateMarketplaceOrder
 		}
 		return dict;
 	}, {} as OrderTranslations);
-	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!, req.logger, orderTranslations);
+	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!, orderTranslations);
 	res.status(201).send(order);
 } as any as RequestHandler;
 
@@ -50,7 +51,7 @@ export type CreateExternalOrderRequest = Request & {
  * create an order for a native offer
  */
 export const createExternalOrder = async function(req: CreateExternalOrderRequest, res: Response) {
-	const order = await createExternalOrderService(req.body.jwt, req.context.user!, req.logger);
+	const order = await createExternalOrderService(req.body.jwt, req.context.user!);
 	res.status(201).send(order);
 } as any as RequestHandler;
 
@@ -63,7 +64,7 @@ export type GetOrderRequest = Request & {
  * get an order
  */
 export const getOrder = async function(req: GetOrderRequest, res: Response) {
-	const order = await getOrderService(req.params.order_id, req.context.user!.id, req.logger);
+	const order = await getOrderService(req.params.order_id, req.context.user!.id);
 	res.status(200).send(order);
 } as any as RequestHandler;
 
@@ -81,7 +82,7 @@ export type SubmitOrderRequest = Request & {
  * check that order hasn't passed expiration + grace period
  */
 export const submitOrder = async function(req: SubmitOrderRequest, res: Response) {
-	req.logger.info("submit order", { userId: req.context.user!.id, orderId: req.params.order_id });
+	logger().info("submit order", { userId: req.context.user!.id, orderId: req.params.order_id });
 
 	const order = await submitOrderService(
 		req.params.order_id,
@@ -89,7 +90,6 @@ export const submitOrder = async function(req: SubmitOrderRequest, res: Response
 		req.body.content,
 		req.context.user!.walletAddress,
 		req.context.user!.appId,
-		req.logger,
 		req.acceptsLanguages.bind(req));
 	res.status(200).send(order);
 } as any as RequestHandler;
@@ -98,7 +98,7 @@ export const submitOrder = async function(req: SubmitOrderRequest, res: Response
  * cancel an order
  */
 export const cancelOrder = async function(req: GetOrderRequest, res: Response) {
-	await cancelOrderService(req.params.order_id, req.logger);
+	await cancelOrderService(req.params.order_id);
 	res.status(204).send();
 } as any as RequestHandler;
 
@@ -112,7 +112,7 @@ export type changeOrderRequest = Request & {
  * change an order - add an error
  */
 export const changeOrder = async function(req: changeOrderRequest, res: Response) {
-	const order = await changeOrderService(req.params.order_id, req.context.user!.id, req.body, req.logger);
+	const order = await changeOrderService(req.params.order_id, req.context.user!.id, req.body);
 	res.status(200).send(order);
 } as any as RequestHandler;
 
@@ -131,6 +131,6 @@ export const getOrderHistory = async function(req: GetOrderHistoryRequest, res: 
 		origin: req.query.origin,
 		offerId: req.query.offer_id
 	};
-	const orderList = await getOrderHistoryService(req.context.user!.id, filters, req.logger, req.query.limit);
+	const orderList = await getOrderHistoryService(req.context.user!.id, filters, req.query.limit);
 	res.status(200).send(orderList);
 } as any as RequestHandler;

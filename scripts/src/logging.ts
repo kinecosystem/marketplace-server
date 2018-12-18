@@ -1,7 +1,6 @@
 import * as winston from "winston";
-import { GenericTextTransportOptions } from "winston";
-import { GenericTransportOptions } from "winston";
-import { FileTransportOptions } from "winston";
+import { FileTransportOptions, GenericTextTransportOptions, GenericTransportOptions } from "winston";
+import * as httpContext from "express-http-context";
 
 export interface LogTarget {
 	name: string;
@@ -21,22 +20,10 @@ export interface FileTarget extends LogTarget {
 	file: string;
 }
 
-let defaultLogger: winston.LoggerInstance;
-
-export function initLogger(...targets: LogTarget[]): winston.LoggerInstance {
-	const options: winston.LoggerOptions = {};
-	options.transports = targets.map(target => createTarget(target));
-	defaultLogger = new winston.Logger(options);
-	return defaultLogger;
-}
-
-export function getDefaultLogger(): winston.LoggerInstance {
-	return defaultLogger;
-}
-
 type WinstonTransportOptions = GenericTransportOptions & GenericTextTransportOptions & { stringify?: boolean };
+
 function createTarget(target: LogTarget): winston.TransportInstance {
-	let cls: { new (options: WinstonTransportOptions): winston.TransportInstance };
+	let cls: { new(options: WinstonTransportOptions): winston.TransportInstance };
 	const defaults: WinstonTransportOptions = {
 		timestamp: true,
 	};
@@ -63,11 +50,6 @@ function createTarget(target: LogTarget): winston.TransportInstance {
 			defaults.level = "error";
 			(options as FileTransportOptions).filename = (target as FileTarget).file;
 			cls = winston.transports.File;
-			/*return new winston.transports.File({
-				filename: (target as FileTarget).file,
-				level: target.level,
-				timestamp: true
-			});*/
 			break;
 
 		default:
@@ -78,6 +60,7 @@ function createTarget(target: LogTarget): winston.TransportInstance {
 }
 
 type OptionsKey = keyof WinstonTransportOptions;
+
 function mergeOptions(defaults: WinstonTransportOptions, options: WinstonTransportOptions): WinstonTransportOptions {
 	const result = Object.assign({}, defaults);
 
@@ -86,4 +69,59 @@ function mergeOptions(defaults: WinstonTransportOptions, options: WinstonTranspo
 		.forEach(key => result[key] = options[key]);
 
 	return result;
+}
+
+function getLogContext() {
+	const reqId = httpContext.get("reqId");
+	const userId = httpContext.get("userId");
+	const deviceId = httpContext.get("deviceId");
+	return { reqId, userId, deviceId };
+}
+
+export interface BasicLogger {
+	error(message: string, options?: object): void;
+
+	warn(message: string, options?: object): void;
+
+	verbose(message: string, options?: object): void;
+
+	info(message: string, options?: object): void;
+
+	debug(message: string, options?: object): void;
+}
+
+let defaultLogger: BasicLogger;
+
+export function initLogger(...targets: LogTarget[]): BasicLogger {
+	if (defaultLogger) {
+		return defaultLogger;
+	}
+
+	const winstonLogger = new winston.Logger({
+		transports: targets.map(target => createTarget(target))
+	});
+
+	defaultLogger = {
+		error: (message: string, options?: object) => {
+			winstonLogger.error(message, { ...options, ...getLogContext() });
+		},
+		warn: (message: string, options?: object) => {
+			winstonLogger.warn(message, { ...options, ...getLogContext() });
+		},
+		verbose: (message: string, options?: object) => {
+			winstonLogger.verbose(message, { ...options, ...getLogContext() });
+		},
+		info: (message: string, options?: object) => {
+			winstonLogger.info(message, { ...options, ...getLogContext() });
+		},
+		debug: (message: string, options?: object) => {
+			winstonLogger.debug(message, { ...options, ...getLogContext() });
+		}
+	};
+
+	return defaultLogger;
+}
+
+export function getDefaultLogger(): BasicLogger {
+	return defaultLogger;
 }

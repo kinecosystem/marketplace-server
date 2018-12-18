@@ -39,6 +39,6 @@ export async function init() {
 	// initializing db and models
 	const msg = await initModels();
 	logger.info("init db", { msg });
-	const res = await initPaymentCallbacks(logger);
+	const res = await initPaymentCallbacks();
 	logger.info("init payment result", { res });
 }

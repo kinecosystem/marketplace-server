@@ -2,7 +2,6 @@ import { getManager } from "typeorm";
 import * as StellarSdk from "stellar-sdk";
 
 import { generateId } from "../../scripts/bin/utils/utils";
-import { getDefaultLogger } from "../../scripts/bin/logging";
 import { Asset, Offer } from "../../scripts/bin/models/offers";
 import { User, AuthToken } from "../../scripts/bin/models/users";
 import { Application, ApplicationConfig } from "../../scripts/bin/models/applications";
@@ -156,7 +155,7 @@ export async function completePayment(orderId: string) {
 		amount: order.amount,
 		timestamp: (new Date()).toISOString()
 	};
-	await paymentComplete(payment, getDefaultLogger());
+	await paymentComplete(payment);
 }
 
 const TABLES = ["application_offers", "orders_contexts", "orders", "offers", "users", "assets", "auth_tokens"];

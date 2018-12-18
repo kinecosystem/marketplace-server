@@ -1,15 +1,15 @@
 import * as express from "express";
 import * as cluster from "cluster";
+import * as httpContext from "express-http-context";
 import * as moment from "moment";
 import { performance } from "perf_hooks";
-import { LoggerInstance } from "winston";
 import { Request, Response } from "express-serve-static-core";
 
 import * as metrics from "./metrics";
 import { getConfig } from "./config";
-import { generateId, pick, getAppIdFromRequest } from "./utils/utils";
+import { generateId, getAppIdFromRequest } from "./utils/utils";
 import { MarketplaceError } from "./errors";
-import { getDefaultLogger } from "./logging";
+import { getDefaultLogger as logger } from "./logging";
 import { abort as restartServer } from "./server";
 
 const START_TIME = (new Date()).toISOString();
@@ -18,47 +18,12 @@ const RESTART_ERROR_COUNT = 5;  // Amount of errors to occur in time frame to tr
 const RESTART_MAX_TIMEFRAME = 20;  // In seconds
 let serverErrorTimeStamps: number[] = [];
 
-let logger: LoggerInstance;
-
-export function init() {
-	logger = getDefaultLogger();
-}
-
-declare module "express" {
-	interface Request {
-		readonly id: string;
-		readonly logger: LoggerInstance;
-	}
-}
-
 /**
  * augments the request object with a request-id and a logger.
- * the logger should be then used when logging inside request handlers, which will then add some more info per log
+ * the logger should be then used when logging inside request handlers, which will then add some more info per logger
  */
 export const requestLogger = function(req: express.Request, res: express.Response, next: express.NextFunction) {
-	const methods = ["debug", "info", "warn", "error"];
-	const id = generateId();
-	const proxy = new Proxy(logger, {
-		get(target, name: keyof LoggerInstance) {
-			if (typeof name === "string" && methods.includes(name)) {
-				return function(...args: any[]) {
-					if (typeof args[args.length - 1] === "object") {
-						args[args.length - 1] = Object.assign({}, args[args.length - 1], { reqId: id });
-					} else {
-						args = [...args, { reqId: id }];
-					}
-
-					(target[name] as (...args: any[]) => void)(...args);
-				};
-			}
-
-			return target[name];
-		}
-	});
-
-	// id & logger are readonly and so cannot be assigned, unless cast to any
-	(req as any).id = id;
-	(req as any).logger = proxy;
+	httpContext.set("reqId", req.header("x-request-id") || generateId());
 	next();
 } as express.RequestHandler;
 
@@ -74,10 +39,10 @@ export const logRequest = function(req: express.Request, res: express.Response, 
 		data.querystring = req.query;
 	}
 
-	req.logger.info(`worker ${ getWorkerId() }: start handling request ${ req.id }: ${ req.method } ${ req.path }`, data);
+	logger().info(`worker ${ getWorkerId() }: start handling request: ${ req.method } ${ req.path }`, data);
 
 	res.on("finish", () => {
-		req.logger.info(`worker ${ getWorkerId() }: finished handling request ${ req.id }`, { time: performance.now() - t });
+		logger().info(`worker ${ getWorkerId() }: finished handling request`, { time: performance.now() - t });
 	});
 
 	next();
@@ -110,9 +75,7 @@ export function generalErrorHandler(err: any, req: Request, res: Response, next:
 }
 
 function clientErrorHandler(error: MarketplaceError, req: express.Request, res: express.Response) {
-	const log = req.logger || logger;
-
-	log.error(`client error (4xx)`, { error: error.toJson() });
+	logger().error(`client error (4xx)`, { error: error.toJson() });
 	metrics.reportClientError(error, getAppIdFromRequest(req));
 
 	// set headers from the error if any
@@ -121,7 +84,6 @@ function clientErrorHandler(error: MarketplaceError, req: express.Request, res: 
 }
 
 function serverErrorHandler(error: any, req: express.Request, res: express.Response) {
-	const log = req.logger || logger;
 	metrics.reportServerError(req.method, req.url, getAppIdFromRequest(req));
 
 	const timestamp = moment().unix();
@@ -147,12 +109,13 @@ function serverErrorHandler(error: any, req: express.Request, res: express.Respo
 		}
 	}
 
-	log.error(`server error (5xx)`, message);
+	logger().error(`server error (5xx)`, { error: message });
 
 	res.status(500).send({ code: 500, error: error.message || "Server error", message: error.message });
 }
 
 export const statusHandler = async function(req: express.Request, res: express.Response) {
+	logger().info(`status called`, { blah: req.context });
 	res.status(200).send(
 		{
 			status: "ok",

@@ -6,7 +6,7 @@ import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
 import { IdPrefix, isNothing } from "../utils/utils";
 import * as payment from "../public/services/payment";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
-import { getDefaultLogger } from "../logging";
+import { getDefaultLogger as log } from "../logging";
 import { getOffers as getUserOffersService } from "../public/services/offers";
 
 type OfferStats = {
@@ -33,7 +33,7 @@ type AppStats = {
 };
 
 let BLOCKCHAIN: BlockchainConfig;
-getBlockchainConfig(getDefaultLogger()).then(data => BLOCKCHAIN = data);
+getBlockchainConfig().then(data => BLOCKCHAIN = data);
 
 const OFFER_HEADERS = `<tr>
 <th>ID</th>
@@ -453,7 +453,7 @@ export async function getUserOffers(params: { user_id: string }, query: any): Pr
 		throw new Error("user not found: " + params.user_id);
 	}
 
-	const offers = (await getUserOffersService(user.id, user.appId, {}, getDefaultLogger())).offers;
+	const offers = (await getUserOffersService(user.id, user.appId, {})).offers;
 	let ret = `<table>${ OFFER_HEADERS }`;
 	for (const offer of offers) {
 		const appOffer = (await AppOffer.findOne({ offerId: offer.id, appId: user.appId }))!;
@@ -516,7 +516,7 @@ export async function retryOrder(params: { order_id: string }, query: any): Prom
 		throw new Error("cant retry non earn or non failed orders");
 	}
 
-	await payment.payTo(order.blockchainData.recipient_address!, order.contexts[0].user.appId, order.amount, order.id, getDefaultLogger());
+	await payment.payTo(order.blockchainData.recipient_address!, order.contexts[0].user.appId, order.amount, order.id);
 
 	return `<h3>Retrying...</h3>
 <div><a href="/orders/${ order.id }">Go Back</a>
@@ -534,7 +534,7 @@ export async function retryUserWallet(params: { user_id: string }, query: any): 
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
-	await payment.createWallet(user.walletAddress, user.appId, user.id, getDefaultLogger());
+	await payment.createWallet(user.walletAddress, user.appId, user.id);
 	return `<h3>Retrying...</h3>
 <div><a href="/users/${ user.id }">Go Back</a>
 <script>
@@ -601,7 +601,7 @@ export async function fuzzySearch(params: { some_id: string }, query: any): Prom
 }
 
 export async function getWallet(params: { wallet_address: string }, query: any): Promise<string> {
-	const data = await payment.getWalletData(params.wallet_address, getDefaultLogger(), { timeout: 5000 });
+	const data = await payment.getWalletData(params.wallet_address, { timeout: 5000 });
 	let ret = `<pre class="wide">${JSON.stringify(data, null, 2)}</pre>`;
 
 	if (data.kin_balance === null) {
@@ -611,7 +611,7 @@ export async function getWallet(params: { wallet_address: string }, query: any):
 }
 
 export async function getWalletPayments(params: { wallet_address: string }, query: any): Promise<string> {
-	const data = await payment.getPayments(params.wallet_address, getDefaultLogger(), { timeout: 5000 });
+	const data = await payment.getPayments(params.wallet_address, { timeout: 5000 });
 	return `<pre class="wide">${ JSON.stringify(data, null, 2) }</pre>`;
 }
 

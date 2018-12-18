@@ -1,5 +1,4 @@
-import { LoggerInstance } from "winston";
-
+import { getDefaultLogger as logger } from "../logging";
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
 import { User } from "../models/users";
@@ -24,9 +23,9 @@ export type WalletCreationSuccessData = {
 	id: string; // user id
 };
 
-export async function walletCreationSuccess(data: WalletCreationSuccessData, logger: LoggerInstance) {
+export async function walletCreationSuccess(data: WalletCreationSuccessData) {
 	createStellarAccountCreationSucceeded(data.id).report();
-	logger.info("wallet created", { userId: data.id });
+	logger().info("wallet created", { userId: data.id });
 }
 
 export type WalletCreationFailureData = {
@@ -34,9 +33,9 @@ export type WalletCreationFailureData = {
 	reason: string;
 };
 
-export async function walletCreationFailure(data: WalletCreationFailureData, logger: LoggerInstance) {
+export async function walletCreationFailure(data: WalletCreationFailureData) {
 	createStellarAccountCreationFailed(data.id, data.reason).report();
-	logger.warn("wallet failed to create", { userId: data.id, reason: data.reason });
+	logger().warn("wallet failed to create", { userId: data.id, reason: data.reason });
 }
 
 export interface CompletedPayment {
@@ -91,15 +90,15 @@ async function getPaymentJWT(order: db.Order, appId: string, userId: string): Pr
 	};
 }
 
-export async function paymentComplete(payment: CompletedPayment, logger: LoggerInstance) {
+export async function paymentComplete(payment: CompletedPayment) {
 	const order = await db.Order.getOne(payment.id);
 	if (!order) {
-		logger.error(`received payment for unknown order id ${ payment.id }`);
+		logger().error(`received payment for unknown order id ${ payment.id }`);
 		return;
 	}
 
 	if (order.status === "completed") {
-		logger.warn(`received payment callback for already completed order ${ payment.id }`);
+		logger().warn(`received payment callback for already completed order ${ payment.id }`);
 		return;
 	}
 
@@ -115,7 +114,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 
 	// validate payment
 	if (order.amount !== payment.amount) {
-		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
 			`amount mismatch ${ order.amount } !== ${ payment.amount }`);
 		// 2. don't complete the transaction? complete only if the server got more than expected?
 
@@ -124,7 +123,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	}
 
 	if (order.blockchainData!.recipient_address !== payment.recipient_address) {
-		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
 			`addresses recipient mismatch ${ order.blockchainData!.recipient_address } !== ${ payment.recipient_address }`);
 
 		await setFailedOrder(order, WrongRecipient());
@@ -132,7 +131,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 	}
 
 	if (order.blockchainData!.sender_address !== payment.sender_address) {
-		logger.error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
 			`addresses sender mismatch ${ order.blockchainData!.sender_address } !== ${ payment.sender_address }`);
 
 		await setFailedOrder(order, WrongSender());
@@ -162,7 +161,7 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 
 	if (order.status !== "pending") {
 		// can be either failed or opened
-		logger.info("a non pending order turned completed", { order, status: order.status });
+		logger().info("a non pending order turned completed", { order, status: order.status });
 		order.error = null;
 	}
 
@@ -175,13 +174,13 @@ export async function paymentComplete(payment: CompletedPayment, logger: LoggerI
 		metrics.completeOrder(context.type, order.offerId, prevStatus, (order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000, payment.app_id);
 	});
 
-	logger.info(`completed order with payment <${ payment.id }, ${ payment.transaction_id }>`);
+	logger().info(`completed order with payment <${ payment.id }, ${ payment.transaction_id }>`);
 }
 
-export async function paymentFailed(payment: FailedPayment, logger: LoggerInstance) {
+export async function paymentFailed(payment: FailedPayment) {
 	const order = await db.Order.getOne(payment.id);
 	if (!order) {
-		logger.error(`received payment for unknown order id ${ payment.id }`);
+		logger().error(`received payment for unknown order id ${ payment.id }`);
 		return;
 	}
 
@@ -192,13 +191,13 @@ export async function paymentFailed(payment: FailedPayment, logger: LoggerInstan
 	}
 
 	await setFailedOrder(order, BlockchainError(payment.reason));
-	logger.info(`failed order with payment <${payment.id}>`);
+	logger().info(`failed order with payment <${payment.id}>`);
 }
 
 /**
  * register to get callbacks for incoming payments for all the active offers
  */
-export async function initPaymentCallbacks(logger: LoggerInstance): Promise<Watcher> {
+export async function initPaymentCallbacks(): Promise<Watcher> {
 	const [appOffers, apps] = await Promise.all([AppOffer.find(), Application.find()]);
 	// create a list of unique addresses
 	const addresses = removeDuplicates(
@@ -210,6 +209,6 @@ export async function initPaymentCallbacks(logger: LoggerInstance): Promise<Watc
 		]
 	);
 
-	logger.info("setting payment watching addresses", { addresses });
+	logger().info("setting payment watching addresses", { addresses });
 	return await setWatcherEndpoint(addresses);
 }

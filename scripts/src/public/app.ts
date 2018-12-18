@@ -1,16 +1,14 @@
 import * as express from "express";
-import "express-async-errors";  // handle async/await errors in middleware
-
+import "express-async-errors"; // handle async/await errors in middleware
 import { initLogger } from "../logging";
 import { getConfig } from "./config";
+import { createRoutes } from "./routes/index";
+import { init as initModels } from "../models/index";
+import { generalErrorHandler, init as initCustomMiddleware, notFoundHandler } from "./middleware";
+import { init as initRemoteConfig } from "./routes/config";
 
 const config = getConfig();
 const logger = initLogger(...config.loggers!);
-
-import { createRoutes } from "./routes/index";
-import { init as initModels } from "../models/index";
-import { init as initCustomMiddleware, notFoundHandler, generalErrorHandler } from "./middleware";
-import { init as initRemoteConfig } from "./routes/config";
 
 function createApp() {
 	const app = express();

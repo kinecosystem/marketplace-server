@@ -1,16 +1,15 @@
 import * as path from "path";
 import * as moment from "moment";
 
-import * as utils from "../../scripts/bin/utils/utils";
-
 import * as metrics from "../../scripts/bin/metrics";
 import { LimitConfig } from "../../scripts/bin/config";
 import { initLogger } from "../../scripts/bin/logging";
+import * as utils from "../../scripts/bin/utils/utils";
 import { MarketplaceError } from "../../scripts/bin/errors";
 import { path as _path } from "../../scripts/bin/utils/path";
 import { Application } from "../../scripts/bin/models/applications";
-import { close as closeModels, init as initModels } from "../../scripts/bin/models/index";
 import { assertRateLimitAppEarn } from "../../scripts/bin/utils/rate_limit";
+import { close as closeModels, init as initModels } from "../../scripts/bin/models/index";
 
 import * as helpers from "./helpers";
 

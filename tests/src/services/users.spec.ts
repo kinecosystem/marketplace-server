@@ -108,6 +108,7 @@ describe("api tests for /users", async () => {
 			.expect(204);
 
 		user = (await User.findOne({ id: user.id }))!;
+
 		let wallets = (await user.getWallets()).all().map(wallet => wallet.address);
 		const walletsCount = wallets.length;
 		expect(wallets).toContain(newWalletAddress);
@@ -123,7 +124,6 @@ describe("api tests for /users", async () => {
 		wallets = (await user.getWallets()).all().map(wallet => wallet.address);
 		expect(wallets).not.toContain(badAddress);
 		expect(wallets.length).toBe(walletsCount);
-
 	});
 
 	test("userExists", async () => {

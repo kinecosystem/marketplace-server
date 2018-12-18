@@ -4,9 +4,9 @@ import { Brackets } from "typeorm";
 import * as metrics from "../../metrics";
 import { Order } from "../../models/orders";
 import { readUTCDate } from "../../utils/utils";
+import { MaxWalletsExceeded } from "../../errors";
 import { Application } from "../../models/applications";
 import { getDefaultLogger as logger } from "../../logging";
-import { MaxWalletsExceeded, NoSuchUser } from "../../errors";
 import { User, AuthToken as DbAuthToken } from "../../models/users";
 import { create as createWalletAddressUpdateSucceeded } from "../../analytics/events/wallet_address_update_succeeded";
 

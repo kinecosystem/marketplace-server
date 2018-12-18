@@ -8,6 +8,8 @@ import { User, AuthToken as DbAuthToken } from "../../models/users";
 import * as payment from "./payment";
 import { readUTCDate } from "../../utils/utils";
 import { Brackets } from "typeorm";
+import { throwOnRateLimit } from "../../utils/rate_limit";
+import * as moment from "moment";
 
 export type AuthToken = {
 	token: string;
@@ -39,7 +41,7 @@ export async function getOrCreateUserCredentials(
 	async function handleExistingUser(existingUser: User) {
 		logger().info("found existing user", { appId, appUserId, userId: existingUser.id });
 		if (existingUser.walletAddress !== walletAddress) {
-			logger().warn(`existing user registered with new wallet ${existingUser.walletAddress} !== ${walletAddress}`);
+			logger().warn(`existing user registered with new wallet ${ existingUser.walletAddress } !== ${ walletAddress }`);
 			if (!app.allowsNewWallet(existingUser.walletCount)) {
 				metrics.maxWalletsExceeded(appId);
 				throw MaxWalletsExceeded();
@@ -52,16 +54,18 @@ export async function getOrCreateUserCredentials(
 		} else {
 			metrics.userRegister(false, false, appId);
 		}
-		logger().info(`returning existing user ${existingUser.id}`);
+		logger().info(`returning existing user ${ existingUser.id }`);
 	}
 
 	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
+		await throwOnRateLimit(app.id, "registration", app.config.limits.hourly_registration, moment.duration({ hours: 1 }));
+		await throwOnRateLimit(app.id, "registration", app.config.limits.minute_registration, moment.duration({ minutes: 1 }));
 		try {
 			logger().info("creating a new user", { appId, appUserId });
 			user = User.new({ appUserId, appId, walletAddress });
 			await user.save();
-			logger().info(`creating stellar wallet for new user ${user.id}: ${user.walletAddress}`);
+			logger().info(`creating stellar wallet for new user ${ user.id }: ${ user.walletAddress }`);
 			await payment.createWallet(user.walletAddress, user.appId, user.id);
 			metrics.userRegister(true, true, appId);
 		} catch (e) {

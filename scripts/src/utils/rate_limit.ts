@@ -57,7 +57,7 @@ class RateLimit {
 	}
 }
 
-// return true if action should be limited
+// throw error when action should be limited
 async function rateLimit(type: string, duration: moment.Duration, limit: number, error: (msg: string) => MarketplaceError, step: number = 1): Promise<void> {
 	const limiter: RateLimit = new RateLimit(type, duration);
 	const rateCount = await limiter.count();
@@ -70,36 +70,17 @@ async function rateLimit(type: string, duration: moment.Duration, limit: number,
 }
 
 export async function rateLimitRegistration(appId: string, limit: number, duration: moment.Duration) {
-	await rateLimit(
-		`register:${ appId }:${ duration.asSeconds() }`,
-		duration,
-		limit,
-		TooManyRegistrations);
+	await rateLimit(`register:${ appId }:${ duration.asSeconds() }`, duration, limit, TooManyRegistrations);
 }
 
 export async function rateLimitAppEarn(appId: string, limit: number, duration: moment.Duration, amount: number) {
-	await rateLimit(
-		`app_earn:${ appId }:${ duration.asSeconds() }`,
-		duration,
-		limit,
-		TooMuchEarnOrdered,
-		amount);
+	await rateLimit(`app_earn:${ appId }:${ duration.asSeconds() }`, duration, limit, TooMuchEarnOrdered, amount);
 }
 
 export async function rateLimitUserEarn(userId: string, limit: number, duration: moment.Duration, amount: number) {
-	await rateLimit(
-		`user_earn:${ userId }:${ duration.asSeconds() }`,
-		duration,
-		limit,
-		TooMuchEarnOrdered,
-		amount);
+	await rateLimit(`user_earn:${ userId }:${ duration.asSeconds() }`, duration, limit, TooMuchEarnOrdered, amount);
 }
 
 export async function rateLimitWalletEarn(wallet: string, limit: number, duration: moment.Duration, amount: number) {
-	await rateLimit(
-		`wallet_earn:${ wallet }:${ duration.asSeconds() }`,
-		duration,
-		limit,
-		TooMuchEarnOrdered,
-		amount);
+	await rateLimit(`wallet_earn:${ wallet }:${ duration.asSeconds() }`, duration, limit, TooMuchEarnOrdered, amount);
 }

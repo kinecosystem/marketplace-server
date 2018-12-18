@@ -22,6 +22,7 @@ export type StringMap = { [key: string]: string; };  // key => value pairs
 export type SignInType = "jwt" | "whitelist";
 export type ApplicationConfig = {
 	max_user_wallets: number | null;
+	daily_earn_offers: number;
 	sign_in_types: SignInType[];
 	limits: LimitConfig;
 };
@@ -53,8 +54,8 @@ export class Application extends CreationDateModel {
 	@OneToMany(type => AppOffer, appOffer => appOffer.app)
 	public appOffers!: AppOffer[];
 
-	public supportsSignInType(type: SignInType, globalSignInTypes: SignInType[]) {
-		return globalSignInTypes.includes(type) && this.config.sign_in_types.includes(type);
+	public supportsSignInType(type: SignInType) {
+		return this.config.sign_in_types.includes(type);
 	}
 
 	public allowsNewWallet(currentNumberOfWallets: number) {

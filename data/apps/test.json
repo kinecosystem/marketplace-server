@@ -6,6 +6,7 @@
   },
   "config": {
     "max_user_wallets": null,
+    "daily_earn_offers": 10,
     "sign_in_types": ["jwt", "whitelist"],
     "limits": {
       "hourly_registration": 10000,

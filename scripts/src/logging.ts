@@ -75,7 +75,8 @@ function getLogContext() {
 	const reqId = httpContext.get("reqId");
 	const userId = httpContext.get("userId");
 	const deviceId = httpContext.get("deviceId");
-	return { reqId, userId, deviceId };
+	const appId = httpContext.get("appId");
+	return { req_id: reqId, user_id: userId, device_id: deviceId, app_id: appId };
 }
 
 export interface BasicLogger {

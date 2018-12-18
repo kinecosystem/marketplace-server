@@ -5,7 +5,7 @@ import { MissingToken, InvalidToken, TOSMissingOrOldToken } from "../errors";
 import * as httpContext from "express-http-context";
 import { AuthToken, User } from "../models/users";
 
-export async function authenticate(req: express.Request): Promise<db.AuthToken> {
+async function getTokenAndUser(req: express.Request): Promise<[db.AuthToken, db.User]> {
 	if (!req.token) {
 		throw MissingToken();
 	}
@@ -15,15 +15,6 @@ export async function authenticate(req: express.Request): Promise<db.AuthToken> 
 		throw InvalidToken(req.token);
 	}
 
-	return token;
-}
-
-export const authenticateUser = async function(req: express.Request, res: express.Response, next: express.NextFunction) {
-	const token = await authenticate(req);
-	httpContext.set("userId", token.userId);
-	httpContext.set("deviceId", token.deviceId);
-	httpContext.set("token", token);
-
 	const user = await db.User.findOneById(token.userId);
 	httpContext.set("user", user);
 
@@ -32,6 +23,19 @@ export const authenticateUser = async function(req: express.Request, res: expres
 		// This should never happen as the token.user_id is a foreign key to the users table
 		throw TOSMissingOrOldToken();
 	}
+	return [token, user];
+}
+
+export const authenticateUser = async function(req: express.Request, res: express.Response, next: express.NextFunction) {
+	const [token, user] = await getTokenAndUser(req);
+	// set token, user for req.context
+	httpContext.set("token", token);
+	httpContext.set("user", user);
+
+	// set userid, deviceid and appid for logging
+	httpContext.set("userId", token.userId);
+	httpContext.set("deviceId", token.deviceId);
+	httpContext.set("appId", user.appId);
 
 	req.context = {
 		get user(): User {

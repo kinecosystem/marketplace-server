@@ -1,10 +1,10 @@
 import * as moment from "moment";
 
 import { getRedisClient, RedisAsyncClient } from "../redis";
-import { TooManyRegistrations, TooMuchEarnOrdered } from "../errors";
+import { MarketplaceError, TooManyRegistrations, TooMuchEarnOrdered } from "../errors";
 import { Application } from "../models/applications";
 
-export class RateLimit {
+class RateLimit {
 	private readonly bucketPrefix: string;
 	private readonly redis: RedisAsyncClient;
 	private readonly windowSize: number = 0;
@@ -28,17 +28,7 @@ export class RateLimit {
 		this.redis = getRedisClient();
 	}
 
-	public async checkRate(): Promise<number> {
-		await this.createOrUpdateBucket(1);
-		return await this.getSum();
-	}
-
-	public async checkAmount(amount: number): Promise<number> {
-		await this.createOrUpdateBucket(amount);
-		return await this.getSum();
-	}
-
-	private async createOrUpdateBucket(step: number): Promise<void> {
+	public async inc(step: number): Promise<void> {
 		const currentBucketName = this.bucketPrefix + this.currentTimestampSeconds;
 		await this.redis.async.incrby(currentBucketName, step);
 		this.redis.expire(currentBucketName, this.ttl);
@@ -52,7 +42,7 @@ export class RateLimit {
 	 * @param      {number}  step    step in seconds
 	 * @return     {number}  sum
 	 */
-	private async getSum() {
+	public async count() {
 		const windowKeys: string[] = [];
 		for (let i = 0; i < this.windowSize; i += this.bucketSize) {
 			windowKeys.push(this.bucketPrefix + (this.currentTimestampSeconds - i));
@@ -67,38 +57,49 @@ export class RateLimit {
 	}
 }
 
-export async function rateLimitRegistration(appId: string, limit: number, duration: moment.Duration) {
-	const type = `register:${ appId }:${ duration.asSeconds() }`;
-	const rateLimit: RateLimit = new RateLimit(type, duration);
-	const rateCount = await rateLimit.checkRate();
-	if (rateCount > limit) {
-		throw TooManyRegistrations(`app: ${ appId }, type: ${ type } exceeded the limit: ${ limit } with: ${ rateCount }`);
+// return true if action should be limited
+async function rateLimit(type: string, duration: moment.Duration, limit: number, error: (msg: string) => MarketplaceError, step: number = 1): Promise<void> {
+	const limiter: RateLimit = new RateLimit(type, duration);
+	const rateCount = await limiter.count();
+	// first check if adding the step is over the limit. If so action should be limited
+	if (rateCount + step > limit) {
+		throw error(`type: ${ type } exceeded the limit: ${ limit } with: ${ rateCount + step }`);
 	}
+	// otherwise, increment and allow the action
+	await limiter.inc(step);
+}
+
+export async function rateLimitRegistration(appId: string, limit: number, duration: moment.Duration) {
+	await rateLimit(
+		`register:${ appId }:${ duration.asSeconds() }`,
+		duration,
+		limit,
+		TooManyRegistrations);
 }
 
 export async function rateLimitAppEarn(appId: string, limit: number, duration: moment.Duration, amount: number) {
-	const type = `app_earn:${ appId }:${ duration.asSeconds() }`;
-	const rateLimit: RateLimit = new RateLimit(type, duration);
-	const rateCount = await rateLimit.checkAmount(amount);
-	if (rateCount > limit) {
-		throw TooMuchEarnOrdered(`app: ${ appId }, type: ${ type } exceeded the limit: ${ limit } with: ${ rateCount }`);
-	}
+	await rateLimit(
+		`app_earn:${ appId }:${ duration.asSeconds() }`,
+		duration,
+		limit,
+		TooMuchEarnOrdered,
+		amount);
 }
 
 export async function rateLimitUserEarn(userId: string, limit: number, duration: moment.Duration, amount: number) {
-	const type = `user_earn:${ userId }:${ duration.asSeconds() }`;
-	const rateLimit: RateLimit = new RateLimit(type, duration);
-	const rateCount = await rateLimit.checkAmount(amount);
-	if (rateCount > limit) {
-		throw TooMuchEarnOrdered(`user: ${ userId }, type: ${ type } exceeded the limit: ${ limit } with: ${ rateCount }`);
-	}
+	await rateLimit(
+		`user_earn:${ userId }:${ duration.asSeconds() }`,
+		duration,
+		limit,
+		TooMuchEarnOrdered,
+		amount);
 }
 
 export async function rateLimitWalletEarn(wallet: string, limit: number, duration: moment.Duration, amount: number) {
-	const type = `wallet_earn:${ wallet }:${ duration.asSeconds() }`;
-	const rateLimit: RateLimit = new RateLimit(type, duration);
-	const rateCount = await rateLimit.checkAmount(amount);
-	if (rateCount > limit) {
-		throw TooMuchEarnOrdered(`wallet: ${ wallet }, type: ${ type } exceeded the limit: ${ limit } with: ${ rateCount }`);
-	}
+	await rateLimit(
+		`wallet_earn:${ wallet }:${ duration.asSeconds() }`,
+		duration,
+		limit,
+		TooMuchEarnOrdered,
+		amount);
 }

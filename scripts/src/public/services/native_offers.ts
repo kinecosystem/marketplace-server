@@ -1,5 +1,5 @@
 import { JWTClaims, verify as verifyJWT } from "../jwt";
-import { ExternalEarnOfferByDifferentUser, InvalidExternalOrderJwt } from "../../errors";
+import { ExternalEarnOfferByDifferentUser, InvalidExternalOrderJwt, MissingFieldJWT } from "../../errors";
 import { getDefaultLogger as log } from "../../logging";
 
 export type ExternalOfferPayload = {
@@ -44,10 +44,20 @@ export function isPayToUser(jwt: ExternalOrderJWT): jwt is ExternalPayToUserOrde
 }
 
 export async function validateExternalOrderJWT(jwt: string, appUserId: string): Promise<ExternalOrderJWT> {
-	const decoded = await verifyJWT<PayToUserPayload, "spend" | "earn" | "pay_to_user">(jwt);
+	const decoded = await verifyJWT<Partial<PayToUserPayload>, "spend" | "earn" | "pay_to_user">(jwt);
 
 	if (decoded.payload.sub !== "earn" && decoded.payload.sub !== "spend" && decoded.payload.sub !== "pay_to_user") {
 		throw InvalidExternalOrderJwt();
+	}
+
+	// payload.sender field is mandatory
+	if (!decoded.payload.sender) {
+		throw MissingFieldJWT("sender");
+	}
+
+	// payload.recipient field is mandatory
+	if (!decoded.payload.recipient) {
+		throw MissingFieldJWT("recipient");
 	}
 
 	if ((decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user") &&

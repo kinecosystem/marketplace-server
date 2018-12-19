@@ -63,15 +63,11 @@ export async function validateExternalOrderJWT(jwt: string, appUserId: string): 
 
 		case "pay_to_user":
 			if (!decoded.payload.sender) { throw MissingFieldJWT("sender"); }
-			// if (!decoded.payload.recipient) { throw MissingFieldJWT("recipient"); }
+			if (!decoded.payload.recipient) { throw MissingFieldJWT("recipient"); }
 			if (!decoded.payload.offer) { throw MissingFieldJWT("offer"); }
 			break;
 
 		default: break;
-	}
-
-	if (!decoded.payload.recipient) {
-		throw MissingFieldJWT("recipient");
 	}
 
 	if (
@@ -83,7 +79,7 @@ export async function validateExternalOrderJWT(jwt: string, appUserId: string): 
 		throw ExternalEarnOfferByDifferentUser(appUserId, decoded.payload.sender.user_id);
 	}
 
-	if (decoded.payload.sub === "earn" && decoded.payload.recipient.user_id !== appUserId) {
+	if (decoded.payload.sub === "earn" && decoded.payload.recipient && decoded.payload.recipient.user_id !== appUserId) {
 		// check that user_id is defined for earn and is the same as current user
 		throw ExternalEarnOfferByDifferentUser(appUserId, decoded.payload.recipient.user_id);
 

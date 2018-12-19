@@ -75,7 +75,7 @@ export type UpdateUserRequest = Request & { body: WalletData };
 
 export const updateUser = async function(req: UpdateUserRequest, res: Response) {
 	const user = req.context.user!;
-	const deviceId = req.body.device_id;
+	const deviceId = req.body.device_id || req.context.token!.deviceId;
 	const walletAddress = req.body.wallet_address;
 
 	logger().info(`updating user ${ user.id }`, { walletAddress, deviceId });

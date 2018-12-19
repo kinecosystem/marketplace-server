@@ -47,9 +47,9 @@ describe("api tests for /users", async () => {
 
 	test("user profile test", async () => {
 		const appId = generateId(IdPrefix.App);
-		const user1 = await helpers.createUser({ appId });
-		const user2 = await helpers.createUser({ appId });
-		const token: AuthToken = (await AuthToken.findOne({ userId: user1.id }))!;
+		const user1 = await helpers.createUser({ appId, deviceId: "test_device_id1" });
+		const user2 = await helpers.createUser({ appId, deviceId: "test_device_id2" });
+		const token = (await AuthToken.findOne({ userId: user1.id }))!;
 
 		await mock(app)
 			.get(`/v1/users/non_user`)
@@ -95,8 +95,9 @@ describe("api tests for /users", async () => {
 		const appId = generateId(IdPrefix.App);
 		const newWalletAddress = "new_address_must_be_56_characters____bla___bla___bla____";
 		const badAddress = "new_address_not_56_chars";
+		const deviceId = "test_device_id";
 
-		let user = await helpers.createUser({ appId });
+		let user = await helpers.createUser({ appId, deviceId });
 		const token: AuthToken = (await AuthToken.findOne({ userId: user.id }))!;
 
 		await mock(app)
@@ -107,8 +108,8 @@ describe("api tests for /users", async () => {
 			.expect(204);
 
 		user = (await User.findOne({ id: user.id }))!;
-		let wallets = await user.getWallets();
-		const walletsCount = wallets.count;
+		let wallets = (await user.getWallets()).all().map(wallet => wallet.address);
+		const walletsCount = wallets.length;
 		expect(wallets).toContain(newWalletAddress);
 
 		await mock(app)
@@ -119,9 +120,9 @@ describe("api tests for /users", async () => {
 			.expect(400);
 
 		user = (await User.findOne({ id: user.id }))!;
-		wallets = await user.getWallets();
+		wallets = (await user.getWallets()).all().map(wallet => wallet.address);
 		expect(wallets).not.toContain(badAddress);
-		expect(wallets.count).toBe(walletsCount);
+		expect(wallets.length).toBe(walletsCount);
 
 	});
 

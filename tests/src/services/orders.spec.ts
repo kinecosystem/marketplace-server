@@ -49,7 +49,7 @@ describe("test orders", async () => {
 	});
 
 	test("getAll and filters", async () => {
-		const user = await helpers.createUser();
+		const user = await helpers.createUser({ deviceId: "test_device_id" });
 		const count = await helpers.createOrders(user.id);
 
 		let orders = await Order.getAll({ userId: user.id, status: "!opened" }, 25);
@@ -208,6 +208,7 @@ describe("test orders", async () => {
 	test("payment confirmation jwt for non test apps is es256", async () => {
 		async function getPaymentConfirmationJWTFor(appId: string) {
 			const user = await helpers.createUser({ appId });
+			const wallet = (await user.getWallets()).all()[0];
 			const order = ExternalOrder.new({
 				offerId: "offer",
 				amount: 1,
@@ -219,7 +220,8 @@ describe("test orders", async () => {
 			}, {
 				user,
 				meta: {},
-				type: "spend"
+				type: "spend",
+				wallet: wallet.address
 			});
 			await order.save();
 			await helpers.completePayment(order.id);

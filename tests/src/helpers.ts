@@ -36,9 +36,9 @@ export async function createUser(options: { appId?: string; deviceId?: string; }
 	const user = await (User.new(userData)).save();
 	await user.updateWallet(deviceId, `test_wallet_${ uniqueId }`);
 
-	const authToken = await (AuthToken.new({
-		userId: user.id,
-		deviceId: `test_${ uniqueId }`
+	await (AuthToken.new({
+		deviceId,
+		userId: user.id
 	})).save();
 
 	return user;
@@ -101,7 +101,9 @@ export async function createOrders(userId: string): Promise<number> {
 }
 
 export async function createExternalOrder(userId: string): Promise<Order> {
-	const user = await User.findOneById(userId);
+	const user = (await User.findOneById(userId))!;
+	const wallet = (await user.getWallets()).all()[0];
+
 	const order = ExternalOrder.new({
 		amount: 65,
 		status: "pending",
@@ -114,6 +116,7 @@ export async function createExternalOrder(userId: string): Promise<Order> {
 	}, {
 		user,
 		type: "earn",
+		wallet: wallet.address,
 		meta: {
 			title: "external order #1",
 			description: "first external order"
@@ -162,15 +165,31 @@ export async function completePayment(orderId: string) {
 	await paymentComplete(payment);
 }
 
-const TABLES = ["application_offers", "orders_contexts", "orders", "offers", "users", "assets", "auth_tokens"];
+/**
+ * the order of the tables here matters.
+ * the `clearDatabase` function deletes the content of the tables in this list by this order.
+ * if the order is incorrect, a sql constraint error will be thrown.
+ */
+const TABLES = [
+	"application_offers",
+	"user_wallets",
+	"orders_contexts",
+	"orders",
+	"offers",
+	"users",
+	"assets",
+	"auth_tokens",
+];
 
 export async function clearDatabase() {
+	let tableName!: string;
+
 	try { // TODO: get this list dynamically
-		for (const tableName of TABLES) {
+		for (tableName of TABLES) {
 			await getManager().query(`DELETE FROM ${ tableName };`);
 		}
 	} catch (error) {
-		throw new Error(`ERROR: Cleaning test db: ${ error }`);
+		throw new Error(`ERROR: Cleaning test db (table: "${ tableName }"): ${ error }`);
 	}
 }
 

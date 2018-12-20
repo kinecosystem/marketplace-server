@@ -8,7 +8,7 @@ import { User, AuthToken as DbAuthToken } from "../../models/users";
 import * as payment from "./payment";
 import { readUTCDate } from "../../utils/utils";
 import { Brackets } from "typeorm";
-import { rateLimitRegistration } from "../../utils/rate_limit";
+import { assertRateLimitRegistration } from "../../utils/rate_limit";
 import * as moment from "moment";
 
 export type AuthToken = {
@@ -59,8 +59,8 @@ export async function getOrCreateUserCredentials(
 
 	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
-		await rateLimitRegistration(app.id, app.config.limits.hourly_registration, moment.duration({ hours: 1 }));
-		await rateLimitRegistration(app.id, app.config.limits.minute_registration, moment.duration({ minutes: 1 }));
+		await assertRateLimitRegistration(app.id, app.config.limits.hourly_registration, moment.duration({ hours: 1 }));
+		await assertRateLimitRegistration(app.id, app.config.limits.minute_registration, moment.duration({ minutes: 1 }));
 		try {
 			logger().info("creating a new user", { appId, appUserId });
 			user = User.new({ appUserId, appId, walletAddress });

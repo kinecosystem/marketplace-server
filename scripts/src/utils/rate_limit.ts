@@ -10,7 +10,7 @@ class RateLimit {
 	private readonly windowSize: number = 0;
 	private readonly bucketSize: number = 0;
 	private readonly currentTimestampSeconds: number = 0;
-	private readonly ttl: number; // two days in seconds
+	private readonly ttl: number;
 
 	/**
 	 * @param      {string}  bucketPrefix
@@ -24,7 +24,7 @@ class RateLimit {
 		this.currentTimestampSeconds = Math.trunc(Date.now() / 1000);
 		this.windowSize = windowSizeMomentObject.asSeconds();
 		this.bucketSize = Math.max(this.windowSize / 60, 1); // resolution
-		this.ttl = this.windowSize * 2;
+		this.ttl = this.windowSize * 2;  // twice the size of the window
 		this.redis = getRedisClient();
 	}
 
@@ -58,8 +58,8 @@ class RateLimit {
 }
 
 // throw error when action should be limited
-async function rateLimit(type: string, duration: moment.Duration, limit: number, error: (msg: string) => MarketplaceError, step: number = 1): Promise<void> {
-	const limiter: RateLimit = new RateLimit(type, duration);
+async function assertRateLimit(type: string, duration: moment.Duration, limit: number, error: (msg: string) => MarketplaceError, step: number = 1): Promise<void> {
+	const limiter = new RateLimit(type, duration);
 	const rateCount = await limiter.count();
 	// first check if adding the step is over the limit. If so action should be limited
 	if (rateCount + step > limit) {
@@ -69,18 +69,18 @@ async function rateLimit(type: string, duration: moment.Duration, limit: number,
 	await limiter.inc(step);
 }
 
-export async function rateLimitRegistration(appId: string, limit: number, duration: moment.Duration) {
-	await rateLimit(`register:${ appId }:${ duration.asSeconds() }`, duration, limit, TooManyRegistrations);
+export async function assertRateLimitRegistration(appId: string, limit: number, duration: moment.Duration) {
+	await assertRateLimit(`register:${ appId }:${ duration.asSeconds() }`, duration, limit, TooManyRegistrations);
 }
 
-export async function rateLimitAppEarn(appId: string, limit: number, duration: moment.Duration, amount: number) {
-	await rateLimit(`app_earn:${ appId }:${ duration.asSeconds() }`, duration, limit, TooMuchEarnOrdered, amount);
+export async function assertRateLimitAppEarn(appId: string, limit: number, duration: moment.Duration, amount: number) {
+	await assertRateLimit(`app_earn:${ appId }:${ duration.asSeconds() }`, duration, limit, TooMuchEarnOrdered, amount);
 }
 
-export async function rateLimitUserEarn(userId: string, limit: number, duration: moment.Duration, amount: number) {
-	await rateLimit(`user_earn:${ userId }:${ duration.asSeconds() }`, duration, limit, TooMuchEarnOrdered, amount);
+export async function assertRateLimitUserEarn(userId: string, limit: number, duration: moment.Duration, amount: number) {
+	await assertRateLimit(`user_earn:${ userId }:${ duration.asSeconds() }`, duration, limit, TooMuchEarnOrdered, amount);
 }
 
-export async function rateLimitWalletEarn(wallet: string, limit: number, duration: moment.Duration, amount: number) {
-	await rateLimit(`wallet_earn:${ wallet }:${ duration.asSeconds() }`, duration, limit, TooMuchEarnOrdered, amount);
+export async function assertRateLimitWalletEarn(wallet: string, limit: number, duration: moment.Duration, amount: number) {
+	await assertRateLimit(`wallet_earn:${ wallet }:${ duration.asSeconds() }`, duration, limit, TooMuchEarnOrdered, amount);
 }

@@ -37,7 +37,7 @@ import {
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
 
-import { rateLimitAppEarn, rateLimitUserEarn, rateLimitWalletEarn } from "../../utils/rate_limit";
+import { assertRateLimitAppEarn, assertRateLimitUserEarn, assertRateLimitWalletEarn } from "../../utils/rate_limit";
 
 export interface OrderList {
 	orders: Order[];
@@ -108,10 +108,10 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {} as OrderTranslations) {
 	const app = (await Application.findOneById(user.appId))!;
 	if (appOffer.offer.type === "earn") {
-		await rateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), appOffer.offer.amount);
-		await rateLimitAppEarn(app.id, app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
-		await rateLimitUserEarn(user.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), appOffer.offer.amount);
-		await rateLimitWalletEarn(user.walletAddress, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), appOffer.offer.amount);
+		await assertRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), appOffer.offer.amount);
+		await assertRateLimitAppEarn(app.id, app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
+		await assertRateLimitUserEarn(user.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), appOffer.offer.amount);
+		await assertRateLimitWalletEarn(user.walletAddress, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), appOffer.offer.amount);
 	}
 
 	if (await appOffer.didExceedCap(user.id)) {
@@ -199,8 +199,8 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
 	const app = (await Application.findOneById(recipient.appId))!;
 
-	await rateLimitUserEarn(recipient.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
-	await rateLimitWalletEarn(recipient.walletAddress, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
+	await assertRateLimitUserEarn(recipient.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
+	await assertRateLimitWalletEarn(recipient.walletAddress, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
 
 	if (!app) {
 		throw NoSuchApp(recipient.appId);

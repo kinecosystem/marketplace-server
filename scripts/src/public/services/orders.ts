@@ -192,10 +192,12 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 	}, {
 		type: "earn",
 		user: recipient,
+		wallet: recipientWallet.address,
 		meta: pick(jwt.recipient, "title", "description")
 	}, {
-		type: "spend",
 		user: sender,
+		type: "spend",
+		wallet: senderWallet.address,
 		meta: pick(jwt.sender, "title", "description")
 	});
 
@@ -226,6 +228,7 @@ async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId:
 	}, {
 		type: "earn",
 		user: recipient,
+		wallet: wallet.address,
 		meta: pick(jwt.recipient, "title", "description")
 	});
 }
@@ -248,8 +251,9 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 			recipient_address: app.walletAddresses.recipient
 		}
 	}, {
-		type: "spend",
 		user: sender,
+		type: "spend",
+		wallet: wallet.address,
 		meta: pick(jwt.sender, "title", "description")
 	});
 

@@ -11,8 +11,8 @@ export function destruct() {
 	return new Promise(resolve => statsd.close(() => resolve()));
 }
 
-export function userRegister(newUser: boolean, newWallet: boolean, appId: string) {
-	statsd.increment("user_register", 1, { new_user: newUser.toString(), new_wallet: newWallet.toString(), app_id: appId });
+export function userRegister(newUser: boolean, appId: string) {
+	statsd.increment("user_register", 1, { new_user: newUser.toString(), app_id: appId });
 }
 
 export function walletAddressUpdate(appId: string) {

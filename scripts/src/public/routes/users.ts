@@ -15,7 +15,6 @@ import { SignInContext, validateRegisterJWT, validateWhitelist } from "../servic
 
 export type WalletData = {
 	device_id: string;
-	wallet_address: string;
 };
 
 export type CommonSignInData = WalletData & {
@@ -65,7 +64,6 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		app,
 		context.appUserId,
 		context.appId,
-		data.wallet_address,
 		data.device_id);
 
 	res.status(200).send(authToken);

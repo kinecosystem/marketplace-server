@@ -37,29 +37,7 @@ export async function getOrCreateUserCredentials(
 	app: Application,
 	appUserId: string,
 	appId: string,
-	walletAddress: string,
 	deviceId: string): Promise<AuthToken> {
-
-	async function handleExistingUser(existingUser: User) {
-		logger().info("found existing user", { appId, appUserId, userId: existingUser.id });
-		const wallets = await existingUser.getWallets();
-
-		if (wallets.has(walletAddress)) {
-			metrics.userRegister(false, false, appId);
-		} else {
-			logger().warn(`existing user registered with new wallet ${ walletAddress }`);
-			if (!app.allowsNewWallet(wallets.count)) {
-				metrics.maxWalletsExceeded(appId);
-				throw MaxWalletsExceeded();
-			}
-
-			await existingUser.updateWallet(deviceId, walletAddress);
-			await payment.createWallet(walletAddress, existingUser.appId, existingUser.id);
-			metrics.userRegister(false, true, appId);
-		}
-
-		logger().info(`returning existing user ${existingUser.id}`);
-	}
 
 	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
@@ -70,22 +48,19 @@ export async function getOrCreateUserCredentials(
 			logger().info("creating a new user", { appId, appUserId });
 			user = User.new({ appUserId, appId });
 			await user.save();
-			await user.updateWallet(deviceId, walletAddress);
-			logger().info(`creating stellar wallet for new user ${ user.id }: ${ walletAddress }`);
-			await payment.createWallet(walletAddress, user.appId, user.id);
-			metrics.userRegister(true, true, appId);
+			metrics.userRegister(true, appId);
 		} catch (e) {
 			// maybe caught a "violates unique constraint" error, check by finding the user again
 			user = await User.findOne({ appId, appUserId });
 			if (user) {
 				logger().warn("solved user registration race condition");
-				await handleExistingUser(user);
+				metrics.userRegister(false, appId);
 			} else {
 				throw e; // some other error
 			}
 		}
 	} else {
-		await handleExistingUser(user);
+		metrics.userRegister(false, appId);
 	}
 
 	// XXX should be a scope object
@@ -107,15 +82,24 @@ export type UpdateUserProps = {
 
 export async function updateUser(user: User, props: UpdateUserProps) {
 	if (props.walletAddress) {
+		const wallets = await user.getWallets();
+		const app = (await Application.findOneById(user.appId))!;
+
+		if (!app.allowsNewWallet(wallets.count)) {
+			metrics.maxWalletsExceeded(app.id);
+			throw MaxWalletsExceeded();
+		}
+
 		await user.updateWallet(props.deviceId, props.walletAddress);
+		logger().info(`creating stellar wallet for user ${ user.id }: ${ props.walletAddress }`);
+		await payment.createWallet(props.walletAddress, user.appId, user.id);
 	}
 
 	createWalletAddressUpdateSucceeded(user.id).report();
 	metrics.walletAddressUpdate(user.appId);
 }
 
-export async function activateUser(
-	authToken: DbAuthToken, user: User): Promise<AuthToken> {
+export async function activateUser(authToken: DbAuthToken, user: User): Promise<AuthToken> {
 	// no activation needed anymore
 	return AuthTokenDbToApi(authToken, user);
 }

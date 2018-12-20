@@ -31,7 +31,6 @@ declare module "express" {
 }
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
-
 	function prefix(path: string): string {
 		if (!pathPrefix) {
 			return path;
@@ -55,7 +54,8 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.get(prefix("users/me"), authenticateUser, myUserInfo);
 	app.get(prefix("users/:user_id"), authenticateUser, userInfo);
 
-	app.patch(prefix("users/"), authenticateUser, updateUser);
+	app.patch(prefix("users/"), authenticateUser, updateUser); // deprecated, use users/me
+	app.patch(prefix("users/me"), authenticateUser, updateUser);
 	app.post(prefix("users/"), signInUser);
 
 	app.get(prefix("config/"), getConfigHandler);

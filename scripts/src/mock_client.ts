@@ -115,7 +115,8 @@ async function didNotApproveTOS() {
 	const userId = generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
-	const client = await MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	const offers = await client.getOffers();
 	await client.createOrder(offers.offers[0].id); // should not throw - we removed need of activate
@@ -128,7 +129,8 @@ async function spendFlow() {
 	const userId = generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
-	const client = await MarketplaceClient.create({ jwt }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
 	await client.activate();
 	const selectedOffer = await getOffer(client, "spend");
@@ -178,12 +180,13 @@ async function earnPollFlow() {
 		return answers;
 	}
 
-	console.log("===================================== earn poll =====================================");
+	console.log("===================================== earnPollFlow =====================================");
 
 	const userId = generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
-	const client = await MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	await client.activate();
 
@@ -242,7 +245,8 @@ async function earnQuizFlowBackwardSupport() {
 	const userId = generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
-	const client = await MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	await client.activate();
 
@@ -303,7 +307,8 @@ async function earnQuizFlow() {
 	const userId = generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
-	const client = await MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	await client.activate();
 
@@ -348,7 +353,8 @@ async function earnTutorial() {
 	const userId = generateId();
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
-	const client = await MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
 	await client.activate();
 
@@ -376,6 +382,7 @@ async function testRegisterNewUser() {
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
 	console.log("OK.\n");
 }
@@ -388,6 +395,7 @@ async function registerJWT() {
 
 	const jwt = await appClient.getRegisterJWT(userId);
 	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
 	console.log("OK.\n");
 }
@@ -399,6 +407,7 @@ async function extraTrustlineIsOK() {
 
 	const jwt = await appClient.getRegisterJWT(userId);
 	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
 	await client.trustKin(); // should not throw
 	console.log("OK.\n");
@@ -434,10 +443,8 @@ async function updateWallet() {
 
 	const jwt = await appClient.getRegisterJWT(userId);
 	const client = await MarketplaceClient.create({ jwt });
-	console.log("Created client 1");
-	const client2 = await MarketplaceClient.create({ jwt });
-	console.log("Created client 2");
-	await client.updateWallet(client2.wallet.address);
+	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.updateWallet();
 	console.log("OK.\n");
 }
 
@@ -449,7 +456,8 @@ async function nativeSpendFlow() {
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 
-	const client = await MarketplaceClient.create({ jwt }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
@@ -503,7 +511,8 @@ async function tryToNativeSpendTwice() {
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 
-	const client = await MarketplaceClient.create({ jwt }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
@@ -548,7 +557,8 @@ async function tryToNativeSpendTwiceWithNonce() {
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 
-	const client = await MarketplaceClient.create({ jwt }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
@@ -600,7 +610,8 @@ async function nativeEarnFlow() {
 	const appClient = new SampleAppClient();
 	const jwt = await appClient.getRegisterJWT(userId);
 
-	const client = await MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers()).filter((item: any) => item.type === "earn")[0] as ExternalOfferPayload;
@@ -654,12 +665,14 @@ async function p2p() {
 
 	const senderPrivateKey = "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR";
 	const senderWalletAddress = "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ";
-	const senderClient = await MarketplaceClient.create({ jwt }, senderPrivateKey);
+	const senderClient = await MarketplaceClient.create({ jwt });
+	await senderClient.updateWallet(senderPrivateKey);
 	await senderClient.activate();
 
 	const recipientId = "test:" + generateId();
 	jwt = await appClient.getRegisterJWT(recipientId);
 	const recipientClient = await MarketplaceClient.create({ jwt });
+	await recipientClient.updateWallet();
 	await recipientClient.activate();
 
 	jwt = await appClient.getP2PJWT({
@@ -718,6 +731,7 @@ async function userProfile() {
 
 	const jwt = await appClient.getRegisterJWT(userId);
 	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
 	let profile = await client.getUserProfile();
 

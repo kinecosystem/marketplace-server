@@ -30,8 +30,7 @@ describe("api tests for /users", async () => {
 			sign_in_type: "whitelist",
 			api_key: myApp.apiKey,
 			device_id: "my_device_id",
-			user_id: "my_app_user_id",
-			wallet_address: helpers.getKeyPair().public
+			user_id: "my_app_user_id"
 		};
 
 		const res = await mock(app)
@@ -92,16 +91,16 @@ describe("api tests for /users", async () => {
 	});
 
 	test("updateUser", async () => {
-		const appId = generateId(IdPrefix.App);
+		const testApp = await helpers.createApp(generateId(IdPrefix.App));
 		const newWalletAddress = "new_address_must_be_56_characters____bla___bla___bla____";
 		const badAddress = "new_address_not_56_chars";
 		const deviceId = "test_device_id";
 
-		let user = await helpers.createUser({ appId, deviceId });
+		let user = await helpers.createUser({ appId: testApp.id, deviceId });
 		const token: AuthToken = (await AuthToken.findOne({ userId: user.id }))!;
 
 		await mock(app)
-			.patch(`/v1/users`)
+			.patch("/v1/users/me")
 			.send({ wallet_address: newWalletAddress })
 			.set("content-type", "application/json")
 			.set("Authorization", `Bearer ${ token.id }`)
@@ -114,7 +113,7 @@ describe("api tests for /users", async () => {
 		expect(wallets).toContain(newWalletAddress);
 
 		await mock(app)
-			.patch(`/v1/users`)
+			.patch("/v1/users/me")
 			.send({ wallet_address: badAddress })
 			.set("content-type", "applications/json")
 			.set("Authorization", `Bearer ${ token.id }`)

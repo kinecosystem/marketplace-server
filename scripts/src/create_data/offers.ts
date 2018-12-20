@@ -97,6 +97,7 @@ export type EarnOptions = {
 	dryRun?: boolean;  // if true, only process data, don't change/insert into the DB
 	confirmUpdate?: boolean;  //
 	onlyUpdateMetaImage?: boolean;
+	verbose?: boolean;
 };
 
 export async function createEarn(
@@ -113,20 +114,20 @@ export async function createEarn(
 	let content;
 	if (existingOffer) {
 		if (options.doNotUpdateExiting) {
-			console.log(`existing offer: ${offerName}`);
+			options.verbose && console.log(`existing offer: ${offerName}`);
 			return existingOffer;
 		}
 		offer = existingOffer;
-		console.log("Updating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : "");
+		options.verbose && console.log("Updating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : "");
 		content = await OfferContent.findOne({ offerId: offer.id });
 	} else {
 		if (options.onlyUpdate) {
-			console.log(`Skipping offer creation for offer: ${ offerName }`);
+			options.verbose && console.log(`Skipping offer creation for offer: ${ offerName }`);
 			return Promise.resolve(null);
 		}
 		const owner = await getOrCreateOwner(brand);
 		offer = Offer.new({ name: offerName, ownerId: owner.id, type: "earn" });
-		console.log("Creating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : "");
+		options.verbose && console.log("Creating earn offer %s id %s", offer.name, offer.id, options.dryRun ? "(dry run)" : "");
 	}
 
 	if (!content) {
@@ -167,14 +168,14 @@ async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string, appL
 	}
 	await Promise.all(appList.map(async appId => {
 		let appOffer = await AppOffer.findOne({ appId, offerId: offer.id });
-		appOffer && console.log("Updating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
+		appOffer && options.verbose && console.log("Updating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
 
 		if (!appOffer) {
-			console.log("Creating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
+			options.verbose && console.log("Creating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
 			appOffer = await AppOffer.create({ appId, offerId: offer.id });
 		}
 		appOffer.walletAddress = walletAddress;
 		appOffer.cap = cap;
-		await !options.dryRun && appOffer.save();
+		!options.dryRun && await appOffer.save();
 	}));
 }

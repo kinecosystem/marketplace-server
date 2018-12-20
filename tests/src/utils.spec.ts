@@ -4,15 +4,14 @@ import * as moment from "moment";
 import * as utils from "../../scripts/bin/utils/utils";
 import { Application } from "../../scripts/bin/models/applications";
 
-import { TooMuchEarnOrdered } from "../../scripts/bin/errors";
 import { path as _path } from "../../scripts/bin/utils/path";
 import * as metrics from "../../scripts/bin/metrics";
-import { throwOnAppEarnLimit } from "../../scripts/bin/utils/rate_limit";
 import * as helpers from "./helpers";
 import { LimitConfig } from "../../scripts/bin/config";
 import { initLogger } from "../../scripts/bin/logging";
 import { MarketplaceError } from "../../scripts/bin/errors";
 import { close as closeModels, init as initModels } from "../../scripts/bin/models/index";
+import { assertRateLimitAppEarn } from "../../scripts/bin/utils/rate_limit";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {
@@ -56,11 +55,11 @@ describe("util functions", () => {
 			};
 			const app: Application = await helpers.createApp(utils.generateId(), limits);
 			for (let i = 0; i < 3; i++) {
-				await throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
+				await assertRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
 			}
 
 			try {
-				await throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
+				await assertRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
 				expect(true).toBeFalsy(); // should throw and not get here
 			} catch (e) {
 				if (e instanceof MarketplaceError) {

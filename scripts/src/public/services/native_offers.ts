@@ -50,21 +50,21 @@ export async function validateExternalOrderJWT(jwt: string, appUserId: string): 
 		throw InvalidExternalOrderJwt();
 	}
 
+	// offer field has to exist in earn/spend/pay_to_user JWTs
+	if (!decoded.payload.offer) { throw MissingFieldJWT("offer"); }
+
 	switch (decoded.payload.sub) {
 		case "spend":
 			if (!decoded.payload.sender) { throw MissingFieldJWT("sender"); }
-			if (!decoded.payload.offer) { throw MissingFieldJWT("offer"); }
 			break;
 
 		case "earn":
 			if (!decoded.payload.recipient) { throw MissingFieldJWT("recipient"); }
-			if (!decoded.payload.offer) { throw MissingFieldJWT("offer"); }
 			break;
 
 		case "pay_to_user":
 			if (!decoded.payload.sender) { throw MissingFieldJWT("sender"); }
 			if (!decoded.payload.recipient) { throw MissingFieldJWT("recipient"); }
-			if (!decoded.payload.offer) { throw MissingFieldJWT("offer"); }
 			break;
 
 		default: break;
@@ -72,17 +72,15 @@ export async function validateExternalOrderJWT(jwt: string, appUserId: string): 
 
 	if (
 		(decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user")
-		&& decoded.payload.sender && !!decoded.payload.sender.user_id
-		&& decoded.payload.sender.user_id !== appUserId
+		&& !!decoded.payload.sender!.user_id && decoded.payload.sender!.user_id !== appUserId
 	) {
 		// if sender.user_id is defined and is different than current user, raise error
-		throw ExternalEarnOfferByDifferentUser(appUserId, decoded.payload.sender.user_id);
+		throw ExternalEarnOfferByDifferentUser(appUserId, decoded.payload.sender!.user_id || "");
 	}
 
 	if (decoded.payload.sub === "earn" && decoded.payload.recipient && decoded.payload.recipient.user_id !== appUserId) {
 		// check that user_id is defined for earn and is the same as current user
 		throw ExternalEarnOfferByDifferentUser(appUserId, decoded.payload.recipient.user_id);
-
 	}
 
 	return decoded.payload as ExternalOrderJWT;

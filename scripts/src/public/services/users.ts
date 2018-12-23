@@ -15,18 +15,22 @@ import { assertRateLimitRegistration } from "../../utils/rate_limit";
 
 export type AuthToken = {
 	token: string;
-	activated: boolean;
-	expiration_date: string;
 	app_id: string;
 	user_id: string;
+	activated: boolean;
+	expiration_date: string;
 	ecosystem_user_id: string;
+	type: "new" | "returning";
 };
 
-function AuthTokenDbToApi(authToken: DbAuthToken, user: User): AuthToken {
+function AuthTokenDbToApi(authToken: DbAuthToken, user: User, newUser: boolean): AuthToken {
+	const type = newUser ? "new" : "returning";
+
 	return {
-		token: authToken.id,
+		type,
 		activated: true, // always true - activation not needed
 		app_id: user.appId,
+		token: authToken.id,
 		user_id: user.appUserId,
 		ecosystem_user_id: user.id,
 		expiration_date: authToken.expireDate.toISOString()
@@ -39,8 +43,10 @@ export async function getOrCreateUserCredentials(
 	appId: string,
 	deviceId: string): Promise<AuthToken> {
 
+	let newUser = false;
 	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
+		newUser = true;
 		await assertRateLimitRegistration(app.id, app.config.limits.hourly_registration, moment.duration({ hours: 1 }));
 		await assertRateLimitRegistration(app.id, app.config.limits.minute_registration, moment.duration({ minutes: 1 }));
 
@@ -72,7 +78,7 @@ export async function getOrCreateUserCredentials(
 		authToken = await (DbAuthToken.new({ userId: user.id, deviceId }).save());
 	}
 
-	return AuthTokenDbToApi(authToken, user);
+	return AuthTokenDbToApi(authToken, user, newUser);
 }
 
 export type UpdateUserProps = {
@@ -101,7 +107,7 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 
 export async function activateUser(authToken: DbAuthToken, user: User): Promise<AuthToken> {
 	// no activation needed anymore
-	return AuthTokenDbToApi(authToken, user);
+	return AuthTokenDbToApi(authToken, user, false);
 }
 
 export async function userExists(appId: string, appUserId: string): Promise<boolean> {

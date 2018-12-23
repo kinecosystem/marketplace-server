@@ -536,13 +536,12 @@ window.setTimeout(function(){
 </div>`;
 }
 
-// ECO-754: what should this do now that there's no single user.walletAddress
-/*export async function retryUserWallet(params: { user_id: string }, query: any): Promise<string> {
+export async function retryUserWallet(params: { user_id: string; wallet: string; }, query: any): Promise<string> {
 	const user = await User.findOneById(params.user_id);
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
-	await payment.createWallet(user.walletAddress, user.appId, user.id);
+	await payment.createWallet(params.wallet, user.appId, user.id);
 	return `<h3>Retrying...</h3>
 <div><a href="/users/${ user.id }">Go Back</a>
 <script>
@@ -552,7 +551,7 @@ window.setTimeout(function(){
     }, 5000);
 </script>
 </div>`;
-}*/
+}
 
 export async function getOrder(params: { order_id: string }, query: any): Promise<string> {
 	const orders = await Order.queryBuilder("order")

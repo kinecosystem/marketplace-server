@@ -1,5 +1,5 @@
 import { JWTClaims, verify as verifyJWT } from "../jwt";
-import { ExternalEarnOfferByDifferentUser, InvalidExternalOrderJwt } from "../../errors";
+import { ExternalEarnOfferByDifferentUser, InvalidExternalOrderJwt, MissingFieldJWT } from "../../errors";
 import { getDefaultLogger as log } from "../../logging";
 
 export type ExternalOfferPayload = {
@@ -44,22 +44,43 @@ export function isPayToUser(jwt: ExternalOrderJWT): jwt is ExternalPayToUserOrde
 }
 
 export async function validateExternalOrderJWT(jwt: string, appUserId: string): Promise<ExternalOrderJWT> {
-	const decoded = await verifyJWT<PayToUserPayload, "spend" | "earn" | "pay_to_user">(jwt);
+	const decoded = await verifyJWT<Partial<PayToUserPayload>, "spend" | "earn" | "pay_to_user">(jwt);
 
 	if (decoded.payload.sub !== "earn" && decoded.payload.sub !== "spend" && decoded.payload.sub !== "pay_to_user") {
 		throw InvalidExternalOrderJwt();
 	}
 
-	if ((decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user") &&
-		!!decoded.payload.sender.user_id && decoded.payload.sender.user_id !== appUserId) {
-		// if sender.user_id is defined and is different than current user, raise error
-		throw ExternalEarnOfferByDifferentUser(appUserId, decoded.payload.sender.user_id);
+	// offer field has to exist in earn/spend/pay_to_user JWTs
+	if (!decoded.payload.offer) { throw MissingFieldJWT("offer"); }
+
+	switch (decoded.payload.sub) {
+		case "spend":
+			if (!decoded.payload.sender) { throw MissingFieldJWT("sender"); }
+			break;
+
+		case "earn":
+			if (!decoded.payload.recipient) { throw MissingFieldJWT("recipient"); }
+			break;
+
+		case "pay_to_user":
+			if (!decoded.payload.sender) { throw MissingFieldJWT("sender"); }
+			if (!decoded.payload.recipient) { throw MissingFieldJWT("recipient"); }
+			break;
+
+		default: break;
 	}
 
-	if (decoded.payload.sub === "earn" && decoded.payload.recipient.user_id !== appUserId) {
+	if (
+		(decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user")
+		&& !!decoded.payload.sender!.user_id && decoded.payload.sender!.user_id !== appUserId
+	) {
+		// if sender.user_id is defined and is different than current user, raise error
+		throw ExternalEarnOfferByDifferentUser(appUserId, decoded.payload.sender!.user_id || "");
+	}
+
+	if (decoded.payload.sub === "earn" && decoded.payload.recipient && decoded.payload.recipient.user_id !== appUserId) {
 		// check that user_id is defined for earn and is the same as current user
 		throw ExternalEarnOfferByDifferentUser(appUserId, decoded.payload.recipient.user_id);
-
 	}
 
 	return decoded.payload as ExternalOrderJWT;

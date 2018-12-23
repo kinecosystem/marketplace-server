@@ -220,8 +220,7 @@ describe("test orders", async () => {
 			}, {
 				user,
 				meta: {},
-				type: "spend",
-				wallet: wallet.address
+				type: "spend"
 			});
 			await order.save();
 			await helpers.completePayment(order.id);

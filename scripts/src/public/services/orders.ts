@@ -136,7 +136,6 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 		}
 	}, {
 		user,
-		wallet: wallet.address,
 		type: appOffer.offer.type,
 		// TODO if order meta content is a template:
 		// replaceTemplateVars(offer, offer.meta.order_meta.content!)
@@ -192,12 +191,10 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 	}, {
 		type: "earn",
 		user: recipient,
-		wallet: recipientWallet.address,
 		meta: pick(jwt.recipient, "title", "description")
 	}, {
 		user: sender,
 		type: "spend",
-		wallet: senderWallet.address,
 		meta: pick(jwt.sender, "title", "description")
 	});
 
@@ -228,7 +225,6 @@ async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId:
 	}, {
 		type: "earn",
 		user: recipient,
-		wallet: wallet.address,
 		meta: pick(jwt.recipient, "title", "description")
 	});
 }
@@ -253,7 +249,6 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 	}, {
 		user: sender,
 		type: "spend",
-		wallet: wallet.address,
 		meta: pick(jwt.sender, "title", "description")
 	});
 

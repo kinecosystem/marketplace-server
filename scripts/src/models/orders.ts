@@ -586,10 +586,6 @@ export class OrderContext extends BaseEntity {
 	@Column()
 	public type!: OfferType;
 
-	// ECO-754: added column
-	@Column()
-	public wallet!: string;
-
 	@Column("simple-json")
 	public readonly meta!: OrderMeta;
 

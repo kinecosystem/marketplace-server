@@ -105,16 +105,7 @@ export type UpdateUserProps = {
 	walletAddress: string;
 };
 
-export async function updateUser(user: User | string, props: UpdateUserProps) {
-	if (typeof user === "string") {
-		const id = user;
-		user = (await User.findOneById(user))!;
-
-		if (!user) {
-			throw NoSuchUser(id);
-		}
-	}
-
+export async function updateUser(user: User, props: UpdateUserProps) {
 	if (props.walletAddress) {
 		await user.updateWallet(props.deviceId, props.walletAddress);
 	}

@@ -38,7 +38,7 @@ type AppDef = { app_id: string, name: string, api_key: string, jwt_public_keys: 
 async function createApp(appId: string, name: string, jwtPublicKeys: StringMap, apiKey: string, appConfig: ApplicationConfig, dryRun?: boolean): Promise<Application> {
 	const existingApp = await Application.findOneById(appId);
 	if (existingApp) {
-		console.log(`existing app: ${appId}`);
+		console.log(`existing app: ${ appId }`);
 		return existingApp;
 	}
 	const app = Application.new({
@@ -191,7 +191,7 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 				buttonText: v.get("PollButtonText")!
 			});
 		} else {
-			console.log(`poll type unknown: ${v.get("PollPageType")}`);
+			console.log(`poll type unknown: ${ v.get("PollPageType") }`);
 		}
 	}
 	if (offer) {
@@ -243,17 +243,17 @@ function initArgsParser(): ScriptConfig {
 		action: "storeTrue"
 	});
 	parser.addArgument(["-c", "--create-db"], {
-		help: `Create tables/schemes if needed. ${"\x1b[41m" /* red */}USUALLY SHOULD NOT BE RUN IN PRODUCTION${"\x1b[0m" /* reset */}`,
+		help: `Create tables/schemes if needed. ${ "\x1b[41m" /* red */ }USUALLY SHOULD NOT BE RUN IN PRODUCTION${ "\x1b[0m" /* reset */ }`,
 		action: "storeTrue"
 	});
 
-/*
-//  implementation of a confirmation prompt function is below
-	parser.addArgument(["-c", "--require-update-confirm"], {
-		help: "Ask for confirmation before updating earn offers",
-		action: "storeTrue"
-	});
-*/
+	/*
+	//  implementation of a confirmation prompt function is below
+		parser.addArgument(["-c", "--require-update-confirm"], {
+			help: "Ask for confirmation before updating earn offers",
+			action: "storeTrue"
+		});
+	*/
 	const parsed = parser.parseArgs();
 	parsed.app_list = parsed.app_list ? parsed.app_list.split(",") : [];
 	return parsed as ScriptConfig;
@@ -280,7 +280,7 @@ initModels(scriptConfig.create_db).then(async () => {
 	if (appsDir) {
 		for (const filename of fs.readdirSync(path(appsDir))) {
 			if (!filename.endsWith(".json")) {
-				console.info(`skipping non json file ${filename}`);
+				console.info(`skipping non json file ${ filename }`);
 				continue;
 			}
 			const data: AppDef = JSON.parse(fs.readFileSync(path(join(appsDir, filename))).toString());
@@ -298,7 +298,7 @@ initModels(scriptConfig.create_db).then(async () => {
 		if (!(appList[0] === "ALL")) {
 			await Promise.all(appList.map(async appId => {
 				if (!await Application.findOneById(appId)) {
-					throw Error(`Application not found ${appId}`);
+					throw Error(`Application not found ${ appId }`);
 				}
 			}));
 		}
@@ -312,6 +312,8 @@ initModels(scriptConfig.create_db).then(async () => {
 			onlyUpdate: scriptConfig.only_update,
 		};
 		for (const filename of fs.readdirSync(path(offersDir))) {
+			console.log(`read ${ filename }`);
+
 			const offersCsv = fs.readFileSync(path(join(offersDir, filename)));
 			const parsed = parseCsv(offersCsv);
 
@@ -320,19 +322,25 @@ initModels(scriptConfig.create_db).then(async () => {
 			let results = [];
 			if (title === "Spend") {
 				results = await parseSpend(parsed, appList);
-				console.log(`created spend:${contentType} offers`);
+				createOfferOptions.verbose && console.log(`created spend:${ contentType } offers`);
 			} else if (title === "Earn") {
 				results = await parseEarn(parsed, contentType, appList, createOfferOptions);
-				console.log(`created earn:${contentType} offers`);
+				createOfferOptions.verbose && console.log(`created earn:${ contentType } offers`);
 			} else {
 				throw new Error("Failed to parse " + parsed[0][0]);
 			}
 		}
 	}
-	await closeModels();
+	try {
+		await closeModels();
+	} catch (e) {
+	}
 	console.log(`done.`);
 }).catch(async (error: Error) => {
 	console.log("error: " + error.message + "\n" + error.stack);
-	await closeModels();
+	try {
+		await closeModels();
+	} catch (e) {
+	}
 	console.log(`done.`);
 });

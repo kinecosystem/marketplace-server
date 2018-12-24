@@ -2,16 +2,17 @@ import * as path from "path";
 import * as moment from "moment";
 
 import * as utils from "../../scripts/bin/utils/utils";
-import { Application } from "../../scripts/bin/models/applications";
 
-import { path as _path } from "../../scripts/bin/utils/path";
 import * as metrics from "../../scripts/bin/metrics";
-import * as helpers from "./helpers";
 import { LimitConfig } from "../../scripts/bin/config";
 import { initLogger } from "../../scripts/bin/logging";
 import { MarketplaceError } from "../../scripts/bin/errors";
+import { path as _path } from "../../scripts/bin/utils/path";
+import { Application } from "../../scripts/bin/models/applications";
 import { close as closeModels, init as initModels } from "../../scripts/bin/models/index";
 import { assertRateLimitAppEarn } from "../../scripts/bin/utils/rate_limit";
+
+import * as helpers from "./helpers";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {

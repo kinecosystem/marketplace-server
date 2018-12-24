@@ -191,7 +191,6 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 	}, {
 		type: "earn",
 		user: recipient,
-		wallet: recipientWallet.address,
 		meta: pick(jwt.recipient, "title", "description")
 	}, {
 		user: sender,
@@ -226,7 +225,6 @@ async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId:
 	}, {
 		type: "earn",
 		user: recipient,
-		wallet: wallet.address,
 		meta: pick(jwt.recipient, "title", "description")
 	});
 }

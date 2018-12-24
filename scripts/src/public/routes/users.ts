@@ -5,6 +5,7 @@ import { Application } from "../../models/applications";
 import { InvalidWalletAddress, NoSuchApp, UnknownSignInType } from "../../errors";
 
 import {
+	logout as logoutService,
 	getOrCreateUserCredentials,
 	userExists as userExistsService,
 	updateUser as updateUserService,
@@ -126,4 +127,9 @@ export const userInfo = async function(req: UserInfoRequest, res: Response) {
 export const myUserInfo = async function(req: Request, res: Response) {
 	req.params.user_id = req.context.user!.appUserId;
 	await (userInfo as any)(req as UserInfoRequest, res);
+} as any as RequestHandler;
+
+export const logoutUser = async function(req: Request, res: Response) {
+	await logoutService(req.context.user!, req.context.token!);
+	res.status(200).send();
 } as any as RequestHandler;

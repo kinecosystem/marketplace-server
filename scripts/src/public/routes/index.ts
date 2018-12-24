@@ -5,7 +5,15 @@ import { statusHandler } from "../middleware";
 
 import { getOffers } from "./offers";
 import { getConfigHandler } from "./config";
-import { activateUser, myUserInfo, signInUser, updateUser, userExists, userInfo } from "./users";
+import {
+	userInfo,
+	myUserInfo,
+	signInUser,
+	updateUser,
+	userExists,
+	logoutUser,
+	activateUser
+} from "./users";
 import {
 	cancelOrder,
 	changeOrder,
@@ -56,6 +64,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 
 	app.patch(prefix("users/"), authenticateUser, updateUser); // deprecated, use users/me
 	app.patch(prefix("users/me"), authenticateUser, updateUser);
+	app.delete(prefix("users/me/session"), authenticateUser, logoutUser);
 	app.post(prefix("users/"), signInUser);
 
 	app.get(prefix("config/"), getConfigHandler);

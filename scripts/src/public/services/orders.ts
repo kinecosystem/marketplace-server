@@ -136,7 +136,6 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 		}
 	}, {
 		user,
-		wallet: wallet.address,
 		type: appOffer.offer.type,
 		// TODO if order meta content is a template:
 		// replaceTemplateVars(offer, offer.meta.order_meta.content!)

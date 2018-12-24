@@ -208,7 +208,6 @@ describe("test orders", async () => {
 	test("payment confirmation jwt for non test apps is es256", async () => {
 		async function getPaymentConfirmationJWTFor(appId: string) {
 			const user = await helpers.createUser({ appId });
-			const wallet = (await user.getWallets()).all()[0];
 			const order = ExternalOrder.new({
 				offerId: "offer",
 				amount: 1,
@@ -221,7 +220,6 @@ describe("test orders", async () => {
 				user,
 				meta: {},
 				type: "spend",
-				wallet: wallet.address
 			});
 			await order.save();
 			await helpers.completePayment(order.id);

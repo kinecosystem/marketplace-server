@@ -88,6 +88,34 @@ describe("test orders", async () => {
 		expect(foundOffer).toBeTruthy();
 	});
 
+	test("getOrderHistory returns only orders for current wallet", async () => {
+		const deviceId = "test_device_id";
+		const user = await helpers.createUser({ deviceId });
+		const offers = await getOffers(user.id, user.appId, {});
+		const firstIteration = Math.floor(offers.offers.length / 2);
+
+		for (let i = 0; i < firstIteration; i++) {
+			const offerId = offers.offers[i].id;
+			const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
+			const order = await submitOrder(openOrder.id, user, deviceId, "{}", user.appId);
+			await helpers.completePayment(order.id);
+		}
+
+		const history1 = (await getOrderHistory(user, deviceId, {})).orders.map(order => order.id);
+		await user.updateWallet(deviceId, `wallet-${ generateId() }`);
+
+		for (let i = firstIteration; i < offers.offers.length; i++) {
+			const offerId = offers.offers[i].id;
+			const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
+			const order = await submitOrder(openOrder.id, user, deviceId, "{}", user.appId);
+			await helpers.completePayment(order.id);
+		}
+
+		const history2 = (await getOrderHistory(user, deviceId, {})).orders.map(order => order.id);
+		expect(history1.length + history2.length).toBe(offers.offers.length);
+		history1.forEach(id => expect(history2).not.toContain(id));
+	});
+
 	test("filter order by offer_id", async () => {
 		const deviceId = "test_device_id";
 		const user = await helpers.createUser({ deviceId });
@@ -99,7 +127,7 @@ describe("test orders", async () => {
 			await helpers.completePayment(order.id);
 		}
 		const offerId = offers.offers[0].id;
-		const history = await getOrderHistory(user.id, { offerId });
+		const history = await getOrderHistory(user, deviceId, { offerId });
 		expect(history.orders.length).toEqual(1);
 		expect(history.orders[0].offer_id).toEqual(offerId);
 
@@ -126,7 +154,7 @@ describe("test orders", async () => {
 			await helpers.completePayment(order.id);
 		}
 		const limit = 2;
-		const history = await getOrderHistory(user.id, {}, limit);
+		const history = await getOrderHistory(user, deviceId, {}, limit);
 		expect(history.orders.length).toEqual(limit);
 		expect(history.orders[0].offer_id).toEqual(offers.offers[3].id);
 		expect(history.orders[1].offer_id).toEqual(offers.offers[2].id);
@@ -208,6 +236,7 @@ describe("test orders", async () => {
 	test("payment confirmation jwt for non test apps is es256", async () => {
 		async function getPaymentConfirmationJWTFor(appId: string) {
 			const user = await helpers.createUser({ appId });
+			const wallet = (await user.getWallets()).all()[0];
 			const order = ExternalOrder.new({
 				offerId: "offer",
 				amount: 1,
@@ -220,6 +249,7 @@ describe("test orders", async () => {
 				user,
 				meta: {},
 				type: "spend",
+				wallet: wallet.address
 			});
 			await order.save();
 			await helpers.completePayment(order.id);

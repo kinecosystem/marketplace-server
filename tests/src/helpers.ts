@@ -46,7 +46,6 @@ export async function createUser(options: { appId?: string; deviceId?: string; }
 
 async function orderFromOffer(offer: Offer, userId: string): Promise<MarketplaceOrder> {
 	const user = (await User.findOneById(userId))!;
-	const wallet = (await user.getWallets()).all()[0];
 
 	return MarketplaceOrder.new({
 		offerId: offer.id,
@@ -60,7 +59,6 @@ async function orderFromOffer(offer: Offer, userId: string): Promise<Marketplace
 	}, {
 		user,
 		type: offer.type,
-		wallet: wallet.address,
 		meta: offer.meta.order_meta
 	}) as MarketplaceOrder;
 }
@@ -102,7 +100,6 @@ export async function createOrders(userId: string): Promise<number> {
 
 export async function createExternalOrder(userId: string): Promise<Order> {
 	const user = (await User.findOneById(userId))!;
-	const wallet = (await user.getWallets()).all()[0];
 
 	const order = ExternalOrder.new({
 		amount: 65,
@@ -116,7 +113,6 @@ export async function createExternalOrder(userId: string): Promise<Order> {
 	}, {
 		user,
 		type: "earn",
-		wallet: wallet.address,
 		meta: {
 			title: "external order #1",
 			description: "first external order"

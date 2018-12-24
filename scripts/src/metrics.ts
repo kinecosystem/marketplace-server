@@ -79,8 +79,9 @@ ID: <${ order.id }> | Type: ${ type } | Origin: ${ order.origin }
 Error: ${ title } | Code: ${ error.code }
 CreatedDate: ${order.createdDate.toISOString()} | LastDate: ${(order.currentStatusDate || order.createdDate).toISOString()}`;
 
+	message += ` sender wallet: ${ order.blockchainData.sender_address }, recipient wallet: ${ order.blockchainData.recipient_address }`;
 	order.forEachContext(context => {
-		message += `UserId: ${ context.user.id } | UserAppId: ${ context.user.appUserId } | Wallet: ${ context.user.walletAddress }`;
+		message += `UserId: ${ context.user.id } | UserAppId: ${ context.user.appUserId }`;
 	});
 	statsd.event(title, message,
 		{ alert_type: "warning" },

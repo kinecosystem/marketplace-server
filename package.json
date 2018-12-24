@@ -75,6 +75,7 @@
 		"start-marketplace-internal": "node scripts/bin/internal/index",
 		"start-marketplace-admin": "node scripts/bin/admin/index",
 		"manage-db-data": "node scripts/bin/manage_db_data",
+		"start-admin": "node scripts/bin/admin/index",
 		"restart": "npm-run-all build start",
 		"test-system": "node scripts/bin/mock_client",
 		"test": "jest --forceExit --runInBand --detectOpenHandles"

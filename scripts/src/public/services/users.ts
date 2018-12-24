@@ -1,15 +1,17 @@
+import * as moment from "moment";
+import { Brackets } from "typeorm";
+
 import * as metrics from "../../metrics";
-import { getDefaultLogger as logger } from "../../logging";
-import { MaxWalletsExceeded } from "../../errors";
 import { Order } from "../../models/orders";
+import { readUTCDate } from "../../utils/utils";
 import { Application } from "../../models/applications";
+import { getDefaultLogger as logger } from "../../logging";
+import { MaxWalletsExceeded, NoSuchUser } from "../../errors";
 import { User, AuthToken as DbAuthToken } from "../../models/users";
+import { create as createWalletAddressUpdateSucceeded } from "../../analytics/events/wallet_address_update_succeeded";
 
 import * as payment from "./payment";
-import { readUTCDate } from "../../utils/utils";
-import { Brackets } from "typeorm";
 import { assertRateLimitRegistration } from "../../utils/rate_limit";
-import * as moment from "moment";
 
 export type AuthToken = {
 	token: string;
@@ -40,34 +42,37 @@ export async function getOrCreateUserCredentials(
 
 	async function handleExistingUser(existingUser: User) {
 		logger().info("found existing user", { appId, appUserId, userId: existingUser.id });
-		if (existingUser.walletAddress !== walletAddress) {
-			logger().warn(`existing user registered with new wallet ${ existingUser.walletAddress } !== ${ walletAddress }`);
-			if (!app.allowsNewWallet(existingUser.walletCount)) {
+		const wallets = await existingUser.getWallets();
+
+		if (wallets.has(walletAddress)) {
+			metrics.userRegister(false, false, appId);
+		} else {
+			logger().warn(`existing user registered with new wallet ${ walletAddress }`);
+			if (!app.allowsNewWallet(wallets.count)) {
 				metrics.maxWalletsExceeded(appId);
 				throw MaxWalletsExceeded();
 			}
-			existingUser.walletCount += 1;
-			existingUser.walletAddress = walletAddress;
-			await existingUser.save();
-			await payment.createWallet(existingUser.walletAddress, existingUser.appId, existingUser.id);
+
+			await existingUser.updateWallet(deviceId, walletAddress);
+			await payment.createWallet(walletAddress, existingUser.appId, existingUser.id);
 			metrics.userRegister(false, true, appId);
-		} else {
-			metrics.userRegister(false, false, appId);
 		}
-		logger().info(`returning existing user ${ existingUser.id }`);
+
+		logger().info(`returning existing user ${existingUser.id}`);
 	}
 
 	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
 		await assertRateLimitRegistration(app.id, app.config.limits.hourly_registration, moment.duration({ hours: 1 }));
 		await assertRateLimitRegistration(app.id, app.config.limits.minute_registration, moment.duration({ minutes: 1 }));
+
 		try {
 			logger().info("creating a new user", { appId, appUserId });
-
-			user = User.new({ appUserId, appId, walletAddress, isNew: true });
+			user = User.new({ appUserId, appId });
 			await user.save();
-			logger().info(`creating stellar wallet for new user ${ user.id }: ${ user.walletAddress }`);
-			await payment.createWallet(user.walletAddress, user.appId, user.id);
+			await user.updateWallet(deviceId, walletAddress);
+			logger().info(`creating stellar wallet for new user ${ user.id }: ${ walletAddress }`);
+			await payment.createWallet(walletAddress, user.appId, user.id);
 			metrics.userRegister(true, true, appId);
 		} catch (e) {
 			// maybe caught a "violates unique constraint" error, check by finding the user again
@@ -93,6 +98,20 @@ export async function getOrCreateUserCredentials(
 	}
 
 	return AuthTokenDbToApi(authToken, user);
+}
+
+export type UpdateUserProps = {
+	deviceId: string;
+	walletAddress: string;
+};
+
+export async function updateUser(user: User, props: UpdateUserProps) {
+	if (props.walletAddress) {
+		await user.updateWallet(props.deviceId, props.walletAddress);
+	}
+
+	createWalletAddressUpdateSucceeded(user.id).report();
+	metrics.walletAddressUpdate(user.appId);
 }
 
 export async function activateUser(

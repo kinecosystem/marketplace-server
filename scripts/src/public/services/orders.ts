@@ -37,7 +37,7 @@ import {
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
 
-import { throwOnAppEarnLimit, throwOnUserEarnLimit } from "../../utils/rate_limit";
+import { assertRateLimitAppEarn, assertRateLimitUserEarn, assertRateLimitWalletEarn } from "../../utils/rate_limit";
 
 export interface OrderList {
 	orders: Order[];
@@ -84,6 +84,7 @@ export async function getOrder(orderId: string, userId: string): Promise<Order> 
 		offerId: order.offerId,
 		contexts: order.contexts
 	});
+
 	return orderDbToApi(order, userId);
 }
 
@@ -105,12 +106,15 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 	return orderDbToApi(order, userId);
 }
 
-async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {} as OrderTranslations) {
+async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string, orderTranslations = {} as OrderTranslations) {
 	const app = (await Application.findOneById(user.appId))!;
 	if (appOffer.offer.type === "earn") {
-		await throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), appOffer.offer.amount);
-		await throwOnAppEarnLimit(app.id, "total_earn", app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
-		await throwOnUserEarnLimit(user.id, "user_earn", app.config.limits.daily_user_earn, moment.duration({ days: 1 }), appOffer.offer.amount);
+		const wallet = (await user.getWallets(userDeviceId)).lastUsed();
+
+		await assertRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), appOffer.offer.amount);
+		await assertRateLimitAppEarn(app.id, app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
+		await assertRateLimitUserEarn(user.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), appOffer.offer.amount);
+		await assertRateLimitWalletEarn(wallet.address, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), appOffer.offer.amount);
 	}
 
 	if (await appOffer.didExceedCap(user.id)) {
@@ -121,13 +125,14 @@ async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {
 	orderMeta.title = orderTranslations.orderTitle || orderMeta.title;
 	orderMeta.description = orderTranslations.orderDescription || orderMeta.description;
 
+	const wallet = (await user.getWallets(userDeviceId)).lastUsed();
 	const order = db.MarketplaceOrder.new({
 		status: "opened",
 		offerId: appOffer.offer.id,
 		amount: appOffer.offer.amount,
 		blockchainData: {
-			sender_address: appOffer.offer.type === "spend" ? user.walletAddress : appOffer.walletAddress,
-			recipient_address: appOffer.offer.type === "spend" ? appOffer.walletAddress : user.walletAddress
+			sender_address: appOffer.offer.type === "spend" ? wallet.address : appOffer.walletAddress,
+			recipient_address: appOffer.offer.type === "spend" ? appOffer.walletAddress : wallet.address
 		}
 	}, {
 		user,
@@ -143,7 +148,7 @@ async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {
 	return order;
 }
 
-export async function createMarketplaceOrder(offerId: string, user: User, orderTranslations?: OrderTranslations): Promise<OpenOrder> {
+export async function createMarketplaceOrder(offerId: string, user: User, userDeviceId: string, orderTranslations?: OrderTranslations): Promise<OpenOrder> {
 	logger().info("creating marketplace order for", { offerId, userId: user.id });
 
 	const appOffer = await AppOffer.findOne({ offerId, appId: user.appId });
@@ -153,7 +158,7 @@ export async function createMarketplaceOrder(offerId: string, user: User, orderT
 
 	const order = await lock(getLockResource("get", offerId, user.id), async () =>
 		(await db.Order.getOpenOrder(offerId, user.id)) ||
-		(await lock(getLockResource("create", offerId), () => createOrder(appOffer, user, orderTranslations)))
+		(await lock(getLockResource("create", offerId), () => createOrder(appOffer, user, userDeviceId, orderTranslations)))
 	);
 
 	if (!order) {
@@ -165,40 +170,44 @@ export async function createMarketplaceOrder(offerId: string, user: User, orderT
 	return openOrderDbToApi(order, user.id);
 }
 
-async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJwt): Promise<db.ExternalOrder> {
+async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalPayToUserOrderJwt): Promise<db.ExternalOrder> {
 	const recipient = await User.findOne({ appId: sender.appId, appUserId: jwt.recipient.user_id });
 
 	if (!recipient) {
 		throw NoSuchUser(jwt.recipient.user_id);
 	}
 
+	const senderWallet = (await sender.getWallets(senderDeviceId)).lastUsed();
+	const recipientWallet = (await recipient.getWallets()).lastUsed();
 	const order = db.ExternalOrder.new({
 		offerId: jwt.offer.id,
 		amount: jwt.offer.amount,
 		status: "opened",
 		nonce: jwt.nonce,
 		blockchainData: {
-			sender_address: sender.walletAddress,
-			recipient_address: recipient.walletAddress
+			sender_address: senderWallet.address,
+			recipient_address: recipientWallet.address
 		}
 	}, {
 		type: "earn",
 		user: recipient,
 		meta: pick(jwt.recipient, "title", "description")
 	}, {
-		type: "spend",
 		user: sender,
+		type: "spend",
 		meta: pick(jwt.sender, "title", "description")
 	});
 
-	await addWatcherEndpoint(recipient.walletAddress, order.id);
+	await addWatcherEndpoint(recipientWallet.address, order.id);
 	return order;
 }
 
-async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
-	const app = await Application.findOneById(recipient.appId);
+async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId: string, jwt: ExternalEarnOrderJWT) {
+	const app = (await Application.findOneById(recipient.appId))!;
+	const wallet = (await recipient.getWallets(recipientDeviceId)).lastUsed();
 
-	await throwOnUserEarnLimit(recipient.id, "user_earn", app!.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
+	await assertRateLimitUserEarn(recipient.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
+	await assertRateLimitWalletEarn(wallet.address, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
 
 	if (!app) {
 		throw NoSuchApp(recipient.appId);
@@ -211,7 +220,7 @@ async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnO
 		status: "opened",
 		blockchainData: {
 			sender_address: app.walletAddresses.sender,
-			recipient_address: recipient.walletAddress
+			recipient_address: wallet.address
 		}
 	}, {
 		type: "earn",
@@ -220,8 +229,9 @@ async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnO
 	});
 }
 
-async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOrderJWT) {
+async function createNormalSpendExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalSpendOrderJWT) {
 	const app = await Application.findOneById(sender.appId);
+	const wallet = (await sender.getWallets(senderDeviceId)).lastUsed();
 
 	if (!app) {
 		throw NoSuchApp(sender.appId);
@@ -233,12 +243,12 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 		status: "opened",
 		nonce: jwt.nonce,
 		blockchainData: {
-			sender_address: sender.walletAddress,
+			sender_address: wallet.address,
 			recipient_address: app.walletAddresses.recipient
 		}
 	}, {
-		type: "spend",
 		user: sender,
+		type: "spend",
 		meta: pick(jwt.sender, "title", "description")
 	});
 
@@ -247,7 +257,7 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 	return order;
 }
 
-export async function createExternalOrder(jwt: string, user: User): Promise<OpenOrder> {
+export async function createExternalOrder(jwt: string, user: User, userDeviceId: string): Promise<OpenOrder> {
 	logger().info("createExternalOrder", { jwt });
 	const payload = await validateExternalOrderJWT(jwt, user.appUserId);
 	const nonce = payload.nonce || db.Order.DEFAULT_NONCE;
@@ -256,11 +266,11 @@ export async function createExternalOrder(jwt: string, user: User): Promise<Open
 
 	if (!order || order.status === "failed") {
 		if (isPayToUser(payload)) {
-			order = await createP2PExternalOrder(user, payload);
+			order = await createP2PExternalOrder(user, userDeviceId, payload);
 		} else if (isExternalEarn(payload)) {
-			order = await createNormalEarnExternalOrder(user, payload);
+			order = await createNormalEarnExternalOrder(user, userDeviceId, payload);
 		} else {
-			order = await createNormalSpendExternalOrder(user, payload);
+			order = await createNormalSpendExternalOrder(user, userDeviceId, payload);
 		}
 
 		await order.save();
@@ -283,20 +293,21 @@ export async function createExternalOrder(jwt: string, user: User): Promise<Open
 
 export async function submitOrder(
 	orderId: string,
-	userId: string,
+	user: User,
+	userDeviceId: string,
 	form: string | undefined,
-	walletAddress: string,
 	appId: string,
 	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
 
 	logger().info("submitOrder", { orderId });
 	const order = await db.Order.getOne(orderId) as db.MarketplaceOrder | db.ExternalOrder;
+	const wallet = (await user.getWallets(userDeviceId)).lastUsed();
 
 	if (!order) {
 		throw NoSuchOrder(orderId);
 	}
 	if (order.status !== "opened") {
-		return orderDbToApi(order, userId);
+		return orderDbToApi(order, user.id);
 	}
 	if (order.isExpired()) {
 		throw OpenOrderExpired(orderId);
@@ -328,7 +339,7 @@ export async function submitOrder(
 					// nothing
 					break;
 				default:
-					logger().warn(`unexpected content type ${offerContent.contentType}`);
+					logger().warn(`unexpected content type ${ offerContent.contentType }`);
 			}
 		}
 	}
@@ -338,14 +349,14 @@ export async function submitOrder(
 	logger().info("order changed to pending", { orderId });
 
 	if (order.isEarn()) {
-		await payment.payTo(walletAddress, appId, order.amount, order.id);
+		await payment.payTo(wallet.address, appId, order.amount, order.id);
 		createEarnTransactionBroadcastToBlockchainSubmitted(order.contexts[0].user.id, order.offerId, order.id).report();
 	}
 
 	order.contexts.forEach(context => {
 		metrics.submitOrder(context.type, order.offerId, appId);
 	});
-	return orderDbToApi(order, userId);
+	return orderDbToApi(order, user.id);
 }
 
 export async function cancelOrder(orderId: string): Promise<void> {

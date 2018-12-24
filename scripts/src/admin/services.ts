@@ -8,6 +8,7 @@ import * as payment from "../public/services/payment";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getDefaultLogger as log } from "../logging";
 import { getOffers as getUserOffersService } from "../public/services/offers";
+import { getOfferContent, replaceTemplateVars } from "../public/services/offer_contents";
 
 type OfferStats = {
 	id: string
@@ -104,13 +105,13 @@ function getOfferStatsQuery(appId: string) {
     from orders
     inner join orders_contexts context on context.order_id = orders.id
     inner join users on users.id = context.user_id
-    where users.app_id='${appId}'
+    where users.app_id='${ appId }'
 ), app_offers as (
     select offers.*,
       (a.cap::json->'total')::text::integer as total_cap
     from offers
 inner join application_offers a on offers.id = a.offer_id
-where a.app_id='${appId}')
+where a.app_id='${ appId }')
 select
   CASE WHEN offers.id IS NULL THEN CONCAT('native ', ordered.type) ELSE offers.id END as id,
   max(offers.name) as name,
@@ -276,13 +277,15 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 
 	function address() {
 		if (appOffer) {
-			return `<a href="${ BLOCKCHAIN.horizon_url}/accounts/${ appOffer.walletAddress }">${ appOffer.walletAddress }</a>`;
+			return `<a href="${ BLOCKCHAIN.horizon_url }/accounts/${ appOffer.walletAddress }">${ appOffer.walletAddress }</a>`;
 		}
 		return ``;
 	}
 
+	const content = replaceTemplateVars(offer, ((await getOfferContent(offer.id)) || { content: "{}" }).content);
+
 	return `<tr>
-<td>${ offer.id }</td>
+<td onclick="overlayOn('${ escape(content) }')">${ offer.id }</td>
 <td><a href="/orders?offer_id=${ offer.id }">orders</a></td>
 <td><a href="/polls/${ offer.id }">polls</a></td>
 <td>${ offer.name }</td>
@@ -290,7 +293,7 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 <td>${ offer.amount }</td>
 <td>${ offer.meta.title }</td>
 <td>${ offer.meta.description }</td>
-<td><img src="${offer.meta.image}"/></td>
+<td><img src="${ offer.meta.image }"/></td>
 <td>${ total() }</td>
 <td>${ perUser() }</td>
 <td>${ address() }</td>
@@ -334,26 +337,30 @@ async function orderToHtml(order: Order): Promise<string> {
 }
 
 async function userToHtml(user: User): Promise<string> {
+	const accounts = (await user.getWallets()).all().map(wallet => {
+		return `
+		<a href="${ BLOCKCHAIN.horizon_url}/accounts/${ wallet.address }">${ wallet.address }</a>
+		<a href="/wallets/${ wallet.address }">balance</a>
+		<a href="/wallets/${ wallet.address }/payments">kin transactions</a>
+		`;
+	}).join("<br/>");
+
 	return `
 <ul>
-<li>ecosystem id: <a href="/users/${ user.id }">${ user.id }</a></li>
-<li>appId: ${ user.appId }</li>
-<li>appUserId: ${ user.appUserId }</li>
-<li>stellar account:
-<a href="${ BLOCKCHAIN.horizon_url}/accounts/${ user.walletAddress }">${ user.walletAddress }</a>
-<a href="/wallets/${ user.walletAddress }">balance</a>
-<a href="/wallets/${ user.walletAddress }/payments">kin transactions</a>
-</li>
-<li>created: ${ user.createdDate }</li>
-<li><a href="/orders?user_id=${ user.id }">orders</a></li>
-<li><a href="/users/${ user.id }/offers">offers</a></li>
-<li><a href="https://analytics.amplitude.com/kinecosystem/project/204515/search/${ user.id }">client events</a></li>
+	<li>ecosystem id: <a href="/users/${ user.id }">${ user.id }</a></li>
+	<li>appId: ${ user.appId }</li>
+	<li>appUserId: ${ user.appUserId }</li>
+	<li>stellar accounts:<br/>${ accounts }</li>
+	<li>created: ${ user.createdDate }</li>
+	<li><a href="/orders?user_id=${ user.id }">orders</a></li>
+	<li><a href="/users/${ user.id }/offers">offers</a></li>
+	<li><a href="https://analytics.amplitude.com/kinecosystem/project/204515/search/${ user.id }">client events</a></li>
 </ul>`;
 }
 
 export type Paging = { limit: number, page: number };
 const DEFAULT_PAGE = 0;
-const DEFAULT_LIMIT = 100;
+const DEFAULT_LIMIT = 150;
 
 function skip(query: Paging): number {
 	return (query.page || 0) * take(query);
@@ -397,7 +404,7 @@ export async function getApplicationUsers(params: { app_id: string }, query: Pag
 
 export async function getOffers(params: any, query: Paging): Promise<string> {
 	const offers = await Offer.find({ order: { createdDate: "DESC" }, take: take(query), skip: skip(query) });
-	let ret = `<table>${OFFER_HEADERS}`;
+	let ret = `<table>${ OFFER_HEADERS }`;
 	for (const offer of offers) {
 		ret += await offerToHtml(offer);
 	}
@@ -419,8 +426,8 @@ export async function getApplicationOffers(params: { app_id: string }, query: Pa
 		throw new Error("no such app: " + params.app_id);
 	}
 
-	console.log(`length ${app.appOffers.length}`);
-	let ret = `<table>${OFFER_HEADERS}`;
+	console.log(`length ${ app.appOffers.length }`);
+	let ret = `<table>${ OFFER_HEADERS }`;
 	for (const appOffer of app.appOffers) {
 		console.log(`offer: `, appOffer.offer);
 		ret += await offerToHtml(appOffer.offer, appOffer);
@@ -529,12 +536,12 @@ window.setTimeout(function(){
 </div>`;
 }
 
-export async function retryUserWallet(params: { user_id: string }, query: any): Promise<string> {
+export async function retryUserWallet(params: { user_id: string; wallet: string; }, query: any): Promise<string> {
 	const user = await User.findOneById(params.user_id);
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
-	await payment.createWallet(user.walletAddress, user.appId, user.id);
+	await payment.createWallet(params.wallet, user.appId, user.id);
 	return `<h3>Retrying...</h3>
 <div><a href="/users/${ user.id }">Go Back</a>
 <script>
@@ -602,7 +609,7 @@ export async function fuzzySearch(params: { some_id: string }, query: any): Prom
 
 export async function getWallet(params: { wallet_address: string }, query: any): Promise<string> {
 	const data = await payment.getWalletData(params.wallet_address, { timeout: 5000 });
-	let ret = `<pre class="wide">${JSON.stringify(data, null, 2)}</pre>`;
+	let ret = `<pre class="wide">${ JSON.stringify(data, null, 2) }</pre>`;
 
 	if (data.kin_balance === null) {
 		ret = `<h3 class="alert">Untrusted!</h3>` + ret;

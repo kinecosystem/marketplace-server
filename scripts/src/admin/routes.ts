@@ -8,8 +8,7 @@ import {
 	getApplicationUsers, getOfferStats,
 	getOrders, fuzzySearch, getWallet, getWalletPayments,
 	getApplicationOffers, getUserOffers,
-	retryOrder, retryUserWallet, getApplicationStats,
-	changeOffer
+	getApplicationStats, changeOffer, retryOrder, retryUserWallet
 } from "./services";
 
 import { statusHandler } from "../middleware";
@@ -95,6 +94,31 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		    bottom: 30px;
 		    font-size: 17px;
 		}
+		#overlay {
+            position: fixed;
+			display: none;
+			width: 100%;
+			height: 100%;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: rgba(0,0,0,0.5);
+			z-index: 2;
+			cursor: pointer;
+		}
+		#overlay #text{
+			position: absolute;
+			width: 80%;
+			height: 80%;
+			top: 50%;
+			left: 50%;
+			overflow-y: scroll;
+			font-size: 15px;
+			color: black;
+			transform: translate(-50%,-50%);
+			-ms-transform: translate(-50%,-50%);
+		}
 		#toast.show {
 		    visibility: visible;
 		    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
@@ -130,12 +154,23 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 					.then(res => toast("ok"))
 					.catch(err => alert("error: " + JSON.stringify(err)));
 			}
+			function overlayOn(text) {
+				document.getElementById("text").innerText = JSON.stringify(JSON.parse(unescape(text)), null,  "\t");
+				document.getElementById("overlay").style.display = "block";
+			}
+			function overlayOff() {
+				document.getElementById("overlay").style.display = "none";
+				document.getElementById("text").innerText = "";
+			}
 		</script>
 	</head>
 	<body>
 		<h1><a href="/">Marketplace Admin</a></h1>
 		<div id="toast">MSG TOAST</div>
-		<div id="content">${content}</div>
+		<div id="overlay" onclick="overlayOff()">
+		  <pre id="text" class="wide">Overlay Text</pre>
+		</div>
+		<div id="content">${ content }</div>
 		<div id="footer"></div>
 	</body>
 </html>`;
@@ -175,7 +210,7 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		.get("/", wrapService(index))
 		// retries
 		.get("/orders/:order_id/retry", wrapService(retryOrder))
-		.get("/users/:user_id/retry", wrapService(retryUserWallet))
+		.get("/users/:user_id/wallets/:wallet/retry", wrapService(retryUserWallet))
 		// change data
 		.post("/applications/:app_id/offers/:offer_id", jsonResponse(changeOffer))
 	;

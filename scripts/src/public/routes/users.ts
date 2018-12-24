@@ -1,29 +1,30 @@
 import { Request, RequestHandler, Response } from "express";
-import { InvalidWalletAddress, NoSuchApp, UnknownSignInType } from "../../errors";
+
 import { getDefaultLogger as logger } from "../../logging";
+import { Application } from "../../models/applications";
+import { InvalidWalletAddress, NoSuchApp, UnknownSignInType } from "../../errors";
 
 import {
-	activateUser as activateUserService,
 	getOrCreateUserCredentials,
-	getUserProfile as getUserProfileService,
-	userExists as userExistsService
+	userExists as userExistsService,
+	updateUser as updateUserService,
+	activateUser as activateUserService,
+	getUserProfile as getUserProfileService
 } from "../services/users";
-import * as metrics from "../../metrics";
 import { SignInContext, validateRegisterJWT, validateWhitelist } from "../services/applications";
-import { Application, SignInType } from "../../models/applications";
-import { getConfig } from "../config";
-import { create as createWalletAddressUpdateSucceeded } from "../../analytics/events/wallet_address_update_succeeded";
 
-export type WalletData = { wallet_address: string };
+export type WalletData = {
+	device_id: string;
+	wallet_address: string;
+};
 
 export type CommonSignInData = WalletData & {
 	sign_in_type: "jwt" | "whitelist";
-	device_id: string;
 };
 
 export type JwtSignInData = CommonSignInData & {
-	sign_in_type: "jwt";
 	jwt: string;
+	sign_in_type: "jwt";
 };
 
 export type WhitelistSignInData = CommonSignInData & {
@@ -73,20 +74,18 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 export type UpdateUserRequest = Request & { body: WalletData };
 
 export const updateUser = async function(req: UpdateUserRequest, res: Response) {
-	const context = req.context;
+	const user = req.context.user!;
+	const deviceId = req.body.device_id || req.context.token!.deviceId;
 	const walletAddress = req.body.wallet_address;
-	const userId = context.user!.id;
-	logger().info(`updating user ${ walletAddress }`, { walletAddress, userId });
+
+	logger().info(`updating user ${ user.id }`, { walletAddress, deviceId });
 
 	if (!walletAddress || walletAddress.length !== 56) {
 		throw InvalidWalletAddress(walletAddress);
 	}
 
-	context.user!.walletAddress = walletAddress;
-	await context.user!.save();
+	await updateUserService(user, { deviceId, walletAddress });
 
-	createWalletAddressUpdateSucceeded(userId).report();
-	metrics.walletAddressUpdate(context.user!.appId);
 	res.status(204).send();
 } as any as RequestHandler;
 

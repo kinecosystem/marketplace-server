@@ -141,7 +141,7 @@ describe("api tests for /users", async () => {
 			.delete("/v1/users/me/session")
 			.send()
 			.set("Authorization", `Bearer ${ token.id }`)
-			.expect(200);
+			.expect(204);
 
 		token = (await AuthToken.findOne({ userId: user.id }))!;
 		expect(token.valid).toBeFalsy();

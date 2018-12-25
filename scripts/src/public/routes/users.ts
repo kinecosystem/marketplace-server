@@ -1,7 +1,7 @@
 import { Request, RequestHandler, Response } from "express";
 
-import { getDefaultLogger as logger } from "../../logging";
 import { Application } from "../../models/applications";
+import { getDefaultLogger as logger } from "../../logging";
 import { InvalidWalletAddress, NoSuchApp, UnknownSignInType } from "../../errors";
 
 import {
@@ -131,5 +131,5 @@ export const myUserInfo = async function(req: Request, res: Response) {
 
 export const logoutUser = async function(req: Request, res: Response) {
 	await logoutService(req.context.user!, req.context.token!);
-	res.status(200).send();
+	res.status(204).send();
 } as any as RequestHandler;

@@ -4,6 +4,7 @@ import { Request as ExpressRequest } from "express-serve-static-core";
 import { isNothing } from "../../utils/utils";
 import * as db from "../../models/offers";
 import { OfferTranslation } from "../../models/translations";
+import * as moment from "moment";
 
 export interface Question {
 	id: string;
@@ -89,6 +90,7 @@ export interface CouponOrderContent {
 }
 
 let AllOfferContentsCache: Map<string, db.OfferContent> | null = null;
+let lastReferesh = moment(0);
 
 /**
  * replace template variables in offer content or order contents
@@ -105,14 +107,15 @@ export async function getOfferContent(offerId: string): Promise<db.OfferContent 
 }
 
 export async function getAllContents(): Promise<Map<string, db.OfferContent>> {
-	if (true) { // disable cache
+	if (moment.duration(moment().diff(lastReferesh)).asMinutes() > 10) {
 		const map = new Map<string, db.OfferContent>();
 		for (const res of await db.OfferContent.find()) {
 			map.set(res.offerId, res);
 		}
 		AllOfferContentsCache = map;
+		lastReferesh = moment();
 	}
-	return AllOfferContentsCache;
+	return AllOfferContentsCache!;
 }
 
 export function isValid(offerContent: db.OfferContent, form: string | undefined): form is string {

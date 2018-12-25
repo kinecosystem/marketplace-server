@@ -3,11 +3,14 @@ import * as moment from "moment";
 import * as expect from "expect";
 import * as jsonwebtoken from "jsonwebtoken";
 
+// it's important to have this at the start
+import { getConfig } from "./public/config";
+getConfig();
+
 import { JWTContent } from "./public/jwt";
 import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
 import { Order as DbOrder } from "./models/orders";
-import { Application } from "./models/applications";
 import { generateId, randomInteger, retry } from "./utils/utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
 import { ExternalOfferPayload } from "./public/services/native_offers";

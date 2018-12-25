@@ -20,6 +20,7 @@ import {
 	InvalidPollAnswers, MarketplaceError,
 	NoSuchOffer,
 	NoSuchOrder,
+	UserHasNoWallet,
 	OfferCapReached,
 	OpenedOrdersOnly,
 	OpenedOrdersUnreturnable,
@@ -107,10 +108,13 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 }
 
 async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string, orderTranslations = {} as OrderTranslations) {
+	const wallet = (await user.getWallets(userDeviceId)).lastUsed();
+	if (!wallet) {
+		throw UserHasNoWallet(user.id, userDeviceId);
+	}
+
 	const app = (await Application.findOneById(user.appId))!;
 	if (appOffer.offer.type === "earn") {
-		const wallet = (await user.getWallets(userDeviceId)).lastUsed();
-
 		await assertRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), appOffer.offer.amount);
 		await assertRateLimitAppEarn(app.id, app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
 		await assertRateLimitUserEarn(user.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), appOffer.offer.amount);
@@ -125,7 +129,6 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 	orderMeta.title = orderTranslations.orderTitle || orderMeta.title;
 	orderMeta.description = orderTranslations.orderDescription || orderMeta.description;
 
-	const wallet = (await user.getWallets(userDeviceId)).lastUsed();
 	const order = db.MarketplaceOrder.new({
 		status: "opened",
 		offerId: appOffer.offer.id,
@@ -171,14 +174,21 @@ export async function createMarketplaceOrder(offerId: string, user: User, userDe
 }
 
 async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalPayToUserOrderJwt): Promise<db.ExternalOrder> {
-	const recipient = await User.findOne({ appId: sender.appId, appUserId: jwt.recipient.user_id });
+	const senderWallet = (await sender.getWallets(senderDeviceId)).lastUsed();
+	if (!senderWallet) {
+		throw UserHasNoWallet(sender.id, senderDeviceId);
+	}
 
+	const recipient = await User.findOne({ appId: sender.appId, appUserId: jwt.recipient.user_id });
 	if (!recipient) {
 		throw NoSuchUser(jwt.recipient.user_id);
 	}
 
-	const senderWallet = (await sender.getWallets(senderDeviceId)).lastUsed();
 	const recipientWallet = (await recipient.getWallets()).lastUsed();
+	if (!recipientWallet) {
+		throw UserHasNoWallet(recipient.id);
+	}
+
 	const order = db.ExternalOrder.new({
 		offerId: jwt.offer.id,
 		amount: jwt.offer.amount,
@@ -204,14 +214,17 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 
 async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId: string, jwt: ExternalEarnOrderJWT) {
 	const app = (await Application.findOneById(recipient.appId))!;
-	const wallet = (await recipient.getWallets(recipientDeviceId)).lastUsed();
-
-	await assertRateLimitUserEarn(recipient.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
-	await assertRateLimitWalletEarn(wallet.address, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
-
 	if (!app) {
 		throw NoSuchApp(recipient.appId);
 	}
+
+	await assertRateLimitUserEarn(recipient.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
+
+	const wallet = (await recipient.getWallets(recipientDeviceId)).lastUsed();
+	if (!wallet) {
+		throw UserHasNoWallet(recipient.id, recipientDeviceId);
+	}
+	await assertRateLimitWalletEarn(wallet.address, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
 
 	return db.ExternalOrder.new({
 		offerId: jwt.offer.id,
@@ -231,10 +244,14 @@ async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId:
 
 async function createNormalSpendExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalSpendOrderJWT) {
 	const app = await Application.findOneById(sender.appId);
-	const wallet = (await sender.getWallets(senderDeviceId)).lastUsed();
 
 	if (!app) {
 		throw NoSuchApp(sender.appId);
+	}
+
+	const wallet = (await sender.getWallets(senderDeviceId)).lastUsed();
+	if (!wallet) {
+		throw UserHasNoWallet(sender.id, senderDeviceId);
 	}
 
 	const order = db.ExternalOrder.new({
@@ -302,6 +319,9 @@ export async function submitOrder(
 	logger().info("submitOrder", { orderId });
 	const order = await db.Order.getOne(orderId) as db.MarketplaceOrder | db.ExternalOrder;
 	const wallet = (await user.getWallets(userDeviceId)).lastUsed();
+	if (!wallet) {
+		throw UserHasNoWallet(user.id, userDeviceId);
+	}
 
 	if (!order) {
 		throw NoSuchOrder(orderId);

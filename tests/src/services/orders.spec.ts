@@ -6,7 +6,7 @@ import { app } from "../../../scripts/bin/public/app";
 import * as metrics from "../../../scripts/bin/metrics";
 import { initLogger } from "../../../scripts/bin/logging";
 import { JWTContent } from "../../../scripts/bin/public/jwt";
-import { TransactionTimeout } from "../../../scripts/bin/errors";
+import { TransactionTimeout, UserHasNoWallet } from "../../../scripts/bin/errors";
 import { AppOffer } from "../../../scripts/bin/models/applications";
 import { AuthToken, User } from "../../../scripts/bin/models/users";
 import { JWTValue, Offer } from "../../../scripts/bin/models/offers";
@@ -371,5 +371,15 @@ describe("test orders", async () => {
 
 		// user2 should be able to open an order
 		await expect(createMarketplaceOrder(offer.id, user2, deviceId2)).resolves.toBeDefined();
+	});
+
+	test("fail to create an order when user has no wallet", async () => {
+		const deviceId = "test_device_id";
+		const user = await helpers.createUser({ deviceId, createWallet: false });
+		const offers = await getOffers(user.id, user.appId, {});
+
+		await expect(createMarketplaceOrder(offers.offers[0].id, user, deviceId))
+			.rejects
+			.toThrow(UserHasNoWallet(user.id, deviceId).message);
 	});
 });

@@ -25,7 +25,7 @@ const animalPoll: Poll = {
 	}],
 };
 
-export async function createUser(options: { appId?: string; deviceId?: string; } = {}): Promise<User> {
+export async function createUser(options: { appId?: string; deviceId?: string; createWallet?: boolean } = {}): Promise<User> {
 	const uniqueId = generateId();
 	const deviceId = options.deviceId || `test_device_${ uniqueId }`;
 	const userData = {
@@ -34,7 +34,9 @@ export async function createUser(options: { appId?: string; deviceId?: string; }
 	} as User;
 
 	const user = await (User.new(userData)).save();
-	await user.updateWallet(deviceId, `test_wallet_${ uniqueId }`);
+	if (options.createWallet === undefined || options.createWallet) {
+		await user.updateWallet(deviceId, `test_wallet_${ uniqueId }`);
+	}
 
 	await (AuthToken.new({
 		deviceId,

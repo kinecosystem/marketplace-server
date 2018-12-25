@@ -99,10 +99,9 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 		await user.updateWallet(props.deviceId, props.walletAddress);
 		logger().info(`creating stellar wallet for user ${ user.id }: ${ props.walletAddress }`);
 		await payment.createWallet(props.walletAddress, user.appId, user.id);
-	}
 
-	createWalletAddressUpdateSucceeded(user.id).report();
-	metrics.walletAddressUpdate(user.appId);
+		createWalletAddressUpdateSucceeded(user.id).report();
+	}
 }
 
 export async function activateUser(authToken: DbAuthToken, user: User): Promise<AuthToken> {

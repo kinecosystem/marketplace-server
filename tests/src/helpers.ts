@@ -62,6 +62,7 @@ async function orderFromOffer(offer: Offer, userId: string): Promise<Marketplace
 	}, {
 		user,
 		type: offer.type,
+		wallet: wallet.address,
 		meta: offer.meta.order_meta
 	}) as MarketplaceOrder;
 }
@@ -117,6 +118,7 @@ export async function createExternalOrder(userId: string): Promise<Order> {
 	}, {
 		user,
 		type: "earn",
+		wallet: wallet.address,
 		meta: {
 			title: "external order #1",
 			description: "first external order"

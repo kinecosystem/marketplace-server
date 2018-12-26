@@ -97,7 +97,7 @@ describe("api tests for /users", async () => {
 		const deviceId = "test_device_id";
 
 		let user = await helpers.createUser({ appId: testApp.id, deviceId });
-		const token: AuthToken = (await AuthToken.findOne({ userId: user.id }))!;
+		const token = (await AuthToken.findOne({ userId: user.id }))!;
 
 		await mock(app)
 			.patch("/v1/users/me")
@@ -130,5 +130,20 @@ describe("api tests for /users", async () => {
 		expect(await userExists(user.appId, user.appUserId)).toBeTruthy();
 		expect(await userExists("another-app", user.appUserId)).toBeFalsy();
 		expect(await userExists(user.appId, "another-user-id")).toBeFalsy();
+	});
+
+	test("logout", async () => {
+		const user = await helpers.createUser();
+		let token = (await AuthToken.findOne({ userId: user.id }))!;
+		expect(token.valid).toBeTruthy();
+
+		await mock(app)
+			.delete("/v1/users/me/session")
+			.send()
+			.set("Authorization", `Bearer ${ token.id }`)
+			.expect(204);
+
+		token = (await AuthToken.findOne({ userId: user.id }))!;
+		expect(token.valid).toBeFalsy();
 	});
 });

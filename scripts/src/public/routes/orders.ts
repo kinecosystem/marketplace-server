@@ -132,6 +132,6 @@ export const getOrderHistory = async function(req: GetOrderHistoryRequest, res: 
 		origin: req.query.origin,
 		offerId: req.query.offer_id
 	};
-	const orderList = await getOrderHistoryService(req.context.user!.id, filters, req.query.limit);
+	const orderList = await getOrderHistoryService(req.context.user!, req.context.token!.deviceId, filters, req.query.limit);
 	res.status(200).send(orderList);
 } as any as RequestHandler;

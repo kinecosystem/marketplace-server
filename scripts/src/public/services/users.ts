@@ -162,3 +162,8 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
 
 	return { stats };
 }
+
+export async function logout(user: User, token: DbAuthToken) {
+	token.valid = false;
+	await token.save();
+}

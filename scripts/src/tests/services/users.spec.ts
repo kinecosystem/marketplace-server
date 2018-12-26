@@ -32,8 +32,7 @@ describe("api tests for /users", async () => {
 			sign_in_type: "whitelist",
 			api_key: myApp.apiKey,
 			device_id: "my_device_id",
-			user_id: "my_app_user_id",
-			wallet_address: helpers.getKeyPair().public
+			user_id: "my_app_user_id"
 		};
 
 		const res = await mock(app)
@@ -94,28 +93,29 @@ describe("api tests for /users", async () => {
 	});
 
 	test("updateUser", async () => {
-		const appId = generateId(IdPrefix.App);
+		const testApp = await helpers.createApp(generateId(IdPrefix.App));
 		const newWalletAddress = "new_address_must_be_56_characters____bla___bla___bla____";
 		const badAddress = "new_address_not_56_chars";
 		const deviceId = "test_device_id";
 
-		let user = await helpers.createUser({ appId, deviceId });
-		const token: AuthToken = (await AuthToken.findOne({ userId: user.id }))!;
+		let user = await helpers.createUser({ appId: testApp.id, deviceId });
+		const token = (await AuthToken.findOne({ userId: user.id }))!;
 
 		await mock(app)
-			.patch(`/v1/users`)
+			.patch("/v1/users/me")
 			.send({ wallet_address: newWalletAddress })
 			.set("content-type", "application/json")
 			.set("Authorization", `Bearer ${ token.id }`)
 			.expect(204);
 
 		user = (await User.findOne({ id: user.id }))!;
+
 		let wallets = (await user.getWallets()).all().map(wallet => wallet.address);
 		const walletsCount = wallets.length;
 		expect(wallets).toContain(newWalletAddress);
 
 		await mock(app)
-			.patch(`/v1/users`)
+			.patch("/v1/users/me")
 			.send({ wallet_address: badAddress })
 			.set("content-type", "applications/json")
 			.set("Authorization", `Bearer ${ token.id }`)
@@ -125,7 +125,6 @@ describe("api tests for /users", async () => {
 		wallets = (await user.getWallets()).all().map(wallet => wallet.address);
 		expect(wallets).not.toContain(badAddress);
 		expect(wallets.length).toBe(walletsCount);
-
 	});
 
 	test("userExists", async () => {
@@ -133,6 +132,21 @@ describe("api tests for /users", async () => {
 		expect(await userExists(user.appId, user.appUserId)).toBeTruthy();
 		expect(await userExists("another-app", user.appUserId)).toBeFalsy();
 		expect(await userExists(user.appId, "another-user-id")).toBeFalsy();
+	});
+
+	test("logout", async () => {
+		const user = await helpers.createUser();
+		let token = (await AuthToken.findOne({ userId: user.id }))!;
+		expect(token.valid).toBeTruthy();
+
+		await mock(app)
+			.delete("/v1/users/me/session")
+			.send()
+			.set("Authorization", `Bearer ${ token.id }`)
+			.expect(204);
+
+		token = (await AuthToken.findOne({ userId: user.id }))!;
+		expect(token.valid).toBeFalsy();
 	});
 
 	test("testSign", async () => {

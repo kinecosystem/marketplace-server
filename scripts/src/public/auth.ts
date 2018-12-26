@@ -11,7 +11,7 @@ async function getTokenAndUser(req: express.Request): Promise<[db.AuthToken, db.
 	}
 
 	const token = await db.AuthToken.findOneById(req.token);
-	if (!token) {
+	if (!token || !token.valid || token.isExpired()) {
 		throw InvalidToken(req.token);
 	}
 

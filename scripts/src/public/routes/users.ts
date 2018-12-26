@@ -1,10 +1,11 @@
 import { Request, RequestHandler, Response } from "express";
 
-import { getDefaultLogger as logger } from "../../logging";
 import { Application } from "../../models/applications";
+import { getDefaultLogger as logger } from "../../logging";
 import { InvalidWalletAddress, NoSuchApp, UnknownSignInType } from "../../errors";
 
 import {
+	logout as logoutService,
 	getOrCreateUserCredentials,
 	userExists as userExistsService,
 	updateUser as updateUserService,
@@ -15,7 +16,6 @@ import { SignInContext, validateRegisterJWT, validateWhitelist } from "../servic
 
 export type WalletData = {
 	device_id: string;
-	wallet_address: string;
 };
 
 export type CommonSignInData = WalletData & {
@@ -65,7 +65,6 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		app,
 		context.appUserId,
 		context.appId,
-		data.wallet_address,
 		data.device_id);
 
 	res.status(200).send(authToken);
@@ -128,4 +127,9 @@ export const userInfo = async function(req: UserInfoRequest, res: Response) {
 export const myUserInfo = async function(req: Request, res: Response) {
 	req.params.user_id = req.context.user!.appUserId;
 	await (userInfo as any)(req as UserInfoRequest, res);
+} as any as RequestHandler;
+
+export const logoutUser = async function(req: Request, res: Response) {
+	await logoutService(req.context.user!, req.context.token!);
+	res.status(204).send();
 } as any as RequestHandler;

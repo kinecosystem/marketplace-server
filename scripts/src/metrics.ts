@@ -11,12 +11,12 @@ export function destruct() {
 	return new Promise(resolve => statsd.close(() => resolve()));
 }
 
-export function userRegister(newUser: boolean, newWallet: boolean, appId: string) {
-	statsd.increment("user_register", 1, { new_user: newUser.toString(), new_wallet: newWallet.toString(), app_id: appId });
+export function userRegister(newUser: boolean, appId: string) {
+	statsd.increment("user_register", 1, { new_user: newUser.toString(), app_id: appId });
 }
 
-export function walletAddressUpdate(appId: string) {
-	statsd.increment("wallet_address_update_succeeded", 1, { app_id: appId });
+export function walletAddressUpdate(appId: string, newWallet: boolean) {
+	statsd.increment("wallet_address_update_succeeded", 1, { app_id: appId, new_wallet: newWallet.toString() });
 }
 
 // no use in /scripts or /tests

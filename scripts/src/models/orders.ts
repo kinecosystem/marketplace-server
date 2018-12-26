@@ -39,6 +39,7 @@ function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, val
 	if (!value) {
 		return;
 	}
+
 	// in case the query is using table alias names, use it with status
 	const fieldName = alias ? `${ alias }.${ name }` : name;
 
@@ -55,6 +56,7 @@ export type GetOrderFilters = {
 	offerId?: string;
 	nonce?: string;
 	origin?: OrderOrigin;
+	walletAddress?: string;
 	status?: OrderStatusAndNegation;
 };
 
@@ -223,6 +225,7 @@ export const Order = {
 		updateQueryWithFilter(query, "origin", filters.origin, "ordr");
 		updateQueryWithFilter(query, "offerId", filters.offerId, "ordr");
 		updateQueryWithFilter(query, "userId", filters.userId, "context");
+		updateQueryWithFilter(query, "wallet", filters.walletAddress, "context");
 
 		return query;
 	},
@@ -544,6 +547,10 @@ export class OrderContext extends BaseEntity {
 
 	@Column()
 	public type!: OfferType;
+
+	// ECO-553: added field
+	@Column()
+	public wallet!: string;
 
 	@Column("simple-json")
 	public readonly meta!: OrderMeta;

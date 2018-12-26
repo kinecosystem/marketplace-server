@@ -554,10 +554,10 @@ export async function retryUserWallet(params: { user_id: string; wallet: string;
 	return `<h3>Retrying...</h3>
 <div><a href="/users/${ user.id }">Go Back</a>
 <script>
-window.setTimeout(function(){
-        // Move to a new location or you can do something else
-        window.location.href = "/users/${ user.id }";
-    }, 5000);
+	window.setTimeout(function(){
+		// Move to a new location or you can do something else
+		window.location.replace("/users/${ user.id }");
+	}, 5000);
 </script>
 </div>`;
 }

@@ -1,8 +1,10 @@
 {
   "compilerOptions": {
     "target": "ES6",
+    "outDir": "bin",
+    "rootDirs": ["scripts/src", "tests/src"],
     "module": "commonjs",
-    "lib": ["dom","es2017"],
+    "lib": ["dom", "es2017"],
 
     "strict": true,
     "sourceMap": true,
@@ -17,6 +19,6 @@
   },
   "exclude": [
     "bin",
-    "../node_modules"
+    "node_modules"
   ]
 }

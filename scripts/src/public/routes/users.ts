@@ -10,9 +10,69 @@ import {
 	userExists as userExistsService,
 	updateUser as updateUserService,
 	activateUser as activateUserService,
+	oldVersionGetOrCreateUserCredentials,
 	getUserProfile as getUserProfileService
 } from "../services/users";
 import { SignInContext, validateRegisterJWT, validateWhitelist } from "../services/applications";
+import { User } from "../../models/users";
+
+export type OldVersionWalletData = {
+	wallet_address: string;
+};
+
+export type OldVersionCommonSignInData = OldVersionWalletData & {
+	sign_in_type: "jwt" | "whitelist";
+	device_id: string;
+};
+
+export type OldVersionJwtSignInData = OldVersionCommonSignInData & {
+	jwt: string;
+	sign_in_type: "jwt";
+};
+
+export type OldVersionWhitelistSignInData = OldVersionCommonSignInData & {
+	sign_in_type: "whitelist";
+	user_id: string;
+	api_key: string;
+};
+
+export type OldVersionRegisterRequest = Request & { body: OldVersionWhitelistSignInData | OldVersionJwtSignInData };
+
+/**
+ * sign in a user,
+ * allow either registration with JWT or plain userId to be checked against a whitelist from the given app
+ */
+export const oldVersionSignInUser = async function(req: OldVersionRegisterRequest, res: Response) {
+	let context: SignInContext;
+	const data: OldVersionWhitelistSignInData | OldVersionJwtSignInData = req.body;
+
+	logger().info("signing in user", { data });
+	// XXX should also check which sign in types does the application allow
+	if (data.sign_in_type === "jwt") {
+		context = await validateRegisterJWT(data.jwt!);
+	} else if (data.sign_in_type === "whitelist") {
+		context = await validateWhitelist(data.user_id, data.api_key);
+	} else {
+		throw UnknownSignInType((data as any).sign_in_type);
+	}
+
+	const app = await Application.findOneById(context.appId);
+	if (!app) {
+		throw NoSuchApp(context.appId);
+	}
+	if (!app.supportsSignInType(data.sign_in_type)) {
+		throw UnknownSignInType(data.sign_in_type);
+	}
+
+	const authToken = await oldVersionGetOrCreateUserCredentials(
+		app,
+		context.appUserId,
+		context.appId,
+		data.wallet_address,
+		data.device_id);
+
+	res.status(200).send(authToken);
+} as any as RequestHandler;
 
 export type WalletData = {
 	device_id: string;

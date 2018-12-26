@@ -34,7 +34,7 @@ db:
 	npm run manage-db-data -- --apps-dir data/apps --offers-dir data/offers --app-list ALL --create-db
 
 con:
-	node -i --experimental-repl-await -e "require('./node-console')"
+	node --experimental-repl-await node-console.js
 
 # docker targets
 revision := $(shell git rev-parse --short HEAD)

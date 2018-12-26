@@ -5,10 +5,6 @@ services: docker
 node_js:
   - "10"
 
-env:
-  global:
-    - DOCKER_REPO="kinecosystem/marketplace-server"
-
 before_script:
   - make build db # db - for make test
   - make generate-funding-address

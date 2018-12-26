@@ -15,6 +15,7 @@ import { generateId, IdPrefix, Mutable } from "../utils/utils";
 
 import { OrderContext } from "./orders";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
+import * as metrics from "../metrics";
 
 @Entity({ name: "users" })
 @Register
@@ -55,6 +56,7 @@ export class User extends CreationDateModel {
 
 	public async updateWallet(deviceId: string, walletAddress: string): Promise<Wallet> {
 		const now = new Date();
+		let newWallet: boolean;
 		let wallet = await Wallet.findOne({
 			deviceId,
 			userId: this.id,
@@ -62,8 +64,10 @@ export class User extends CreationDateModel {
 		});
 
 		if (wallet) {
+			newWallet = false;
 			wallet.lastUsedDate = now;
 		} else {
+			newWallet = true;
 			wallet = Wallet.create({
 				deviceId,
 				userId: this.id,
@@ -73,6 +77,7 @@ export class User extends CreationDateModel {
 			});
 		}
 
+		metrics.walletAddressUpdate(this.appId, newWallet);
 		return wallet.save();
 	}
 
@@ -155,8 +160,8 @@ export class Wallets {
 		return this.items.find(x => x.address === address);
 	}
 
-	public lastUsed(): Wallet {
-		return this.items.reduce((lastUsed, current) => lastUsed.lastUsedDate < current.lastUsedDate ? current : lastUsed);
+	public lastUsed(): Wallet | null {
+		return this.count === 0 ? null : this.items.reduce((lastUsed, current) => lastUsed.lastUsedDate < current.lastUsedDate ? current : lastUsed);
 	}
 }
 

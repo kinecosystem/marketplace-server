@@ -6,7 +6,6 @@ import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
 import { IdPrefix, isNothing } from "../utils/utils";
 import * as payment from "../public/services/payment";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
-import { getDefaultLogger as log } from "../logging";
 import { getOffers as getUserOffersService } from "../public/services/offers";
 import { getOfferContent, replaceTemplateVars } from "../public/services/offer_contents";
 
@@ -550,10 +549,10 @@ export async function retryUserWallet(params: { user_id: string; wallet: string;
 	return `<h3>Retrying...</h3>
 <div><a href="/users/${ user.id }">Go Back</a>
 <script>
-window.setTimeout(function(){
-        // Move to a new location or you can do something else
-        window.location.href = "/users/${ user.id }";
-    }, 5000);
+	window.setTimeout(function(){
+		// Move to a new location or you can do something else
+		window.location.replace("/users/${ user.id }");
+	}, 5000);
 </script>
 </div>`;
 }

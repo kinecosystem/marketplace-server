@@ -61,7 +61,7 @@ export class ClientError extends Error {
 }
 
 export class ClientRequests {
-	public static async create(data: { device_id: string; wallet_address: string; }, headers?: StringMap) {
+	public static async create(data: { device_id: string; }, headers?: StringMap) {
 		const res = await axios.post<AuthToken>(MARKETPLACE_BASE + "/v1/users", data, { headers });
 		return new ClientRequests(res.data);
 	}
@@ -133,7 +133,7 @@ export class ClientRequests {
 }
 
 export class Client {
-	public static async create(signInPayload: SignInPayload, walletAddress?: string, config?: { headers?: StringMap }): Promise<Client> {
+	public static async create(signInPayload: SignInPayload, config?: { headers?: StringMap }): Promise<Client> {
 		if (!this.blockchainConfig) {
 			this.blockchainConfig = (await ClientRequests.getConfig()).blockchain;
 		}
@@ -143,15 +143,8 @@ export class Client {
 			this.blockchainConfig.asset_issuer,
 			this.blockchainConfig.horizon_url);
 
-		const keys = !walletAddress ?
-			Keypair.random() :
-			(walletAddress.startsWith("S") ?
-				Keypair.fromSecret(walletAddress) :
-				Keypair.fromPublicKey(walletAddress));
-
 		const data = {
-			device_id: "my_device",
-			wallet_address: keys.publicKey(),
+			device_id: "my_device"
 		};
 
 		if (isJWT(signInPayload)) {
@@ -165,20 +158,21 @@ export class Client {
 		}
 
 		const requests = await ClientRequests.create(data, config ? config.headers : {});
-		const wallet = await createWallet(network, keys);
 
-		return new Client(wallet, requests);
+		return new Client(network, requests);
 	}
 
 	private static blockchainConfig: BlockchainConfig;
 
 	public readonly appId: string;
-
-	public readonly wallet: KinWallet;
 	public readonly requests: ClientRequests;
 
-	private constructor(wallet: KinWallet, requests: ClientRequests) {
-		this.wallet = wallet;
+	public wallet?: KinWallet;
+
+	private readonly network: KinNetwork;
+
+	private constructor(network: KinNetwork, requests: ClientRequests) {
+		this.network = network;
 		this.requests = requests;
 		this.appId = requests.auth.app_id;
 	}
@@ -196,12 +190,28 @@ export class Client {
 		}
 	}
 
-	public async updateWallet(walletAddress: string) {
-		const res = await this.requests.request("/v1/users", { wallet_address: walletAddress }).patch();
-		return;
+	public async updateWallet(walletAddress?: string) {
+		const keys = !walletAddress ?
+			Keypair.random() :
+			(walletAddress.startsWith("S") ?
+				Keypair.fromSecret(walletAddress) :
+				Keypair.fromPublicKey(walletAddress));
+
+		if (keys.canSign()) {
+			console.log("updating wallet with keys: ", { public: keys.publicKey(), private: keys.secret() });
+		} else {
+			console.log("updating wallet with public key only: ", { public: keys.publicKey() });
+		}
+
+		await this.requests.request("/v1/users", { wallet_address: keys.publicKey() }).patch();
+		this.wallet = await createWallet(this.network, keys);
 	}
 
 	public async pay(recipient: string, amount: number, orderId: string) {
+		if (!this.wallet) {
+			throw new Error("first set a wallet");
+		}
+
 		try {
 			const memo = createMemo(this.appId, orderId);
 			return await this.wallet.pay(recipient, amount, memo);
@@ -328,12 +338,20 @@ export class Client {
 	}
 
 	public async findKinPayment(orderId: string): Promise<CompletedPayment | undefined> {
+		if (!this.wallet) {
+			throw new Error("first set a wallet");
+		}
+
 		return (await this.wallet.getPayments())
 			.map(paymentFromTransaction)
 			.find(payment => payment !== undefined && payment.id === orderId);
 	}
 
 	public async trustKin() {
+		if (!this.wallet) {
+			throw new Error("first set a wallet");
+		}
+
 		await this.wallet.trustKin();
 	}
 }

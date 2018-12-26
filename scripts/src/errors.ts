@@ -56,7 +56,8 @@ const CODES = {
 		WrongAmount: 3,
 		AssetUnavailable: 4,
 		BlockchainError: 5,
-		TransactionTimeout: 6
+		TransactionTimeout: 6,
+		UserHasNoWallet: 7
 	},
 	TooManyRequests: {
 		Registrations: 1,
@@ -262,6 +263,15 @@ export function BlockchainError(message?: string) {
 
 export function TransactionTimeout() {
 	return TransactionFailed(CODES.TransactionFailed.TransactionTimeout, "Transaction Timeout");
+}
+
+export function UserHasNoWallet(userId: string, deviceId?: string) {
+	let message = `No wallet was set for user ${ userId }`;
+	if (deviceId) {
+		message += ` for device ${ deviceId }`;
+	}
+
+	return TransactionFailed(CODES.TransactionFailed.UserHasNoWallet, message);
 }
 
 function TooManyRequests(index: number, message: string): MarketplaceError {

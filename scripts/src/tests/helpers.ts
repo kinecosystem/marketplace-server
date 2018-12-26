@@ -29,7 +29,7 @@ const animalPoll: Poll = {
 	}],
 };
 
-export async function createUser(options: { appId?: string; deviceId?: string; } = {}): Promise<User> {
+export async function createUser(options: { appId?: string; deviceId?: string; createWallet?: boolean } = {}): Promise<User> {
 	const uniqueId = generateId();
 	const deviceId = options.deviceId || `test_device_${ uniqueId }`;
 	const userData = {
@@ -38,7 +38,9 @@ export async function createUser(options: { appId?: string; deviceId?: string; }
 	} as User;
 
 	const user = await (User.new(Object.assign(userData, { isNew: true }))).save();
-	await user.updateWallet(deviceId, `test_wallet_${ uniqueId }`);
+	if (options.createWallet === undefined || options.createWallet) {
+		await user.updateWallet(deviceId, `test_wallet_${ uniqueId }`);
+	}
 
 	await (AuthToken.new({
 		deviceId,
@@ -64,6 +66,7 @@ async function orderFromOffer(offer: Offer, userId: string): Promise<Marketplace
 	}, {
 		user,
 		type: offer.type,
+		wallet: wallet.address,
 		meta: offer.meta.order_meta
 	}) as MarketplaceOrder;
 }
@@ -119,6 +122,7 @@ export async function createExternalOrder(userId: string): Promise<Order> {
 	}, {
 		user,
 		type: "earn",
+		wallet: wallet.address,
 		meta: {
 			title: "external order #1",
 			description: "first external order"

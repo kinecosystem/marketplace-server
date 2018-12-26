@@ -64,16 +64,16 @@
 		"typescript": "^2.8"
 	},
 	"scripts": {
-		"clean": "rimraf bin",
+		"clean": "rimraf scripts/bin",
 		"transpile": "tsc -p .",
 		"lint": "./node_modules/.bin/tslint -p .",
 		"build": "npm-run-all clean lint transpile",
-		"start": "nodemon bin/scripts/src/public/index",
-		"start-internal": "nodemon bin/scripts/src/internal/index",
-		"start-admin": "nodemon bin/scripts/src/admin/index",
-		"manage-db-data": "node bin/scripts/src/manage_db_data",
+		"start": "nodemon scripts/bin/public/index",
+		"start-internal": "nodemon scripts/bin/internal/index",
+		"start-admin": "nodemon scripts/bin/admin/index",
+		"manage-db-data": "node scripts/bin/manage_db_data",
 		"restart": "npm-run-all build start",
-		"test-system": "node bin/scripts/src/mock_client",
+		"test-system": "node scripts/bin/mock_client",
 		"test": "jest --forceExit --runInBand --detectOpenHandles"
 	},
 	"author": "",
@@ -91,18 +91,16 @@
 			"^.+\\.(ts|tsx)$": "ts-jest"
 		},
 		"testMatch": [
-			"<rootDir>/tests/src/utils.spec.ts",
-			"<rootDir>/tests/src/services/index.spec.ts",
-			"<rootDir>/tests/src/services/users.spec.ts",
-			"<rootDir>/tests/src/services/orders.spec.ts"
+			"<rootDir>/scripts/src/tests/**.spec.ts"
 		],
 		"setupFiles": [
-			"<rootDir>/tests/src/init_tests.ts"
+			"<rootDir>/scripts/src/tests/init_tests.ts"
 		],
 		"coverageDirectory": "<rootDir>/coverage/",
 		"collectCoverageFrom": [
-			"<rootDir>/scripts/**/*.ts",
-			"!<rootDir>/scripts/**/*.d.ts"
+			"<rootDir>/scripts/src/**/*.ts",
+			"!<rootDir>/scripts/src/tests/**",
+			"!<rootDir>/scripts/src/**/*.d.ts"
 		],
 		"collectCoverage": true
 	}

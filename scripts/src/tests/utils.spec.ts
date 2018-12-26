@@ -1,21 +1,21 @@
 import * as path from "path";
 import * as moment from "moment";
 
-import * as utils from "../../scripts/src/utils/utils";
-import { Application } from "../../scripts/src/models/applications";
+import * as utils from "../utils/utils";
+import { Application } from "../models/applications";
 
-import { path as _path } from "../../scripts/src/utils/path";
-import * as metrics from "../../scripts/src/metrics";
+import { path as _path } from "../utils/path";
+import * as metrics from "../metrics";
 import * as helpers from "./helpers";
-import { LimitConfig } from "../../scripts/src/config";
-import { initLogger } from "../../scripts/src/logging";
-import { MarketplaceError } from "../../scripts/src/errors";
-import { close as closeModels, init as initModels } from "../../scripts/src/models/index";
-import { assertRateLimitAppEarn } from "../../scripts/src/utils/rate_limit";
+import { LimitConfig } from "../config";
+import { initLogger } from "../logging";
+import { MarketplaceError } from "../errors";
+import { close as closeModels, init as initModels } from "../models/index";
+import { assertRateLimitAppEarn } from "../utils/rate_limit";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {
-		expect(_path("my.file")).toEqual(path.resolve(__dirname, "../../", "my.file"));
+		expect(_path("my.file")).toEqual(path.resolve(__dirname, "../../../", "my.file"));
 	});
 	beforeEach(async done => {
 		initLogger();

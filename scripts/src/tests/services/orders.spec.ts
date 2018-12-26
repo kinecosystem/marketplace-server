@@ -1,13 +1,13 @@
 import mock = require("supertest");
 import * as moment from "moment";
-import * as metrics from "../../../scripts/src/metrics";
-import { generateId, IdPrefix, random } from "../../../scripts/src/utils/utils";
-import { AuthToken, User } from "../../../scripts/src/models/users";
-import { JWTValue, Offer } from "../../../scripts/src/models/offers";
-import { getOffers } from "../../../scripts/src/public/services/offers";
-import { initLogger } from "../../../scripts/src/logging";
-import { ExternalOrder, Order } from "../../../scripts/src/models/orders";
-import { close as closeModels, init as initModels } from "../../../scripts/src/models/index";
+import * as metrics from "../../metrics";
+import { generateId, IdPrefix, random } from "../../utils/utils";
+import { AuthToken, User } from "../../models/users";
+import { JWTValue, Offer } from "../../models/offers";
+import { getOffers } from "../../public/services/offers";
+import { initLogger } from "../../logging";
+import { ExternalOrder, Order } from "../../models/orders";
+import { close as closeModels, init as initModels } from "../../models/index";
 import {
 	changeOrder,
 	createMarketplaceOrder,
@@ -15,14 +15,14 @@ import {
 	getOrderHistory,
 	setFailedOrder,
 	submitOrder, OrderList
-} from "../../../scripts/src/public/services/orders";
-import { TransactionTimeout } from "../../../scripts/src/errors";
-import { AppOffer } from "../../../scripts/src/models/applications";
-import { JWTContent } from "../../../scripts/src/public/jwt";
+} from "../../public/services/orders";
+import { TransactionTimeout } from "../../errors";
+import { AppOffer } from "../../models/applications";
+import { JWTContent } from "../../public/jwt";
 
 import * as helpers from "../helpers";
 import * as jsonwebtoken from "jsonwebtoken";
-import { app } from "../../../scripts/src/public/app";
+import { app } from "../../public/app";
 
 import { localCache } from "../../../scripts/bin/utils/cache";
 

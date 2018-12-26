@@ -69,6 +69,7 @@ export type GetOrderFilters = {
 	userId: string;
 	offerId?: string;
 	origin?: OrderOrigin;
+	walletAddress?: string;
 	status?: OrderStatusAndNegation;
 };
 
@@ -276,6 +277,7 @@ export const Order = {
 		updateQueryWithFilter(query, "status", filters.status, "ordr");
 		updateQueryWithFilter(query, "origin", filters.origin, "ordr");
 		updateQueryWithFilter(query, "offer_id", filters.offerId, "ordr");
+		updateQueryWithFilter(query, "wallet", filters.walletAddress, "context");
 
 		/**
 		 * In case `filters` doesn't contain the `origin`, include the origin of the extending class.
@@ -585,6 +587,10 @@ export class OrderContext extends BaseEntity {
 
 	@Column()
 	public type!: OfferType;
+
+	// ECO-553: added field
+	@Column()
+	public wallet!: string;
 
 	@Column("simple-json")
 	public readonly meta!: OrderMeta;

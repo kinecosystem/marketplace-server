@@ -84,7 +84,9 @@
 			"tsx",
 			"js"
 		],
-    "roots": ["<rootDir>"],
+		"roots": [
+			"<rootDir>"
+		],
 		"transform": {
 			"^.+\\.(ts|tsx)$": "ts-jest"
 		},
@@ -98,7 +100,10 @@
 			"<rootDir>/tests/src/init_tests.ts"
 		],
 		"coverageDirectory": "<rootDir>/coverage/",
-		"collectCoverageFrom": ["<rootDir>/scripts/**/*.ts", "!<rootDir>/scripts/**/*.d.ts"],
+		"collectCoverageFrom": [
+			"<rootDir>/scripts/**/*.ts",
+			"!<rootDir>/scripts/**/*.d.ts"
+		],
 		"collectCoverage": true
 	}
 }

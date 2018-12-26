@@ -23,7 +23,6 @@ run-admin:
 
 test:
 	npm run transpile
-	npm run transpile-tests
 	npm test
 
 test-system:

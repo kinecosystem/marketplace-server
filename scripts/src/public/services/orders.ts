@@ -405,6 +405,10 @@ export async function getOrderHistory(
 	// XXX use the cursor input values
 	const status: db.OrderStatusAndNegation = "!opened";
 	const wallet = (await user.getWallets(deviceId)).lastUsed();
+	if (!wallet) {
+		throw UserHasNoWallet(user.id, deviceId);
+	}
+
 	const orders = await db.Order.getAll(
 		Object.assign({}, filters, { userId: user.id, walletAddress: wallet.address, status }),
 		limit

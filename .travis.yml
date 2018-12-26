@@ -5,6 +5,10 @@ services: docker
 node_js:
   - "10"
 
+env:
+  global:
+    - DOCKER_REPO="kinecosystem/marketplace-server"
+
 before_script:
   - make build db # db - for make test
   - make generate-funding-address
@@ -24,3 +28,9 @@ after_failure:
 branches:
   only:
     - master
+
+deploy:
+  provider: script
+  script: echo "pushing docker image" # && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && make push-image
+  on:
+    branch: master

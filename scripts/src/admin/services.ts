@@ -547,7 +547,7 @@ export async function retryUserWallet(params: { user_id: string; wallet: string;
 <script>
 	window.setTimeout(function(){
 		// Move to a new location or you can do something else
-		window.location.href = "/users/${ user.id }";
+		window.location.replace("/users/${ user.id }");
 	}, 5000);
 </script>
 </div>`;

@@ -1,6 +1,6 @@
 import { StatsD } from "hot-shots";
-
 import { getConfig } from "./config";
+
 import { MarketplaceError } from "./errors";
 import { Order, OrderFlowType, OrderOrigin } from "./models/orders";
 

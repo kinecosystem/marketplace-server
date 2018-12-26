@@ -43,7 +43,7 @@
 		"@types/csv-parse": "^1.1.11",
 		"@types/expect": "^1.20.3",
 		"@types/express": "^4.11.0",
-		"@types/jest": "^23.3.5",
+		"@types/jest": "^23.3.10",
 		"@types/jsonwebtoken": "^7.2.5",
 		"@types/redis": "^2.8.6",
 		"@types/redis-mock": "^0.17.0",
@@ -58,7 +58,7 @@
 		"rimraf": "2.6.1",
 		"sqlite3": "^4.0.4",
 		"supertest": "^3.0.0",
-		"ts-jest": "^23.10.4",
+		"ts-jest": "^23.10.5",
 		"tslint": "^5.9.1",
 		"tslint-eslint-rules": "^4.1.1",
 		"typescript": "^2.8"
@@ -85,17 +85,21 @@
 			"tsx",
 			"js"
 		],
+    "roots": ["<rootDir>"],
 		"transform": {
-			"^.+\\.(ts|tsx)$": "<rootDir>/tests/preprocessor.js"
+			"^.+\\.(ts|tsx)$": "ts-jest"
 		},
 		"testMatch": [
-			"**/tests/src/**.(spec.ts)"
+			"<rootDir>/tests/src/utils.spec.ts",
+			"<rootDir>/tests/src/services/index.spec.ts",
+			"<rootDir>/tests/src/services/users.spec.ts",
+			"<rootDir>/tests/src/services/orders.spec.ts"
 		],
 		"setupFiles": [
-			"./tests/src/init_tests.js"
-    ],
-    "coverageDirectory": "./coverage/",
-    "collectCoverageFrom": ["**/scripts/bin/**.js"],
-    "collectCoverage": true
+			"<rootDir>/tests/src/init_tests.ts"
+		],
+		"coverageDirectory": "<rootDir>/coverage/",
+		"collectCoverageFrom": ["<rootDir>/scripts/**/*.ts", "!<rootDir>/scripts/**/*.d.ts"],
+		"collectCoverage": true
 	}
 }

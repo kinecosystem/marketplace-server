@@ -1,17 +1,17 @@
 import * as path from "path";
 import * as moment from "moment";
 
-import * as utils from "../../scripts/bin/utils/utils";
-import { Application } from "../../scripts/bin/models/applications";
+import * as utils from "../../scripts/src/utils/utils";
+import { Application } from "../../scripts/src/models/applications";
 
-import { path as _path } from "../../scripts/bin/utils/path";
-import * as metrics from "../../scripts/bin/metrics";
+import { path as _path } from "../../scripts/src/utils/path";
+import * as metrics from "../../scripts/src/metrics";
 import * as helpers from "./helpers";
-import { LimitConfig } from "../../scripts/bin/config";
-import { initLogger } from "../../scripts/bin/logging";
-import { MarketplaceError } from "../../scripts/bin/errors";
-import { close as closeModels, init as initModels } from "../../scripts/bin/models/index";
-import { assertRateLimitAppEarn } from "../../scripts/bin/utils/rate_limit";
+import { LimitConfig } from "../../scripts/src/config";
+import { initLogger } from "../../scripts/src/logging";
+import { MarketplaceError } from "../../scripts/src/errors";
+import { close as closeModels, init as initModels } from "../../scripts/src/models/index";
+import { assertRateLimitAppEarn } from "../../scripts/src/utils/rate_limit";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {

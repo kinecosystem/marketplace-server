@@ -8,13 +8,13 @@
     "max_user_wallets": null,
     "daily_earn_offers": 10,
     "sign_in_types": ["jwt", "whitelist"],
-    "limits": {
-      "hourly_registration": 10000,
-      "minute_registration": 1000,
-      "hourly_total_earn": 60000,
-      "minute_total_earn": 1000,
-      "daily_user_earn": 5000
-    }
+		"limits": {
+			"hourly_registration": 200000,
+			"minute_registration": 10000,
+			"hourly_total_earn": 5000000,
+			"minute_total_earn": 85000,
+			"daily_user_earn": 5000
+		}
   },
   "app_id": "test",
   "name": "Test App"

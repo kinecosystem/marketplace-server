@@ -2,10 +2,10 @@ import * as express from "express";
 import "express-async-errors"; // handle async/await errors in middleware
 import { initLogger } from "../logging";
 import { getConfig } from "./config";
-import { createRoutes } from "./routes/index";
 import { init as initModels } from "../models/index";
-import { generalErrorHandler, init as initCustomMiddleware, notFoundHandler } from "./middleware";
 import { init as initRemoteConfig } from "./routes/config";
+import { createRoutes, createOldVersionRoutes } from "./routes/index";
+import { generalErrorHandler, init as initCustomMiddleware, notFoundHandler } from "./middleware";
 
 const config = getConfig();
 const logger = initLogger(...config.loggers!);
@@ -29,7 +29,8 @@ function createApp() {
 export const app: express.Express = createApp();
 
 // routes
-createRoutes(app, "/v1");
+createRoutes(app, "/v2");
+createOldVersionRoutes(app, "/v1");
 
 // catch 404
 app.use(notFoundHandler);

@@ -95,6 +95,7 @@
 			"./tests/src/init_tests.js"
     ],
     "coverageDirectory": "./coverage/",
+    "collectCoverageFrom": ["**/scripts/bin/**.js"],
     "collectCoverage": true
 	}
 }

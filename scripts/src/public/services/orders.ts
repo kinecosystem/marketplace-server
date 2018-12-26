@@ -136,10 +136,11 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 		}
 	}, {
 		user,
+		wallet: wallet.address,
 		type: appOffer.offer.type,
 		// TODO if order meta content is a template:
 		// replaceTemplateVars(offer, offer.meta.order_meta.content!)
-		meta: orderMeta,
+		meta: orderMeta
 	});
 	await order.save();
 
@@ -191,10 +192,12 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 	}, {
 		type: "earn",
 		user: recipient,
+		wallet: recipientWallet.address,
 		meta: pick(jwt.recipient, "title", "description")
 	}, {
 		user: sender,
 		type: "spend",
+		wallet: senderWallet.address,
 		meta: pick(jwt.sender, "title", "description")
 	});
 
@@ -225,6 +228,7 @@ async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId:
 	}, {
 		type: "earn",
 		user: recipient,
+		wallet: wallet.address,
 		meta: pick(jwt.recipient, "title", "description")
 	});
 }
@@ -249,6 +253,7 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 	}, {
 		user: sender,
 		type: "spend",
+		wallet: wallet.address,
 		meta: pick(jwt.sender, "title", "description")
 	});
 
@@ -370,7 +375,8 @@ export async function cancelOrder(orderId: string): Promise<void> {
 }
 
 export async function getOrderHistory(
-	userId: string,
+	user: User,
+	deviceId: string,
 	filters: { origin?: db.OrderOrigin; offerId?: string; },
 	limit: number = 25,
 	before?: string,
@@ -378,15 +384,16 @@ export async function getOrderHistory(
 
 	// XXX use the cursor input values
 	const status: db.OrderStatusAndNegation = "!opened";
+	const wallet = (await user.getWallets(deviceId)).lastUsed();
 	const orders = await db.Order.getAll(
-		Object.assign({}, filters, { userId, status }),
+		Object.assign({}, filters, { userId: user.id, walletAddress: wallet.address, status }),
 		limit
 	) as Array<db.MarketplaceOrder | db.ExternalOrder>;
 
 	return {
 		orders: orders.map(order => {
 			checkIfTimedOut(order); // no need to wait for the promise
-			return orderDbToApi(order, userId);
+			return orderDbToApi(order, user.id);
 		}),
 		paging: {
 			cursors: {

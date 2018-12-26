@@ -6,7 +6,6 @@ import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
 import { IdPrefix, isNothing } from "../utils/utils";
 import * as payment from "../public/services/payment";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
-import { getDefaultLogger as log } from "../logging";
 import { getOffers as getUserOffersService } from "../public/services/offers";
 import { getOfferContent, replaceTemplateVars } from "../public/services/offer_contents";
 

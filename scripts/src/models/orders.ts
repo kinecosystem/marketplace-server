@@ -500,6 +500,70 @@ class OrderImpl extends CreationDateModel implements Order {
 		this.contexts.forEach(fn);
 	}
 
+	public get sender(): User | null {
+		for (const context of this.contexts) {
+			if (context.type === "spend") {
+				return context.user;
+			}
+		}
+
+		return null;
+	}
+
+	public get senderMeta(): OrderMeta | null {
+		for (const context of this.contexts) {
+			if (context.type === "spend") {
+				return context.meta;
+			}
+		}
+
+		return null;
+	}
+
+	public get recipient(): User | null {
+		for (const context of this.contexts) {
+			if (context.type === "earn") {
+				return context.user;
+			}
+		}
+
+		return null;
+	}
+
+	public get recipientMeta(): OrderMeta | null {
+		for (const context of this.contexts) {
+			if (context.type === "earn") {
+				return context.meta;
+			}
+		}
+
+		return null;
+	}
+
+	public get user(): User | null {
+		if (this.isP2P()) {
+			throw new Error("Order.user isn't supported when origin is 'p2p'");
+		}
+
+		return this.contexts[0].user;
+	}
+
+	public get meta(): OrderMeta | null {
+		if (this.isP2P()) {
+			throw new Error("Order.meta isn't supported when origin is 'p2p'");
+		}
+
+		return this.contexts[0].meta;
+	}
+
+	public get type(): OfferType {
+		if (this.isP2P()) {
+			throw new Error("Order.type isn't supported when origin is 'p2p'");
+		}
+
+		return this.contexts[0].type;
+	}
+
 	public remove() {
 		return getManager().transaction(async manager => {
 			await manager.query("DELETE FROM orders_contexts WHERE order_id=$1", [this.id]);

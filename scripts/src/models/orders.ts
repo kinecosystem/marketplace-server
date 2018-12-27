@@ -73,6 +73,8 @@ export type GetOrderFilters = {
 	status?: OrderStatusAndNegation;
 };
 
+export type OrderFlowType = "p2p" | "earn" | "spend";
+
 export interface Order {
 	readonly id: string;
 	readonly nonce: string;
@@ -113,6 +115,8 @@ export interface Order {
 	save(): Promise<this>;
 
 	remove(): Promise<this>;
+
+	flowType(): OrderFlowType;
 }
 
 function createOrder(data?: DeepPartial<Order>, contexts?: Array<DeepPartial<OrderContext>>): Order {
@@ -567,6 +571,17 @@ class OrderImpl extends CreationDateModel implements Order {
 			await manager.query("DELETE FROM orders_contexts WHERE order_id=$1", [this.id]);
 			return manager.remove(this);
 		});
+	}
+
+	public flowType(): OrderFlowType {
+		if (this.isP2P()) {
+			return "p2p";
+		} else if (this.isEarn()) {
+			return "earn";
+		} else if (this.isSpend()) {
+			return "spend";
+		}
+		throw new Error(`unexpected flow type for ${this}`);
 	}
 }
 

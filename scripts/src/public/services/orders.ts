@@ -297,9 +297,7 @@ export async function createExternalOrder(jwt: string, user: User, userDeviceId:
 
 		await order.save();
 
-		order.contexts.forEach(context => {
-			metrics.createOrder("external", context.type, payload.offer.id, user.appId);
-		});
+		metrics.createOrder("external", order.flowType(), "native", user.appId);
 
 		logger().info("created new open external order", {
 			offerId: payload.offer.id,
@@ -378,9 +376,7 @@ export async function submitOrder(
 		createEarnTransactionBroadcastToBlockchainSubmitted(order.contexts[0].user.id, order.offerId, order.id).report();
 	}
 
-	order.contexts.forEach(context => {
-		metrics.submitOrder(context.type, order.offerId, appId);
-	});
+	metrics.submitOrder(order.origin, order.flowType(), appId);
 	return orderDbToApi(order, user.id);
 }
 

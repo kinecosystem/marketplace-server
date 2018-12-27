@@ -1,7 +1,7 @@
 import { getDefaultLogger as logger } from "../../logging";
 
 import { verify as verifyJwt } from "../jwt";
-import { InvalidApiKey } from "../../errors";
+import { InvalidApiKey, MissingFieldJWT } from "../../errors";
 import { Application, AppWhitelists } from "../../models/applications";
 
 export type RegisterPayload = {
@@ -14,7 +14,13 @@ export type SignInContext = {
 };
 
 export async function validateRegisterJWT(jwt: string): Promise<SignInContext> {
-	const decoded = await verifyJwt<RegisterPayload, "register">(jwt);
+	const decoded = await verifyJwt<Partial<RegisterPayload>, "register">(jwt);
+
+	// payload.user_id field is mandatory
+	if (!decoded.payload.user_id) {
+		throw MissingFieldJWT("user_id");
+	}
+
 	const appId = decoded.payload.iss;
 	const appUserId = decoded.payload.user_id;
 

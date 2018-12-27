@@ -170,9 +170,12 @@ export async function paymentComplete(payment: CompletedPayment) {
 	order.setStatus("completed");
 	await order.save();
 
-	order.forEachContext(context => {
-		metrics.completeOrder(context.type, order.offerId, prevStatus, (order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000, payment.app_id);
-	});
+	metrics.completeOrder(
+		order.origin,
+		order.flowType(),
+		prevStatus,
+		(order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000,
+		payment.app_id);
 
 	logger().info(`completed order with payment <${ payment.id }, ${ payment.transaction_id }>`);
 }
@@ -191,7 +194,7 @@ export async function paymentFailed(payment: FailedPayment) {
 	}
 
 	await setFailedOrder(order, BlockchainError(payment.reason));
-	logger().info(`failed order with payment <${payment.id}>`);
+	logger().info(`failed order with payment <${ payment.id }>`);
 }
 
 /**
@@ -203,8 +206,8 @@ export async function initPaymentCallbacks(): Promise<Watcher> {
 	const addresses = removeDuplicates(
 		[
 			...(appOffers
-			.filter(appOffer => appOffer.offer.type === "spend")
-			.map(appOffer => appOffer.walletAddress)),
+				.filter(appOffer => appOffer.offer.type === "spend")
+				.map(appOffer => appOffer.walletAddress)),
 			...(apps.map(app => app.walletAddresses.recipient))
 		]
 	);

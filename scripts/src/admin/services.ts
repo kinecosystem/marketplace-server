@@ -521,7 +521,8 @@ export async function retryOrder(params: { order_id: string }, query: any): Prom
 	if (order.status !== "failed" || order.isP2P() || order.contexts[0].type !== "earn") {
 		throw new Error("cant retry non earn or non failed orders");
 	}
-
+	order.setStatus("pending");
+	await order.save();
 	await payment.payTo(order.blockchainData.recipient_address!, order.contexts[0].user.appId, order.amount, order.id);
 
 	return `<h3>Retrying...</h3>

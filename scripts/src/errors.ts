@@ -46,7 +46,8 @@ const CODES = {
 		MaxWalletsExceeded: 7,
 		InvalidWalletAddress: 8,
 		ExpiredJwt: 9,
-		InvalidJwtIssuedTime: 10
+		InvalidJwtIssuedTime: 10,
+		MissingFieldJWT: 11
 	},
 	TransactionFailed: {
 		WrongSender: 1,
@@ -204,6 +205,10 @@ export function ExpiredJwt(exp: number) {
 
 export function InvalidJwtIssuedTime(iat: number) {
 	return BadRequestError(CODES.BadRequest.InvalidJwtIssuedTime, `The JWT 'iat' field (${ iat }) is in the future`);
+}
+
+export function MissingFieldJWT(fieldName: string) {
+	return BadRequestError(CODES.BadRequest.MissingFieldJWT, `The JWT ${ fieldName } field is missing`);
 }
 
 export function InvalidPollAnswers() {

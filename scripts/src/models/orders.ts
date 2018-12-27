@@ -35,21 +35,6 @@ export type OrderStatus = "completed" | "failed" | "pending";
 export type OpenOrderStatus = OrderStatus | "opened";
 export type OrderStatusAndNegation = OpenOrderStatus | "!opened" | "!completed" | "!failed" | "!pending";
 
-function updateQueryWithStatus(query: SelectQueryBuilder<any>, status?: OrderStatusAndNegation | null, alias?: string) {
-	if (!status) {
-		return;
-	}
-
-	// in case the query is using table alias names, use it with status
-	const fieldName = alias ? `${ alias }.status` : "status";
-
-	if (status.startsWith("!")) {
-		query.andWhere(`${ fieldName } != :status`, { status: status.substring(1) });
-	} else {
-		query.andWhere(`${ fieldName } = :status`, { status });
-	}
-}
-
 function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, value?: string | null, alias?: string) {
 	if (!value) {
 		return;
@@ -66,8 +51,10 @@ function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, val
 }
 
 export type GetOrderFilters = {
-	userId: string;
+	userId?: string;
+	orderId?: string;
 	offerId?: string;
+	nonce?: string;
 	origin?: OrderOrigin;
 	status?: OrderStatusAndNegation;
 };
@@ -129,12 +116,6 @@ function createOrder(data?: DeepPartial<Order>, contexts?: Array<DeepPartial<Ord
 	return order;
 }
 
-export type FindByParams = {
-	offerId: string;
-	userId: string;
-	nonce?: string;
-};
-
 export const Order = {
 	DEFAULT_NONCE: "default",
 	// count the number of orders completed/pending/opened per offer for a given user or all
@@ -178,6 +159,7 @@ export const Order = {
 
 	countToday(userId: string, type: OfferType, origin: OrderOrigin): Promise<number> {
 		const midnight = new Date((new Date()).setUTCHours(0, 0, 0, 0));
+
 		const query = OrderImpl.createQueryBuilder("ordr")
 			.leftJoinAndSelect("ordr.contexts", "context")
 			.andWhere("context.user_id = :userId", { userId })
@@ -201,13 +183,8 @@ export const Order = {
 		// has at least 2 minutes to complete before expiration
 		const latestExpiration = moment().add(2, "minutes").toDate();
 
-		const query = OrderImpl.createQueryBuilder("ordr") // don't use 'order', it messed things up
-			.leftJoinAndSelect("ordr.contexts", "context")
-			.leftJoinAndSelect("context.user", "user")
-			.where("ordr.offer_id = :offerId", { offerId })
-			.andWhere("ordr.status = :status", { status: "opened" })
-			.andWhere("context.user_id = :userId", { userId })
-			.andWhere("ordr.expiration_date > :date", { date: latestExpiration })
+		const query = this.genericGet({ offerId, userId });
+		query.andWhere("ordr.expiration_date > :date", { date: latestExpiration })
 			.orderBy("ordr.expiration_date", "DESC"); // if there are a few, get the one with the most time left
 
 		const order = await (query.getOne() as Promise<T | undefined>);
@@ -220,32 +197,6 @@ export const Order = {
 	},
 
 	/**
-	 * Returns one order which matches the passed user and offer id
-	 *
-	 * @param orderId
-	 * @param userId
-	 */
-	findBy<T extends Order>(params: FindByParams & { origin?: OrderOrigin; }): Promise<T | undefined> {
-		const query = OrderImpl.createQueryBuilder("ordr")
-			.innerJoinAndSelect("ordr.contexts", "context")
-			.leftJoinAndSelect("context.user", "user")
-			.where("ordr.offer_id = :offerId", { offerId: params.offerId })
-			.andWhere("context.user_id = :userId", { userId: params.userId });
-
-		if (params.nonce) {
-			query.andWhere("ordr.nonce = :nonce", { nonce: params.nonce });
-		}
-
-		if (params.origin) {
-			query.andWhere("ordr.origin = :origin", { origin: params.origin });
-		}
-
-		query.orderBy("ordr.current_status_date", "DESC");
-
-		return query.getOne() as Promise<T | undefined>;
-	},
-
-	/**
 	 * Returns one order with the id which was passed.
 	 * If `status` is passed as well, the order will be returned only if the status matches.
 	 *
@@ -253,51 +204,30 @@ export const Order = {
 	 * get open order with id "id1": getOne("id1", "opened")
 	 * get NOT open order: getOne("id1", "!opened")
 	 */
-	getOne<T extends Order>(orderId: string, status?: OrderStatusAndNegation, origin?: OrderOrigin): Promise<T | undefined> {
+	getOne<T extends Order>(filters: GetOrderFilters & { orderId: string }): Promise<T | undefined> {
+		const query = this.genericGet(filters);
+		return query.getOne() as Promise<T | undefined>;
+
+	},
+
+	genericGet<T extends Order>(filters: GetOrderFilters): SelectQueryBuilder<OrderImpl> {
 		const query = OrderImpl.createQueryBuilder("ordr")
 			.innerJoinAndSelect("ordr.contexts", "context")
 			.leftJoinAndSelect("context.user", "user")
-			.where("ordr.id = :orderId", { orderId });
-
-		updateQueryWithStatus(query, status, "ordr");
-
-		if (origin) {
-			query.andWhere("ordr.origin = :origin", { origin });
-		}
-
-		return query.getOne() as Promise<T | undefined>;
-	},
-
-	getAll<T extends Order>(filters: GetOrderFilters, limit?: number, origin?: OrderOrigin): Promise<T[]> {
-		const query = OrderImpl.createQueryBuilder("ordr") // don't use 'order', it messed things up
-			.leftJoinAndSelect("ordr.contexts", "context")
-			.leftJoinAndSelect("context.user", "user")
-			.where("context.user_id = :userId", filters)
 			.orderBy("ordr.current_status_date", "DESC")
 			.addOrderBy("ordr.id", "DESC");
 
-		// updateQueryWithStatus(query, filters.status);
+		updateQueryWithFilter(query, "id", filters.orderId, "ordr");
 		updateQueryWithFilter(query, "status", filters.status, "ordr");
+		updateQueryWithFilter(query, "user_id", filters.userId, "context");
 		updateQueryWithFilter(query, "origin", filters.origin, "ordr");
 		updateQueryWithFilter(query, "offer_id", filters.offerId, "ordr");
 
-		/**
-		 * In case `filters` doesn't contain the `origin`, include the origin of the extending class.
-		 * So, when doing:
-		 *  MarketplaceOrder.getAll({ userId: "..."})
-		 * It will add `origin: "marketplace"` to the filters.
-		 *
-		 * When doing:
-		 *  ExternalOrder.getAll({ userId: "..."})
-		 * It will add `origin: "external"` to the filters.
-		 *
-		 * When doing:
-		 *  Order.getAll({ userId: "..."})
-		 * No origin is added
-		 */
-		if (!filters.origin && origin) {
-			query.andWhere("ordr.origin = :origin", { origin });
-		}
+		return query;
+	},
+
+	getAll<T extends Order>(filters: GetOrderFilters & { userId: string }, limit?: number): Promise<T[]> {
+		const query = this.genericGet(filters);
 
 		if (limit) {
 			query.limit(limit);
@@ -341,16 +271,12 @@ function extendedOrder(origin: OrderOrigin): (typeof Order) & OrderFactory {
 			return createOrder(data, context!);
 		},
 
-		findBy<T extends Order>(params: FindByParams): Promise<T | undefined> {
-			return Order.findBy(Object.assign({}, params, { origin }));
+		getOne<T extends Order>(filters: GetOrderFilters & { orderId: string }): Promise<T | undefined> {
+			return Order.getOne({ ...filters, origin });
 		},
 
-		getOne<T extends Order>(orderId: string, status?: OrderStatusAndNegation): Promise<T | undefined> {
-			return Order.getOne(orderId, status, origin);
-		},
-
-		getAll<T extends Order>(filters: GetOrderFilters, limit?: number): Promise<T[]> {
-			return Order.getAll(filters, limit, origin);
+		getAll<T extends Order>(filters: GetOrderFilters & { userId: string }, limit?: number): Promise<T[]> {
+			return Order.getAll({ ...filters, origin }, limit);
 		}
 	});
 }
@@ -579,7 +505,7 @@ class OrderImpl extends CreationDateModel implements Order {
 		} else if (this.isSpend()) {
 			return "spend";
 		}
-		throw new Error(`unexpected flow type for ${this}`);
+		throw new Error(`unexpected flow type for ${ this }`);
 	}
 }
 

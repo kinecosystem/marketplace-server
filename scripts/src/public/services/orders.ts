@@ -70,7 +70,7 @@ export interface Order extends BaseOrder {
 }
 
 export async function getOrder(orderId: string, userId: string): Promise<Order> {
-	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
+	const order = await db.Order.getOne({ orderId, status: "!opened" }) as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
 		throw NoSuchOrder(orderId);
@@ -88,7 +88,7 @@ export async function getOrder(orderId: string, userId: string): Promise<Order> 
 }
 
 export async function changeOrder(orderId: string, userId: string, change: Partial<Order>): Promise<Order> {
-	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
+	const order = await db.Order.getOne({ orderId, status: "!opened" }) as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
 		throw NoSuchOrder(orderId);
@@ -254,7 +254,8 @@ export async function createExternalOrder(jwt: string, user: User): Promise<Open
 	const payload = await validateExternalOrderJWT(jwt, user.appUserId);
 	const nonce = payload.nonce || db.Order.DEFAULT_NONCE;
 
-	let order = await db.Order.findBy({ offerId: payload.offer.id, userId: user.id, nonce });
+	const orders = await db.Order.getAll({ offerId: payload.offer.id, userId: user.id, nonce });
+	let order = orders.length > 0 ? orders[0] : undefined;
 
 	if (!order || order.status === "failed") {
 		if (isPayToUser(payload)) {
@@ -290,7 +291,7 @@ export async function submitOrder(
 	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
 
 	logger().info("submitOrder", { orderId });
-	const order = await db.Order.getOne(orderId) as db.MarketplaceOrder | db.ExternalOrder;
+	const order = await db.Order.getOne({ orderId }) as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
 		throw NoSuchOrder(orderId);
@@ -348,7 +349,7 @@ export async function submitOrder(
 
 export async function cancelOrder(orderId: string): Promise<void> {
 	// you can only delete an open order - not a pending order
-	const order = await db.Order.getOne(orderId, "opened");
+	const order = await db.Order.getOne({ orderId, status: "opened" });
 	if (!order) {
 		throw NoSuchOrder(orderId);
 	}
@@ -366,7 +367,7 @@ export async function getOrderHistory(
 	// XXX use the cursor input values
 	const status: db.OrderStatusAndNegation = "!opened";
 	const orders = await db.Order.getAll(
-		Object.assign({}, filters, { userId, status }),
+		{ ...filters, userId, status },
 		limit
 	) as Array<db.MarketplaceOrder | db.ExternalOrder>;
 

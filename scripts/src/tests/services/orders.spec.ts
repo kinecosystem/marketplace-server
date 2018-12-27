@@ -219,7 +219,7 @@ describe("test orders", async () => {
 			await order.save();
 			await helpers.completePayment(order.id);
 
-			const completedOrder = (await Order.getOne(order.id))!;
+			const completedOrder = (await Order.getOne({ orderId: order.id }))!;
 			expect(completedOrder.value!.type).toBe("payment_confirmation");
 			return jsonwebtoken.decode(
 				(completedOrder.value as JWTValue).jwt, { complete: true }
@@ -283,10 +283,10 @@ describe("test orders", async () => {
 		{
 			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user);
 			await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
-			const dbOrder = (await Order.getOne(openOrder.id))!;
+			const dbOrder = (await Order.getOne({ orderId: openOrder.id }))!;
 			const expDate = dbOrder.expirationDate!;
 			await setFailedOrder(dbOrder, TransactionTimeout());
-			const dbOrder2 = (await Order.getOne(openOrder.id))!;
+			const dbOrder2 = (await Order.getOne({ orderId: openOrder.id }))!;
 			expect(expDate.getTime()).toBeGreaterThan(dbOrder2.currentStatusDate.getTime());
 		}
 
@@ -294,10 +294,10 @@ describe("test orders", async () => {
 		{
 			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user);
 			await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
-			const dbOrder = (await Order.getOne(openOrder.id))!;
+			const dbOrder = (await Order.getOne({ orderId: openOrder.id }))!;
 			const expDate = dbOrder.expirationDate!;
 			await setFailedOrder(dbOrder, TransactionTimeout(), expDate);
-			const dbOrder2 = (await Order.getOne(openOrder.id))!;
+			const dbOrder2 = (await Order.getOne({ orderId: openOrder.id }))!;
 			expect(expDate.getTime()).toEqual(dbOrder2.currentStatusDate.getTime());
 		}
 	});

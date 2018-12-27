@@ -144,7 +144,7 @@ export async function createOffers() {
 }
 
 export async function completePayment(orderId: string) {
-	const order = (await Order.getOne(orderId))!;
+	const order = (await Order.getOne({ orderId }))!;
 	const user = order.contexts[0].user;
 	const payment: CompletedPayment = {
 		id: order.id,

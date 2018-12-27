@@ -10,41 +10,40 @@ import {
 	userExists as userExistsService,
 	updateUser as updateUserService,
 	activateUser as activateUserService,
-	oldVersionGetOrCreateUserCredentials,
+	v1GetOrCreateUserCredentials,
 	getUserProfile as getUserProfileService
 } from "../services/users";
 import { SignInContext, validateRegisterJWT, validateWhitelist } from "../services/applications";
-import { User } from "../../models/users";
 
-export type OldVersionWalletData = {
+export type V1WalletData = {
 	wallet_address: string;
 };
 
-export type OldVersionCommonSignInData = OldVersionWalletData & {
+export type V1CommonSignInData = V1WalletData & {
 	sign_in_type: "jwt" | "whitelist";
 	device_id: string;
 };
 
-export type OldVersionJwtSignInData = OldVersionCommonSignInData & {
+export type V1JwtSignInData = V1CommonSignInData & {
 	jwt: string;
 	sign_in_type: "jwt";
 };
 
-export type OldVersionWhitelistSignInData = OldVersionCommonSignInData & {
+export type V1WhitelistSignInData = V1CommonSignInData & {
 	sign_in_type: "whitelist";
 	user_id: string;
 	api_key: string;
 };
 
-export type OldVersionRegisterRequest = Request & { body: OldVersionWhitelistSignInData | OldVersionJwtSignInData };
+export type V1RegisterRequest = Request & { body: V1WhitelistSignInData | V1JwtSignInData };
 
 /**
  * sign in a user,
  * allow either registration with JWT or plain userId to be checked against a whitelist from the given app
  */
-export const oldVersionSignInUser = async function(req: OldVersionRegisterRequest, res: Response) {
+export const V1SignInUser = async function(req: V1RegisterRequest, res: Response) {
 	let context: SignInContext;
-	const data: OldVersionWhitelistSignInData | OldVersionJwtSignInData = req.body;
+	const data: V1WhitelistSignInData | V1JwtSignInData = req.body;
 
 	logger().info("signing in user", { data });
 	// XXX should also check which sign in types does the application allow
@@ -64,7 +63,7 @@ export const oldVersionSignInUser = async function(req: OldVersionRegisterReques
 		throw UnknownSignInType(data.sign_in_type);
 	}
 
-	const authToken = await oldVersionGetOrCreateUserCredentials(
+	const authToken = await v1GetOrCreateUserCredentials(
 		app,
 		context.appUserId,
 		context.appId,

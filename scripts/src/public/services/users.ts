@@ -13,7 +13,7 @@ import { create as createWalletAddressUpdateSucceeded } from "../../analytics/ev
 import * as payment from "./payment";
 import { assertRateLimitRegistration } from "../../utils/rate_limit";
 
-export type OldVersionAuthToken = {
+export type V1AuthToken = {
 	token: string;
 	activated: boolean;
 	expiration_date: string;
@@ -22,7 +22,7 @@ export type OldVersionAuthToken = {
 	ecosystem_user_id: string;
 };
 
-function OldVersionAuthTokenDbToApi(authToken: DbAuthToken, user: User): OldVersionAuthToken {
+function V1AuthTokenDbToApi(authToken: DbAuthToken, user: User): V1AuthToken {
 	return {
 		token: authToken.id,
 		activated: true, // always true - activation not needed
@@ -33,17 +33,17 @@ function OldVersionAuthTokenDbToApi(authToken: DbAuthToken, user: User): OldVers
 	};
 }
 
-export async function oldVersionGetOrCreateUserCredentials(
+export async function v1GetOrCreateUserCredentials(
 	app: Application,
 	appUserId: string,
 	appId: string,
 	walletAddress: string,
-	deviceId: string): Promise<OldVersionAuthToken> {
+	deviceId: string): Promise<V1AuthToken> {
 
 	const data = await register(app, appUserId, appId, deviceId);
 	await data.user.updateWallet(deviceId, walletAddress);
 
-	return OldVersionAuthTokenDbToApi(data.token, data.user);
+	return V1AuthTokenDbToApi(data.token, data.user);
 }
 
 export type AuthToken = {
@@ -70,7 +70,7 @@ export async function getOrCreateUserCredentials(
 	app: Application,
 	appUserId: string,
 	appId: string,
-	deviceId: string): Promise<{ auth: AuthToken, user: {}; }> {
+	deviceId: string): Promise<{ auth: AuthToken, user: UserProfile; }> {
 
 	const data = await register(app, appUserId, appId, deviceId);
 
@@ -132,7 +132,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
 		throw NoSuchUser(userId);
 	}
 
-	return createUserProfile(user);
+	return createUserProfileObject(user);
 }
 
 export async function logout(user: User, token: DbAuthToken) {
@@ -146,10 +146,8 @@ async function register(
 	appId: string,
 	deviceId: string) {
 
-	let newUser = false;
 	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
-		newUser = true;
 		await assertRateLimitRegistration(app.id, app.config.limits.hourly_registration, moment.duration({ hours: 1 }));
 		await assertRateLimitRegistration(app.id, app.config.limits.minute_registration, moment.duration({ minutes: 1 }));
 
@@ -184,11 +182,11 @@ async function register(
 	return {
 		user,
 		token: authToken,
-		profile: await createUserProfile(user)
+		profile: await createUserProfileObject(user)
 	};
 }
 
-async function createUserProfile(user: User): Promise<UserProfile> {
+async function createUserProfileObject(user: User): Promise<UserProfile> {
 	const data: Array<{ type: string; last_date: string; cnt: number; }> = await Order.queryBuilder("ordr")
 		.select("context.type as type")
 		.addSelect("MAX(ordr.created_date) as last_date")

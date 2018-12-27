@@ -172,7 +172,7 @@ export async function paymentComplete(payment: CompletedPayment) {
 
 	metrics.completeOrder(
 		order.origin,
-		order.isP2P() ? "p2p" : order.contexts[0].type,
+		order.flowType(),
 		prevStatus,
 		(order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000,
 		payment.app_id);

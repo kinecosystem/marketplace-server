@@ -2,7 +2,7 @@ import { StatsD } from "hot-shots";
 
 import { getConfig } from "./config";
 import { MarketplaceError } from "./errors";
-import { Order, OrderOrigin } from "./models/orders";
+import { Order, OrderFlowType, OrderOrigin } from "./models/orders";
 
 // XXX can add general tags to the metrics (i.e. - public/ internal, machine name etc)
 const statsd = new StatsD(Object.assign({ prefix: "marketplace_" }, getConfig().statsd));
@@ -32,15 +32,15 @@ export function timeRequest(time: number, method: string, path: string, appId: s
 	statsd.timing("request", time, { method, path, app_id: appId });
 }
 
-export function createOrder(orderOrigin: OrderOrigin, offerType: "earn" | "spend" | "p2p", offerId: string, appId: string) {
+export function createOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType, offerId: string, appId: string) {
 	statsd.increment("create_order", 1, { order_type: orderOrigin, offer_type: offerType, offer_id: offerId, app_id: appId });
 }
 
-export function submitOrder(orderOrigin: OrderOrigin, offerType: "earn" | "spend" | "p2p",  appId: string) {
+export function submitOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType,  appId: string) {
 	statsd.increment("submit_order", 1, { offer_type: offerType, app_id: appId });
 }
 
-export function completeOrder(orderOrigin: OrderOrigin, offerType: "earn" | "spend" | "p2p", prevStatus: string, time: number, appId: string) {
+export function completeOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType, prevStatus: string, time: number, appId: string) {
 	statsd.increment("complete_order", 1, { offer_type: offerType, app_id: appId });
 	// time from last status
 	statsd.timing("complete_order_time", time, { offer_type: offerType, prev_status: prevStatus, app_id: appId });

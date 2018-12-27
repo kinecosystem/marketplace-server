@@ -70,7 +70,7 @@ export interface Order extends BaseOrder {
 }
 
 export async function getOrder(orderId: string, userId: string): Promise<Order> {
-	const order = await db.Order.getOne({ orderId, status: "!opened" }) as db.MarketplaceOrder | db.ExternalOrder;
+	const order = await db.Order.getOne({ userId, orderId, status: "!opened" }) as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
 		throw NoSuchOrder(orderId);
@@ -88,7 +88,7 @@ export async function getOrder(orderId: string, userId: string): Promise<Order> 
 }
 
 export async function changeOrder(orderId: string, userId: string, change: Partial<Order>): Promise<Order> {
-	const order = await db.Order.getOne({ orderId, status: "!opened" }) as db.MarketplaceOrder | db.ExternalOrder;
+	const order = await db.Order.getOne({ userId, orderId, status: "!opened" }) as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
 		throw NoSuchOrder(orderId);
@@ -291,7 +291,7 @@ export async function submitOrder(
 	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
 
 	logger().info("submitOrder", { orderId });
-	const order = await db.Order.getOne({ orderId }) as db.MarketplaceOrder | db.ExternalOrder;
+	const order = await db.Order.getOne({ userId, orderId }) as db.MarketplaceOrder | db.ExternalOrder;
 
 	if (!order) {
 		throw NoSuchOrder(orderId);
@@ -347,9 +347,9 @@ export async function submitOrder(
 	return orderDbToApi(order, userId);
 }
 
-export async function cancelOrder(orderId: string): Promise<void> {
+export async function cancelOrder(orderId: string, userId: string): Promise<void> {
 	// you can only delete an open order - not a pending order
-	const order = await db.Order.getOne({ orderId, status: "opened" });
+	const order = await db.Order.getOne({ userId, orderId, status: "opened" });
 	if (!order) {
 		throw NoSuchOrder(orderId);
 	}

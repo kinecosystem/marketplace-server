@@ -1,4 +1,5 @@
 import { generateId, IdPrefix } from "../utils/utils";
+import { LocalCache } from "../utils/cache";
 import { BaseEntity, Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
 import { CreationDateModel, initializer as Initializer, register as Register } from "./index";
 import { Cap, Offer, OfferType } from "./offers";
@@ -16,7 +17,7 @@ export type ApplicationConfig = {
 	limits: LimitConfig;
 };
 
-const AppOffersCache = new Map<string, [AppOffer[], moment.Moment]>();
+// const AppOffersCache = new Map<string, [AppOffer[], moment.Moment]>();
 
 @Entity({ name: "applications" })
 @Initializer("apiKey", () => generateId(IdPrefix.App))
@@ -56,23 +57,22 @@ export class Application extends CreationDateModel {
 @Register
 export class AppOffer extends BaseEntity {
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
+		const cache = LocalCache.getInstance();
 		const cacheKey = `appOffers:${appId}:${type}`;
-		if (AppOffersCache.has(cacheKey)) {
-			const [offers, lastReferesh] = AppOffersCache.get(cacheKey)!;
-			if (moment.duration(moment().diff(lastReferesh)).asMinutes() <= 10) {
-				return offers;
-			}
+
+		if (!cache.checkValidity(cacheKey)) {
+			const results = await AppOffer.createQueryBuilder("app_offer")
+				.leftJoinAndSelect("app_offer.offer", "offer")
+				.where("app_id = :appId", { appId })
+				.andWhere("offer.type = :type", { type })
+				.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
+				.addOrderBy("offer.id", "ASC")
+				.getMany();
+			cache.set(cacheKey, results);
 		}
 
-		const results = await AppOffer.createQueryBuilder("app_offer")
-			.leftJoinAndSelect("app_offer.offer", "offer")
-			.where("app_id = :appId", { appId })
-			.andWhere("offer.type = :type", { type })
-			.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
-			.addOrderBy("offer.id", "ASC")
-			.getMany();
-		AppOffersCache.set(cacheKey, [results, moment()]);
-		return results;
+		const offers = cache.get(cacheKey);
+		return offers;
 	}
 
 	@PrimaryColumn({ name: "app_id" })

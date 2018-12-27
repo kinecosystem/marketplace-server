@@ -59,7 +59,8 @@ describe("test orders", async () => {
 		expect(orders.length).toBe(orders.filter(o => o.status !== "opened").length);
 
 		const offers = new Map<string, number>();
-		(await Order.getAll({ userId: user.id })).forEach(order => {
+		orders = await Order.getAll({ userId: user.id })
+		orders.forEach(order => {
 			offers.set(order.offerId, offers.has(order.offerId) ? offers.get(order.offerId)! + 1 : 1);
 		});
 

@@ -2,6 +2,7 @@ import { getDefaultLogger as log } from "../../logging";
 import { Request as ExpressRequest } from "express-serve-static-core";
 
 import { isNothing } from "../../utils/utils";
+import { LocalCache } from "../../utils/cache";
 import * as db from "../../models/offers";
 import { OfferTranslation } from "../../models/translations";
 import * as moment from "moment";
@@ -89,9 +90,6 @@ export interface CouponOrderContent {
 	image: string;
 }
 
-let AllOfferContentsCache: Map<string, db.OfferContent> | null = null;
-let lastReferesh = moment(0);
-
 /**
  * replace template variables in offer content or order contents
  */
@@ -107,15 +105,18 @@ export async function getOfferContent(offerId: string): Promise<db.OfferContent 
 }
 
 export async function getAllContents(): Promise<Map<string, db.OfferContent>> {
-	if (moment.duration(moment().diff(lastReferesh)).asMinutes() > 10) {
+
+	const cache = LocalCache.getInstance();
+	const cacheKey = "offerContents";
+	if (!cache.checkValidity(cacheKey)) {
 		const map = new Map<string, db.OfferContent>();
 		for (const res of await db.OfferContent.find()) {
 			map.set(res.offerId, res);
 		}
-		AllOfferContentsCache = map;
-		lastReferesh = moment();
+		cache.set(cacheKey, map);
 	}
-	return AllOfferContentsCache!;
+
+	return cache.get(cacheKey);
 }
 
 export function isValid(offerContent: db.OfferContent, form: string | undefined): form is string {

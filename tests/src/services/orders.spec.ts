@@ -36,6 +36,7 @@ describe("test orders", async () => {
 		await initModels();
 		await helpers.clearDatabase();
 		await helpers.createOffers();
+		cache.clear();
 		helpers.patchDependencies();
 
 		done();
@@ -43,7 +44,9 @@ describe("test orders", async () => {
 
 	afterEach(async done => {
 		await closeModels();
-		done();
+		setTimeout(() => {
+			done();
+		}, 1000);
 	});
 
 	afterAll(async () => {

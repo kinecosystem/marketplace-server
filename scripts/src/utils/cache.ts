@@ -6,38 +6,27 @@ interface CacheValue {
 }
 
 interface CacheObj {
-	key: string;
-	value: CacheValue;
+	[key: string]: CacheValue;
 }
 
-export class LocalCache {
-	public static getInstance() {
-		if (!this.instance) {
-			this.instance = new this();
+const cacheTTL = 10; // minutes
+const items = new Map<string, CacheValue>();
+export const localCache = {
+	get<T>(key: string): T | null {
+		const value = items.get(key);
+		if (value && moment.duration(moment().diff(value.lastRefresh)).asMinutes() <= cacheTTL) {
+			return value.data;
+		} else {
+			return null;
 		}
-		return this.instance;
-	}
-
-	private static instance: LocalCache;
-	private readonly cache = {} as CacheObj;
-	private readonly cacheTTL = 10; // minutes
-	private constructor() {}
-
-	public checkValidity(key: string): boolean {
-		if (!(this.cache as any)[key]) { return false; }
-
-		const { lastRefresh } = (this.cache as any)[key] as CacheValue;
-		return moment.duration(moment().diff(lastRefresh)).asMinutes() <= this.cacheTTL;
-	}
-
-	public get(key: string) {
-		return (this.cache as any)[key].data;
-	}
-
-	public set(key: string, data: any) {
-		(this.cache as any)[key] = {
+	},
+	set(key: string, data: any) {
+		items.set(key, {
 			lastRefresh: moment(),
 			data
-		};
+		});
+	},
+	clear() {
+		items.clear();
 	}
-}
+};

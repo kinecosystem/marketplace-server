@@ -281,7 +281,7 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 
 export async function createExternalOrder(jwt: string, user: User, userDeviceId: string): Promise<OpenOrder> {
 	logger().info("createExternalOrder", { jwt });
-	const payload = await validateExternalOrderJWT(jwt, user.appUserId);
+	const payload = await validateExternalOrderJWT(jwt, user.appUserId, userDeviceId);
 	const nonce = payload.nonce || db.Order.DEFAULT_NONCE;
 
 	const orders = await db.Order.getAll({ offerId: payload.offer.id, userId: user.id, nonce });

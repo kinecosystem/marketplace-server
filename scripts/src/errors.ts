@@ -29,8 +29,9 @@ const CODES = {
 	},
 	Conflict: {
 		ExternalOrderAlreadyCompleted: 1,
-		ExternalEarnOfferByDifferentUser: 2,
+		ExternalOrderByDifferentUser: 2,
 		CompletedOrderCantTransitionToFailed: 3,
+		ExternalOrderByDifferentDevice: 4
 	},
 	InternalServerError: {
 		OpenedOrdersOnly: 1,
@@ -158,14 +159,19 @@ export function ExternalOrderAlreadyCompleted(orderId: string) {
 	return error;
 }
 
-export function ExternalEarnOfferByDifferentUser(loggedInUser: string, payToUser: string) {
-	const message = `Pay to user (${ payToUser }) is not the logged in user (${ loggedInUser })`;
-	return ConflictError(CODES.Conflict.ExternalEarnOfferByDifferentUser, message);
+export function ExternalOrderByDifferentUser(loggedInUser: string, payToUser: string) {
+	const message = `User (${ payToUser }) is not the logged in user (${ loggedInUser })`;
+	return ConflictError(CODES.Conflict.ExternalOrderByDifferentUser, message);
 }
 
 export function CompletedOrderCantTransitionToFailed() {
 	const message = "cant set an error message to a completed order";
 	return ConflictError(CODES.Conflict.CompletedOrderCantTransitionToFailed, message);
+}
+
+export function ExternalOrderByDifferentDevice(loggedDeviceId: string, deviceId: string) {
+	const message = `Device (${ deviceId }) is not the logged in device (${ loggedDeviceId })`;
+	return ConflictError(CODES.Conflict.ExternalOrderByDifferentUser, message);
 }
 
 export function OfferCapReached(id: string) {

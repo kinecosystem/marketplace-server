@@ -219,9 +219,10 @@ export const Order = {
 
 		updateQueryWithFilter(query, "id", filters.orderId, "ordr");
 		updateQueryWithFilter(query, "status", filters.status, "ordr");
-		updateQueryWithFilter(query, "user_id", filters.userId, "context");
+		updateQueryWithFilter(query, "nonce", filters.nonce, "ordr");
 		updateQueryWithFilter(query, "origin", filters.origin, "ordr");
 		updateQueryWithFilter(query, "offer_id", filters.offerId, "ordr");
+		updateQueryWithFilter(query, "user_id", filters.userId, "context");
 
 		return query;
 	},
@@ -355,11 +356,10 @@ class OrderImpl extends CreationDateModel implements Order {
 	public async save(): Promise<this> {
 		await getManager().transaction(async mgr => {
 			for (const context of this.contexts) {
-				(context as any).order = this;
-				(context as any).orderId = this.id;
-				(context as any).user_id = context.user.id;
+				(context as Mutable<OrderContext>).order = this;
+				(context as Mutable<OrderContext>).orderId = this.id;
+				(context as Mutable<OrderContext>).userId = context.user.id;
 			}
-
 			await mgr.save(this);
 		});
 

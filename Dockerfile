@@ -25,7 +25,7 @@ ENV BUILD_COMMIT $BUILD_COMMIT
 ENV BUILD_TIMESTAMP $BUILD_TIMESTAMP
 
 EXPOSE 3000
-HEALTHCHECK --start_period=10s --interval=1m --timeout=5s --retries=3 CMD wget localhost:3000/status -q -O - > /dev/null 2>&1
+HEALTHCHECK --interval=1m --timeout=5s --retries=3 CMD wget localhost:3000/status -q -O - > /dev/null 2>&1
 
 # run the api server
 CMD [ "npm", "run", "start" ]

@@ -44,16 +44,26 @@ class SampleAppClient {
 		return res.data.jwt;
 	}
 
-	public async getSpendJWT(offerId: string, nonce?: string): Promise<string> {
+	public async getSpendJWT(userId: string, deviceId: string, offerId: string, nonce?: string): Promise<string> {
 		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/spend/token", {
-			params: { offer_id: offerId, nonce }
+			params: {
+				nonce,
+				user_id: userId,
+				offer_id: offerId,
+				device_id: deviceId
+			}
 		});
 		return res.data.jwt;
 	}
 
-	public async getEarnJWT(userId: string, offerId: string, nonce?: string): Promise<string> {
+	public async getEarnJWT(userId: string, deviceId: string, offerId: string, nonce?: string): Promise<string> {
 		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/earn/token", {
-			params: { user_id: userId, offer_id: offerId, nonce }
+			params: {
+				nonce,
+				user_id: userId,
+				offer_id: offerId,
+				device_id: deviceId
+			}
 		});
 		return res.data.jwt;
 	}
@@ -61,6 +71,8 @@ class SampleAppClient {
 	public async getP2PJWT(data: {
 		offer_id: string;
 		amount: number;
+		user_id: string;
+		device_id: string;
 		sender_title: string;
 		sender_description: string;
 		recipient_id: string;
@@ -457,7 +469,9 @@ async function updateWallet() {
 
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
+	console.log("one");
 	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	console.log("two");
 	await client.updateWallet();
 	console.log("OK.\n");
 }
@@ -476,7 +490,7 @@ async function nativeSpendFlow() {
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
-	const offerJwt = await appClient.getSpendJWT(selectedOffer.id);
+	const offerJwt = await appClient.getSpendJWT(userId, deviceId, selectedOffer.id);
 	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ offerJwt }`);
 
 	const openOrder = await client.createExternalOrder(offerJwt);
@@ -532,7 +546,7 @@ async function tryToNativeSpendTwice() {
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
-	const offerJwt = await appClient.getSpendJWT(selectedOffer.id);
+	const offerJwt = await appClient.getSpendJWT(userId, deviceId, selectedOffer.id);
 	const openOrder = await client.createExternalOrder(offerJwt);
 	console.log(`created order`, openOrder.id, `for offer`, selectedOffer.id);
 
@@ -545,7 +559,7 @@ async function tryToNativeSpendTwice() {
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
 	console.log(`completed order`, order.id);
-	const offerJwt2 = await appClient.getSpendJWT(selectedOffer.id);
+	const offerJwt2 = await appClient.getSpendJWT(userId, deviceId, selectedOffer.id);
 	// should not allow to create a new order
 	console.log(`expecting error for new order`, selectedOffer.id);
 
@@ -579,7 +593,7 @@ async function tryToNativeSpendTwiceWithNonce() {
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
-	const offerJwt = await appClient.getSpendJWT(selectedOffer.id, "nonce:one");
+	const offerJwt = await appClient.getSpendJWT(userId, deviceId, selectedOffer.id, "nonce:one");
 	const openOrder = await client.createExternalOrder(offerJwt);
 	console.log(`created order ${ openOrder.id } (nonce ${ openOrder.nonce }) for offer ${ selectedOffer.id }`);
 
@@ -598,7 +612,7 @@ async function tryToNativeSpendTwiceWithNonce() {
 	expect(jwtPayload.payload.nonce).toEqual("nonce:one");
 
 	console.log(`completed order`, order.id);
-	const offerJwt2 = await appClient.getSpendJWT(selectedOffer.id, "nonce:two");
+	const offerJwt2 = await appClient.getSpendJWT(userId, deviceId, selectedOffer.id, "nonce:two");
 	// should allow to create a new order
 	const openOrder2 = await client.createExternalOrder(offerJwt2);
 	console.log(`created order ${ openOrder2.id } (nonce ${ openOrder2.nonce }) for offer ${ selectedOffer.id }`);
@@ -633,7 +647,7 @@ async function nativeEarnFlow() {
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers()).filter((item: any) => item.type === "earn")[0] as ExternalOfferPayload;
-	const offerJwt = await appClient.getEarnJWT(userId, selectedOffer.id);
+	const offerJwt = await appClient.getEarnJWT(userId, deviceId, selectedOffer.id);
 	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ offerJwt }`);
 
 	const openOrder = await client.createExternalOrder(offerJwt);
@@ -698,6 +712,8 @@ async function p2p() {
 	jwt = await appClient.getP2PJWT({
 		offer_id: offer.id,
 		amount: offer.amount,
+		user_id: senderId,
+		device_id: senderDeviceId,
 		sender_title: "sent moneys",
 		sender_description: "money sent to test p2p",
 		recipient_id: recipientId,

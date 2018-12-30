@@ -90,7 +90,6 @@ export const submitOrder = async function(req: SubmitOrderRequest, res: Response
 		req.context.user!,
 		req.context.token!.deviceId,
 		req.body.content,
-		req.context.user!.appId,
 		req.acceptsLanguages.bind(req));
 	res.status(200).send(order);
 } as any as RequestHandler;

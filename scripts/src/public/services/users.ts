@@ -6,8 +6,8 @@ import { Order } from "../../models/orders";
 import { readUTCDate } from "../../utils/utils";
 import { Application } from "../../models/applications";
 import { getDefaultLogger as logger } from "../../logging";
-import { MaxWalletsExceeded, NoSuchUser } from "../../errors";
 import { User, AuthToken as DbAuthToken } from "../../models/users";
+import { MaxWalletsExceeded, NoSuchUser, NoSuchApp } from "../../errors";
 import { create as createWalletAddressUpdateSucceeded } from "../../analytics/events/wallet_address_update_succeeded";
 
 import * as payment from "./payment";
@@ -88,7 +88,11 @@ export type UpdateUserProps = {
 export async function updateUser(user: User, props: UpdateUserProps) {
 	if (props.walletAddress) {
 		const wallets = await user.getWallets();
-		const app = (await Application.findOneById(user.appId))!;
+		const app = await Application.findOneById(user.appId);
+
+		if (!app) {
+			throw NoSuchApp(user.appId);
+		}
 
 		if (!app.allowsNewWallet(wallets.count)) {
 			metrics.maxWalletsExceeded(app.id);

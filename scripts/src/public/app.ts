@@ -4,7 +4,7 @@ import { initLogger } from "../logging";
 import { getConfig } from "./config";
 import { init as initModels } from "../models/index";
 import { init as initRemoteConfig } from "./routes/config";
-import { createRoutes, createOldVersionRoutes } from "./routes/index";
+import { createRoutes, createV1Routes } from "./routes/index";
 import { generalErrorHandler, init as initCustomMiddleware, notFoundHandler } from "./middleware";
 
 const config = getConfig();
@@ -30,7 +30,7 @@ export const app: express.Express = createApp();
 
 // routes
 createRoutes(app, "/v2");
-createOldVersionRoutes(app, "/v1");
+createV1Routes(app, "/v1");
 
 // catch 404
 app.use(notFoundHandler);

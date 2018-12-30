@@ -160,6 +160,10 @@ export class Wallets {
 		return this.items.find(x => x.address === address);
 	}
 
+	public get first(): Wallet | undefined {
+		return this.items[0];
+	}
+
 	public lastUsed(): Wallet | null {
 		return this.count === 0 ? null : this.items.reduce((lastUsed, current) => lastUsed.lastUsedDate < current.lastUsedDate ? current : lastUsed);
 	}

@@ -41,7 +41,7 @@ export type V1RegisterRequest = Request & { body: V1WhitelistSignInData | V1JwtS
  * sign in a user,
  * allow either registration with JWT or plain userId to be checked against a whitelist from the given app
  */
-export const V1SignInUser = async function(req: V1RegisterRequest, res: Response) {
+export const v1SignInUser = async function(req: V1RegisterRequest, res: Response) {
 	let context: SignInContext;
 	const data: V1WhitelistSignInData | V1JwtSignInData = req.body;
 
@@ -166,6 +166,28 @@ export const activateUser = async function(req: Request, res: Response) {
 } as any as RequestHandler;
 
 export type UserInfoRequest = Request & { params: { user_id: string; } };
+
+export const v1UserInfo = async function(req: UserInfoRequest, res: Response) {
+	logger().debug(`userInfo userId: ${ req.params.user_id }`);
+
+	if (req.context.user!.appUserId !== req.params.user_id) {
+		const userFound = await userExistsService(req.context.user!.appId, req.params.user_id);
+		if (userFound) {
+			res.status(200).send({});
+		} else {
+			res.status(404).send();
+		}
+	} else {
+		const profile = await getUserProfileService(req.context.user!.id);
+		delete profile.created_date;
+		res.status(200).send(profile);
+	}
+} as any as RequestHandler;
+
+export const v1MyUserInfo = async function(req: Request, res: Response) {
+	req.params.user_id = req.context.user!.appUserId;
+	await (v1UserInfo as any)(req as UserInfoRequest, res);
+} as any as RequestHandler;
 
 export const userInfo = async function(req: UserInfoRequest, res: Response) {
 	logger().debug(`userInfo userId: ${ req.params.user_id }`);

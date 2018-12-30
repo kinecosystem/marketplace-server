@@ -8,12 +8,14 @@ import { getConfigHandler } from "./config";
 import {
 	userInfo,
 	myUserInfo,
+	v1UserInfo,
 	signInUser,
 	updateUser,
 	userExists,
 	logoutUser,
 	activateUser,
-	oldVersionSignInUser
+	v1SignInUser,
+	v1MyUserInfo,
 } from "./users";
 import {
 	cancelOrder,
@@ -71,7 +73,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.get("/status", statusHandler);
 }
 
-export function createOldVersionRoutes(app: express.Express, pathPrefix?: string) {
+export function createV1Routes(app: express.Express, pathPrefix?: string) {
 	function prefix(path: string): string {
 		if (!pathPrefix) {
 			return path;
@@ -92,13 +94,13 @@ export function createOldVersionRoutes(app: express.Express, pathPrefix?: string
 
 	app.post(prefix("users/me/activate"), authenticateUser, activateUser);
 	app.get(prefix("users/exists"), authenticateUser, userExists);
-	app.get(prefix("users/me"), authenticateUser, myUserInfo);
-	app.get(prefix("users/:user_id"), authenticateUser, userInfo);
+	app.get(prefix("users/me"), authenticateUser, v1MyUserInfo);
+	app.get(prefix("users/:user_id"), authenticateUser, v1UserInfo);
 
 	app.patch(prefix("users/"), authenticateUser, updateUser); // deprecated, use users/me
 	app.patch(prefix("users/me"), authenticateUser, updateUser);
 	app.delete(prefix("users/me/session"), authenticateUser, logoutUser);
-	app.post(prefix("users/"), oldVersionSignInUser); // this is different than the new version
+	app.post(prefix("users/"), v1SignInUser); // this is different than the new version
 
 	app.get(prefix("config/"), getConfigHandler);
 	app.get("/status", statusHandler);

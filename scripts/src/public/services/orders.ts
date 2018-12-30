@@ -317,7 +317,6 @@ export async function submitOrder(
 	user: User,
 	userDeviceId: string,
 	form: string | undefined,
-	appId: string,
 	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
 
 	logger().info("submitOrder", { orderId });
@@ -373,11 +372,11 @@ export async function submitOrder(
 	logger().info("order changed to pending", { orderId });
 
 	if (order.isEarn()) {
-		await payment.payTo(wallet.address, appId, order.amount, order.id);
+		await payment.payTo(wallet.address, user.appId, order.amount, order.id);
 		createEarnTransactionBroadcastToBlockchainSubmitted(order.contexts[0].user.id, order.offerId, order.id).report();
 	}
 
-	metrics.submitOrder(order.origin, order.flowType(), appId);
+	metrics.submitOrder(order.origin, order.flowType(), user.appId);
 	return orderDbToApi(order, user.id);
 }
 

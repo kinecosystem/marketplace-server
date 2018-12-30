@@ -2,7 +2,7 @@ import { getDefaultLogger as log } from "../../logging";
 import { Request as ExpressRequest } from "express-serve-static-core";
 
 import { isNothing } from "../../utils/utils";
-import { LocalCache } from "../../utils/cache";
+import { localCache } from "../../utils/cache";
 import * as db from "../../models/offers";
 import { OfferTranslation } from "../../models/translations";
 import * as moment from "moment";
@@ -105,18 +105,17 @@ export async function getOfferContent(offerId: string): Promise<db.OfferContent 
 }
 
 export async function getAllContents(): Promise<Map<string, db.OfferContent>> {
-
-	const cache = LocalCache.getInstance();
 	const cacheKey = "offerContents";
-	if (!cache.checkValidity(cacheKey)) {
-		const map = new Map<string, db.OfferContent>();
+	let contentsMap: Map<string, db.OfferContent> | null = localCache.get(cacheKey);
+	if (!contentsMap) {
+		contentsMap = new Map<string, db.OfferContent>();
 		for (const res of await db.OfferContent.find()) {
-			map.set(res.offerId, res);
+			contentsMap.set(res.offerId, res);
 		}
-		cache.set(cacheKey, map);
+		localCache.set(cacheKey, contentsMap);
 	}
 
-	return cache.get(cacheKey);
+	return contentsMap;
 }
 
 export function isValid(offerContent: db.OfferContent, form: string | undefined): form is string {

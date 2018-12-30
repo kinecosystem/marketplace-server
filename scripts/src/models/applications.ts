@@ -1,5 +1,5 @@
 import { generateId, IdPrefix } from "../utils/utils";
-import { LocalCache } from "../utils/cache";
+import { localCache } from "../utils/cache";
 import { BaseEntity, Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
 import { CreationDateModel, initializer as Initializer, register as Register } from "./index";
 import { Cap, Offer, OfferType } from "./offers";
@@ -57,22 +57,21 @@ export class Application extends CreationDateModel {
 @Register
 export class AppOffer extends BaseEntity {
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
-		const cache = LocalCache.getInstance();
 		const cacheKey = `appOffers:${appId}:${type}`;
+		let appOffers: AppOffer[] | null = localCache.get(cacheKey);
 
-		if (!cache.checkValidity(cacheKey)) {
-			const results = await AppOffer.createQueryBuilder("app_offer")
+		if (!appOffers) {
+			appOffers = await AppOffer.createQueryBuilder("app_offer")
 				.leftJoinAndSelect("app_offer.offer", "offer")
 				.where("app_id = :appId", { appId })
 				.andWhere("offer.type = :type", { type })
 				.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
 				.addOrderBy("offer.id", "ASC")
 				.getMany();
-			cache.set(cacheKey, results);
+			localCache.set(cacheKey, appOffers);
 		}
 
-		const offers = cache.get(cacheKey);
-		return offers;
+		return appOffers;
 	}
 
 	@PrimaryColumn({ name: "app_id" })

@@ -28,6 +28,8 @@ import * as jsonwebtoken from "jsonwebtoken";
 import { app } from "../../../scripts/bin/public/app";
 import { OrderList } from "../../../scripts/src/public/services/orders";
 
+import { localCache } from "../../../scripts/bin/utils/cache";
+
 describe("test orders", async () => {
 	jest.setTimeout(20000);
 
@@ -36,17 +38,15 @@ describe("test orders", async () => {
 		await initModels();
 		await helpers.clearDatabase();
 		await helpers.createOffers();
-		cache.clear();
 		helpers.patchDependencies();
 
+		localCache.clear();
 		done();
 	});
 
 	afterEach(async done => {
 		await closeModels();
-		setTimeout(() => {
-			done();
-		}, 1000);
+		done();
 	});
 
 	afterAll(async () => {
@@ -62,7 +62,7 @@ describe("test orders", async () => {
 		expect(orders.length).toBe(orders.filter(o => o.status !== "opened").length);
 
 		const offers = new Map<string, number>();
-		orders = await Order.getAll({ userId: user.id })
+		orders = await Order.getAll({ userId: user.id });
 		orders.forEach(order => {
 			offers.set(order.offerId, offers.has(order.offerId) ? offers.get(order.offerId)! + 1 : 1);
 		});

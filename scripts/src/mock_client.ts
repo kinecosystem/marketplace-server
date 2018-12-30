@@ -31,8 +31,8 @@ const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
 
 // TODO: should this be moved to the client?
 class SampleAppClient {
-	public async getRegisterJWT(userId: string, iat?: number, exp?: number): Promise<string> {
-		const params: any = { user_id: userId };
+	public async getRegisterJWT(userId: string, deviceId: string, iat?: number, exp?: number): Promise<string> {
+		const params: any = { user_id: userId, device_id: deviceId };
 		if (iat) {
 			params.iat = iat;
 		}
@@ -113,11 +113,12 @@ async function getOffer(client: MarketplaceClient, offerType: OfferType, content
 }
 
 async function didNotApproveTOS() {
-	console.log("=====================================didNotApproveTOS=====================================");
+	console.log("===================================== didNotApproveTOS =====================================");
 
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
@@ -130,8 +131,9 @@ async function spendFlow() {
 	console.log("=====================================spend=====================================");
 
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
@@ -186,8 +188,9 @@ async function earnPollFlow() {
 	console.log("===================================== earnPollFlow =====================================");
 
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
@@ -246,8 +249,9 @@ async function earnQuizFlowBackwardSupport() {
 	console.log("===================================== earn quiz =====================================");
 
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
@@ -308,8 +312,9 @@ async function earnQuizFlow() {
 	console.log("===================================== earn quiz =====================================");
 
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
@@ -354,8 +359,9 @@ async function earnQuizFlow() {
 async function earnTutorial() {
 	console.log("===================================== earnTutorial =====================================");
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
 
@@ -382,8 +388,9 @@ async function earnTutorial() {
 async function testRegisterNewUser() {
 	console.log("===================================== testRegisterNewUser =====================================");
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
@@ -394,9 +401,10 @@ async function registerJWT() {
 	console.log("===================================== registerJWT =====================================");
 
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
 
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
@@ -406,9 +414,10 @@ async function registerJWT() {
 async function extraTrustlineIsOK() {
 	console.log("===================================== extraTrustlineIsOK =====================================");
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
 
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
@@ -420,16 +429,17 @@ async function outdatedJWT() {
 	console.log("===================================== outdatedJWT =====================================");
 
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
 
-	let jwt = await appClient.getRegisterJWT(userId, moment().add(1, "days").unix());
+	let jwt = await appClient.getRegisterJWT(userId, deviceId, moment().add(1, "days").unix());
 	try {
 		await MarketplaceClient.create({ jwt });
 		throw new Error("shouldn't be able to register with JWT with iat in the future");
 	} catch (e) {
 	}
 
-	jwt = await appClient.getRegisterJWT(userId, moment().unix(), moment().subtract(1, "days").unix());
+	jwt = await appClient.getRegisterJWT(userId, deviceId, moment().unix(), moment().subtract(1, "days").unix());
 	try {
 		await MarketplaceClient.create({ jwt });
 		throw new Error("shouldn't be able to register with JWT with exp in the past");
@@ -442,9 +452,10 @@ async function outdatedJWT() {
 async function updateWallet() {
 	console.log("===================================== updateWallet =====================================");
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
 
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 	await client.updateWallet();
@@ -456,8 +467,9 @@ async function nativeSpendFlow() {
 
 	// this address is prefunded with test kin
 	const userId = "test:rich_user:" + generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
@@ -511,8 +523,9 @@ async function tryToNativeSpendTwice() {
 	console.log("===================================== tryToNativeSpendTwice =====================================");
 
 	const userId = "rich_user:" + generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
@@ -557,8 +570,9 @@ async function tryToNativeSpendTwiceWithNonce() {
 	console.log("===================================== tryToNativeSpendTwiceWithNonce =====================================");
 
 	const userId = "rich_user:" + generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
@@ -610,8 +624,9 @@ async function nativeEarnFlow() {
 
 	// this address is prefunded with test kin
 	const userId = "test:" + generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
@@ -664,7 +679,8 @@ async function p2p() {
 	};
 	const appClient = new SampleAppClient();
 	const senderId = "test:rich_user:" + generateId();
-	let jwt = await appClient.getRegisterJWT(senderId);
+	const senderDeviceId = generateId();
+	let jwt = await appClient.getRegisterJWT(senderId, senderDeviceId);
 
 	const senderPrivateKey = "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR";
 	const senderWalletAddress = "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ";
@@ -673,7 +689,8 @@ async function p2p() {
 	await senderClient.activate();
 
 	const recipientId = "test:" + generateId();
-	jwt = await appClient.getRegisterJWT(recipientId);
+	const recipientDeviceId = generateId();
+	jwt = await appClient.getRegisterJWT(recipientId, recipientDeviceId);
 	const recipientClient = await MarketplaceClient.create({ jwt });
 	await recipientClient.updateWallet();
 	await recipientClient.activate();
@@ -730,9 +747,10 @@ async function userProfile() {
 	console.log("===================================== userProfile =====================================");
 
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
 
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 

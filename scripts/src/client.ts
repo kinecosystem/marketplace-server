@@ -62,12 +62,12 @@ export class ClientError extends Error {
 
 export class ClientRequests {
 	public static async create(data: { device_id: string; }, headers?: StringMap) {
-		const res = await axios.post<AuthToken>(MARKETPLACE_BASE + "/v1/users", data, { headers });
-		return new ClientRequests(res.data);
+		const res = await axios.post<{ auth: AuthToken; }>(MARKETPLACE_BASE + "/v2/users", data, { headers });
+		return new ClientRequests(res.data.auth);
 	}
 
 	public static async getConfig(): Promise<ConfigResponse> {
-		const res = await axios.get<ConfigResponse>(MARKETPLACE_BASE + "/v1/config");
+		const res = await axios.get<ConfigResponse>(MARKETPLACE_BASE + "/v2/config");
 		return res.data;
 	}
 
@@ -82,7 +82,7 @@ export class ClientRequests {
 	}
 
 	public async activate() {
-		const res = await this.request("/v1/users/me/activate").post<AuthToken>();
+		const res = await this.request("/v2/users/me/activate").post<AuthToken>();
 		this.authToken = res.data;
 	}
 
@@ -203,7 +203,7 @@ export class Client {
 			console.log("updating wallet with public key only: ", { public: keys.publicKey() });
 		}
 
-		await this.requests.request("/v1/users", { wallet_address: keys.publicKey() }).patch();
+		await this.requests.request("/v2/users/me", { wallet_address: keys.publicKey() }).patch();
 		this.wallet = await createWallet(this.network, keys);
 	}
 
@@ -224,7 +224,7 @@ export class Client {
 	public async getOffers(): Promise<OfferList> {
 		try {
 			const res = await this.requests
-				.request("/v1/offers")
+				.request("/v2/offers")
 				.get<OfferList>();
 			return res.data;
 		} catch (e) {
@@ -236,7 +236,7 @@ export class Client {
 	public async getOrder(orderId: string): Promise<Order> {
 		try {
 			const res = await this.requests
-				.request(`/v1/orders/${ orderId }`)
+				.request(`/v2/orders/${ orderId }`)
 				.get<Order>();
 			return res.data;
 		} catch (e) {
@@ -248,7 +248,7 @@ export class Client {
 	public async createOrder(offerId: string): Promise<OpenOrder> {
 		try {
 			const res = await this.requests
-				.request(`/v1/offers/${ offerId }/orders`)
+				.request(`/v2/offers/${ offerId }/orders`)
 				.post<OpenOrder>();
 			return res.data;
 		} catch (e) {
@@ -260,7 +260,7 @@ export class Client {
 	public async cancelOrder(orderId: string): Promise<void> {
 		try {
 			await this.requests
-				.request(`/v1/orders/${ orderId }`)
+				.request(`/v2/orders/${ orderId }`)
 				.delete();
 		} catch (e) {
 			console.log(`error while cancelling order ${ orderId }`);
@@ -271,7 +271,7 @@ export class Client {
 	public async changeOrder(orderId: string, data: Partial<Order>): Promise<Order> {
 		try {
 			const res = await this.requests
-				.request(`/v1/orders/${ orderId }`, data)
+				.request(`/v2/orders/${ orderId }`, data)
 				.patch<Order>();
 			return res.data;
 		} catch (e) {
@@ -292,7 +292,7 @@ export class Client {
 	public async getOrders(): Promise<OrderList> {
 		try {
 			const res = await this.requests
-				.request("/v1/orders")
+				.request("/v2/orders")
 				.get<OrderList>();
 			return res.data;
 		} catch (e) {
@@ -304,7 +304,7 @@ export class Client {
 	public async submitOrder(orderId: string, content?: string): Promise<Order> {
 		try {
 			const res = await this.requests
-				.request(`/v1/orders/${ orderId }`, { content })
+				.request(`/v2/orders/${ orderId }`, { content })
 				.post<Order>();
 			return res.data;
 		} catch (e) {
@@ -316,7 +316,7 @@ export class Client {
 	public async createExternalOrder(jwt: string): Promise<OpenOrder> {
 		try {
 			const res = await this.requests
-				.request(`/v1/offers/external/orders`, { jwt })
+				.request(`/v2/offers/external/orders`, { jwt })
 				.post<OpenOrder>();
 			return res.data;
 		} catch (e) {
@@ -328,7 +328,7 @@ export class Client {
 	public async getUserProfile(userId: string = "me"): Promise<UserProfile> {
 		try {
 			const res = await this.requests
-				.request(`/v1/users/${ userId }`)
+				.request(`/v2/users/${ userId }`)
 				.get<UserProfile>();
 			return res.data;
 		} catch (e) {

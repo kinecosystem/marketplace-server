@@ -1,20 +1,9 @@
 import { generateId, IdPrefix } from "../utils/utils";
-import {
-	BaseEntity,
-	Column,
-	Entity,
-	Index,
-	JoinColumn,
-	JoinTable,
-	ManyToMany,
-	ManyToOne,
-	OneToMany,
-	PrimaryColumn
-} from "typeorm";
-import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
+import { localCache } from "../utils/cache";
+import { BaseEntity, Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
+import { CreationDateModel, initializer as Initializer, register as Register } from "./index";
 import { Cap, Offer, OfferType } from "./offers";
-import { Model } from "sequelize";
-import { Order, OrderContext } from "./orders";
+import { Order } from "./orders";
 
 import { LimitConfig } from "../config";
 
@@ -26,8 +15,6 @@ export type ApplicationConfig = {
 	sign_in_types: SignInType[];
 	limits: LimitConfig;
 };
-
-const AppOffersCache = new Map<string, AppOffer[]>();
 
 @Entity({ name: "applications" })
 @Initializer("apiKey", () => generateId(IdPrefix.App))
@@ -67,21 +54,21 @@ export class Application extends CreationDateModel {
 @Register
 export class AppOffer extends BaseEntity {
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
-		// XXX add cache
 		const cacheKey = `appOffers:${appId}:${type}`;
-		// if (AppOffersCache.has(cacheKey)) {
-		// 	return AppOffersCache.get(cacheKey) as AppOffer[];
-		// }
+		let appOffers = localCache.get<AppOffer[]>(cacheKey);
 
-		const results = await AppOffer.createQueryBuilder("app_offer")
-			.leftJoinAndSelect("app_offer.offer", "offer")
-			.where("app_id = :appId", { appId })
-			.andWhere("offer.type = :type", { type })
-			.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
-			.addOrderBy("offer.id", "ASC")
-			.getMany();
-		// AppOffersCache.set(cacheKey, results);
-		return results;
+		if (!appOffers) {
+			appOffers = await AppOffer.createQueryBuilder("app_offer")
+				.leftJoinAndSelect("app_offer.offer", "offer")
+				.where("app_id = :appId", { appId })
+				.andWhere("offer.type = :type", { type })
+				.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
+				.addOrderBy("offer.id", "ASC")
+				.getMany();
+			localCache.set(cacheKey, appOffers);
+		}
+
+		return appOffers;
 	}
 
 	@PrimaryColumn({ name: "app_id" })

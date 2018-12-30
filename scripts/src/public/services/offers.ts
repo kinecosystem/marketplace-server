@@ -85,7 +85,7 @@ async function getLanguage(acceptsLanguagesFunc?: ExpressRequest["acceptsLanguag
  * return the sublist of offers from this app that the user can complete due to capping
  */
 async function filterOffers(userId: string, appId: string, appOffers: AppOffer[], acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Offer[]> {
-	if (!appOffers) { // special case as most partners don't hanve spend offers
+	if (!appOffers) { // special case as most partners don't have spend offers
 		return [];
 	}
 	const [/*totalOfferCounts*/, userOfferCounts, contents, [language, availableTranslations]] = await Promise.all([

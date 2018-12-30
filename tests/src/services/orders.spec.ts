@@ -28,6 +28,8 @@ import * as jsonwebtoken from "jsonwebtoken";
 import { app } from "../../../scripts/bin/public/app";
 import { OrderList } from "../../../scripts/src/public/services/orders";
 
+import { localCache } from "../../../scripts/bin/utils/cache";
+
 describe("test orders", async () => {
 	jest.setTimeout(20000);
 
@@ -38,6 +40,7 @@ describe("test orders", async () => {
 		await helpers.createOffers();
 		helpers.patchDependencies();
 
+		localCache.clear();
 		done();
 	});
 

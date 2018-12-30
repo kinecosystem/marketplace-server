@@ -1,5 +1,10 @@
 import * as moment from "moment";
-import { Column, Entity, OneToMany } from "typeorm";
+import {
+	Column,
+	Entity,
+	OneToMany,
+	getManager
+} from "typeorm";
 
 import { generateId, IdPrefix } from "../utils/utils";
 
@@ -25,6 +30,21 @@ export class User extends CreationDateModel {
 
 	@Column({ name: "wallet_count", default: 1 })
 	public walletCount!: number;
+
+	public async save(): Promise<this> {
+		await getManager()
+			.createQueryBuilder()
+			.insert()
+			.into(User)
+			.values([{
+				id: this.id,
+				appId: this.appId,
+				appUserId: this.appUserId,
+				walletAddress: this.walletAddress
+			}])
+			.execute();
+		return this;
+	}
 }
 
 @Entity({ name: "auth_tokens" })

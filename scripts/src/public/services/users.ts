@@ -63,6 +63,13 @@ export async function getOrCreateUserCredentials(
 		await assertRateLimitRegistration(app.id, app.config.limits.minute_registration, moment.duration({ minutes: 1 }));
 		try {
 			logger().info("creating a new user", { appId, appUserId });
+
+
+
+
+
+
+
 			user = User.new({ appUserId, appId, walletAddress });
 			await user.save();
 			logger().info(`creating stellar wallet for new user ${ user.id }: ${ user.walletAddress }`);

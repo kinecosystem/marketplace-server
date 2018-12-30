@@ -1,17 +1,20 @@
 import { JWTClaims, verify as verifyJWT } from "../jwt";
-import { ExternalEarnOfferByDifferentUser, InvalidExternalOrderJwt, MissingFieldJWT } from "../../errors";
-import { getDefaultLogger as log } from "../../logging";
+import { ExternalOrderByDifferentUser, ExternalOrderByDifferentDevice, InvalidExternalOrderJwt, MissingFieldJWT } from "../../errors";
 
 export type ExternalOfferPayload = {
 	id: string;
 	amount: number;
 };
-export type ExternalSenderPayload = {
-	user_id?: string;
+
+export type ExternalEngagedUserPayload = {
+	device_id: string;
+};
+
+export type ExternalUserPayload = {
+	user_id: string;
 	title: string;
 	description: string;
 };
-export type ExternalRecipientPayload = { user_id: string } & ExternalSenderPayload;
 
 export type JWTPayload = {
 	nonce?: string;
@@ -19,12 +22,16 @@ export type JWTPayload = {
 };
 
 export type SpendPayload = JWTPayload & {
-	sender: ExternalSenderPayload;
+	sender: ExternalUserPayload & ExternalEngagedUserPayload;
 };
+
 export type EarnPayload = JWTPayload & {
-	recipient: ExternalRecipientPayload;
+	recipient: ExternalUserPayload & ExternalEngagedUserPayload;
 };
-export type PayToUserPayload = EarnPayload & SpendPayload;
+
+export type PayToUserPayload = SpendPayload & {
+	recipient: ExternalUserPayload;
+};
 
 export type ExternalEarnOrderJWT = JWTClaims<"earn"> & EarnPayload;
 export type ExternalSpendOrderJWT = JWTClaims<"spend"> & SpendPayload;
@@ -43,8 +50,34 @@ export function isPayToUser(jwt: ExternalOrderJWT): jwt is ExternalPayToUserOrde
 	return jwt.sub === "pay_to_user";
 }
 
-export async function validateExternalOrderJWT(jwt: string, appUserId: string): Promise<ExternalOrderJWT> {
-	const decoded = await verifyJWT<Partial<PayToUserPayload>, "spend" | "earn" | "pay_to_user">(jwt);
+function validateUserPayload(data: any, key: "sender" | "recipient", shouldHaveDeviceId: boolean) {
+	const user = data[key] as ExternalUserPayload | undefined;
+
+	if (!user) {
+		throw MissingFieldJWT(key);
+	}
+
+	if (!user.user_id) {
+		throw MissingFieldJWT(`${ key }.user_id`);
+	}
+
+	if (!user.title) {
+		throw MissingFieldJWT(`${ key }.title`);
+	}
+
+	if (!user.description) {
+		throw MissingFieldJWT(`${ key }.description`);
+	}
+
+	if (shouldHaveDeviceId && !(user as ExternalUserPayload & ExternalEngagedUserPayload).device_id) {
+		throw MissingFieldJWT(`${ key }.device_id`);
+	}
+}
+
+export async function validateExternalOrderJWT(jwt: string, appUserId: string, deviceId: string): Promise<ExternalOrderJWT> {
+	// const decoded = await verifyJWT<Partial<PayToUserPayload>, "spend" | "earn" | "pay_to_user">(jwt);
+	// const decoded = await verifyJWT<SpendPayload | EarnPayload | PayToUserPayload, "spend" | "earn" | "pay_to_user">(jwt);
+	const decoded = await verifyJWT<ExternalOrderJWT, "spend" | "earn" | "pay_to_user">(jwt);
 
 	if (decoded.payload.sub !== "earn" && decoded.payload.sub !== "spend" && decoded.payload.sub !== "pay_to_user") {
 		throw InvalidExternalOrderJwt();
@@ -55,32 +88,35 @@ export async function validateExternalOrderJWT(jwt: string, appUserId: string): 
 
 	switch (decoded.payload.sub) {
 		case "spend":
-			if (!decoded.payload.sender) { throw MissingFieldJWT("sender"); }
+			validateUserPayload(decoded.payload, "sender", true);
 			break;
 
 		case "earn":
-			if (!decoded.payload.recipient) { throw MissingFieldJWT("recipient"); }
+			validateUserPayload(decoded.payload, "recipient", true);
 			break;
 
 		case "pay_to_user":
-			if (!decoded.payload.sender) { throw MissingFieldJWT("sender"); }
-			if (!decoded.payload.recipient) { throw MissingFieldJWT("recipient"); }
+			validateUserPayload(decoded.payload, "sender", true);
+			validateUserPayload(decoded.payload, "recipient", false);
 			break;
-
-		default: break;
 	}
 
-	if (
-		(decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user")
-		&& !!decoded.payload.sender!.user_id && decoded.payload.sender!.user_id !== appUserId
-	) {
-		// if sender.user_id is defined and is different than current user, raise error
-		throw ExternalEarnOfferByDifferentUser(appUserId, decoded.payload.sender!.user_id || "");
-	}
+	if (isExternalSpend(decoded.payload) || isPayToUser(decoded.payload)) {
+		if (decoded.payload.sender.user_id !== appUserId) {
+			throw ExternalOrderByDifferentUser(appUserId, decoded.payload.sender.user_id);
+		}
 
-	if (decoded.payload.sub === "earn" && decoded.payload.recipient && decoded.payload.recipient.user_id !== appUserId) {
-		// check that user_id is defined for earn and is the same as current user
-		throw ExternalEarnOfferByDifferentUser(appUserId, decoded.payload.recipient.user_id);
+		if (decoded.payload.sender.device_id !== deviceId) {
+			throw ExternalOrderByDifferentDevice(deviceId, decoded.payload.sender.device_id);
+		}
+	} else { // decoded.payload.sub === "earn"
+		if (decoded.payload.recipient.user_id !== appUserId) {
+			throw ExternalOrderByDifferentUser(appUserId, decoded.payload.recipient.user_id);
+		}
+
+		if (decoded.payload.recipient.device_id !== deviceId) {
+			throw ExternalOrderByDifferentDevice(deviceId, decoded.payload.recipient.device_id);
+		}
 	}
 
 	return decoded.payload as ExternalOrderJWT;

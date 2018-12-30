@@ -5,7 +5,6 @@ import { isNothing } from "../../utils/utils";
 import { localCache } from "../../utils/cache";
 import * as db from "../../models/offers";
 import { OfferTranslation } from "../../models/translations";
-import * as moment from "moment";
 
 export interface Question {
 	id: string;

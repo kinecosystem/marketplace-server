@@ -6,7 +6,6 @@ import { Cap, Offer, OfferType } from "./offers";
 import { Order } from "./orders";
 
 import { LimitConfig } from "../config";
-import * as moment from "moment";
 
 export type StringMap = { [key: string]: string; };  // key => value pairs
 export type SignInType = "jwt" | "whitelist";
@@ -56,7 +55,7 @@ export class Application extends CreationDateModel {
 export class AppOffer extends BaseEntity {
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
 		const cacheKey = `appOffers:${appId}:${type}`;
-		let appOffers = localCache.get<Map<string, db.OfferContent>>(cacheKey);
+		let appOffers = localCache.get<AppOffer[]>(cacheKey);
 
 		if (!appOffers) {
 			appOffers = await AppOffer.createQueryBuilder("app_offer")

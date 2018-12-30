@@ -1,54 +1,30 @@
-import mock = require("supertest");
 import * as moment from "moment";
+import mock = require("supertest");
 import * as jsonwebtoken from "jsonwebtoken";
 
 import { app } from "../../../scripts/bin/public/app";
 import * as metrics from "../../../scripts/bin/metrics";
 import { initLogger } from "../../../scripts/bin/logging";
-import { JWTContent } from "../../../scripts/bin/public/jwt";
-import { AppOffer } from "../../../scripts/bin/models/applications";
 import { AuthToken, User } from "../../../scripts/bin/models/users";
 import { JWTValue, Offer } from "../../../scripts/bin/models/offers";
 import { getOffers } from "../../../scripts/bin/public/services/offers";
-import { OrderList } from "../../../scripts/bin/public/services/orders";
 import { ExternalOrder, Order } from "../../../scripts/bin/models/orders";
 import { generateId, random, IdPrefix } from "../../../scripts/bin/utils/utils";
-import { TransactionTimeout, UserHasNoWallet } from "../../../scripts/bin/errors";
 import { close as closeModels, init as initModels } from "../../../scripts/bin/models/index";
-import * as metrics from "../../metrics";
-import { generateId, IdPrefix, random } from "../../utils/utils";
-import { AuthToken, User } from "../../models/users";
-import { JWTValue, Offer } from "../../models/offers";
-import { getOffers } from "../../public/services/offers";
-import { initLogger } from "../../logging";
-import { ExternalOrder, Order } from "../../models/orders";
-import { close as closeModels, init as initModels } from "../../models/index";
 import {
-	changeOrder,
-	createMarketplaceOrder,
 	getOrder,
-	getOrderHistory,
+	OrderList,
+	changeOrder,
+	submitOrder,
 	setFailedOrder,
-	submitOrder, OrderList
-} from "../../public/services/orders";
-import { TransactionTimeout } from "../../errors";
-import { AppOffer } from "../../models/applications";
-import { JWTContent } from "../../public/jwt";
+	getOrderHistory,
+	createMarketplaceOrder
+} from "../../../scripts/bin/public/services/orders";
+import { TransactionTimeout } from "../../../scripts/bin/errors";
+import { AppOffer } from "../../../scripts/bin/models/applications";
+import { JWTContent } from "../../../scripts/bin/public/jwt";
 
 import * as helpers from "../helpers";
-import * as jsonwebtoken from "jsonwebtoken";
-import { app } from "../../public/app";
-
-import { localCache } from "../../utils/cache";
-
-async function completeOrder(user: User, deviceId: string) {
-	const offers = await getOffers(user.id, user.appId, {});
-	const offerId = offers.offers[0].id;
-	const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
-	const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
-	await helpers.completePayment(order.id);
-	return order;
-}
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
@@ -60,7 +36,6 @@ describe("test orders", async () => {
 		await helpers.createOffers();
 		helpers.patchDependencies();
 
-		localCache.clear();
 		done();
 	});
 
@@ -74,7 +49,7 @@ describe("test orders", async () => {
 	});
 
 	test("getAll and filters", async () => {
-		const user = await helpers.createUser({ deviceId: "test_device_id" });
+		const user = await helpers.createUser();
 		const count = await helpers.createOrders(user.id);
 
 		let orders = await Order.getAll({ userId: user.id, status: "!opened" }, 25);
@@ -105,40 +80,12 @@ describe("test orders", async () => {
 			throw Error("failed to find earn order");
 		}
 
-		const order = await createMarketplaceOrder(offer.id, user, deviceId);
+		await createMarketplaceOrder(offer.id, user, deviceId);
 
 		const offers2 = await getOffers(user.id, user.appId, {});
 		const foundOffer = offers2.offers.find(x => x.id === offer.id);
 
 		expect(foundOffer).toBeTruthy();
-	});
-
-	test("getOrderHistory returns only orders for current wallet", async () => {
-		const deviceId = "test_device_id";
-		const user = await helpers.createUser({ deviceId });
-		const offers = await getOffers(user.id, user.appId, {});
-		const firstIteration = Math.floor(offers.offers.length / 2);
-
-		for (let i = 0; i < firstIteration; i++) {
-			const offerId = offers.offers[i].id;
-			const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
-			const order = await submitOrder(openOrder.id, user, deviceId, "{}");
-			await helpers.completePayment(order.id);
-		}
-
-		const history1 = (await getOrderHistory(user, deviceId, {})).orders.map(order => order.id);
-		await user.updateWallet(deviceId, `wallet-${ generateId() }`);
-
-		for (let i = firstIteration; i < offers.offers.length; i++) {
-			const offerId = offers.offers[i].id;
-			const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
-			const order = await submitOrder(openOrder.id, user, deviceId, "{}");
-			await helpers.completePayment(order.id);
-		}
-
-		const history2 = (await getOrderHistory(user, deviceId, {})).orders.map(order => order.id);
-		expect(history1.length + history2.length).toBe(offers.offers.length);
-		history1.forEach(id => expect(history2).not.toContain(id));
 	});
 
 	test("filter order by offer_id", async () => {
@@ -151,7 +98,6 @@ describe("test orders", async () => {
 			const order = await submitOrder(openOrder.id, user, deviceId, "{}");
 			await helpers.completePayment(order.id);
 		}
-
 		const offerId = offers.offers[0].id;
 		const history = await getOrderHistory(user, deviceId, { offerId });
 		expect(history.orders.length).toEqual(1);
@@ -167,38 +113,6 @@ describe("test orders", async () => {
 		const orderHistory: OrderList = res.body;
 		expect(orderHistory.orders.length).toEqual(1);
 		expect(orderHistory.orders[0].offer_id).toEqual(offerId);
-	});
-
-	test("create and find p2p order", async () => {
-		const user = await helpers.createUser();
-
-		await helpers.createP2POrder(user.id);
-		const orders = await Order.getAll({ origin: "external", userId: user.id, status: "!opened" });
-
-		expect(orders.length).toEqual(1);
-		expect(orders[0].contexts.length).toEqual(2);
-	});
-
-	test("getOrder returns only my orders", async () => {
-		const user1 = await helpers.createUser();
-		const user2 = await helpers.createUser();
-
-		const user1token: AuthToken = (await AuthToken.findOne({ userId: user1.id }))!;
-		const user2token: AuthToken = (await AuthToken.findOne({ userId: user2.id }))!;
-
-		const user1order = await completeOrder(user1, user1token.deviceId);
-
-		await mock(app)
-			.get(`/v1/orders/${ user1order.id }`)
-			.set("x-request-id", "123")
-			.set("Authorization", `Bearer ${ user1token.id }`)
-			.expect(200);
-
-		await mock(app)
-			.get(`/v1/orders/${ user1order.id }`)
-			.set("x-request-id", "123")
-			.set("Authorization", `Bearer ${ user2token.id }`)
-			.expect(404);
 	});
 
 	test("getOrderHistory limit", async () => {
@@ -312,7 +226,7 @@ describe("test orders", async () => {
 			await order.save();
 			await helpers.completePayment(order.id);
 
-			const completedOrder = (await Order.getOne({ orderId: order.id }))!;
+			const completedOrder = (await Order.getOne(order.id))!;
 			expect(completedOrder.value!.type).toBe("payment_confirmation");
 			return jsonwebtoken.decode(
 				(completedOrder.value as JWTValue).jwt, { complete: true }
@@ -379,10 +293,10 @@ describe("test orders", async () => {
 		{
 			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, deviceId);
 			await submitOrder(openOrder.id, user, deviceId, "{}");
-			const dbOrder = (await Order.getOne({ orderId: openOrder.id }))!;
+			const dbOrder = (await Order.getOne(openOrder.id))!;
 			const expDate = dbOrder.expirationDate!;
 			await setFailedOrder(dbOrder, TransactionTimeout());
-			const dbOrder2 = (await Order.getOne({ orderId: openOrder.id }))!;
+			const dbOrder2 = (await Order.getOne(openOrder.id))!;
 			expect(expDate.getTime()).toBeGreaterThan(dbOrder2.currentStatusDate.getTime());
 		}
 
@@ -390,10 +304,10 @@ describe("test orders", async () => {
 		{
 			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, deviceId);
 			await submitOrder(openOrder.id, user, deviceId, "{}");
-			const dbOrder = (await Order.getOne({ orderId: openOrder.id }))!;
+			const dbOrder = (await Order.getOne(openOrder.id))!;
 			const expDate = dbOrder.expirationDate!;
 			await setFailedOrder(dbOrder, TransactionTimeout(), expDate);
-			const dbOrder2 = (await Order.getOne({ orderId: openOrder.id }))!;
+			const dbOrder2 = (await Order.getOne(openOrder.id))!;
 			expect(expDate.getTime()).toEqual(dbOrder2.currentStatusDate.getTime());
 		}
 	});
@@ -432,9 +346,10 @@ describe("test orders", async () => {
 	test("offer cap is not shared between apps", async () => {
 		const offer = (await Offer.findOne())!;
 
-		async function createAppUser(offer: Offer, appId: string): Promise<User> {
+		async function createAppUser(offer: Offer, appId: string): Promise<[User, string]> {
+			const deviceId = generateId();
 			const app = await helpers.createApp(appId);
-			const user = await helpers.createUser({ appId: app.id });
+			const user = await helpers.createUser({ appId: app.id, deviceId });
 			await AppOffer.create({
 				appId: app.id,
 				offerId: offer.id,
@@ -442,15 +357,11 @@ describe("test orders", async () => {
 				walletAddress: "some_address"
 			}).save();
 
-			return user;
+			return [user, deviceId];
 		}
 
-		const user1 = await createAppUser(offer, generateId(IdPrefix.App));
-		const user2 = await createAppUser(offer, generateId(IdPrefix.App));
-
-		const deviceId1 = (await AuthToken.findOne({ userId: user1.id })).deviceId;
-		const deviceId2 = (await AuthToken.findOne({ userId: user2.id })).deviceId;
-
+		const [user1, deviceId1] = await createAppUser(offer, generateId(IdPrefix.App));
+		const [user2, deviceId2] = await createAppUser(offer, generateId(IdPrefix.App));
 
 		const openOrder = await createMarketplaceOrder(offer.id, user1, deviceId1);
 		const order = await submitOrder(openOrder.id, user1, deviceId1, "{}");
@@ -461,15 +372,5 @@ describe("test orders", async () => {
 
 		// user2 should be able to open an order
 		await expect(createMarketplaceOrder(offer.id, user2, deviceId2)).resolves.toBeDefined();
-	});
-
-	test("fail to create an order when user has no wallet", async () => {
-		const deviceId = "test_device_id";
-		const user = await helpers.createUser({ deviceId, createWallet: false });
-		const offers = await getOffers(user.id, user.appId, {});
-
-		await expect(createMarketplaceOrder(offers.offers[0].id, user, deviceId))
-			.rejects
-			.toThrow(UserHasNoWallet(user.id, deviceId).message);
 	});
 });

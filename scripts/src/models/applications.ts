@@ -17,8 +17,6 @@ export type ApplicationConfig = {
 	limits: LimitConfig;
 };
 
-// const AppOffersCache = new Map<string, [AppOffer[], moment.Moment]>();
-
 @Entity({ name: "applications" })
 @Initializer("apiKey", () => generateId(IdPrefix.App))
 @Register
@@ -58,7 +56,7 @@ export class Application extends CreationDateModel {
 export class AppOffer extends BaseEntity {
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
 		const cacheKey = `appOffers:${appId}:${type}`;
-		let appOffers: AppOffer[] | null = localCache.get(cacheKey);
+		let appOffers = localCache.get<Map<string, db.OfferContent>>(cacheKey);
 
 		if (!appOffers) {
 			appOffers = await AppOffer.createQueryBuilder("app_offer")

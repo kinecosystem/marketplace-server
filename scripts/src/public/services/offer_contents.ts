@@ -106,7 +106,7 @@ export async function getOfferContent(offerId: string): Promise<db.OfferContent 
 
 export async function getAllContents(): Promise<Map<string, db.OfferContent>> {
 	const cacheKey = "offerContents";
-	let contentsMap: Map<string, db.OfferContent> | null = localCache.get(cacheKey);
+	let contentsMap = localCache.get<Map<string, db.OfferContent>>(cacheKey);
 	if (!contentsMap) {
 		contentsMap = new Map<string, db.OfferContent>();
 		for (const res of await db.OfferContent.find()) {

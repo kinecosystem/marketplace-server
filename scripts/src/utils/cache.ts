@@ -5,10 +5,6 @@ interface CacheValue {
 	data: any;
 }
 
-interface CacheObj {
-	[key: string]: CacheValue;
-}
-
 const cacheTTL = 10; // minutes
 const items = new Map<string, CacheValue>();
 export const localCache = {

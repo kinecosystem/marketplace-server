@@ -13,7 +13,14 @@ import {
 	v1GetOrCreateUserCredentials,
 	getUserProfile as getUserProfileService
 } from "../services/users";
-import { SignInContext, validateRegisterJWT, validateWhitelist } from "../services/applications";
+import {
+	SignInContext,
+	V1SignInContext,
+	validateRegisterJWT,
+	v1ValidateRegisterJWT,
+	validateWhitelist,
+	v1ValidateWhitelist,
+} from "../services/applications";
 
 export type V1WalletData = {
 	wallet_address: string;
@@ -42,15 +49,15 @@ export type V1RegisterRequest = Request & { body: V1WhitelistSignInData | V1JwtS
  * allow either registration with JWT or plain userId to be checked against a whitelist from the given app
  */
 export const v1SignInUser = async function(req: V1RegisterRequest, res: Response) {
-	let context: SignInContext;
+	let context: V1SignInContext;
 	const data: V1WhitelistSignInData | V1JwtSignInData = req.body;
 
 	logger().info("signing in user", { data });
 	// XXX should also check which sign in types does the application allow
 	if (data.sign_in_type === "jwt") {
-		context = await validateRegisterJWT(data.jwt!);
+		context = await v1ValidateRegisterJWT(data.jwt!);
 	} else if (data.sign_in_type === "whitelist") {
-		context = await validateWhitelist(data.user_id, data.api_key);
+		context = await v1ValidateWhitelist(data.user_id, data.api_key);
 	} else {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
@@ -73,9 +80,7 @@ export const v1SignInUser = async function(req: V1RegisterRequest, res: Response
 	res.status(200).send(authToken);
 } as any as RequestHandler;
 
-export type WalletData = {
-	device_id: string;
-};
+export type WalletData = {};
 
 export type CommonSignInData = WalletData & {
 	sign_in_type: "jwt" | "whitelist";
@@ -90,6 +95,7 @@ export type WhitelistSignInData = CommonSignInData & {
 	sign_in_type: "whitelist";
 	user_id: string;
 	api_key: string;
+	device_id: string;
 };
 
 export type RegisterRequest = Request & { body: WhitelistSignInData | JwtSignInData };
@@ -107,7 +113,7 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	if (data.sign_in_type === "jwt") {
 		context = await validateRegisterJWT(data.jwt!);
 	} else if (data.sign_in_type === "whitelist") {
-		context = await validateWhitelist(data.user_id, data.api_key);
+		context = await validateWhitelist(data.user_id, data.device_id, data.api_key);
 	} else {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
@@ -124,7 +130,7 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		app,
 		context.appUserId,
 		context.appId,
-		data.device_id);
+		context.deviceId);
 
 	res.status(200).send(authToken);
 } as any as RequestHandler;

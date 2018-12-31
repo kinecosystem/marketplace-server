@@ -26,6 +26,15 @@ import { app } from "../../public/app";
 
 import { localCache } from "../../utils/cache";
 
+async function completeOrder(user: User) {
+	const offers = await getOffers(user.id, user.appId, {});
+	const offerId = offers.offers[0].id;
+	const openOrder = await createMarketplaceOrder(offerId, user);
+	const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+	await helpers.completePayment(order.id);
+	return order;
+}
+
 describe("test orders", async () => {
 	jest.setTimeout(20000);
 
@@ -112,6 +121,27 @@ describe("test orders", async () => {
 		const orderHistory: OrderList = res.body;
 		expect(orderHistory.orders.length).toEqual(1);
 		expect(orderHistory.orders[0].offer_id).toEqual(offerId);
+	});
+
+	test("getOrder returns only my orders", async () => {
+		const user1 = await helpers.createUser();
+		const user2 = await helpers.createUser();
+		const user1order = await completeOrder(user1);
+
+		const user1token: AuthToken = (await AuthToken.findOne({ userId: user1.id }))!;
+		const user2token: AuthToken = (await AuthToken.findOne({ userId: user2.id }))!;
+
+		await mock(app)
+			.get(`/v1/orders/${ user1order.id }`)
+			.set("x-request-id", "123")
+			.set("Authorization", `Bearer ${ user1token.id }`)
+			.expect(200);
+
+		await mock(app)
+			.get(`/v1/orders/${ user1order.id }`)
+			.set("x-request-id", "123")
+			.set("Authorization", `Bearer ${ user2token.id }`)
+			.expect(404);
 	});
 
 	test("getOrderHistory limit", async () => {
@@ -362,4 +392,5 @@ describe("test orders", async () => {
 		// user2 should be able to open an order
 		await expect(createMarketplaceOrder(offer.id, user2)).resolves.toBeDefined();
 	});
-});
+})
+;

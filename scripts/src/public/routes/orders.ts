@@ -9,6 +9,7 @@ import {
 	changeOrder as changeOrderService,
 	getOrderHistory as getOrderHistoryService,
 	createExternalOrder as createExternalOrderService,
+	v1CreateExternalOrder as v1CreateExternalOrderService,
 	createMarketplaceOrder as createMarketplaceOrderService,
 } from "../services/orders";
 import { OfferTranslation } from "../../models/translations";
@@ -51,6 +52,10 @@ export type CreateExternalOrderRequest = Request & {
 /**
  * create an order for a native offer
  */
+export const v1CreateExternalOrder = async function(req: CreateExternalOrderRequest, res: Response) {
+	const order = await v1CreateExternalOrderService(req.body.jwt, req.context.user!);
+	res.status(201).send(order);
+} as any as RequestHandler;
 export const createExternalOrder = async function(req: CreateExternalOrderRequest, res: Response) {
 	const order = await createExternalOrderService(req.body.jwt, req.context.user!, req.context.token!.deviceId);
 	res.status(201).send(order);

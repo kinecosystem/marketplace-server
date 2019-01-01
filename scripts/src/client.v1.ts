@@ -61,13 +61,13 @@ export class ClientError extends Error {
 }
 
 export class ClientRequests {
-	public static async create(data: any, headers?: StringMap) {
-		const res = await axios.post<{ auth: AuthToken; }>(MARKETPLACE_BASE + "/v2/users", data, { headers });
-		return new ClientRequests(res.data.auth);
+	public static async create(data: { device_id: string; wallet_address: string; }, headers?: StringMap) {
+		const res = await axios.post<AuthToken>(MARKETPLACE_BASE + "/v1/users", data, { headers });
+		return new ClientRequests(res.data);
 	}
 
 	public static async getConfig(): Promise<ConfigResponse> {
-		const res = await axios.get<ConfigResponse>(MARKETPLACE_BASE + "/v2/config");
+		const res = await axios.get<ConfigResponse>(MARKETPLACE_BASE + "/v1/config");
 		return res.data;
 	}
 
@@ -82,7 +82,7 @@ export class ClientRequests {
 	}
 
 	public async activate() {
-		const res = await this.request("/v2/users/me/activate").post<AuthToken>();
+		const res = await this.request("/v1/users/me/activate").post<AuthToken>();
 		this.authToken = res.data;
 	}
 
@@ -133,7 +133,7 @@ export class ClientRequests {
 }
 
 export class Client {
-	public static async create(signInPayload: SignInPayload, config?: { headers?: StringMap }): Promise<Client> {
+	public static async create(signInPayload: SignInPayload, walletAddress?: string, config?: { headers?: StringMap }): Promise<Client> {
 		if (!this.blockchainConfig) {
 			this.blockchainConfig = (await ClientRequests.getConfig()).blockchain;
 		}
@@ -143,7 +143,16 @@ export class Client {
 			this.blockchainConfig.asset_issuer,
 			this.blockchainConfig.horizon_url);
 
-		const data = {};
+		const keys = !walletAddress ?
+			Keypair.random() :
+			(walletAddress.startsWith("S") ?
+				Keypair.fromSecret(walletAddress) :
+				Keypair.fromPublicKey(walletAddress));
+
+		const data = {
+			device_id: "my_device",
+			wallet_address: keys.publicKey(),
+		};
 
 		if (isJWT(signInPayload)) {
 			Object.assign(data, { sign_in_type: "jwt", jwt: signInPayload.jwt });
@@ -155,22 +164,23 @@ export class Client {
 			});
 		}
 
-		const requests = await ClientRequests.create(data, config ? config.headers : {});
+		console.log("register data: ", data);
 
-		return new Client(network, requests);
+		const requests = await ClientRequests.create(data, config ? config.headers : {});
+		const wallet = await createWallet(network, keys);
+
+		return new Client(wallet, requests);
 	}
 
 	private static blockchainConfig: BlockchainConfig;
 
 	public readonly appId: string;
+
+	public readonly wallet: KinWallet;
 	public readonly requests: ClientRequests;
 
-	public wallet?: KinWallet;
-
-	private readonly network: KinNetwork;
-
-	private constructor(network: KinNetwork, requests: ClientRequests) {
-		this.network = network;
+	private constructor(wallet: KinWallet, requests: ClientRequests) {
+		this.wallet = wallet;
 		this.requests = requests;
 		this.appId = requests.auth.app_id;
 	}
@@ -188,28 +198,12 @@ export class Client {
 		}
 	}
 
-	public async updateWallet(walletAddress?: string) {
-		const keys = !walletAddress ?
-			Keypair.random() :
-			(walletAddress.startsWith("S") ?
-				Keypair.fromSecret(walletAddress) :
-				Keypair.fromPublicKey(walletAddress));
-
-		if (keys.canSign()) {
-			console.log("updating wallet with keys: ", { public: keys.publicKey(), private: keys.secret() });
-		} else {
-			console.log("updating wallet with public key only: ", { public: keys.publicKey() });
-		}
-
-		await this.requests.request("/v2/users/me", { wallet_address: keys.publicKey() }).patch();
-		this.wallet = await createWallet(this.network, keys);
+	public async updateWallet(walletAddress: string) {
+		const res = await this.requests.request("/v1/users", { wallet_address: walletAddress }).patch();
+		return;
 	}
 
 	public async pay(recipient: string, amount: number, orderId: string) {
-		if (!this.wallet) {
-			throw new Error("first set a wallet");
-		}
-
 		try {
 			const memo = createMemo(this.appId, orderId);
 			return await this.wallet.pay(recipient, amount, memo);
@@ -222,7 +216,7 @@ export class Client {
 	public async getOffers(): Promise<OfferList> {
 		try {
 			const res = await this.requests
-				.request("/v2/offers")
+				.request("/v1/offers")
 				.get<OfferList>();
 			return res.data;
 		} catch (e) {
@@ -234,7 +228,7 @@ export class Client {
 	public async getOrder(orderId: string): Promise<Order> {
 		try {
 			const res = await this.requests
-				.request(`/v2/orders/${ orderId }`)
+				.request(`/v1/orders/${ orderId }`)
 				.get<Order>();
 			return res.data;
 		} catch (e) {
@@ -246,7 +240,7 @@ export class Client {
 	public async createOrder(offerId: string): Promise<OpenOrder> {
 		try {
 			const res = await this.requests
-				.request(`/v2/offers/${ offerId }/orders`)
+				.request(`/v1/offers/${ offerId }/orders`)
 				.post<OpenOrder>();
 			return res.data;
 		} catch (e) {
@@ -258,7 +252,7 @@ export class Client {
 	public async cancelOrder(orderId: string): Promise<void> {
 		try {
 			await this.requests
-				.request(`/v2/orders/${ orderId }`)
+				.request(`/v1/orders/${ orderId }`)
 				.delete();
 		} catch (e) {
 			console.log(`error while cancelling order ${ orderId }`);
@@ -269,7 +263,7 @@ export class Client {
 	public async changeOrder(orderId: string, data: Partial<Order>): Promise<Order> {
 		try {
 			const res = await this.requests
-				.request(`/v2/orders/${ orderId }`, data)
+				.request(`/v1/orders/${ orderId }`, data)
 				.patch<Order>();
 			return res.data;
 		} catch (e) {
@@ -290,7 +284,7 @@ export class Client {
 	public async getOrders(): Promise<OrderList> {
 		try {
 			const res = await this.requests
-				.request("/v2/orders")
+				.request("/v1/orders")
 				.get<OrderList>();
 			return res.data;
 		} catch (e) {
@@ -302,7 +296,7 @@ export class Client {
 	public async submitOrder(orderId: string, content?: string): Promise<Order> {
 		try {
 			const res = await this.requests
-				.request(`/v2/orders/${ orderId }`, { content })
+				.request(`/v1/orders/${ orderId }`, { content })
 				.post<Order>();
 			return res.data;
 		} catch (e) {
@@ -314,7 +308,7 @@ export class Client {
 	public async createExternalOrder(jwt: string): Promise<OpenOrder> {
 		try {
 			const res = await this.requests
-				.request(`/v2/offers/external/orders`, { jwt })
+				.request(`/v1/offers/external/orders`, { jwt })
 				.post<OpenOrder>();
 			return res.data;
 		} catch (e) {
@@ -326,7 +320,7 @@ export class Client {
 	public async getUserProfile(userId: string = "me"): Promise<UserProfile> {
 		try {
 			const res = await this.requests
-				.request(`/v2/users/${ userId }`)
+				.request(`/v1/users/${ userId }`)
 				.get<UserProfile>();
 			return res.data;
 		} catch (e) {
@@ -336,20 +330,12 @@ export class Client {
 	}
 
 	public async findKinPayment(orderId: string): Promise<CompletedPayment | undefined> {
-		if (!this.wallet) {
-			throw new Error("first set a wallet");
-		}
-
 		return (await this.wallet.getPayments())
 			.map(paymentFromTransaction)
 			.find(payment => payment !== undefined && payment.id === orderId);
 	}
 
 	public async trustKin() {
-		if (!this.wallet) {
-			throw new Error("first set a wallet");
-		}
-
 		await this.wallet.trustKin();
 	}
 }

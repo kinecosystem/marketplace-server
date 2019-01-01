@@ -35,8 +35,8 @@ export type PayToUserPayload = SpendPayload & {
 
 export type ExternalEarnOrderJWT = JWTClaims<"earn"> & EarnPayload;
 export type ExternalSpendOrderJWT = JWTClaims<"spend"> & SpendPayload;
-export type ExternalPayToUserOrderJwt = JWTClaims<"pay_to_user"> & PayToUserPayload;
-export type ExternalOrderJWT = ExternalEarnOrderJWT | ExternalSpendOrderJWT | ExternalPayToUserOrderJwt;
+export type ExternalPayToUserOrderJWT = JWTClaims<"pay_to_user"> & PayToUserPayload;
+export type ExternalOrderJWT = ExternalEarnOrderJWT | ExternalSpendOrderJWT | ExternalPayToUserOrderJWT;
 
 export function isExternalEarn(jwt: ExternalOrderJWT): jwt is ExternalEarnOrderJWT {
 	return jwt.sub === "earn";
@@ -46,7 +46,7 @@ export function isExternalSpend(jwt: ExternalOrderJWT): jwt is ExternalSpendOrde
 	return jwt.sub === "spend";
 }
 
-export function isPayToUser(jwt: ExternalOrderJWT): jwt is ExternalPayToUserOrderJwt {
+export function isPayToUser(jwt: ExternalOrderJWT): jwt is ExternalPayToUserOrderJWT {
 	return jwt.sub === "pay_to_user";
 }
 
@@ -75,8 +75,6 @@ function validateUserPayload(data: any, key: "sender" | "recipient", shouldHaveD
 }
 
 export async function validateExternalOrderJWT(jwt: string, appUserId: string, deviceId: string): Promise<ExternalOrderJWT> {
-	// const decoded = await verifyJWT<Partial<PayToUserPayload>, "spend" | "earn" | "pay_to_user">(jwt);
-	// const decoded = await verifyJWT<SpendPayload | EarnPayload | PayToUserPayload, "spend" | "earn" | "pay_to_user">(jwt);
 	const decoded = await verifyJWT<ExternalOrderJWT, "spend" | "earn" | "pay_to_user">(jwt);
 
 	if (decoded.payload.sub !== "earn" && decoded.payload.sub !== "spend" && decoded.payload.sub !== "pay_to_user") {

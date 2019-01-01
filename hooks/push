@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# File needs to be called /hooks/build relative to the Dockerfile.
+# $IMAGE_NAME var is injected into the build so the tag is correct.
+
+make push-image

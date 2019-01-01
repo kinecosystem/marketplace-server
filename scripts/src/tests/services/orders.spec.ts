@@ -1,34 +1,30 @@
 import mock = require("supertest");
-
 import * as moment from "moment";
-import * as metrics from "../../../scripts/bin/metrics";
-import { generateId, random, IdPrefix } from "../../../scripts/bin/utils/utils";
-import { Event } from "../../../scripts/bin/analytics";
-import { AuthToken, User } from "../../../scripts/bin/models/users";
-import { JWTValue, Offer } from "../../../scripts/bin/models/offers";
-import * as payment from "../../../scripts/bin/public/services/payment";
-import { getOffers } from "../../../scripts/bin/public/services/offers";
-import { initLogger } from "../../../scripts/bin/logging";
-import { ExternalOrder, Order } from "../../../scripts/bin/models/orders";
-import { close as closeModels, init as initModels } from "../../../scripts/bin/models/index";
+import * as metrics from "../../metrics";
+import { generateId, IdPrefix, random } from "../../utils/utils";
+import { AuthToken, User } from "../../models/users";
+import { JWTValue, Offer } from "../../models/offers";
+import { getOffers } from "../../public/services/offers";
+import { initLogger } from "../../logging";
+import { ExternalOrder, Order } from "../../models/orders";
+import { close as closeModels, init as initModels } from "../../models/index";
 import {
 	changeOrder,
 	createMarketplaceOrder,
 	getOrder,
 	getOrderHistory,
 	setFailedOrder,
-	submitOrder
-} from "../../../scripts/bin/public/services/orders";
-import { TransactionTimeout } from "../../../scripts/bin/errors";
-import { AppOffer } from "../../../scripts/bin/models/applications";
-import { JWTContent } from "../../../scripts/bin/public/jwt";
+	submitOrder, OrderList
+} from "../../public/services/orders";
+import { TransactionTimeout } from "../../errors";
+import { AppOffer } from "../../models/applications";
+import { JWTContent } from "../../public/jwt";
 
 import * as helpers from "../helpers";
 import * as jsonwebtoken from "jsonwebtoken";
-import { app } from "../../../scripts/bin/public/app";
-import { OrderList } from "../../../scripts/src/public/services/orders";
+import { app } from "../../public/app";
 
-import { localCache } from "../../../scripts/bin/utils/cache";
+import { localCache } from "../../utils/cache";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);

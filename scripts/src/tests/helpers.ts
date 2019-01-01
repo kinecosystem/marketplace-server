@@ -1,17 +1,17 @@
 import { getManager } from "typeorm";
 import * as StellarSdk from "stellar-sdk";
 
-import { generateId } from "../../scripts/bin/utils/utils";
-import { Asset, Offer } from "../../scripts/bin/models/offers";
-import { User, AuthToken } from "../../scripts/bin/models/users";
-import { Application, ApplicationConfig } from "../../scripts/bin/models/applications";
-import { LimitConfig } from "../../scripts/bin/config";
-import { createEarn, createSpend } from "../../scripts/bin/create_data/offers";
-import { Poll, PageType } from "../../scripts/bin/public/services/offer_contents";
-import { CompletedPayment, paymentComplete } from "../../scripts/bin/internal/services";
-import { ExternalOrder, MarketplaceOrder, Order } from "../../scripts/bin/models/orders";
-import * as payment from "../../scripts/bin/public/services/payment";
-import { Event } from "../../scripts/bin/analytics";
+import { generateId } from "../utils/utils";
+import { Asset, Offer } from "../models/offers";
+import { User, AuthToken } from "../models/users";
+import { Application, ApplicationConfig } from "../models/applications";
+import { LimitConfig } from "../config";
+import { createEarn, createSpend } from "../create_data/offers";
+import { Poll, PageType } from "../public/services/offer_contents";
+import { CompletedPayment, paymentComplete } from "../internal/services";
+import { ExternalOrder, MarketplaceOrder, Order } from "../models/orders";
+import * as payment from "../public/services/payment";
+import { Event } from "../analytics";
 
 const animalPoll: Poll = {
 	pages: [{

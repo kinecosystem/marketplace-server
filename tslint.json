@@ -1,11 +1,28 @@
 {
-	"extends": ["tslint:recommended", "tslint-eslint-rules"],
+	"extends": [
+		"tslint:recommended",
+		"tslint-eslint-rules"
+	],
 	"rules": {
-		"indent": [true, "tabs", 2],
-		"quotemark": [true, "double"],
-		"object-curly-spacing": [true, "always"],
-		"arrow-parens": [true, "ban-single-arg-parens"],
-		"whitespace": [true,
+		"indent": [
+			true,
+			"tabs",
+			2
+		],
+		"quotemark": [
+			true,
+			"double"
+		],
+		"object-curly-spacing": [
+			true,
+			"always"
+		],
+		"arrow-parens": [
+			true,
+			"ban-single-arg-parens"
+		],
+		"whitespace": [
+			true,
 			"check-branch",
 			"check-decl",
 			"check-operator",
@@ -16,24 +33,38 @@
 			"check-module"
 		],
 		"eofline": true,
-		"max-line-length": [250],
+		"max-line-length": [
+			250
+		],
 		"no-console": false,
-		"interface-name": [true, "never-prefix"],
+		"interface-name": [
+			true,
+			"never-prefix"
+		],
 		"no-var-requires": false,
 		"ordered-imports": false,
 		"no-shadowed-variable": false,
 		"interface-over-type-literal": false,
 		"max-classes-per-file": false,
 		"object-literal-sort-keys": false,
-		"no-unused-expression": [true, "allow-fast-null-checks"],
-		"variable-name": [false],
+		"no-unused-expression": [
+			true,
+			"allow-fast-null-checks"
+		],
+		"variable-name": [
+			false
+		],
 		"only-arrow-functions": false,
 		"trailing-comma": false,
 		"no-empty-interface": false,
 		"no-empty": false,
 		"unified-signatures": false,
-		"ban-types": [false],
+		"ban-types": [
+			false
+		],
 		"one-line": true,
-		"object-literal-key-quotes": [false]
+		"object-literal-key-quotes": [
+			false
+		]
 	}
 }

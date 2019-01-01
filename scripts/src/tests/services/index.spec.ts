@@ -1,7 +1,7 @@
 import mock = require("supertest");
 
-import { app } from "../../../scripts/bin/public/app";
-import * as metrics from "../../../scripts/bin/metrics";
+import { app } from "../../public/app";
+import * as metrics from "../../metrics";
 
 describe("general api checks", async () => {
 	test("unknown api endpoints should return 404", async () => {

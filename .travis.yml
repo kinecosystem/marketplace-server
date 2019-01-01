@@ -3,7 +3,7 @@ sudo: required
 services: docker
 
 node_js:
-  - "8"
+  - "10"
 
 before_script:
   - make build db # db - for make test
@@ -15,7 +15,18 @@ before_script:
 
 script:
   - make test
+  - ./node_modules/codecov/bin/codecov
   - make test-system-docker
 
 after_failure:
   - make logs
+
+branches:
+  only:
+    - master
+
+deploy:
+  provider: script
+  script: echo "pushing docker image" # && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && make push-image
+  on:
+    branch: master

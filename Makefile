@@ -1,5 +1,3 @@
-console_script = $(shell cat node-console.js)
-
 all:
 	trap 'kill %1' SIGINT; make run-internal & bash -c 'sleep 1 && make run'
 
@@ -33,7 +31,7 @@ db:
 	npm run manage-db-data -- --apps-dir data/apps --offers-dir data/offers --app-list ALL --create-db
 
 con:
-	node --experimental-repl-await node-console.js
+	node --experimental-repl-await ./scripts/bin/node-console.js
 
 # docker targets
 revision := $(shell git rev-parse --short HEAD)

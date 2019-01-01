@@ -1,7 +1,7 @@
 const repl = require("repl");
 // const babel = require("@babel/core");
 
-const BASE_MODULE_PATH = "./scripts/bin/";
+const BASE_MODULE_PATH = "./";
 
 const util = require("util");
 
@@ -67,7 +67,7 @@ const r = context.r = function r(module: string, reload?: boolean) {
 	return require(BASE_MODULE_PATH + module);
 };
 
-context.log = function log(value: any = "No Value To Log", ...args) {
+context.log = function log(value: any = "No Value To Log", ...args: any[]) {
 	if (value.then && typeof value.then === "function") {
 		value.then(log);
 		args.length && log(...args);

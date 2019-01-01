@@ -24,7 +24,7 @@ import * as helpers from "../helpers";
 import * as jsonwebtoken from "jsonwebtoken";
 import { app } from "../../public/app";
 
-import { localCache } from "../../../scripts/bin/utils/cache";
+import { localCache } from "../../utils/cache";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);

@@ -392,5 +392,4 @@ describe("test orders", async () => {
 		// user2 should be able to open an order
 		await expect(createMarketplaceOrder(offer.id, user2)).resolves.toBeDefined();
 	});
-})
-;
+});

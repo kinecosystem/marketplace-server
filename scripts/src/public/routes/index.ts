@@ -21,6 +21,7 @@ import {
 	cancelOrder,
 	changeOrder,
 	createExternalOrder,
+	v1CreateExternalOrder,
 	createMarketplaceOrder,
 	getOrder,
 	getOrderHistory,
@@ -83,7 +84,7 @@ export function createV1Routes(app: express.Express, pathPrefix?: string) {
 
 	app.get(prefix("offers/"), authenticateUser, getOffers);
 
-	app.post(prefix("offers/external/orders"), authenticateUser, createExternalOrder);
+	app.post(prefix("offers/external/orders"), authenticateUser, v1CreateExternalOrder);
 	app.post(prefix("offers/:offer_id/orders"), authenticateUser, createMarketplaceOrder);
 
 	app.get(prefix("orders/"), authenticateUser, getOrderHistory);

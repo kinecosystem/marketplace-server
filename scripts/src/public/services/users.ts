@@ -36,12 +36,12 @@ function V1AuthTokenDbToApi(authToken: DbAuthToken, user: User): V1AuthToken {
 export async function v1GetOrCreateUserCredentials(
 	app: Application,
 	appUserId: string,
-	appId: string,
 	walletAddress: string,
 	deviceId: string): Promise<V1AuthToken> {
 
-	const data = await register(app, appUserId, appId, deviceId);
+	const data = await register(app, appUserId, app.id, deviceId);
 	await data.user.updateWallet(deviceId, walletAddress);
+	await payment.createWallet(walletAddress, app.id, appUserId);
 
 	return V1AuthTokenDbToApi(data.token, data.user);
 }
@@ -69,10 +69,9 @@ function AuthTokenDbToApi(authToken: DbAuthToken, user: User): AuthToken {
 export async function getOrCreateUserCredentials(
 	app: Application,
 	appUserId: string,
-	appId: string,
 	deviceId: string): Promise<{ auth: AuthToken, user: UserProfile; }> {
 
-	const data = await register(app, appUserId, appId, deviceId);
+	const data = await register(app, appUserId, app.id, deviceId);
 
 	return {
 		user: data.profile,
@@ -123,6 +122,10 @@ export type UserStats = {
 	spend_count: number;
 	last_earn_date?: string;
 	last_spend_date?: string;
+};
+
+export type V1UserProfile = {
+	stats: UserStats
 };
 
 export type UserProfile = {

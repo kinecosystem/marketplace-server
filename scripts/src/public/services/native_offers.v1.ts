@@ -28,8 +28,8 @@ export type PayToUserPayload = EarnPayload & SpendPayload;
 
 export type ExternalEarnOrderJWT = JWTClaims<"earn"> & EarnPayload;
 export type ExternalSpendOrderJWT = JWTClaims<"spend"> & SpendPayload;
-export type ExternalPayToUserOrderJwt = JWTClaims<"pay_to_user"> & PayToUserPayload;
-export type ExternalOrderJWT = ExternalEarnOrderJWT | ExternalSpendOrderJWT | ExternalPayToUserOrderJwt;
+export type ExternalPayToUserOrderJWT = JWTClaims<"pay_to_user"> & PayToUserPayload;
+export type ExternalOrderJWT = ExternalEarnOrderJWT | ExternalSpendOrderJWT | ExternalPayToUserOrderJWT;
 
 export function isExternalEarn(jwt: ExternalOrderJWT): jwt is ExternalEarnOrderJWT {
 	return jwt.sub === "earn";
@@ -39,7 +39,7 @@ export function isExternalSpend(jwt: ExternalOrderJWT): jwt is ExternalSpendOrde
 	return jwt.sub === "spend";
 }
 
-export function isPayToUser(jwt: ExternalOrderJWT): jwt is ExternalPayToUserOrderJwt {
+export function isPayToUser(jwt: ExternalOrderJWT): jwt is ExternalPayToUserOrderJWT {
 	return jwt.sub === "pay_to_user";
 }
 

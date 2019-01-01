@@ -73,7 +73,6 @@ export const v1SignInUser = async function(req: V1RegisterRequest, res: Response
 	const authToken = await v1GetOrCreateUserCredentials(
 		app,
 		context.appUserId,
-		context.appId,
 		data.wallet_address,
 		data.device_id);
 
@@ -129,7 +128,6 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	const authToken = await getOrCreateUserCredentials(
 		app,
 		context.appUserId,
-		context.appId,
 		context.deviceId);
 
 	res.status(200).send(authToken);

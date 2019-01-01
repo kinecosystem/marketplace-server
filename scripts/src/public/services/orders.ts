@@ -10,7 +10,20 @@ import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
 import { Application, AppOffer } from "../../models/applications";
-import { isExternalEarn, isPayToUser, validateExternalOrderJWT } from "../services/native_offers";
+import {
+	isPayToUser,
+	isExternalEarn,
+	ExternalEarnOrderJWT,
+	ExternalSpendOrderJWT,
+	validateExternalOrderJWT,
+	ExternalPayToUserOrderJWT } from "./native_offers";
+import {
+	isPayToUser as v1IsPayToUser,
+	isExternalEarn as v1IsExternalEarn,
+	ExternalEarnOrderJWT as V1ExternalEarnOrderJWT,
+	ExternalSpendOrderJWT as V1ExternalSpendOrderJWT,
+	validateExternalOrderJWT as v1ValidateExternalOrderJWT,
+	ExternalPayToUserOrderJWT as V1ExternalPayToUserOrderJwt } from "./native_offers.v1";
 import {
 	ApiError,
 	NoSuchApp,
@@ -32,7 +45,6 @@ import { Paging } from "./index";
 import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
 import * as offerContents from "./offer_contents";
-import { ExternalEarnOrderJWT, ExternalPayToUserOrderJwt, ExternalSpendOrderJWT } from "./native_offers";
 import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
@@ -174,13 +186,55 @@ export async function createMarketplaceOrder(offerId: string, user: User, userDe
 	return openOrderDbToApi(order, user.id);
 }
 
-async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalPayToUserOrderJwt): Promise<db.ExternalOrder> {
+async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt: V1ExternalPayToUserOrderJwt): Promise<db.ExternalOrder> {
 	const senderWallet = (await sender.getWallets(senderDeviceId)).lastUsed();
 	if (!senderWallet) {
 		throw UserHasNoWallet(sender.id, senderDeviceId);
 	}
 
 	const recipient = await User.findOne({ appId: sender.appId, appUserId: jwt.recipient.user_id });
+	if (!recipient) {
+		throw NoSuchUser(jwt.recipient.user_id);
+	}
+
+	const recipientWallet = (await recipient.getWallets()).lastUsed();
+	if (!recipientWallet) {
+		throw UserHasNoWallet(recipient.id);
+	}
+
+	const order = db.ExternalOrder.new({
+		offerId: jwt.offer.id,
+		amount: jwt.offer.amount,
+		status: "opened",
+		nonce: jwt.nonce,
+		blockchainData: {
+			sender_address: senderWallet.address,
+			recipient_address: recipientWallet.address
+		}
+	}, {
+		type: "earn",
+		user: recipient,
+		wallet: recipientWallet.address,
+		meta: pick(jwt.recipient, "title", "description")
+	}, {
+		user: sender,
+		type: "spend",
+		wallet: senderWallet.address,
+		meta: pick(jwt.sender, "title", "description")
+	});
+
+	await addWatcherEndpoint(recipientWallet.address, order.id);
+	return order;
+}
+
+async function v1CreateP2PExternalOrder(sender: User, jwt: V1ExternalPayToUserOrderJwt): Promise<db.ExternalOrder> {
+	const senderWallet = (await sender.getWallets()).lastUsed();
+	if (!senderWallet) {
+		throw UserHasNoWallet(sender.id);
+	}
+
+	const recipient = await User.findOne({ appId: sender.appId, appUserId: jwt.recipient.user_id });
+
 	if (!recipient) {
 		throw NoSuchUser(jwt.recipient.user_id);
 	}
@@ -246,6 +300,38 @@ async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId:
 	});
 }
 
+async function v1CreateNormalEarnExternalOrder(recipient: User, jwt: V1ExternalEarnOrderJWT) {
+	const app = (await Application.findOneById(recipient.appId))!;
+
+	await assertRateLimitUserEarn(recipient.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
+
+	const wallet = (await recipient.getWallets()).lastUsed();
+	if (!wallet) {
+		throw UserHasNoWallet(recipient.id);
+	}
+	await assertRateLimitWalletEarn(wallet.address, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
+
+	if (!app) {
+		throw NoSuchApp(recipient.appId);
+	}
+
+	return db.ExternalOrder.new({
+		offerId: jwt.offer.id,
+		amount: jwt.offer.amount,
+		nonce: jwt.nonce,
+		status: "opened",
+		blockchainData: {
+			sender_address: app.walletAddresses.sender,
+			recipient_address: wallet.address
+		}
+	}, {
+		type: "earn",
+		user: recipient,
+		wallet: wallet.address,
+		meta: pick(jwt.recipient, "title", "description")
+	});
+}
+
 async function createNormalSpendExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalSpendOrderJWT) {
 	const app = await Application.findOneById(sender.appId);
 
@@ -277,6 +363,71 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 	await addWatcherEndpoint(app.walletAddresses.recipient, order.id);
 
 	return order;
+}
+
+async function v1CreateNormalSpendExternalOrder(sender: User, jwt: V1ExternalSpendOrderJWT) {
+	const app = await Application.findOneById(sender.appId);
+
+	if (!app) {
+		throw NoSuchApp(sender.appId);
+	}
+
+	const wallet = (await sender.getWallets()).lastUsed();
+	if (!wallet) {
+		throw UserHasNoWallet(sender.id);
+	}
+
+	const order = db.ExternalOrder.new({
+		offerId: jwt.offer.id,
+		amount: jwt.offer.amount,
+		status: "opened",
+		nonce: jwt.nonce,
+		blockchainData: {
+			sender_address: wallet.address,
+			recipient_address: app.walletAddresses.recipient
+		}
+	}, {
+		user: sender,
+		type: "spend",
+		wallet: wallet.address,
+		meta: pick(jwt.sender, "title", "description")
+	});
+
+	await addWatcherEndpoint(app.walletAddresses.recipient, order.id);
+
+	return order;
+}
+
+export async function v1CreateExternalOrder(jwt: string, user: User): Promise<OpenOrder> {
+	logger().info("createExternalOrder", { jwt });
+	const payload = await v1ValidateExternalOrderJWT(jwt, user.appUserId);
+	const nonce = payload.nonce || db.Order.DEFAULT_NONCE;
+
+	let order = await db.Order.findBy({ offerId: payload.offer.id, userId: user.id, nonce });
+
+	if (!order || order.status === "failed") {
+		if (v1IsPayToUser(payload)) {
+			order = await v1CreateP2PExternalOrder(user, payload);
+		} else if (v1IsExternalEarn(payload)) {
+			order = await v1CreateNormalEarnExternalOrder(user, payload);
+		} else {
+			order = await v1CreateNormalSpendExternalOrder(user, payload);
+		}
+
+		await order.save();
+
+		metrics.createOrder("external", order.flowType(), "native", user.appId);
+
+		logger().info("created new open external order", {
+			offerId: payload.offer.id,
+			userId: user.id,
+			orderId: order.id
+		});
+	} else if (order.status === "pending" || order.status === "completed") {
+		throw ExternalOrderAlreadyCompleted(order.id);
+	}
+
+	return openOrderDbToApi(order, user.id);
 }
 
 export async function createExternalOrder(jwt: string, user: User, userDeviceId: string): Promise<OpenOrder> {

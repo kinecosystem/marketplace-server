@@ -1,0 +1,7 @@
+- [ ] linked to a JIRA issue
+- [ ] description of the change
+- [ ] tests for the newly added code
+- [ ] if this is a breaking change, contains backward support code
+- [ ] if this requires client changes or partner updates, updated dependendants
+- [ ] were metrics and alerts added
+- [ ] should I change documentation

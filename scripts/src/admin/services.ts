@@ -510,7 +510,7 @@ export async function getOrders(params: any, query: Paging & { status?: OpenOrde
 }
 
 export async function retryOrder(params: { order_id: string }, query: any): Promise<string> {
-	const order = await Order.getOne(params.order_id);
+	const order = await Order.getOne({ orderId: params.order_id });
 
 	if (!order) {
 		throw new Error("order not found: " + params.order_id);

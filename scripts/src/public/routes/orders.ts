@@ -98,7 +98,7 @@ export const submitOrder = async function(req: SubmitOrderRequest, res: Response
  * cancel an order
  */
 export const cancelOrder = async function(req: GetOrderRequest, res: Response) {
-	await cancelOrderService(req.params.order_id);
+	await cancelOrderService(req.params.order_id, req.context.user!.id);
 	res.status(204).send();
 } as any as RequestHandler;
 

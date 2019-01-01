@@ -91,7 +91,7 @@ async function getPaymentJWT(order: db.Order, appId: string, userId: string): Pr
 }
 
 export async function paymentComplete(payment: CompletedPayment) {
-	const order = await db.Order.getOne(payment.id);
+	const order = await db.Order.getOne({ orderId: payment.id });
 	if (!order) {
 		logger().error(`received payment for unknown order id ${ payment.id }`);
 		return;
@@ -181,7 +181,7 @@ export async function paymentComplete(payment: CompletedPayment) {
 }
 
 export async function paymentFailed(payment: FailedPayment) {
-	const order = await db.Order.getOne(payment.id);
+	const order = await db.Order.getOne({ orderId: payment.id });
 	if (!order) {
 		logger().error(`received payment for unknown order id ${ payment.id }`);
 		return;

@@ -131,7 +131,7 @@ export async function paymentComplete(payment: CompletedPayment) {
 	}
 
 	if (order.blockchainData!.sender_address !== payment.sender_address) {
-		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }> ` +
 			`addresses sender mismatch ${ order.blockchainData!.sender_address } !== ${ payment.sender_address }`);
 
 		await setFailedOrder(order, WrongSender());

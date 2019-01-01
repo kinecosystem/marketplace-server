@@ -1,7 +1,9 @@
 const repl = require("repl");
+// const babel = require("@babel/core");
+
 const BASE_MODULE_PATH = "./scripts/bin/";
 
-require("util");
+const util = require("util");
 
 // ***** Terminal Colors and Formats ***** //
 const TERMINAL_STYLE = {
@@ -32,22 +34,33 @@ const TERMINAL_STYLE = {
 	bgwhite: "\x1b[47m",
 };
 
-console.log(TERMINAL_STYLE.bggreen, TERMINAL_STYLE.fgblack, "To use DB init one of the server apps, shortcuts available: .ADMIN, .PUBLIC, .INTERNAL", TERMINAL_STYLE.reset);
+console.log(TERMINAL_STYLE.bggreen, TERMINAL_STYLE.fgblack, "To use DB init one of the server apps, shortcuts available: .admin, .public, .internal", TERMINAL_STYLE.reset);
 
-const replServer: REPLSer = repl.start({
+/*** Keeping for reference ***/
+/*const BABEL_OPTIONS = {
+	babelrc: false,
+	"presets": ["es2015", { "modules": true }]
+};
+
+const evaluatorFunc = function(cmd, context, filename, callback) {
+	babel.transform(cmd, BABEL_OPTIONS, function(err, result) {
+		console.log(result.code);
+		eval(result.code);
+		callback(null, result.code);
+		replServer.displayPrompt(true);
+	});
+};*/
+
+const replServer = repl.start({
 	prompt: "marketplace > ",
 	useColors: true,
-	ignoreUndefined: true,
+	// ignoreUndefined: true,
 	replMode: repl.REPL_MODE_SLOPPY,
 });
 
-// replServer.on('exit', () => {
-// 	process.exit();
-// });
-
 // init
 const context = replServer.context;
-const r = context.r  = function r(module: string, reload?: boolean) {
+const r = context.r = function r(module: string, reload?: boolean) {
 	if (reload && require.cache[require.resolve(BASE_MODULE_PATH + module)]) {
 		delete require.cache[require.resolve(BASE_MODULE_PATH + module)];
 	}
@@ -67,10 +80,11 @@ context.log = function log(value: any = "No Value To Log", ...args) {
 	if (args) {
 		console.log.apply(console, [value].concat(args));
 	} else {
-		console.log(util.inspect(value, { showHidden: false, depth: null, color: true }))
+		console.log(util.inspect(value, { showHidden: false, depth: null, color: true }));
 	}
 };
 
+/*  Require app models  */
 context._offers = r("models/offers");
 context.Offer = context._offers.Offer;
 context.OfferContent = context._offers.OfferContent;
@@ -83,16 +97,16 @@ context.AuthToken = (r("models/users")).AuthToken;
 context.Application = (r("models/applications")).Application;
 context.AppOffer = r("models/applications").AppOffer;
 
-replServer.defineCommand("ADMIN", {
+/* Add shortcut REPL commands for loading the marketplace apps */
+replServer.defineCommand("admin", {
 	help: "Init the Admin App",
 	action: r.bind(null, "admin/app")
 });
-replServer.defineCommand("PUBLIC", {
+replServer.defineCommand("public", {
 	help: "Init the Public App",
 	action: r.bind(null, "public/app")
 });
-replServer.defineCommand("INTERNAL", {
+replServer.defineCommand("internal", {
 	help: "Init the Internal App",
 	action: r.bind(null, "internal/app")
 });
-

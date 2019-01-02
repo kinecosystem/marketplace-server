@@ -16,7 +16,7 @@ import {
 	ExternalEarnOrderJWT,
 	ExternalSpendOrderJWT,
 	validateExternalOrderJWT,
-	ExternalPayToUserOrderJWT } from "./native_offers";
+	ExternalPayToUserOrderJWT } from "./native_offers.v1";
 import {
 	ApiError,
 	NoSuchApp,
@@ -179,13 +179,14 @@ export async function createMarketplaceOrder(offerId: string, user: User, userDe
 	return openOrderDbToApi(order, user.id);
 }
 
-async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalPayToUserOrderJWT): Promise<db.ExternalOrder> {
-	const senderWallet = (await sender.getWallets(senderDeviceId)).lastUsed();
+async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJWT): Promise<db.ExternalOrder> {
+	const senderWallet = (await sender.getWallets()).lastUsed();
 	if (!senderWallet) {
-		throw UserHasNoWallet(sender.id, senderDeviceId);
+		throw UserHasNoWallet(sender.id);
 	}
 
 	const recipient = await User.findOne({ appId: sender.appId, appUserId: jwt.recipient.user_id });
+
 	if (!recipient) {
 		throw NoSuchUser(jwt.recipient.user_id);
 	}
@@ -220,19 +221,20 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 	return order;
 }
 
-async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId: string, jwt: ExternalEarnOrderJWT) {
+async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
 	const app = (await Application.findOneById(recipient.appId))!;
-	if (!app) {
-		throw NoSuchApp(recipient.appId);
-	}
 
 	await assertRateLimitUserEarn(recipient.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
 
-	const wallet = (await recipient.getWallets(recipientDeviceId)).lastUsed();
+	const wallet = (await recipient.getWallets()).lastUsed();
 	if (!wallet) {
-		throw UserHasNoWallet(recipient.id, recipientDeviceId);
+		throw UserHasNoWallet(recipient.id);
 	}
 	await assertRateLimitWalletEarn(wallet.address, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
+
+	if (!app) {
+		throw NoSuchApp(recipient.appId);
+	}
 
 	return db.ExternalOrder.new({
 		offerId: jwt.offer.id,
@@ -251,16 +253,16 @@ async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId:
 	});
 }
 
-async function createNormalSpendExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalSpendOrderJWT) {
+async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOrderJWT) {
 	const app = await Application.findOneById(sender.appId);
 
 	if (!app) {
 		throw NoSuchApp(sender.appId);
 	}
 
-	const wallet = (await sender.getWallets(senderDeviceId)).lastUsed();
+	const wallet = (await sender.getWallets()).lastUsed();
 	if (!wallet) {
-		throw UserHasNoWallet(sender.id, senderDeviceId);
+		throw UserHasNoWallet(sender.id);
 	}
 
 	const order = db.ExternalOrder.new({
@@ -284,20 +286,20 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 	return order;
 }
 
-export async function createExternalOrder(jwt: string, user: User, userDeviceId: string): Promise<OpenOrder> {
+export async function createExternalOrder(jwt: string, user: User): Promise<OpenOrder> {
 	logger().info("createExternalOrder", { jwt });
-	const payload = await validateExternalOrderJWT(jwt, user.appUserId, userDeviceId);
+	const payload = await validateExternalOrderJWT(jwt, user.appUserId);
 	const nonce = payload.nonce || db.Order.DEFAULT_NONCE;
 
 	let order = await db.Order.findBy({ offerId: payload.offer.id, userId: user.id, nonce });
 
 	if (!order || order.status === "failed") {
 		if (isPayToUser(payload)) {
-			order = await createP2PExternalOrder(user, userDeviceId, payload);
+			order = await createP2PExternalOrder(user, payload);
 		} else if (isExternalEarn(payload)) {
-			order = await createNormalEarnExternalOrder(user, userDeviceId, payload);
+			order = await createNormalEarnExternalOrder(user, payload);
 		} else {
-			order = await createNormalSpendExternalOrder(user, userDeviceId, payload);
+			order = await createNormalSpendExternalOrder(user, payload);
 		}
 
 		await order.save();

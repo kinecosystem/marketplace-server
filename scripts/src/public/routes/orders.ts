@@ -1,6 +1,7 @@
 import { Request, RequestHandler, Response } from "express";
 import { getDefaultLogger as logger } from "../../logging";
 
+import { OfferTranslation } from "../../models/translations";
 import {
 	Order,
 	getOrder as getOrderService,
@@ -9,10 +10,9 @@ import {
 	changeOrder as changeOrderService,
 	getOrderHistory as getOrderHistoryService,
 	createExternalOrder as createExternalOrderService,
-	v1CreateExternalOrder as v1CreateExternalOrderService,
 	createMarketplaceOrder as createMarketplaceOrderService,
 } from "../services/orders";
-import { OfferTranslation } from "../../models/translations";
+import { createExternalOrder as v1CreateExternalOrderService } from "../services/orders.v1";
 
 export type CreateMarketplaceOrderRequest = Request & {
 	params: {

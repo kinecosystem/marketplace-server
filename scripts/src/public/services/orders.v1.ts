@@ -16,7 +16,7 @@ import {
 	ExternalEarnOrderJWT,
 	ExternalSpendOrderJWT,
 	validateExternalOrderJWT,
-	ExternalPayToUserOrderJWT } from "./native_offers";
+	ExternalPayToUserOrderJWT } from "./native_offers.v1";
 import {
 	ApiError,
 	NoSuchApp,
@@ -76,9 +76,9 @@ export interface Order extends BaseOrder {
 }
 
 export async function getOrder(orderId: string, userId: string): Promise<Order> {
-	const order = await db.Order.getOne({ orderId, status: "!opened" });
+	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
 
-	if (!order || order.contextFor(userId) === null) {
+	if (!order) {
 		throw NoSuchOrder(orderId);
 	}
 
@@ -95,9 +95,9 @@ export async function getOrder(orderId: string, userId: string): Promise<Order> 
 }
 
 export async function changeOrder(orderId: string, userId: string, change: Partial<Order>): Promise<Order> {
-	const order = await db.Order.getOne({ orderId, status: "!opened" });
+	const order = await db.Order.getOne(orderId, "!opened") as db.MarketplaceOrder | db.ExternalOrder;
 
-	if (!order || order.contextFor(userId) === null) {
+	if (!order) {
 		throw NoSuchOrder(orderId);
 	}
 	if (order.status === "completed") {
@@ -179,13 +179,14 @@ export async function createMarketplaceOrder(offerId: string, user: User, userDe
 	return openOrderDbToApi(order, user.id);
 }
 
-async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalPayToUserOrderJWT): Promise<db.ExternalOrder> {
-	const senderWallet = (await sender.getWallets(senderDeviceId)).lastUsed();
+async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJWT): Promise<db.ExternalOrder> {
+	const senderWallet = (await sender.getWallets()).lastUsed();
 	if (!senderWallet) {
-		throw UserHasNoWallet(sender.id, senderDeviceId);
+		throw UserHasNoWallet(sender.id);
 	}
 
 	const recipient = await User.findOne({ appId: sender.appId, appUserId: jwt.recipient.user_id });
+
 	if (!recipient) {
 		throw NoSuchUser(jwt.recipient.user_id);
 	}
@@ -220,19 +221,20 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 	return order;
 }
 
-async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId: string, jwt: ExternalEarnOrderJWT) {
+async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
 	const app = (await Application.findOneById(recipient.appId))!;
-	if (!app) {
-		throw NoSuchApp(recipient.appId);
-	}
 
 	await assertRateLimitUserEarn(recipient.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
 
-	const wallet = (await recipient.getWallets(recipientDeviceId)).lastUsed();
+	const wallet = (await recipient.getWallets()).lastUsed();
 	if (!wallet) {
-		throw UserHasNoWallet(recipient.id, recipientDeviceId);
+		throw UserHasNoWallet(recipient.id);
 	}
 	await assertRateLimitWalletEarn(wallet.address, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
+
+	if (!app) {
+		throw NoSuchApp(recipient.appId);
+	}
 
 	return db.ExternalOrder.new({
 		offerId: jwt.offer.id,
@@ -251,16 +253,16 @@ async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId:
 	});
 }
 
-async function createNormalSpendExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalSpendOrderJWT) {
+async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOrderJWT) {
 	const app = await Application.findOneById(sender.appId);
 
 	if (!app) {
 		throw NoSuchApp(sender.appId);
 	}
 
-	const wallet = (await sender.getWallets(senderDeviceId)).lastUsed();
+	const wallet = (await sender.getWallets()).lastUsed();
 	if (!wallet) {
-		throw UserHasNoWallet(sender.id, senderDeviceId);
+		throw UserHasNoWallet(sender.id);
 	}
 
 	const order = db.ExternalOrder.new({
@@ -284,21 +286,20 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 	return order;
 }
 
-export async function createExternalOrder(jwt: string, user: User, userDeviceId: string): Promise<OpenOrder> {
+export async function createExternalOrder(jwt: string, user: User): Promise<OpenOrder> {
 	logger().info("createExternalOrder", { jwt });
-	const payload = await validateExternalOrderJWT(jwt, user.appUserId, userDeviceId);
+	const payload = await validateExternalOrderJWT(jwt, user.appUserId);
 	const nonce = payload.nonce || db.Order.DEFAULT_NONCE;
 
-	const orders = await db.Order.getAll({ offerId: payload.offer.id, userId: user.id, nonce });
-	let order = orders.length > 0 ? orders[0] : undefined;
+	let order = await db.Order.findBy({ offerId: payload.offer.id, userId: user.id, nonce });
 
 	if (!order || order.status === "failed") {
 		if (isPayToUser(payload)) {
-			order = await createP2PExternalOrder(user, userDeviceId, payload);
+			order = await createP2PExternalOrder(user, payload);
 		} else if (isExternalEarn(payload)) {
-			order = await createNormalEarnExternalOrder(user, userDeviceId, payload);
+			order = await createNormalEarnExternalOrder(user, payload);
 		} else {
-			order = await createNormalSpendExternalOrder(user, userDeviceId, payload);
+			order = await createNormalSpendExternalOrder(user, payload);
 		}
 
 		await order.save();
@@ -325,13 +326,13 @@ export async function submitOrder(
 	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
 
 	logger().info("submitOrder", { orderId });
-	const order = await db.Order.getOne({ orderId });
+	const order = await db.Order.getOne(orderId) as db.MarketplaceOrder | db.ExternalOrder;
 	const wallet = (await user.getWallets(userDeviceId)).lastUsed();
 	if (!wallet) {
 		throw UserHasNoWallet(user.id, userDeviceId);
 	}
 
-	if (!order || order.contextFor(user.id) === null) {
+	if (!order) {
 		throw NoSuchOrder(orderId);
 	}
 	if (order.status !== "opened") {
@@ -385,10 +386,10 @@ export async function submitOrder(
 	return orderDbToApi(order, user.id);
 }
 
-export async function cancelOrder(orderId: string, userId: string): Promise<void> {
+export async function cancelOrder(orderId: string): Promise<void> {
 	// you can only delete an open order - not a pending order
-	const order = await db.Order.getOne({ orderId, status: "opened" });
-	if (!order || order.contextFor(userId) === null) {
+	const order = await db.Order.getOne(orderId, "opened");
+	if (!order) {
 		throw NoSuchOrder(orderId);
 	}
 
@@ -410,12 +411,10 @@ export async function getOrderHistory(
 		throw UserHasNoWallet(user.id, deviceId);
 	}
 
-	const orders = await db.Order.getAll({
-		...filters,
-		status,
-		userId: user.id,
-		walletAddress: wallet.address
-	}, limit);
+	const orders = await db.Order.getAll(
+		Object.assign({}, filters, { userId: user.id, walletAddress: wallet.address, status }),
+		limit
+	) as Array<db.MarketplaceOrder | db.ExternalOrder>;
 
 	return {
 		orders: orders.map(order => {
@@ -476,7 +475,9 @@ export async function setFailedOrder(order: db.Order, error: MarketplaceError, f
 	order.currentStatusDate = failureDate || order.currentStatusDate;
 	order.error = error.toJson();
 
-	metrics.orderFailed(order);
+	order.contexts.forEach(context => {
+		metrics.orderFailed(order);
+	});
 
 	return await order.save();
 }

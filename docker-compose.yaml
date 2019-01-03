@@ -47,7 +47,7 @@ services:
       - marketplace-public # so I can wait for it
     environment:
       <<: *app_env_vars
-      APP_NAME: 'marketplace-internal'
+      APP_NAME: 'marketplace-admin'
 
   marketplace-internal:
     image: kinecosystem/marketplace-server:latest

@@ -1,5 +1,5 @@
-import mock = require("supertest");
 import * as moment from "moment";
+import mock = require("supertest");
 import * as jsonwebtoken from "jsonwebtoken";
 
 import { app } from "../../../scripts/bin/public/app";
@@ -471,5 +471,43 @@ describe("test orders", async () => {
 		await expect(createMarketplaceOrder(offers.offers[0].id, user, deviceId))
 			.rejects
 			.toThrow(UserHasNoWallet(user.id, deviceId).message);
+	});
+
+	test("multiple users on the same device with different wallets", async () => {
+		const deviceId = "test_device_id";
+		const appId = (await Application.findOne())!.id;
+		const user1 = await helpers.createUser({ deviceId, appId });
+
+		let token = (await AuthToken.findOne({ userId: user1.id }))!;
+		let offers = await getOffers(user1.id, appId, {});
+		const offersCount = offers.offers.length;
+		const orderCount = randomInteger(1, offersCount - 1);
+
+		for (let i = 0; i < orderCount; i++) {
+			const offerId = offers.offers[i].id;
+			const openOrder = await createMarketplaceOrder(offerId, user1, deviceId);
+			const order = await submitOrder(openOrder.id, user1, deviceId, "{}");
+			await helpers.completePayment(order.id);
+		}
+
+		let res = await mock(app)
+			.get(`/v1/orders`)
+			.set("x-request-id", "123")
+			.set("Authorization", `Bearer ${ token.id }`);
+		expect(res.body.orders.length).toEqual(orderCount);
+
+		const user2 = await helpers.createUser({ deviceId, appId });
+		token = (await AuthToken.findOne({ userId: user2.id }))!;
+
+		// check that the orders by user1 did not affect the number of available offers to user2
+		offers = await getOffers(user2.id, appId, {});
+		expect(offers.offers.length).toBe(offersCount);
+
+		// check that the orders by user1 did not affect the order history of user2
+		res = await mock(app)
+			.get(`/v1/orders`)
+			.set("x-request-id", "123")
+			.set("Authorization", `Bearer ${ token.id }`);
+		expect(res.body.orders.length).toEqual(0);
 	});
 });

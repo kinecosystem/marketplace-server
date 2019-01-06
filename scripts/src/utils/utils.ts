@@ -1,5 +1,7 @@
 import * as _path from "path";
 import * as fs from "fs";
+import * as crypto from "crypto";
+import { promisify } from "util";
 
 import { Express } from "express";
 import { Context } from "../public/routes";
@@ -69,14 +71,21 @@ export enum IdPrefix {
 const ID_LENGTH = 20;
 const ID_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+/**
+ * Generating id uses cryptographic randomness
+ * randomInts is an array filled with random integers 0-255
+ * Every int converted into ID_CHARS place
+ *
+ * @param      {IdPrefix}  prefix  The id prefix
+ * @return     {string}  random string of ID_LENGTH length
+ */
 export function generateId(prefix: IdPrefix | string = IdPrefix.None): string {
-	let id = "";
+	const buffer = Buffer.alloc(ID_LENGTH);
+	const randomInts = new Uint8Array(crypto.randomFillSync(buffer)); // not async function for saving existing function interface the same
 
-	while (id.length < ID_LENGTH) {
-		id += ID_CHARS[randomInteger(0, ID_CHARS.length)];
-	}
-
-	return prefix + id;
+	return prefix + randomInts.reduce(
+		(str, int) => str + ID_CHARS[Math.trunc(int / 256 * ID_CHARS.length)], ""
+	);
 }
 
 export function normalizeError(error: string | Error | any): string {

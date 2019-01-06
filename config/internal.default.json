@@ -20,5 +20,9 @@
 	"payment_service": "http://localhost:5000",
 	"internal_service": "http://localhost:3001",
 	"jwt_keys_dir": "jwt",
-	"bi_service": "https://kin-bi.appspot.com/eco_"
+	"bi_service": "https://kin-bi.appspot.com/eco_",
+	"statsd": {
+		"host": "localhost",
+		"port": 8125
+	}
 }

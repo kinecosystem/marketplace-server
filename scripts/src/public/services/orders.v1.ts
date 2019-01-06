@@ -437,7 +437,7 @@ function openOrderDbToApi(order: db.Order, userId: string): OpenOrder {
 		throw OpenedOrdersOnly();
 	}
 
-	const context = order.contextFor(userId)!;
+	const context = order.contextForUser(userId)!;
 	return {
 		id: order.id,
 		nonce: order.nonce,
@@ -456,7 +456,7 @@ function orderDbToApi(order: db.Order, userId: string): Order {
 		throw OpenedOrdersUnreturnable();
 	}
 
-	const context = order.contextFor(userId)!;
+	const context = order.contextForUser(userId)!;
 	const apiOrder = Object.assign(
 		pick(order, "id", "origin", "status", "amount"), {
 			result: order.value,

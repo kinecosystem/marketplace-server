@@ -70,7 +70,7 @@ export type GetOrderRequest = Request & {
  * get an order
  */
 export const getOrder = async function(req: GetOrderRequest, res: Response) {
-	const order = await getOrderService(req.params.order_id, req.context.user!.id);
+	const order = await getOrderService(req.params.order_id, req.context.user!);
 	res.status(200).send(order);
 } as any as RequestHandler;
 
@@ -117,7 +117,7 @@ export type changeOrderRequest = Request & {
  * change an order - add an error
  */
 export const changeOrder = async function(req: changeOrderRequest, res: Response) {
-	const order = await changeOrderService(req.params.order_id, req.context.user!.id, req.body);
+	const order = await changeOrderService(req.params.order_id, req.context.user!, req.body);
 	res.status(200).send(order);
 } as any as RequestHandler;
 

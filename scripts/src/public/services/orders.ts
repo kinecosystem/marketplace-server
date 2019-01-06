@@ -2,13 +2,13 @@ import * as moment from "moment";
 import { Request as ExpressRequest } from "express-serve-static-core";
 
 import { lock } from "../../redis";
-import { pick } from "../../utils/utils";
 import * as metrics from "../../metrics";
 import { User } from "../../models/users";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
 import { getDefaultLogger as logger } from "../../logging";
+import { pick, capitalizeFirstLetter } from "../../utils/utils";
 import { Application, AppOffer } from "../../models/applications";
 import {
 	isPayToUser,
@@ -75,14 +75,19 @@ export interface Order extends BaseOrder {
 	origin: db.OrderOrigin;
 }
 
-export async function getOrder(orderId: string, userId: string): Promise<Order> {
+export async function getOrder(orderId: string, user: User): Promise<Order> {
 	const order = await db.Order.getOne({ orderId, status: "!opened" });
 
-	if (!order || order.contextFor(userId) === null) {
+	if (!order || order.contextFor(user.id) === null) {
 		throw NoSuchOrder(orderId);
 	}
 
 	checkIfTimedOut(order); // no need to wait for the promise
+
+	const wallet = (await user.getWallets()).lastUsed();
+	if (!wallet) {
+		throw UserHasNoWallet(user.id);
+	}
 
 	logger().debug("getOne returning", {
 		orderId,
@@ -91,13 +96,13 @@ export async function getOrder(orderId: string, userId: string): Promise<Order> 
 		contexts: order.contexts
 	});
 
-	return orderDbToApi(order, userId);
+	return await orderDbToApi(order, user.id, wallet.address);
 }
 
-export async function changeOrder(orderId: string, userId: string, change: Partial<Order>): Promise<Order> {
+export async function changeOrder(orderId: string, user: User, change: Partial<Order>): Promise<Order> {
 	const order = await db.Order.getOne({ orderId, status: "!opened" });
 
-	if (!order || order.contextFor(userId) === null) {
+	if (!order || order.contextFor(user.id) === null) {
 		throw NoSuchOrder(orderId);
 	}
 	if (order.status === "completed") {
@@ -108,8 +113,13 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 	order.status = "failed";
 	await order.save();
 
+	const wallet = (await user.getWallets()).lastUsed();
+	if (!wallet) {
+		throw UserHasNoWallet(user.id);
+	}
+
 	logger().debug("order patched with error", { orderId, contexts: order.contexts, error: change.error });
-	return orderDbToApi(order, userId);
+	return await orderDbToApi(order, user.id, wallet.address);
 }
 
 async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string, orderTranslations = {} as OrderTranslations) {
@@ -335,7 +345,7 @@ export async function submitOrder(
 		throw NoSuchOrder(orderId);
 	}
 	if (order.status !== "opened") {
-		return orderDbToApi(order, user.id);
+		return await orderDbToApi(order, user.id, wallet.address);
 	}
 	if (order.isExpired()) {
 		throw OpenOrderExpired(orderId);
@@ -382,7 +392,7 @@ export async function submitOrder(
 	}
 
 	metrics.submitOrder(order.origin, order.flowType(), user.appId);
-	return orderDbToApi(order, user.id);
+	return await orderDbToApi(order, user.id, wallet.address);
 }
 
 export async function cancelOrder(orderId: string, userId: string): Promise<void> {
@@ -413,15 +423,14 @@ export async function getOrderHistory(
 	const orders = await db.Order.getAll({
 		...filters,
 		status,
-		userId: user.id,
 		walletAddress: wallet.address
 	}, limit);
 
 	return {
-		orders: orders.map(order => {
+		orders: await Promise.all(orders.map(async order => {
 			checkIfTimedOut(order); // no need to wait for the promise
-			return orderDbToApi(order, user.id);
-		}),
+			return await orderDbToApi(order, user.id, wallet.address);
+		})),
 		paging: {
 			cursors: {
 				after: "MTAxNTExOTQ1MjAwNzI5NDE",
@@ -438,7 +447,7 @@ function openOrderDbToApi(order: db.Order, userId: string): OpenOrder {
 		throw OpenedOrdersOnly();
 	}
 
-	const context = order.contextFor(userId)!;
+	const context = order.contextForUser(userId)!;
 	return {
 		id: order.id,
 		nonce: order.nonce,
@@ -452,12 +461,12 @@ function openOrderDbToApi(order: db.Order, userId: string): OpenOrder {
 	};
 }
 
-function orderDbToApi(order: db.Order, userId: string): Order {
+async function orderDbToApi(order: db.Order, userId: string, wallet: string): Promise<Order> {
 	if (order.status === "opened") {
 		throw OpenedOrdersUnreturnable();
 	}
 
-	const context = order.contextFor(userId)!;
+	/*const context = order.contextFor(userId)!;
 	const apiOrder = Object.assign(
 		pick(order, "id", "origin", "status", "amount"), {
 			result: order.value,
@@ -466,9 +475,35 @@ function orderDbToApi(order: db.Order, userId: string): Order {
 			error: order.error as ApiError,
 			blockchain_data: order.blockchainData,
 			completion_date: (order.currentStatusDate || order.createdDate).toISOString()
-		}, pick(context.meta, "title", "description", "content", "call_to_action")) as Order;
+		}, pick(context.meta, "title", "description", "content", "call_to_action")) as Order;*/
 
-	return apiOrder;
+	const apiOrder = Object.assign(
+		pick(order, "id", "origin", "status", "amount"), {
+			result: order.value,
+			offer_id: order.offerId,
+			error: order.error as ApiError,
+			blockchain_data: order.blockchainData,
+			completion_date: (order.currentStatusDate || order.createdDate).toISOString()
+		}) as Order;
+
+	const data: any = {};
+	let context = order.contextForUser(userId)!;
+	if (context) {
+		Object.assign(data, {
+			offer_type: context.type,
+		}, pick(context.meta, "title", "description", "content", "call_to_action"));
+	} else {
+		context = order.contextForWallet(wallet)!;
+		const app = (await Application.findOneById(context.user.appId))!;
+
+		Object.assign(data, {
+			offer_type: context.type,
+		}, pick(context.meta, "title", "description", "content", "call_to_action"));
+		data.title = capitalizeFirstLetter(context.type) + " transaction in " + app.name;
+		data.description = "The transaction was created in a different app or by a different user using the same wallet";
+	}
+
+	return Object.assign({}, apiOrder, data);
 }
 
 export async function setFailedOrder(order: db.Order, error: MarketplaceError, failureDate?: Date): Promise<db.Order> {

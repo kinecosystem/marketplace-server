@@ -33,7 +33,7 @@ export async function createUser(options: { appId?: string } = {}): Promise<User
 		walletAddress: `test_${ uniqueId }`
 	} as User;
 
-	const user = await (User.new(userData)).save();
+	const user = await (User.new(Object.assign(userData, { isNew: true }))).save();
 
 	const authToken = await (AuthToken.new({
 		userId: user.id,

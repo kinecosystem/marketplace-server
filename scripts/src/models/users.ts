@@ -16,6 +16,8 @@ import { CreationDateModel, register as Register, initializer as Initializer } f
 @Initializer("id", () => generateId(IdPrefix.User))
 // @Unique(["appId", "appUserId"]) // supported from 0.2.0
 export class User extends CreationDateModel {
+	public static readonly defaultWalletCount = 1;
+
 	@Column({ name: "app_id" })
 	public appId!: string;
 
@@ -28,19 +30,23 @@ export class User extends CreationDateModel {
 	@OneToMany(type => OrderContext, context => context.user)
 	public contexts!: OrderContext[];
 
-	@Column({ name: "wallet_count", default: 1 })
+	@Column({ name: "wallet_count", default: User.defaultWalletCount })
 	public walletCount!: number;
 
+	/**
+	 * Overrided save method
+	 * If this (user) is new, it calls direct insert method instead of built-in upsert TypeORM functionality
+	 * It generates id and tries to insert it to the table, up to 3 tries, and breaks the loops on success
+	 */
 	public async save(): Promise<this> {
-		let errorCount = 0;
-		while (true) {
-			if (errorCount > 3) { break; }
-			console.log("errorCount: ", errorCount);
+		if (!this.isNew) { await super.save(); return this; }
 
-			try {
-				/**
-				 * tries to insert a new user with generated id
-				 */
+		let errorCount = 0;
+		const triesCount = 3;
+		while (true) {
+			if (errorCount > triesCount) { throw new Error(`user generated with the same id more than ${ triesCount } times or some another error`); }
+
+			try { // tries to insert a new user with generated id
 				await getManager()
 					.createQueryBuilder()
 					.insert()
@@ -50,13 +56,12 @@ export class User extends CreationDateModel {
 						appId: this.appId,
 						appUserId: this.appUserId,
 						walletAddress: this.walletAddress,
-						walletCount: this.walletCount, // possibly null
-						createdDate: this.createdDate, // possibly null
+						walletCount: User.defaultWalletCount, // insert TypeORM method sends null to omitted columns
+						createdDate: this.createdDate,
 					}])
 					.execute();
 				break; // breaks the while loop in case of success
 			} catch (e) {
-				console.log(e.message);
 				this.id = generateId(IdPrefix.User);
 				errorCount++;
 			}

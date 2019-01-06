@@ -64,7 +64,7 @@ export async function getOrCreateUserCredentials(
 		try {
 			logger().info("creating a new user", { appId, appUserId });
 
-			user = User.new({ appUserId, appId, walletAddress });
+			user = User.new({ appUserId, appId, walletAddress, isNew: true });
 			await user.save();
 			logger().info(`creating stellar wallet for new user ${ user.id }: ${ user.walletAddress }`);
 			await payment.createWallet(user.walletAddress, user.appId, user.id);

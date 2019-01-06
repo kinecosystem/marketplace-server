@@ -32,17 +32,35 @@ export class User extends CreationDateModel {
 	public walletCount!: number;
 
 	public async save(): Promise<this> {
-		await getManager()
-			.createQueryBuilder()
-			.insert()
-			.into(User)
-			.values([{
-				id: this.id,
-				appId: this.appId,
-				appUserId: this.appUserId,
-				walletAddress: this.walletAddress
-			}])
-			.execute();
+		let errorCount = 0;
+		while (true) {
+			if (errorCount > 3) { break; }
+			console.log("errorCount: ", errorCount);
+
+			try {
+				/**
+				 * tries to insert a new user with generated id
+				 */
+				await getManager()
+					.createQueryBuilder()
+					.insert()
+					.into(User)
+					.values([{
+						id: this.id,
+						appId: this.appId,
+						appUserId: this.appUserId,
+						walletAddress: this.walletAddress,
+						walletCount: this.walletCount, // possibly null
+						createdDate: this.createdDate, // possibly null
+					}])
+					.execute();
+				break; // breaks the while loop in case of success
+			} catch (e) {
+				console.log(e.message);
+				this.id = generateId(IdPrefix.User);
+				errorCount++;
+			}
+		}
 		return this;
 	}
 }

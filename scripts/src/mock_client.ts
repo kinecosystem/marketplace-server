@@ -11,11 +11,11 @@ import { JWTContent } from "./public/jwt";
 import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
 import { Order as DbOrder } from "./models/orders";
-import { generateId, randomInteger, retry } from "./utils/utils";
+import { Client as V1MarketplaceClient } from "./client.v1";
+import { delay, generateId, randomInteger, retry } from "./utils/utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { Client as MarketplaceClient, ClientError, JWTPayload } from "./client";
-import { Client as V1MarketplaceClient, ClientError as V1ClientError, JWTPayload as V1JWTPayload } from "./client.v1";
 import { CompletedPayment, JWTBodyPaymentConfirmation } from "./internal/services";
 import {
 	Answers,
@@ -27,6 +27,7 @@ import {
 	QuizPage,
 } from "./public/services/offer_contents";
 import { AnswersBackwardSupport } from "./public/services/offer_contents";
+import * as StellarSdk from "stellar-sdk";
 
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
 
@@ -227,6 +228,8 @@ async function spendFlow() {
 	console.log(`completion date: ${ order.completion_date }`);
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+
+	console.log("MOO::::: ", order.content);
 
 	const couponOrderContent: CouponOrderContent = JSON.parse(order.content!);
 
@@ -1395,6 +1398,75 @@ async function v1UserProfile() {
 	console.log("OK.\n");
 }
 
+async function twoUsersSharingWallet() {
+	console.log("===================================== twoUsersSharingWallet =====================================");
+
+	const deviceId = generateId();
+	const appClient = new SampleAppClient();
+	const offers = await appClient.getOffers();
+	const earnOffers = offers.filter((item: any) => item.type === "earn");
+	const walletKeys = StellarSdk.Keypair.random();
+	console.log(`public key: ${ walletKeys.publicKey() }`);
+	console.log(`private key: ${ walletKeys.secret() }`);
+
+	const userId1 = "test:" + generateId();
+	console.log(`creating user ${ userId1 }`);
+	const client1 = await MarketplaceClient.create({ jwt: await appClient.getRegisterJWT(userId1, deviceId) });
+	await client1.updateWallet(walletKeys.publicKey());
+	await client1.activate();
+
+	let orderCount = randomInteger(1, earnOffers.length);
+	for (let i = 0; i < orderCount; i++) {
+		const offer = earnOffers[i];
+		console.log(`ordering earn offer ${ offer.id } of ${ offer.amount } kin for user ${ userId1 }`);
+		const offerJwt = await appClient.getEarnJWT(userId1, deviceId, offer.id);
+		const openOrder = await client1.createExternalOrder(offerJwt);
+		await client1.submitOrder(openOrder.id);
+		await retry(() => client1.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	}
+
+	const userId2 = "test:" + generateId();
+	console.log(`creating user ${ userId2 }`);
+	const client2 = await MarketplaceClient.create({ jwt: await appClient.getRegisterJWT(userId2, deviceId) });
+	await client2.updateWallet(walletKeys.secret());
+	await client2.activate();
+
+	let wallet1Balance = await client1.wallet!.balance.update();
+	let wallet2Balance = await client2.wallet!.balance.update();
+
+	expect(wallet1Balance).toBe(wallet2Balance);
+
+	const spendOffers = offers.filter((item: any) => item.type === "spend");
+	orderCount = randomInteger(0, spendOffers.length);
+
+	for (let i = 0; i < orderCount; i++) {
+		const offer = spendOffers[i];
+		if (client2.wallet!.balance.cached - offer.amount <= 0) {
+			continue;
+		}
+
+		console.log(`ordering earn offer ${ offer.id } of ${ offer.amount } kin for user ${ userId2 }`);
+		const offerJwt = await appClient.getSpendJWT(userId1, deviceId, offer.id);
+		const openOrder = await client1.createExternalOrder(offerJwt);
+		await client1.submitOrder(openOrder.id);
+		await retry(() => client1.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+		await client2.wallet!.balance.update();
+	}
+	await client1.wallet!.balance.update();
+
+	wallet1Balance = await client1.wallet!.balance.update();
+	wallet2Balance = await client2.wallet!.balance.update();
+
+	expect(wallet1Balance).toBe(wallet2Balance);
+
+	const orders1 = (await client1.getOrders()).orders.map(o => o.id);
+	const orders2 = (await client2.getOrders()).orders.map(o => o.id);
+	expect(orders1.length).toBe(orders2.length);
+	orders1.every(id => { expect(orders2.includes(id)); return true; });
+
+	console.log("OK.\n");
+}
+
 async function main() {
 	await registerJWT();
 	await v1RegisterJWT();
@@ -1428,6 +1500,9 @@ async function main() {
 	await v1TryToNativeSpendTwiceWithNonce();
 	await p2p();
 	await v1P2p();
+
+	// multiple users/devices/wallets flows
+	await twoUsersSharingWallet();
 }
 
 main()

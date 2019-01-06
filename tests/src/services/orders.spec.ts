@@ -1,20 +1,20 @@
-import mock = require("supertest");
 import * as moment from "moment";
+import mock = require("supertest");
 import * as jsonwebtoken from "jsonwebtoken";
 
 import { app } from "../../../scripts/bin/public/app";
 import * as metrics from "../../../scripts/bin/metrics";
 import { initLogger } from "../../../scripts/bin/logging";
 import { JWTContent } from "../../../scripts/bin/public/jwt";
-import { AppOffer } from "../../../scripts/bin/models/applications";
 import { AuthToken, User } from "../../../scripts/bin/models/users";
 import { JWTValue, Offer } from "../../../scripts/bin/models/offers";
 import { getOffers } from "../../../scripts/bin/public/services/offers";
 import { OrderList } from "../../../scripts/bin/public/services/orders";
 import { ExternalOrder, Order } from "../../../scripts/bin/models/orders";
-import { generateId, random, IdPrefix } from "../../../scripts/bin/utils/utils";
+import { Application, AppOffer } from "../../../scripts/bin/models/applications";
 import { TransactionTimeout, UserHasNoWallet } from "../../../scripts/bin/errors";
 import { close as closeModels, init as initModels } from "../../../scripts/bin/models/index";
+import { generateId, random, randomInteger, IdPrefix } from "../../../scripts/bin/utils/utils";
 import {
 	changeOrder,
 	createMarketplaceOrder,
@@ -410,5 +410,43 @@ describe("test orders", async () => {
 		await expect(createMarketplaceOrder(offers.offers[0].id, user, deviceId))
 			.rejects
 			.toThrow(UserHasNoWallet(user.id, deviceId).message);
+	});
+
+	test("multiple users on the same device with different wallets", async () => {
+		const deviceId = "test_device_id";
+		const appId = (await Application.findOne())!.id;
+		const user1 = await helpers.createUser({ deviceId, appId });
+
+		let token = (await AuthToken.findOne({ userId: user1.id }))!;
+		let offers = await getOffers(user1.id, appId, {});
+		const offersCount = offers.offers.length;
+		const orderCount = randomInteger(1, offersCount - 1);
+
+		for (let i = 0; i < orderCount; i++) {
+			const offerId = offers.offers[i].id;
+			const openOrder = await createMarketplaceOrder(offerId, user1, deviceId);
+			const order = await submitOrder(openOrder.id, user1, deviceId, "{}");
+			await helpers.completePayment(order.id);
+		}
+
+		let res = await mock(app)
+			.get(`/v1/orders`)
+			.set("x-request-id", "123")
+			.set("Authorization", `Bearer ${ token.id }`);
+		expect(res.body.orders.length).toEqual(orderCount);
+
+		const user2 = await helpers.createUser({ deviceId, appId });
+		token = (await AuthToken.findOne({ userId: user2.id }))!;
+
+		// check that the orders by user1 did not affect the number of available offers to user2
+		offers = await getOffers(user2.id, appId, {});
+		expect(offers.offers.length).toBe(offersCount);
+
+		// check that the orders by user1 did not affect the order history of user2
+		res = await mock(app)
+			.get(`/v1/orders`)
+			.set("x-request-id", "123")
+			.set("Authorization", `Bearer ${ token.id }`);
+		expect(res.body.orders.length).toEqual(0);
 	});
 });

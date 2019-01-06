@@ -66,7 +66,7 @@ function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, val
 }
 
 export type GetOrderFilters = {
-	userId: string;
+	userId?: string;
 	offerId?: string;
 	origin?: OrderOrigin;
 	walletAddress?: string;
@@ -94,7 +94,9 @@ export interface Order {
 
 	forEachContext(fn: (context: OrderContext) => void): void;
 
-	contextFor(userId: string): OrderContext | null;
+	contextForUser(userId: string): OrderContext | null;
+
+	contextForWallet(userId: string): OrderContext | null;
 
 	setStatus(status: OpenOrderStatus): void;
 
@@ -273,9 +275,13 @@ export const Order = {
 		const query = OrderImpl.createQueryBuilder("ordr") // don't use 'order', it messed things up
 			.leftJoinAndSelect("ordr.contexts", "context")
 			.leftJoinAndSelect("context.user", "user")
-			.where("context.user_id = :userId", filters)
 			.orderBy("ordr.current_status_date", "DESC")
 			.addOrderBy("ordr.id", "DESC");
+
+		// this is not done using the updateQueryWithFilter because it's the first `.where` (not `.andWhere`)
+		if (filters.userId) {
+			query.where("context.user_id = :userId", filters);
+		}
 
 		// updateQueryWithStatus(query, filters.status);
 		updateQueryWithFilter(query, "status", filters.status, "ordr");
@@ -488,9 +494,19 @@ class OrderImpl extends CreationDateModel implements Order {
 		return !this.isP2P();
 	}
 
-	public contextFor(userId: string): OrderContext | null {
+	public contextForUser(userId: string): OrderContext | null {
 		for (const context of this.contexts) {
 			if (context.user.id === userId) {
+				return context;
+			}
+		}
+
+		return null;
+	}
+
+	public contextForWallet(walletAddress: string): OrderContext | null {
+		for (const context of this.contexts) {
+			if (context.wallet === walletAddress) {
 				return context;
 			}
 		}

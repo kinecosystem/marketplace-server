@@ -64,8 +64,8 @@ export type JWTBodyPaymentConfirmation = {
 	}
 };
 
-async function getPaymentJWT(order: db.Order, appId: string, userId: string): Promise<OrderValue> {
-	const loggedInContext = order.contextFor(userId)!;
+async function getPaymentJWT(order: db.Order, appId: string, user: User): Promise<OrderValue> {
+	const loggedInContext = order.contextForUser(user.id)!;
 	const payload: JWTBodyPaymentConfirmation = {
 		nonce: order.nonce,
 		offer_id: order.offerId,
@@ -154,9 +154,9 @@ export async function paymentComplete(payment: CompletedPayment) {
 			}
 		}
 	} else if (order.isP2P()) {
-		order.value = await getPaymentJWT(order, payment.app_id, order.sender.id);
+		order.value = await getPaymentJWT(order, payment.app_id, order.sender);
 	} else if (order.isNormal()) {
-		order.value = await getPaymentJWT(order, payment.app_id, order.user.id);
+		order.value = await getPaymentJWT(order, payment.app_id, order.user);
 	}
 
 	if (order.status !== "pending") {

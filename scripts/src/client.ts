@@ -163,16 +163,20 @@ export class Client {
 	private static blockchainConfig: BlockchainConfig;
 
 	public readonly appId: string;
+	public readonly wallets: KinWallet[];
 	public readonly requests: ClientRequests;
-
-	public wallet?: KinWallet;
 
 	private readonly network: KinNetwork;
 
 	private constructor(network: KinNetwork, requests: ClientRequests) {
+		this.wallets = [];
 		this.network = network;
 		this.requests = requests;
 		this.appId = requests.auth.app_id;
+	}
+
+	public get wallet() {
+		return this.wallets[0];
 	}
 
 	public get active(): boolean {
@@ -202,7 +206,7 @@ export class Client {
 		}
 
 		await this.requests.request("/v2/users/me", { wallet_address: keys.publicKey() }).patch();
-		this.wallet = await createWallet(this.network, keys);
+		this.wallets.push(await createWallet(this.network, keys));
 	}
 
 	public async pay(recipient: string, amount: number, orderId: string) {

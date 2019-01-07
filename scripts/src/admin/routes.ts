@@ -13,7 +13,7 @@ import {
 } from "./services";
 
 import { statusHandler } from "../middleware";
-import { config } from "./app";
+import { getConfig } from "./config";
 
 function jsonResponse(func: (body: any, params: any, query: any) => Promise<string>): RequestHandler {
 	return async function(req: Request, res: Response) {
@@ -281,7 +281,7 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 			if (!jsonData){
 				return;
 			}
-			previewElemnt.src = "${config.webview}?cacheBuster=${Date.now()}&jsonData=" + encodeURIComponent(jsonData);
+			previewElemnt.src = "${getConfig().webview}?cacheBuster=${Date.now()}&jsonData=" + encodeURIComponent(jsonData);
 		}
 	</script>
 	</body>

@@ -4,7 +4,7 @@ import "express-async-errors";  // handle async/await errors in middleware
 import { getConfig } from "./config";
 import { initLogger } from "../logging";
 
-export const config = getConfig();
+const config = getConfig();
 const logger = initLogger(...config.loggers!);
 
 import { createRoutes } from "./routes";

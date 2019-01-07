@@ -283,13 +283,13 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 	}
 
 	function getAmountElement() {
-		return `<input type="number" onchange="submitData('/offers/${ offer.id }', { amount: parseInt(this.value, 10) })" value="${ offer.amount }"/>`;
+		return `<input type="number" onchange="submitData('/offers/${ offer.id }', { amount: Number(this.value) })" value="${ offer.amount }"/>`;
 	}
 
 	const content = replaceTemplateVars(offer, ((await getOfferContent(offer.id)) || { content: "{}" }).content);
 
 	return `<tr class='offer-row'>
-<td class='offer-id'><a onclick="overlayOn('${ escape(content) }', '${ offer.id }')">${ offer.id }</a></td>
+<td class='offer-id'><a onclick="overlayOn(this.dataset.content, '${ offer.id }')" data-content="${ escape(content) }">${ offer.id }</a></td>
 <td><a href="/orders?offer_id=${ offer.id }">orders</a></td>
 <td><a href="/polls/${ offer.id }">polls</a></td>
 <td>${ offer.name }</td>
@@ -655,6 +655,10 @@ type ChangeOfferData = Partial<Offer> & {
 	content: string;
 };
 
+function isInOffer(key: string, offer: Offer): key is keyof Offer {
+	return key in offer;
+}
+
 export async function changeOffer(body: ChangeOfferData, params: { offer_id: string }, query: any): Promise<any> {
 	const offer = await Offer.findOneById(params.offer_id);
 	console.log("changeOffer:", offer, "with:", body);
@@ -666,15 +670,15 @@ export async function changeOffer(body: ChangeOfferData, params: { offer_id: str
 	}
 	Object.keys(body).forEach(async key => {
 		if (key === "content") {
-			const offerContent = await OfferContent.findOne({ offerId: params.offer_id });
-			offerContent!.content = body.content;
-			offerContent!.save();
+			const offerContent = (await OfferContent.findOne({ offerId: params.offer_id }))!;
+			offerContent.content = body.content;
+			await offerContent.save();
 		}
-		if (key in offer) {
-			offer[key] = body[key];
+		if (isInOffer(key, offer)) {
+			offer[key] = body[key]!;
 			console.log("updating:", key, "with:", body[key]);
 		}
 	});
 
-	offer.save();
+	await offer.save();
 }

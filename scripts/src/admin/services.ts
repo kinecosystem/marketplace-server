@@ -282,6 +282,10 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 		return ``;
 	}
 
+	function getAmountElement() {
+		return `<input type="number" onchange="submitData('/offers/${ offer.id }', { amount: parseInt(this.value, 10) })" value="${ offer.amount }"/>`;
+	}
+
 	const content = replaceTemplateVars(offer, ((await getOfferContent(offer.id)) || { content: "{}" }).content);
 
 	return `<tr class='offer-row'>
@@ -290,7 +294,7 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 <td><a href="/polls/${ offer.id }">polls</a></td>
 <td>${ offer.name }</td>
 <td>${ offer.type }</td>
-<td>${ offer.amount }</td>
+<td>${ getAmountElement() }</td>
 <td>${ offer.meta.title }</td>
 <td>${ offer.meta.description }</td>
 <td><img src="${ offer.meta.image }"/></td>

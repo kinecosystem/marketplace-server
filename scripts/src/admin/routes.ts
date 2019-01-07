@@ -9,10 +9,11 @@ import {
 	getOrders, fuzzySearch, getWallet, getWalletPayments,
 	getApplicationOffers, getUserOffers,
 	retryOrder, retryUserWallet, getApplicationStats,
-	changeOffer
+	changeAppOffer, changeOffer
 } from "./services";
 
 import { statusHandler } from "../middleware";
+import { config } from "./app";
 
 function jsonResponse(func: (body: any, params: any, query: any) => Promise<string>): RequestHandler {
 	return async function(req: Request, res: Response) {
@@ -24,6 +25,7 @@ function jsonResponse(func: (body: any, params: any, query: any) => Promise<stri
 function wrapService(func: (params: any, query: any) => Promise<string>): RequestHandler {
 	return async function(req: Request, res: Response) {
 		const content = await func(req.params, req.query);
+		/* tslint:disable:no-trailing-whitespace */
 		const html = `
 <html>
 	<head>
@@ -79,6 +81,16 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		}
 		</style>
 		<style>
+		.flex-row-container {
+		    display: flex;
+		    flex-direction: row;
+		    flex-wrap: nowrap;
+		    justify-content: center;
+		    align-content: stretch;
+		    align-items: center;
+	    }
+
+
 		#toast {
 		    visibility: hidden;
 		    min-width: 250px;
@@ -90,12 +102,21 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		    border-radius: 2px;
 		    padding: 16px;
 		    position: fixed;
-		    z-index: 1;
+		    z-index: 100000;
 		    left: 50%;
 		    bottom: 30px;
 		    font-size: 17px;
 		}
-		#overlay {
+		
+		.btn {
+			width: 52%;
+			height: 8.5%;
+			margin: 5px;
+			cursor: pointer;
+			border-radius: 9px;
+		}
+		
+		.overlay {
             position: fixed;
 			display: none;
 			width: 100%;
@@ -108,22 +129,49 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 			z-index: 2;
 			cursor: pointer;
 		}
-		#overlay #text{
+		.overlay-content {
 			position: absolute;
 			width: 80%;
 			height: 80%;
 			top: 50%;
 			left: 50%;
-			overflow-y: scroll;
-			font-size: 15px;
+			padding: 2%;
 			color: black;
+			background-color: white;
 			transform: translate(-50%,-50%);
 			-ms-transform: translate(-50%,-50%);
+		}
+		
+		.overlay-content div {
+			margin: 5px;
+		}
+		
+		.overlay-content .text{
+			flex: 4 1 auto;
+			overflow-y: scroll;
+			font-size: 15px;
+		}
+		.overlay-content .controls {
+			flex: 1 1 auto;
+			text-align: center;
+		}
+		.overlay-content .preview {
+			flex: 2 1 auto;
+			}
+		.overlay-content .preview iframe{
+			height: 100%;
+			width: 100%;
 		}
 		#toast.show {
 		    visibility: visible;
 		    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
 		    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+		}
+		
+		.offer-row .offer-id {
+			cursor: hand;
+			color: blue;
+			text-decoration: underline;
 		}
 		@-webkit-keyframes fadein {
 		    from {bottom: 0; opacity: 0;}
@@ -142,39 +190,104 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		    to {bottom: 0; opacity: 0;}
 		}
 		</style>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
-		<script>
-			function toast(msg) {
-			    var element = document.getElementById("toast");
-			    element.innerText = msg;
-			    element.className = "show";
-			    setTimeout(function(){ element.className = element.className.replace("show", ""); }, 3000);
-			}
-			function submitData(url, data) {
-				axios.post(url, data)
-					.then(res => toast("ok"))
-					.catch(err => alert("error: " + JSON.stringify(err)));
-			}
-			function overlayOn(text) {
-				document.getElementById("text").innerText = JSON.stringify(JSON.parse(unescape(text)), null,  "\t");
-				document.getElementById("overlay").style.display = "block";
-			}
-			function overlayOff() {
-				document.getElementById("overlay").style.display = "none";
-				document.getElementById("text").innerText = "";
-			}
-		</script>
 	</head>
 	<body>
+	
 		<h1><a href="/">Marketplace Admin</a></h1>
 		<div id="toast">MSG TOAST</div>
-		<div id="overlay" onclick="overlayOff()">
-		  <pre id="text" class="wide">Overlay Text</pre>
+		<div class="overlay"">
+			<div class="overlay-content flex-row-container">
+				<pre contenteditable="true" class="text" class="wide">Overlay Text</pre>
+				<div class="controls">
+					<button class="preview-btn btn">Refresh Preview</button>
+					<br />
+					<button class="publish-btn btn">Publish</button>
+					<br />
+					<button class="btn" onclick="overlayOff()">Close</button>
+				</div>
+				<div class="preview"><iframe></iframe></div>
+			</div>
 		</div>
 		<div id="content">${ content }</div>
 		<div id="footer"></div>
+	
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+		
+	<script>
+		let overlayElement;
+		let overlayTextElement;
+		let toastElemnt;
+		let previewElemnt;
+		let previewBtnElemnt;
+		let publishBtnElemnt;
+		document.addEventListener("DOMContentLoaded", function() {
+			overlayElement = document.querySelector(".overlay");
+			overlayTextElement = document.querySelector(".overlay .text");
+			previewBtnElemnt = document.querySelector(".overlay .preview-btn");
+			previewElemnt = document.querySelector(".overlay .preview iframe");
+			publishBtnElemnt = document.querySelector(".overlay .publish-btn");
+			
+			toastElemnt = document.querySelector("#toast");
+			previewBtnElemnt.addEventListener("click", refreshPreviewBtnHandler)
+			publishBtnElemnt.addEventListener("click", publishBtnHandler)
+		});
+		function toast(msg) {
+		    toastElemnt.innerText = msg;
+		    toastElemnt.className = "show";
+		    setTimeout(function(){ toastElemnt.className = toastElemnt.className.replace("show", ""); }, 3000);
+		}
+		function submitData(url, data) {
+			axios.post(url, data)
+				.then(res => toast("ok"))
+				.catch(err => alert("error: " + JSON.stringify(err)));
+		}
+		function overlayOn(text, offerId) {
+			overlayElement.style.display = "block";
+			overlayElement.dataset.offerId = offerId;
+			overlayTextElement.innerText = JSON.stringify(JSON.parse(unescape(text)), null,  2);
+		}
+		function overlayOff() {
+			overlayElement.style.display = "none";
+			overlayTextElement.textContent = "";
+			previewElemnt.src = "";
+		}
+	
+		function validateJSONAndWarn(json){
+			try {
+				jsonData = JSON.stringify(JSON.parse(json));
+				return jsonData;
+			} catch {
+				toast("Invaid JSON");
+				return false;
+			}
+		}
+		
+		function publishBtnHandler(){
+			const json = overlayTextElement.textContent;
+			if (!validateJSONAndWarn(json)){
+				return;
+			}
+			var data = {
+				content: json,
+			};
+			submitData("/offers/" + overlayElement.dataset.offerId, data);
+		}
+		
+		function refreshPreviewBtnHandler (){
+			refreshPreview(overlayTextElement.textContent);
+		}
+		function refreshPreview(json){
+			let jsonData = validateJSONAndWarn(json);
+			if (!jsonData){
+				return;
+			}
+			previewElemnt.src = "${config.webview}?cacheBuster=${Date.now()}&jsonData=" + encodeURIComponent(jsonData);
+		}
+	</script>
 	</body>
+
 </html>`;
+		/* tslint:enable:no-trailing-whitespace */
 		res.status(200).send(html);
 	} as any as RequestHandler;
 }
@@ -213,7 +326,8 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		.get("/orders/:order_id/retry", wrapService(retryOrder))
 		.get("/users/:user_id/retry", wrapService(retryUserWallet))
 		// change data
-		.post("/applications/:app_id/offers/:offer_id", jsonResponse(changeOffer))
+		.post("/applications/:app_id/offers/:offer_id", jsonResponse(changeAppOffer))
+		.post("/offers/:offer_id", jsonResponse(changeOffer))
 	;
 
 	app.use("", router);

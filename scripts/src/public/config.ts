@@ -2,7 +2,6 @@ import { Config as BaseConfig, init as baseInit, getConfig as baseGetConfig, Lim
 
 export interface Config extends BaseConfig {
 	assets_base: string;
-	webview: string;
 	environment_name: string;
 	ecosystem_service: string;
 	internal_service: string;

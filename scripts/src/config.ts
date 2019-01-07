@@ -29,6 +29,7 @@ export interface Config {
 	commit?: string;
 	timestamp?: string;
 	bi_service: string;
+	webview: string;
 }
 
 let config: Config;

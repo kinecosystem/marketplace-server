@@ -25,7 +25,7 @@
 	},
 	"payment_service": "http://localhost:5000",
 	"internal_service": "http://localhost:3001",
-	"webview": "https://some-url.com",
+	"webview": "https://s3.amazonaws.com/assets.kinecosystemtest.com/web-offers/cards-based/index.html",
 	"ecosystem_service": "http://localhost:3000",
 	"environment_name": "local",
 	"bi_service": "https://kin-bi.appspot.com/eco_"

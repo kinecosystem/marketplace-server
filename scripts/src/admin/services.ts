@@ -1,5 +1,5 @@
 import { Application, AppOffer } from "../models/applications";
-import { Cap, Offer, PollAnswer } from "../models/offers";
+import { Cap, Offer, OfferContent, PollAnswer } from "../models/offers";
 import { getManager } from "typeorm";
 import { User } from "../models/users";
 import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
@@ -282,15 +282,19 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 		return ``;
 	}
 
+	function getAmountElement() {
+		return `<input type="number" onchange="submitData('/offers/${ offer.id }', { amount: Number(this.value) })" value="${ offer.amount }"/>`;
+	}
+
 	const content = replaceTemplateVars(offer, ((await getOfferContent(offer.id)) || { content: "{}" }).content);
 
-	return `<tr>
-<td onclick="overlayOn('${ escape(content) }')">${ offer.id }</td>
+	return `<tr class='offer-row'>
+<td class='offer-id'><a onclick="overlayOn(this.dataset.content, '${ offer.id }')" data-content="${ escape(content) }">${ offer.id }</a></td>
 <td><a href="/orders?offer_id=${ offer.id }">orders</a></td>
 <td><a href="/polls/${ offer.id }">polls</a></td>
 <td>${ offer.name }</td>
 <td>${ offer.type }</td>
-<td>${ offer.amount }</td>
+<td>${ getAmountElement() }</td>
 <td>${ offer.meta.title }</td>
 <td>${ offer.meta.description }</td>
 <td><img src="${ offer.meta.image }"/></td>
@@ -619,7 +623,7 @@ export async function getWalletPayments(params: { wallet_address: string }, quer
 	return `<pre class="wide">${ JSON.stringify(data, null, 2) }</pre>`;
 }
 
-export async function changeOffer(body: { cap: Cap }, params: { app_id: string, offer_id: string }, query: any): Promise<any> {
+export async function changeAppOffer(body: { cap: Cap }, params: { app_id: string, offer_id: string }, query: any): Promise<any> {
 	const appOffer = await AppOffer.findOne({ offerId: params.offer_id, appId: params.app_id });
 	if (!appOffer) {
 		throw new Error("no such offer: " + params.offer_id);
@@ -645,4 +649,36 @@ export async function changeOffer(body: { cap: Cap }, params: { app_id: string, 
 
 	await appOffer.save();
 	return { appOffer };
+}
+
+type ChangeOfferData = Partial<Offer> & {
+	content: string;
+};
+
+function isInOffer(key: string, offer: Offer): key is keyof Offer {
+	return key in offer;
+}
+
+export async function changeOffer(body: ChangeOfferData, params: { offer_id: string }, query: any): Promise<any> {
+	const offer = await Offer.findOneById(params.offer_id);
+	console.log("changeOffer:", offer, "with:", body);
+	if (!offer) {
+		throw new Error("no such offer: " + params.offer_id);
+	}
+	if (!Object.keys(body)) {
+		throw new Error("invalid input: empty");
+	}
+	Object.keys(body).forEach(async key => {
+		if (key === "content") {
+			const offerContent = (await OfferContent.findOne({ offerId: params.offer_id }))!;
+			offerContent.content = body.content;
+			await offerContent.save();
+		}
+		if (isInOffer(key, offer)) {
+			offer[key] = body[key]!;
+			console.log("updating:", key, "with:", body[key]);
+		}
+	});
+
+	await offer.save();
 }

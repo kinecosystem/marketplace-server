@@ -33,6 +33,9 @@ db:
 con:
 	node --experimental-repl-await ./scripts/bin/node-console.js
 
+# "make down  up" will not work sometimes, adding sleep after "down" fixes it 
+sleep: 
+	sleep 0.5
 # docker targets
 revision := $(shell git rev-parse --short HEAD)
 image := "kinecosystem/marketplace-server"

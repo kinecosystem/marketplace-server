@@ -141,7 +141,7 @@ export class Wallets {
 	private readonly items: Wallet[];
 
 	constructor(items: Wallet[]) {
-		this.items = items;
+		this.items = Array.from(new Set(items));
 	}
 
 	public get count() {

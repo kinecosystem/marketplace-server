@@ -150,6 +150,7 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 			flex: 4 1 auto;
 			overflow-y: scroll;
 			font-size: 15px;
+			max-height: 99%;
 		}
 		.overlay-content .controls {
 			flex: 1 1 auto;

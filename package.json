@@ -37,7 +37,7 @@
 		"winston": "^2.4.0"
 	},
 	"devDependencies": {
-		"@kinecosystem/kin.js": "^1.0.6",
+		"@kinecosystem/kin.js": "^1.0.7",
 		"@types/argparse": "^1.0.35",
 		"@types/body-parser": "^1.16.8",
 		"@types/csv-parse": "^1.1.11",

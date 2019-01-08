@@ -229,9 +229,7 @@ async function spendFlow() {
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 
-	console.log("MOO::::: ", order.content);
-
-	const couponOrderContent: CouponOrderContent = JSON.parse(order.content!);
+	JSON.parse(order.content!);
 
 	console.log("OK.\n");
 }
@@ -1463,6 +1461,23 @@ async function twoUsersSharingWallet() {
 	const orders2 = (await client2.getOrders()).orders.map(o => o.id);
 	expect(orders1.length).toBe(orders2.length);
 	orders1.every(id => { expect(orders2.includes(id)); return true; });
+
+	console.log("OK.\n");
+}
+
+async function walletSharedAcrossApps() {
+	console.log("===================================== walletSharedAcrossApps =====================================");
+
+	// app 1
+	{
+		const deviceId = generateId();
+		const appClient = new SampleAppClient();
+	}
+
+	// app 2
+	{
+
+	}
 
 	console.log("OK.\n");
 }

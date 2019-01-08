@@ -274,12 +274,12 @@ describe("test orders", async () => {
 		};
 		const changedOrder = await changeOrder(
 			openOrder.id,
-			user.id,
+			user,
 			{
 				error
 			});
 		expect(changedOrder.status).toBe("failed");
-		const order = await getOrder(openOrder.id, user.id);
+		const order = await getOrder(openOrder.id, user);
 		expect(order.status).toBe("failed");
 		expect(order.error).toEqual(error);
 	});

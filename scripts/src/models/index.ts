@@ -42,6 +42,14 @@ export abstract class Model extends BaseEntity {
 
 	@PrimaryColumn()
 	public id!: string;
+
+	public isNew: boolean;
+
+	public constructor(isNew = false) {
+		super();
+
+		this.isNew = isNew;
+	}
 }
 
 export abstract class CreationDateModel extends Model {

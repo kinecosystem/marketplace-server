@@ -15,7 +15,7 @@ import { TransactionTimeout, UserHasNoWallet } from "../../../scripts/bin/errors
 import { getOffers, Offer as OfferData } from "../../../scripts/bin/public/services/offers";
 import { OrderList, Order as OrderData } from "../../../scripts/bin/public/services/orders";
 import { close as closeModels, init as initModels } from "../../../scripts/bin/models/index";
-import { generateId, random, randomInteger, IdPrefix, pick } from "../../../scripts/bin/utils/utils";
+import { generateId, random, randomInteger, IdPrefix } from "../../../scripts/bin/utils/utils";
 import {
 	changeOrder,
 	createMarketplaceOrder,
@@ -73,25 +73,39 @@ describe("test orders", async () => {
 			.set("Authorization", `Bearer ${ token.id }`)).body.orders as OrderData[];
 	}
 
-	async function createOrdersForUser(user: User, deviceId: string, app: Application, offers?: OfferData[]) {
-		if (!offers) {
-			offers = (await getOffers(user.id, app.id, {})).offers;
-		}
+	type CreateOrdersOptions = {
+		divideBy?: number;
+		offers?: OfferData[];
+	};
 
-		const orderCount = randomInteger(1, offers.length);
+	async function createOrdersForUser(user: User, deviceId: string, app: Application, options: CreateOrdersOptions = {}) {
+		const offers = options.offers || (await getOffers(user.id, app.id, {})).offers;
+		const earns = offers.filter(o => o.offer_type === "earn");
+		const spends = offers.filter(o => o.offer_type === "spend");
+
+		const earnsCount = randomInteger(1, earns.length > 2 && options.divideBy ? earns.length / options.divideBy : earns.length);
+		const spendsCount = randomInteger(1, spends.length > 2 && options.divideBy ? spends.length / options.divideBy : spends.length);
 		const orders = [] as string[];
 		let balance = 0;
 
-		for (let i = 0; i < orderCount; i++) {
-			if (offers[i].offer_type === "spend" && balance - offers[i].amount <= 0) {
-				continue;
-			} else if (offers[i].offer_type === "spend") {
-				balance -= offers[i].amount;
+		for (let i = 0; i < earnsCount + spendsCount; i++) {
+			let offer: OfferData;
+
+			if (i < earnsCount) {
+				offer = earns[i];
 			} else {
-				balance += offers[i].amount;
+				offer = spends[i - earnsCount];
 			}
 
-			const openOrder = await createMarketplaceOrder(offers[i].id, user, deviceId);
+			if (offer.offer_type === "spend" && balance - offer.amount <= 0) {
+				continue;
+			} else if (offer.offer_type === "spend") {
+				balance -= offer.amount;
+			} else {
+				balance += offer.amount;
+			}
+
+			const openOrder = await createMarketplaceOrder(offer.id, user, deviceId);
 			const order = await submitOrder(openOrder.id, user, deviceId, "{}");
 			await helpers.completePayment(order.id);
 
@@ -553,11 +567,11 @@ describe("test orders", async () => {
 		const offers1 = (await getOffers(user1.id, app1.id, {})).offers;
 		const offers2 = (await getOffers(user2.id, app2.id, {})).offers;
 
-		const orders1 = await createOrdersForUser(user1, deviceId1, app1, offers1);
+		const orders1 = await createOrdersForUser(user1, deviceId1, app1, { offers: offers1 });
 		// make sure that at least 1 order was created for user1/app1
 		expect(orders1.length).toBeGreaterThan(0);
 
-		const orders2 = await createOrdersForUser(user2, deviceId2, app2, offers2);
+		const orders2 = await createOrdersForUser(user2, deviceId2, app2, { offers: offers2 });
 		// make sure that at least 1 order was created for user2/app2
 		expect(orders2.length).toBeGreaterThan(0);
 
@@ -600,7 +614,7 @@ describe("test orders", async () => {
 
 		const user = await helpers.createUser({ deviceId: deviceId1, appId: app.id, createWallet: false });
 		await user.updateWallet(deviceId1, walletAddress1);
-		const orders1 = await createOrdersForUser(user, deviceId1, app);
+		const orders1 = await createOrdersForUser(user, deviceId1, app, { divideBy: 2 });
 		expect(orders1.length).toBeGreaterThan(0);
 
 		const token1 = (await AuthToken.findOne({ userId: user.id }))!;
@@ -609,7 +623,7 @@ describe("test orders", async () => {
 			deviceId: deviceId2
 		})).save();
 		await user.updateWallet(deviceId2, walletAddress2);
-		const orders2 = await createOrdersForUser(user, deviceId2, app);
+		const orders2 = await createOrdersForUser(user, deviceId2, app, { divideBy: 2 });
 		expect(orders2.length).toBeGreaterThan(0);
 
 		expect((await user.getWallets()).count).toBe(2);
@@ -629,7 +643,8 @@ describe("test orders", async () => {
 		const user = await helpers.createUser({ deviceId: deviceId1, appId: app.id, createWallet: false });
 		await user.updateWallet(deviceId1, walletAddress);
 		const token1 = (await AuthToken.findOne({ userId: user.id }))!;
-		await createOrdersForUser(user, deviceId1, app);
+		const orders1 = await createOrdersForUser(user, deviceId1, app, { divideBy: 2 });
+		expect(orders1.length).toBeGreaterThan(0);
 
 		const deviceId2 = `device_${ generateId() }`;
 		const token2 = await (AuthToken.new({
@@ -637,7 +652,8 @@ describe("test orders", async () => {
 			deviceId: deviceId2
 		})).save();
 		await user.updateWallet(deviceId2, walletAddress);
-		await createOrdersForUser(user, deviceId2, app);
+		const orders2 = await createOrdersForUser(user, deviceId2, app, { divideBy: 2 });
+		expect(orders2.length).toBeGreaterThan(0);
 
 		expect((await user.getWallets()).count).toBe(2);
 		expect(new Set((await user.getWallets()).all().map(w => w.address)).size).toBe(1);

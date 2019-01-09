@@ -170,7 +170,7 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		    animation: fadein 0.5s, fadeout 0.5s 2.5s;
 		}
 		
-		.offer-row .offer-id {
+		.offer-row .offer-id a{
 			cursor: hand;
 			color: blue;
 			text-decoration: underline;

@@ -19,7 +19,7 @@
 	},
 	"payment_service": "http://localhost:5000",
 	"internal_service": "http://localhost:3001",
-	"webview": "http://localhost:8080/",
+	"webview": "https://s3.amazonaws.com/assets.kinecosystemtest.com/web-offers/cards-based/index.html",
 	"jwt_keys_dir": "jwt",
 	"bi_service": "https://kin-bi.appspot.com/eco_",
 	"statsd": {

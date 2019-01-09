@@ -1,3 +1,5 @@
+import axios from "axios";
+import * as moment from "moment";
 import * as expect from "expect";
 import * as jsonwebtoken from "jsonwebtoken";
 
@@ -102,7 +104,7 @@ async function getOffer(client: MarketplaceClient, offerType: OfferType, content
 		}
 	}
 	if (!selectedOffer) {
-		throw new Error(`did not find a ${offerType}:${contentType} offer`);
+		throw new Error(`did not find a ${ offerType }:${ contentType } offer`);
 	}
 	return selectedOffer;
 }
@@ -118,25 +120,6 @@ async function didNotApproveTOS() {
 	const offers = await client.getOffers();
 	await client.createOrder(offers.offers[0].id); // should not throw - we removed need of activate
 	console.log("OK.\n");
-}
-
-async function getOfferTranslations() {
-	console.log("=====================================getOfferTranslations=====================================");
-
-	const client = await MarketplaceClient.create({
-			apiKey: API_KEY,
-			userId: "new_user_14543"
-		},
-		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ",
-		{ headers: { "accept-language": "pt-BR" } });
-
-	const offers = await client.getOffers();
-	//  We don't know the order of the offers received but some must have this title
-	expect(offers.offers.filter((i, t) => {
-		return i.title === "Faça um teste";
-	}).length).toBeGreaterThan(0);
-
-	console.log("OK.\n", offers.offers.slice(0, 4));
 }
 
 async function spendFlow() {
@@ -773,7 +756,6 @@ async function main() {
 	await tryToNativeSpendTwice();
 	await tryToNativeSpendTwiceWithNonce();
 	await p2p();
-	await getOfferTranslations();
 }
 
 main()

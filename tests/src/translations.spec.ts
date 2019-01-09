@@ -14,7 +14,7 @@ import { OfferTranslation } from "../../scripts/bin/models/translations";
 const CSV_TEMPLATE_FILE = "/tmp/translations_template.csv";
 const CSV_TRANSLATION_FILE = "/tmp/translation.csv";
 
-describe("translations tools tests", async () => {
+describe("translations tests", async () => {
 	beforeAll(async done => {
 		await initModels();
 		done();
@@ -44,7 +44,7 @@ describe("translations tools tests", async () => {
 	});
 
 	test("Adapt test translation CSV to the offers in the DB", async () => {
-		await adaptCsv(path.join(__dirname, "../../data/translations/test_pt-BR.csv"), CSV_TEMPLATE_FILE, CSV_TRANSLATION_FILE);
+		await adaptCsv(path.join(__dirname, "../../data/translations/test_pt_BR.csv"), CSV_TEMPLATE_FILE, CSV_TRANSLATION_FILE);
 		const csv = readFileSync(CSV_TRANSLATION_FILE);
 		const parsedCsv = (csvParse as CsvParse)(csv);
 		const csvData = parsedCsv.splice(1);
@@ -59,7 +59,7 @@ describe("translations tools tests", async () => {
 	});
 
 	test("processFile (import) translation CSV", async () => {
-		translations.processFile(path.join(__dirname, "../../data/translations/test_pt-BR.csv"), CSV_TEMPLATE_FILE);
+		translations.processFile(path.join(__dirname, "../../data/translations/test_pt_BR.csv"), CSV_TEMPLATE_FILE);
 		expect(await OfferTranslation.find({ translation: "Favoritos" }));
 	});
 });

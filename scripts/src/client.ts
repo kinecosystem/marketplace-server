@@ -61,10 +61,9 @@ export class ClientError extends Error {
 }
 
 export class ClientRequests {
-
 	public static async create(data: { device_id: string; wallet_address: string; }, headers?: StringMap) {
 		const res = await axios.post<AuthToken>(MARKETPLACE_BASE + "/v1/users", data, { headers });
-		return new ClientRequests(res.data, headers);
+		return new ClientRequests(res.data);
 	}
 
 	public static async getConfig(): Promise<ConfigResponse> {
@@ -73,11 +72,9 @@ export class ClientRequests {
 	}
 
 	public authToken: AuthToken;
-	public headers: StringMap;
 
 	private constructor(authToken: AuthToken) {
 		this.authToken = authToken;
-		this.headers = headers;
 	}
 
 	public get auth() {
@@ -102,7 +99,7 @@ export class ClientRequests {
 				return await promise;
 			} catch (e) {
 				const apiError: ApiError = e.response!.data;
-				const error = new ClientError(`server error for "${ url }" ${ e.response!.status }(${ apiError.code }): ${ apiError.error }`);
+				const error = new ClientError(`server error for "${ url }" ${ e.response!.status }(${ apiError.code }): ${ apiError.error }, ${ apiError.message }`);
 				error.response = e.response;
 
 				throw error;
@@ -126,11 +123,12 @@ export class ClientRequests {
 	}
 
 	private getConfig() {
-		const headers = Object.assign(this.headers, {
-			"x-request-id": uuid(),
-			"Authorization": this.auth ? `Bearer ${ this.auth.token }` : "",
-		});
-		return { headers };
+		return {
+			headers: {
+				"x-request-id": uuid(),
+				"Authorization": this.auth ? `Bearer ${ this.auth.token }` : "",
+			},
+		};
 	}
 }
 
@@ -166,7 +164,7 @@ export class Client {
 			});
 		}
 
-		const requests = await ClientRequests.create(data, config && config.headers);
+		const requests = await ClientRequests.create(data, config ? config.headers : {});
 		const wallet = await createWallet(network, keys);
 
 		return new Client(wallet, requests);

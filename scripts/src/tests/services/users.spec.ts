@@ -6,12 +6,14 @@ import { close as closeModels, init as initModels } from "../../models/index";
 import { generateId, IdPrefix } from "../../utils/utils";
 
 import * as helpers from "../helpers";
+import { createApp, signJwt } from "../helpers";
 import * as metrics from "../../metrics";
 import { AuthToken, User } from "../../models/users";
 
 import { Response } from "supertest";
 import { WhitelistSignInData } from "../../public/routes/users";
 import mock = require("supertest");
+import { verify } from "../../public/jwt";
 
 describe("api tests for /users", async () => {
 	beforeAll(async done => {
@@ -124,5 +126,13 @@ describe("api tests for /users", async () => {
 		expect(await userExists(user.appId, user.appUserId)).toBeTruthy();
 		expect(await userExists("another-app", user.appUserId)).toBeFalsy();
 		expect(await userExists(user.appId, "another-user-id")).toBeFalsy();
+	});
+
+	test("testSign", async () => {
+		const app = await createApp(generateId(IdPrefix.App));
+		const payload = { test: "test" };
+		const jwt = await signJwt(app.id, "subject", payload);
+		const res = await verify<{ test: string }, "test_subject">(jwt);
+		expect(res.payload.test).toEqual(payload.test);
 	});
 });

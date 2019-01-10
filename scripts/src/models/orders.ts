@@ -227,14 +227,32 @@ export const Order = {
 		return query;
 	},
 
-	getAll<T extends Order>(filters: GetOrderFilters & { userId: string }, limit?: number): Promise<T[]> {
-		const query = this.genericGet(filters);
+	async getAll<T extends Order>(filters: GetOrderFilters & { userId: string }, limit?: number): Promise<T[]> {
+		const allOrders = await this.genericGet(filters).getMany();
+		console.log(allOrders[0].contexts);
+
+		const ids: string[] = allOrders.map((o: Order) => o.contexts[0].userId);
+		const createKey = (i: number) => "id" + i.toString();
+		const idsKeys: string = ids.map((id: string, i: number) => ":id" + i.toString()).join(",");
+		const idsValues: any = ids.reduce((target: any, id: string, i: number) => {
+			target[createKey(i)] = id;
+			return target;
+		}, {});
+
+		console.log(this.genericGet({}).where(`
+			context.user_id IN (${idsKeys})
+		`, { idsValues }).getSql());
+		console.log(idsValues);
+		const userOrdersQuery = this.genericGet({})
+			.where(`context.user_id IN (${idsKeys})`, idsValues)
 
 		if (limit) {
-			query.limit(limit);
+			userOrdersQuery.limit(limit);
 		}
 
-		return query.getMany() as any;
+		const orders = await userOrdersQuery.getMany();
+		console.log(orders);
+		return userOrdersQuery.getMany() as any;
 	},
 
 	find(options?: FindManyOptions<Order>): Promise<Order[]> {

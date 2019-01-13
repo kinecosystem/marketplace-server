@@ -106,10 +106,9 @@ describe("test orders", async () => {
 			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
 			await helpers.completePayment(order.id);
 		}
+
 		const offerId = offers.offers[0].id;
 		const history = await getOrderHistory(user.id, { offerId });
-
-		return;
 
 		expect(history.orders.length).toEqual(1);
 		expect(history.orders[0].offer_id).toEqual(offerId);
@@ -124,6 +123,18 @@ describe("test orders", async () => {
 		const orderHistory: OrderList = res.body;
 		expect(orderHistory.orders.length).toEqual(1);
 		expect(orderHistory.orders[0].offer_id).toEqual(offerId);
+	});
+
+	test("create and find p2p order", async () => {
+		const user = await helpers.createUser();
+		const offers = await getOffers(user.id, user.appId, {});
+		const offerId = offers.offers[0].id;
+
+		await helpers.createP2POrder(user.id, offerId);
+		const orders = await Order.getAll({ origin: "external", userId: user.id, status: "!opened" });
+
+		expect(orders.length).toEqual(1);
+		expect(orders[0].contexts.length).toEqual(2);
 	});
 
 	test("getOrder returns only my orders", async () => {

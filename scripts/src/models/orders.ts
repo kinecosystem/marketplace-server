@@ -16,7 +16,7 @@ import {
 	SelectQueryBuilder
 } from "typeorm";
 
-import { ApiError } from "../errors";
+import { ApiError } fro m"../errors";
 import { generateId, IdPrefix, Mutable, isNothing } from "../utils/utils";
 
 import { User } from "./users";
@@ -227,31 +227,25 @@ export const Order = {
 		return query;
 	},
 
+	/**
+	 * Gets orders by `filters` (by `user_id`) object, maps it to order ids and searching  by `IN order_ids`
+	 * First `genericGet` will be replaced by caching lookup
+	 *
+	 * @param      {GetOrderFilters & {userId: string}}  filters
+	 * @param      {number}  limit
+	 * @return     {Promise<T[]>}  filtered orders including p2p
+	 */
 	async getAll<T extends Order>(filters: GetOrderFilters & { userId: string }, limit?: number): Promise<T[]> {
-		const allOrders = await this.genericGet(filters).getMany();
-		console.log(allOrders[0].contexts);
+		const allOrders = await this.genericGet(filters).getMany(); // can be replaced by cache
 
-		const ids: string[] = allOrders.map((o: Order) => o.contexts[0].userId);
-		const createKey = (i: number) => "id" + i.toString();
-		const idsKeys: string = ids.map((id: string, i: number) => ":id" + i.toString()).join(",");
-		const idsValues: any = ids.reduce((target: any, id: string, i: number) => {
-			target[createKey(i)] = id;
-			return target;
-		}, {});
-
-		console.log(this.genericGet({}).where(`
-			context.user_id IN (${idsKeys})
-		`, { idsValues }).getSql());
-		console.log(idsValues);
-		const userOrdersQuery = this.genericGet({})
-			.where(`context.user_id IN (${idsKeys})`, idsValues)
+		const ids: string[] = allOrders.map((o: Order) => o.id);
+		const userOrdersQuery = this.genericGet(Object.assign(filters, { userId: null })) // this query looks for every orders returned by previous query without userId
+			.andWhere(`ordr.id IN (:ids)`, { ids });
 
 		if (limit) {
 			userOrdersQuery.limit(limit);
 		}
 
-		const orders = await userOrdersQuery.getMany();
-		console.log(orders);
 		return userOrdersQuery.getMany() as any;
 	},
 
@@ -307,6 +301,7 @@ export const MarketplaceOrder = extendedOrder("marketplace") as (typeof Order) &
 export type ExternalOrder = Order;
 
 export const ExternalOrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
+export const P2POrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
 
 export type NormalOrder = Order & {
 	user: User;

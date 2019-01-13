@@ -139,7 +139,7 @@ describe("api tests for /users", async () => {
 	});
 
 	test("testMalformedJWT", async () => {
-		let jwt;
+		let jwt: string;
 		let payload;
 
 		const app = await createApp(generateId(IdPrefix.App));

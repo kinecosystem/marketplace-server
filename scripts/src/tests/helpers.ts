@@ -1,3 +1,6 @@
+import * as path from "path";
+import * as jsonwebtoken from "jsonwebtoken";
+import * as moment from "moment";
 import { getManager } from "typeorm";
 import * as StellarSdk from "stellar-sdk";
 
@@ -13,9 +16,6 @@ import { ExternalOrder, MarketplaceOrder, Order } from "../models/orders";
 import * as payment from "../public/services/payment";
 import { Event } from "../analytics";
 import { getConfig } from "../internal/config";
-import * as path from "path";
-import * as jsonwebtoken from "jsonwebtoken";
-import * as moment from "moment";
 
 const animalPoll: Poll = {
 	pages: [{

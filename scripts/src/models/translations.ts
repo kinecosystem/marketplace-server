@@ -30,13 +30,13 @@ export class OfferTranslation extends BaseEntity {
 		}
 
 		const query = OfferTranslation.createQueryBuilder("translations");
-		if (languages) {
+		if (languages && !languages.length) {
 			query.where("translations.language IN (:languages)", { languages });
 		}
 		if (offerId) {
 			query.andWhere("translations.offer_id = :offerId", { offerId });
 		}
-		if (paths) {
+		if (paths && !paths.length) {
 			query.andWhere("translations.path IN (:paths)", { paths });
 		}
 		const results = await query.getMany();

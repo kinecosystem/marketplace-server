@@ -16,7 +16,7 @@ import {
 	SelectQueryBuilder
 } from "typeorm";
 
-import { ApiError } fro m"../errors";
+import { ApiError } from "../errors";
 import { generateId, IdPrefix, Mutable, isNothing } from "../utils/utils";
 
 import { User } from "./users";
@@ -239,6 +239,10 @@ export const Order = {
 		const allOrders = await this.genericGet(filters).getMany(); // can be replaced by cache
 
 		const ids: string[] = allOrders.map((o: Order) => o.id);
+		if (!ids.length) {
+			return []; // empty array causes sql syntax error
+		}
+
 		const userOrdersQuery = this.genericGet(Object.assign(filters, { userId: null })) // this query looks for every orders returned by previous query without userId
 			.andWhere(`ordr.id IN (:ids)`, { ids });
 

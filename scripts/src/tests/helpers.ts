@@ -5,7 +5,7 @@ import { getManager } from "typeorm";
 import * as StellarSdk from "stellar-sdk";
 
 import { generateId, readKeysDir, random } from "../utils/utils";
-import { Asset, Offer } from "../models/offers";
+import { Asset, Offer, OfferContent } from "../models/offers";
 import { User, AuthToken } from "../models/users";
 import { Application, ApplicationConfig, StringMap } from "../models/applications";
 import { LimitConfig } from "../config";
@@ -160,15 +160,17 @@ export async function createP2POrder(userId: string): Promise<Order> {
 export async function createOffers() {
 	const uniqueId = generateId();
 
-	for (let i = 0; i < 5; i += 1) {
+	const offersCount = 5;
+	for (let i = 0; i < offersCount; i += 1) {
 		await createEarn(
 			`${ uniqueId }_earn${ i }`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
 			`earn${ i }`, `earn${ i }`, `earn${ i }`, `earn${ i }`, 100, 30, 1, `earn${ i }`, `earn${ i }`, "poll", animalPoll, ["ALL"]
 		);
 	}
+	await createMalformedOffer(offersCount + 1);
 
-	for (let i = 0; i < 5; i += 1) {
+	for (let i = 0; i < offersCount; i += 1) {
 		await createSpend(
 			`${ uniqueId }_spend${ i }`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
@@ -178,6 +180,19 @@ export async function createOffers() {
 			[`spend${ i }_1`, `spend${ i }_2`, `spend${ i }_3`, `spend${ i }_4`, `spend${ i }_5`], ["ALL"]
 		);
 	}
+}
+
+async function createMalformedOffer(num: number) {
+	const offerId = generateId()
+	await createEarn(
+		`${ offerId }_earn${ num }`,
+		"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
+		`earn${ num }`, `earn${ num }`, `earn${ num }`, `earn${ num }`, 100, 30, 1, `earn${ num }`, `earn${ num }`, "poll", animalPoll, ["ALL"]
+	);
+
+	const offerContents = (await OfferContent.findOneById(offerId))!;
+	offerContents.content = JSON.parse(offerContents.content);
+	await offerContents.save();
 }
 
 export async function completePayment(orderId: string) {

@@ -127,10 +127,8 @@ describe("test orders", async () => {
 
 	test("create and find p2p order", async () => {
 		const user = await helpers.createUser();
-		const offers = await getOffers(user.id, user.appId, {});
-		const offerId = offers.offers[0].id;
 
-		await helpers.createP2POrder(user.id, offerId);
+		await helpers.createP2POrder(user.id);
 		const orders = await Order.getAll({ origin: "external", userId: user.id, status: "!opened" });
 
 		expect(orders.length).toEqual(1);

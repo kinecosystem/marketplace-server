@@ -120,14 +120,14 @@ export async function createExternalOrder(userId: string): Promise<Order> {
 	return order;
 }
 
-export async function createP2POrder(userId: string, offerId: string): Promise<Order> {
+export async function createP2POrder(userId: string): Promise<Order> {
 	const sender = await User.findOneById(userId);
 	const recipient = await createUser();
 
 	const order = P2POrder.new({
 		amount: 65,
 		status: "pending",
-		offerId,
+		offerId: "p2p offer example",
 		blockchainData: {
 			transaction_id: "A123123123123123",
 			recipient_address: "G123123123123",

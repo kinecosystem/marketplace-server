@@ -31,7 +31,7 @@ export class User extends CreationDateModel {
 	@OneToMany(type => OrderContext, context => context.user)
 	public contexts!: OrderContext[];
 
-	@Column({ name: "walletCount" })
+	@Column({ name: "wallet_count" })
 	public walletCount!: number;
 
 	/**

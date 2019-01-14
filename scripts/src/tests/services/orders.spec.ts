@@ -78,7 +78,34 @@ describe("test orders", async () => {
 		const orders = [] as string[];
 		let balance = 0;
 
-		for (let i = 0; i < earnsCount + spendsCount; i++) {
+		for (let i = 0; i < earnsCount; i++) {
+			const offer = earns[i];
+			balance += offer.amount;
+
+			const openOrder = await createMarketplaceOrder(offer.id, user, deviceId);
+			const order = await submitOrder(openOrder.id, user, deviceId, "{}");
+			await helpers.completePayment(order.id);
+
+			orders.push(order.id);
+		}
+
+		for (let i = 0; i < spendsCount; i++) {
+			const offer = spends[i];
+
+			if (balance - offer.amount <= 0) {
+				continue;
+			}
+
+			balance -= offer.amount;
+
+			const openOrder = await createMarketplaceOrder(offer.id, user, deviceId);
+			const order = await submitOrder(openOrder.id, user, deviceId, "{}");
+			await helpers.completePayment(order.id);
+
+			orders.push(order.id);
+		}
+
+		/*for (let i = 0; i < earnsCount + spendsCount; i++) {
 			let offer: OfferData;
 
 			if (i < earnsCount) {
@@ -100,7 +127,7 @@ describe("test orders", async () => {
 			await helpers.completePayment(order.id);
 
 			orders.push(order.id);
-		}
+		}*/
 
 		return orders;
 	}

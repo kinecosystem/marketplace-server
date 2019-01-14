@@ -287,7 +287,7 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 	}
 
 	const OfferContent = ((await getOfferContent(offer.id)) || { contentType: "poll", content: "{}" });
-	const offerIdHtml = OfferContent.contentType === 'coupon' ? offer.id : `<a onclick="overlayOn(this.dataset.content, '${ offer.id }')" data-content="${ escape(OfferContent.content) }">${ offer.id }</a>`;
+	const offerIdHtml = OfferContent.contentType === "coupon" ? offer.id : `<a onclick="overlayOn(this.dataset.content, '${ offer.id }')" data-content="${ escape(OfferContent.content) }">${ offer.id }</a>`;
 	return `<tr class='offer-row'>
 <td class='offer-id'>${offerIdHtml}</td>
 <td><a href="/orders?offer_id=${ offer.id }">orders</a></td>

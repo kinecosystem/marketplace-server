@@ -78,7 +78,7 @@ export interface Order extends BaseOrder {
 export async function getOrder(orderId: string, user: User): Promise<Order> {
 	const order = await db.Order.getOne({ orderId, status: "!opened" });
 
-	if (!order || order.contextFor(user.id) === null) {
+	if (!order || order.contextForUser(user.id) === null) {
 		throw NoSuchOrder(orderId);
 	}
 
@@ -102,7 +102,7 @@ export async function getOrder(orderId: string, user: User): Promise<Order> {
 export async function changeOrder(orderId: string, user: User, change: Partial<Order>): Promise<Order> {
 	const order = await db.Order.getOne({ orderId, status: "!opened" });
 
-	if (!order || order.contextFor(user.id) === null) {
+	if (!order || order.contextForUser(user.id) === null) {
 		throw NoSuchOrder(orderId);
 	}
 	if (order.status === "completed") {
@@ -341,7 +341,7 @@ export async function submitOrder(
 		throw UserHasNoWallet(user.id, userDeviceId);
 	}
 
-	if (!order || order.contextFor(user.id) === null) {
+	if (!order || order.contextForUser(user.id) === null) {
 		throw NoSuchOrder(orderId);
 	}
 	if (order.status !== "opened") {
@@ -398,7 +398,7 @@ export async function submitOrder(
 export async function cancelOrder(orderId: string, userId: string): Promise<void> {
 	// you can only delete an open order - not a pending order
 	const order = await db.Order.getOne({ orderId, status: "opened" });
-	if (!order || order.contextFor(userId) === null) {
+	if (!order || order.contextForUser(userId) === null) {
 		throw NoSuchOrder(orderId);
 	}
 
@@ -466,17 +466,6 @@ async function orderDbToApi(order: db.Order, userId: string, wallet: string): Pr
 		throw OpenedOrdersUnreturnable();
 	}
 
-	/*const context = order.contextFor(userId)!;
-	const apiOrder = Object.assign(
-		pick(order, "id", "origin", "status", "amount"), {
-			result: order.value,
-			offer_type: context.type,
-			offer_id: order.offerId,
-			error: order.error as ApiError,
-			blockchain_data: order.blockchainData,
-			completion_date: (order.currentStatusDate || order.createdDate).toISOString()
-		}, pick(context.meta, "title", "description", "content", "call_to_action")) as Order;*/
-
 	const apiOrder = Object.assign(
 		pick(order, "id", "origin", "status", "amount"), {
 			result: order.value,
@@ -494,7 +483,7 @@ async function orderDbToApi(order: db.Order, userId: string, wallet: string): Pr
 		}, pick(context.meta, "title", "description", "content", "call_to_action"));
 	} else {
 		context = order.contextForWallet(wallet)!;
-		const app = (await Application.findOneById(context.user.appId))!;
+		const app = (await Application.findOneById(context.user.appId))!;  // TODO This is run inside a for loop - better remove this
 
 		Object.assign(data, {
 			offer_type: context.type,

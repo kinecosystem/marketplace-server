@@ -1,18 +1,14 @@
 import mock = require("supertest");
 
 import { app } from "../../public/app";
-import { AuthToken as ApiAuthToken, userExists } from "../../public/services/users";
-import { close as closeModels, init as initModels } from "../../models/index";
-import { generateId, IdPrefix } from "../../utils/utils";
-
-import * as helpers from "../helpers";
 import * as metrics from "../../metrics";
 import { AuthToken, User } from "../../models/users";
-
-import { verify } from "../../public/jwt";
+import { generateId, IdPrefix } from "../../utils/utils";
 import { WhitelistSignInData } from "../../public/routes/users";
-import { validateRegisterJWT } from "../../public/services/applications";
-import { validateExternalOrderJWT } from "../../public/services/native_offers";
+import { close as closeModels, init as initModels } from "../../models/index";
+import { AuthToken as ApiAuthToken, userExists, UserProfile } from "../../public/services/users";
+
+import * as helpers from "../helpers";
 
 describe("api tests for /users", async () => {
 	beforeAll(async done => {

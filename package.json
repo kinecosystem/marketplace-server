@@ -70,12 +70,11 @@
 		"build": "npm-run-all clean lint transpile",
 		"start": "nodemon scripts/bin/public/index",
 		"start-internal": "nodemon scripts/bin/internal/index",
-		"start-admin": "nodemon scripts/bin/admin/index",
+		"start-admin": "node scripts/bin/admin/index",
 		"start-marketplace-public": "node scripts/bin/public/index",
 		"start-marketplace-internal": "node scripts/bin/internal/index",
 		"start-marketplace-admin": "node scripts/bin/admin/index",
 		"manage-db-data": "node scripts/bin/manage_db_data",
-		"start-admin": "node scripts/bin/admin/index",
 		"restart": "npm-run-all build start",
 		"test-system": "node scripts/bin/mock_client",
 		"test": "jest --forceExit --runInBand --detectOpenHandles"

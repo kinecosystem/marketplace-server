@@ -2,43 +2,36 @@ import * as moment from "moment";
 import mock = require("supertest");
 import * as jsonwebtoken from "jsonwebtoken";
 
-import { app } from "../../../scripts/bin/public/app";
-import * as metrics from "../../../scripts/bin/metrics";
-import { initLogger } from "../../../scripts/bin/logging";
-import { JWTContent } from "../../../scripts/bin/public/jwt";
-import { AppOffer } from "../../../scripts/bin/models/applications";
-import { AuthToken, User } from "../../../scripts/bin/models/users";
-import { JWTValue, Offer } from "../../../scripts/bin/models/offers";
-import { ExternalOrder, Order } from "../../../scripts/bin/models/orders";
-import { generateId, random, IdPrefix } from "../../../scripts/bin/utils/utils";
-import { TransactionTimeout, UserHasNoWallet } from "../../../scripts/bin/errors";
-import { getOffers, Offer as OfferData } from "../../../scripts/bin/public/services/offers";
-import { OrderList, Order as OrderData } from "../../../scripts/bin/public/services/orders";
-import { close as closeModels, init as initModels } from "../../../scripts/bin/models/index";
-import { generateId, random, randomInteger, IdPrefix } from "../../../scripts/bin/utils/utils";
+import { app } from "../../public/app";
+import * as metrics from "../..//metrics";
+import { initLogger } from "../../logging";
+import { JWTContent } from "../../public/jwt";
+import { localCache } from "../../utils/cache";
+import { AuthToken, User } from "../../models/users";
+import { JWTValue, Offer } from "../../models/offers";
+import { ExternalOrder, Order } from "../../models/orders";
+import { Application, AppOffer } from "../../models/applications";
+import { TransactionTimeout, UserHasNoWallet } from "../../errors";
+import { getOffers, Offer as OfferData } from "../../public/services/offers";
+import { close as closeModels, init as initModels } from "../../models/index";
+import { generateId, random, randomInteger, IdPrefix } from "../../utils/utils";
 import {
 	changeOrder,
 	createMarketplaceOrder,
 	getOrder,
 	getOrderHistory,
 	setFailedOrder,
-	submitOrder, OrderList
+	submitOrder, OrderList,
+	Order as OrderData
 } from "../../public/services/orders";
-import { TransactionTimeout } from "../../errors";
-import { AppOffer } from "../../models/applications";
-import { JWTContent } from "../../public/jwt";
 
 import * as helpers from "../helpers";
-import * as jsonwebtoken from "jsonwebtoken";
-import { app } from "../../public/app";
-
-import { localCache } from "../../utils/cache";
 
 async function completeOrder(user: User, deviceId: string) {
 	const offers = await getOffers(user.id, user.appId, {});
 	const offerId = offers.offers[0].id;
 	const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
-	const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+	const order = await submitOrder(openOrder.id, user, deviceId, "{}");
 	await helpers.completePayment(order.id);
 	return order;
 }
@@ -46,7 +39,7 @@ async function completeOrder(user: User, deviceId: string) {
 describe("test orders", async () => {
 	jest.setTimeout(20000);
 
-	beforeEach(async done => {
+	beforeAll(async done => {
 		initLogger();
 		await initModels();
 		await helpers.clearDatabase();
@@ -57,18 +50,15 @@ describe("test orders", async () => {
 		done();
 	});
 
-	afterEach(async done => {
+	afterAll(async done => {
 		await closeModels();
-		done();
-	});
-
-	afterAll(async () => {
 		await metrics.destruct();
+		done();
 	});
 
 	async function getHistory(token: AuthToken) {
 		return (await mock(app)
-			.get("/v1/orders")
+			.get("/v2/orders")
 			.set("x-request-id", "123")
 			.set("Authorization", `Bearer ${ token.id }`)).body.orders as OrderData[];
 	}
@@ -202,7 +192,7 @@ describe("test orders", async () => {
 		// test with the API
 		const token: AuthToken = (await AuthToken.findOne({ userId: user.id }))!;
 		const res = await mock(app)
-			.get(`/v1/orders?offer_id=${ offerId }`)
+			.get(`/v2/orders?offer_id=${ offerId }`)
 			.set("x-request-id", "123")
 			.set("Authorization", `Bearer ${ token.id }`);
 
@@ -225,19 +215,19 @@ describe("test orders", async () => {
 		const user1 = await helpers.createUser();
 		const user2 = await helpers.createUser();
 
-		const user1token: AuthToken = (await AuthToken.findOne({ userId: user1.id }))!;
-		const user2token: AuthToken = (await AuthToken.findOne({ userId: user2.id }))!;
+		const user1token = (await AuthToken.findOne({ userId: user1.id }))!;
+		const user2token = (await AuthToken.findOne({ userId: user2.id }))!;
 
 		const user1order = await completeOrder(user1, user1token.deviceId);
 
 		await mock(app)
-			.get(`/v1/orders/${ user1order.id }`)
+			.get(`/v2/orders/${ user1order.id }`)
 			.set("x-request-id", "123")
 			.set("Authorization", `Bearer ${ user1token.id }`)
 			.expect(200);
 
 		await mock(app)
-			.get(`/v1/orders/${ user1order.id }`)
+			.get(`/v2/orders/${ user1order.id }`)
 			.set("x-request-id", "123")
 			.set("Authorization", `Bearer ${ user2token.id }`)
 			.expect(404);
@@ -262,7 +252,7 @@ describe("test orders", async () => {
 		// test with the API
 		const token: AuthToken = (await AuthToken.findOne({ userId: user.id }))!;
 		const res = await mock(app)
-			.get(`/v1/orders?limit=${ limit }`)
+			.get(`/v2/orders?limit=${ limit }`)
 			.set("x-request-id", "123")
 			.set("Authorization", `Bearer ${ token.id }`);
 

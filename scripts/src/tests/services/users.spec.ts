@@ -140,7 +140,7 @@ describe("api tests for /users", async () => {
 
 	test("testMalformedJWT", async () => {
 		let jwt: string;
-		let payload;
+		let payload: object;
 
 		const app = await createApp(generateId(IdPrefix.App));
 		payload = {}; // no user_id

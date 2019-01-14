@@ -72,9 +72,11 @@ describe("test orders", async () => {
 		const offers = options.offers || (await getOffers(user.id, app.id, {})).offers;
 		const earns = offers.filter(o => o.offer_type === "earn");
 		const spends = offers.filter(o => o.offer_type === "spend");
+		console.log(`[DEBUG 1] offers count: ${ offers.length }, earns count: ${ earns.length }, spends count: ${ spends.length }`);
 
 		const earnsCount = randomInteger(1, earns.length > 2 && options.divideBy ? earns.length / options.divideBy : earns.length);
 		const spendsCount = randomInteger(1, spends.length > 2 && options.divideBy ? spends.length / options.divideBy : spends.length);
+		console.log(`[DEBUG 2] random earns count: ${ earnsCount }, random spends count: ${ spendsCount }`);
 		const orders = [] as string[];
 		let balance = 0;
 
@@ -129,6 +131,7 @@ describe("test orders", async () => {
 			orders.push(order.id);
 		}*/
 
+		console.log(`[DEBUG 3] returning ${ orders.length } orders`);
 		return orders;
 	}
 

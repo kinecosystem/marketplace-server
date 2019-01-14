@@ -16,6 +16,8 @@ import { path } from "./utils/path";
 
 import "./models/orders";
 import "./models/users";
+import * as translations from "./admin/translations";
+import * as adaptTranslations from "./adapt_translation_csv";
 
 getConfig();  // App Config
 
@@ -29,6 +31,8 @@ type ScriptConfig = {
 	dry_run: boolean;
 	require_update_confirm: boolean;
 	create_db: boolean;
+	trans_file: string | null;
+	trans_lang: string | null;
 };
 let scriptConfig: ScriptConfig;
 
@@ -246,6 +250,12 @@ function initArgsParser(): ScriptConfig {
 		help: `Create tables/schemes if needed. ${ "\x1b[41m" /* red */ }USUALLY SHOULD NOT BE RUN IN PRODUCTION${ "\x1b[0m" /* reset */ }`,
 		action: "storeTrue"
 	});
+	parser.addArgument(["--trans-file"], {
+		help: "Location of a translations csv file"
+	});
+	parser.addArgument(["--trans-lang"], {
+		help: "case-SENSITIVE Translations language (e.g, pt-BR)"
+	});
 
 	/*
 	//  implementation of a confirmation prompt function is below
@@ -331,6 +341,22 @@ initModels(scriptConfig.create_db).then(async () => {
 			}
 		}
 	}
+	const translationsFile = scriptConfig.trans_file;
+	const translationsLanguage = scriptConfig.trans_lang;
+	if (translationsFile && translationsLanguage) {
+		const generatedStringsFileName = "/tmp/temp_local_translations_string.csv";
+		const translationsFilename = "/tmp/translations.csv";
+		console.log("creating translations template file");
+		await translations.writeCsvTemplateToFile(generatedStringsFileName);
+		console.log("adapting test translations file");
+		await adaptTranslations.processFile(translationsFile, generatedStringsFileName, translationsFilename);
+		console.log("processing translations and inserting into db");
+		await translations.processFile(translationsFilename, translationsLanguage);
+		console.log("Done. Translations Ready.");
+	} else if (translationsFile || translationsLanguage) {
+		throw Error("Both a translations file and a translations language need to be specified.");
+	}
+
 	try {
 		await closeModels();
 	} catch (e) {

@@ -285,7 +285,7 @@ async function processTranslationData(csvDataRows: TranslationData) {
 		if (table === "offer") {
 			offerTranslations[column] = translation;
 		} else {
-			let evalString = `offerTranslations.content.${jsonPath}=translation`;
+			const evalString = `offerTranslations.content.${jsonPath}=translation`;
 			try {
 				/* tslint:disable-next-line:no-eval */
 				eval(evalString);

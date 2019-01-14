@@ -4,12 +4,12 @@ import csvParse = require("csv-parse/lib/sync");
 import * as path from "path";
 import { readFileSync } from "fs";
 
-import { CsvParse, TranslationDataRow } from "../../scripts/bin/admin/translations";
-import { init as initModels, close as closeModels } from "../../scripts/bin/models/index";
-import { processFile as adaptCsv } from "../../scripts/bin/adaptTranslationCsv";
-import * as translations from "../../scripts/bin/admin/translations";
-import { Offer, OfferContent } from "../../scripts/bin/models/offers";
-import { OfferTranslation } from "../../scripts/bin/models/translations";
+import { CsvParse, TranslationDataRow } from "../../scripts/src/admin/translations";
+import { init as initModels, close as closeModels } from "../../scripts/src/models/index";
+import { processFile as adaptCsv } from "../../scripts/src/adapt_translation_csv";
+import * as translations from "../../scripts/src/admin/translations";
+import { Offer, OfferContent } from "../../scripts/src/models/offers";
+import { OfferTranslation } from "../../scripts/src/models/translations";
 
 const CSV_TEMPLATE_FILE = "/tmp/translations_template.csv";
 const CSV_TRANSLATION_FILE = "/tmp/translation.csv";
@@ -51,11 +51,11 @@ describe("translations tests", async () => {
 		let [type, key, defaultStr, translation, charLimit] = (csvData[Math.floor(csvData.length / 2)]) as TranslationDataRow;
 		expect(translation.length).toBeGreaterThan(0);
 		expect(translation.length).toBeLessThan(Number(charLimit));
-		const testTranslation = csvData.filter(([type, key, defaultStr, translation, charLimit]) => translation === "Favoritos");
+		const testTranslation = csvData.filter(([type, key, defaultStr, translation]: [string, string, string, string ]) => translation === "Favoritos");
 		expect(testTranslation.length).toBe(1);
 		[type, key, defaultStr, translation, charLimit] = testTranslation[0];
 		const [table, offerId, column, jsonPath] = key.split(":");
-		expect(await Offer.find({ id: offerId })[0].meta.title).toBe("Favorites");
+		expect(await Offer.findOne({ id: offerId })!.meta.title).toBe("Favorites");
 	});
 
 	test("processFile (import) translation CSV", async () => {

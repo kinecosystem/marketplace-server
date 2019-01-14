@@ -1,17 +1,16 @@
 import * as expect from "expect";
+import mock = require("supertest");
+import { Response } from "supertest";
 
-import { app } from "../../../scripts/bin/public/app";
-import { AuthToken as ApiAuthToken, userExists } from "../../../scripts/bin/public/services/users";
-import { close as closeModels, init as initModels } from "../../../scripts/bin/models/index";
-import { generateId, IdPrefix } from "../../../scripts/bin/utils/utils";
+import { app } from "../../public/app";
+import * as metrics from "../../metrics";
+import { AuthToken, User } from "../../models/users";
+import { generateId, IdPrefix } from "../../utils/utils";
+import { V1WhitelistSignInData } from "../../public/routes/users";
+import { close as closeModels, init as initModels } from "../../models/index";
+import { AuthToken as ApiAuthToken, userExists } from "../../public/services/users";
 
 import * as helpers from "../helpers";
-import * as metrics from "../../../scripts/bin/metrics";
-import { AuthToken, User } from "../../../scripts/bin/models/users";
-
-import { Response } from "supertest";
-import { V1WhitelistSignInData } from "../../../scripts/bin/public/routes/users";
-import mock = require("supertest");
 
 describe("api tests for /users", async () => {
 	beforeAll(async done => {

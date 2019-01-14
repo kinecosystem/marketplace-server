@@ -2,15 +2,17 @@ import * as moment from "moment";
 import mock = require("supertest");
 import * as jsonwebtoken from "jsonwebtoken";
 
-import { app } from "../../../scripts/bin/public/app";
-import * as metrics from "../../../scripts/bin/metrics";
-import { initLogger } from "../../../scripts/bin/logging";
-import { AuthToken, User } from "../../../scripts/bin/models/users";
-import { JWTValue, Offer } from "../../../scripts/bin/models/offers";
-import { getOffers } from "../../../scripts/bin/public/services/offers";
-import { ExternalOrder, Order } from "../../../scripts/bin/models/orders";
-import { generateId, random, IdPrefix } from "../../../scripts/bin/utils/utils";
-import { close as closeModels, init as initModels } from "../../../scripts/bin/models/index";
+import { app } from "../../public/app";
+import * as metrics from "../../metrics";
+import { initLogger } from "../../logging";
+import { JWTContent } from "../../public/jwt";
+import { AppOffer } from "../../models/applications";
+import { AuthToken, User } from "../../models/users";
+import { JWTValue, Offer } from "../../models/offers";
+import { getOffers } from "../../public/services/offers";
+import { ExternalOrder, Order } from "../../models/orders";
+import { generateId, random, IdPrefix } from "../../utils/utils";
+import { close as closeModels, init as initModels } from "../../models/index";
 import {
 	getOrder,
 	OrderList,
@@ -19,17 +21,15 @@ import {
 	setFailedOrder,
 	getOrderHistory,
 	createMarketplaceOrder
-} from "../../../scripts/bin/public/services/orders";
-import { TransactionTimeout } from "../../../scripts/bin/errors";
-import { AppOffer } from "../../../scripts/bin/models/applications";
-import { JWTContent } from "../../../scripts/bin/public/jwt";
+} from "../../public/services/orders";
+import { TransactionTimeout } from "../../errors";
 
 import * as helpers from "../helpers";
 
 describe("test orders", async () => {
 	jest.setTimeout(20000);
 
-	beforeEach(async done => {
+	beforeAll(async done => {
 		initLogger();
 		await initModels();
 		await helpers.clearDatabase();
@@ -39,13 +39,10 @@ describe("test orders", async () => {
 		done();
 	});
 
-	afterEach(async done => {
+	afterAll(async done => {
 		await closeModels();
-		done();
-	});
-
-	afterAll(async () => {
 		await metrics.destruct();
+		done();
 	});
 
 	test("getAll and filters", async () => {
@@ -92,12 +89,15 @@ describe("test orders", async () => {
 		const deviceId = "test_device_id";
 		const user = await helpers.createUser({ deviceId });
 		const offers = await getOffers(user.id, user.appId, {});
+		console.log(offers);
+
 		for (let i = 0; i < offers.offers.length && i < 4; i++) {
 			const offerId = offers.offers[i].id;
 			const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
 			const order = await submitOrder(openOrder.id, user, deviceId, "{}");
 			await helpers.completePayment(order.id);
 		}
+
 		const offerId = offers.offers[0].id;
 		const history = await getOrderHistory(user, deviceId, { offerId });
 		expect(history.orders.length).toEqual(1);
@@ -226,7 +226,7 @@ describe("test orders", async () => {
 			await order.save();
 			await helpers.completePayment(order.id);
 
-			const completedOrder = (await Order.getOne(order.id))!;
+			const completedOrder = (await Order.getOne({ orderId: order.id }))!;
 			expect(completedOrder.value!.type).toBe("payment_confirmation");
 			return jsonwebtoken.decode(
 				(completedOrder.value as JWTValue).jwt, { complete: true }
@@ -293,10 +293,10 @@ describe("test orders", async () => {
 		{
 			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, deviceId);
 			await submitOrder(openOrder.id, user, deviceId, "{}");
-			const dbOrder = (await Order.getOne(openOrder.id))!;
+			const dbOrder = (await Order.getOne({ orderId: openOrder.id }))!;
 			const expDate = dbOrder.expirationDate!;
 			await setFailedOrder(dbOrder, TransactionTimeout());
-			const dbOrder2 = (await Order.getOne(openOrder.id))!;
+			const dbOrder2 = (await Order.getOne({ orderId: openOrder.id }))!;
 			expect(expDate.getTime()).toBeGreaterThan(dbOrder2.currentStatusDate.getTime());
 		}
 
@@ -304,10 +304,10 @@ describe("test orders", async () => {
 		{
 			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user, deviceId);
 			await submitOrder(openOrder.id, user, deviceId, "{}");
-			const dbOrder = (await Order.getOne(openOrder.id))!;
+			const dbOrder = (await Order.getOne({ orderId: openOrder.id }))!;
 			const expDate = dbOrder.expirationDate!;
 			await setFailedOrder(dbOrder, TransactionTimeout(), expDate);
-			const dbOrder2 = (await Order.getOne(openOrder.id))!;
+			const dbOrder2 = (await Order.getOne({ orderId: openOrder.id }))!;
 			expect(expDate.getTime()).toEqual(dbOrder2.currentStatusDate.getTime());
 		}
 	});

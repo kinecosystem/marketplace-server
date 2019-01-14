@@ -16,7 +16,7 @@ import { AssetUnavailable, BlockchainError, WrongAmount, WrongRecipient, WrongSe
 import { setFailedOrder } from "../public/services/orders";
 import { Application, AppOffer } from "../models/applications";
 
-const BLOCKCHAIN = "stellar-testnet";
+const BLOCKCHAIN = "kin-prod";
 const RS512_APPS = ["test", "smpl"];
 
 export type WalletCreationSuccessData = {

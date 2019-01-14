@@ -2,10 +2,13 @@ import mock = require("supertest");
 
 import { app } from "../../public/app";
 import * as metrics from "../../metrics";
+import { verify } from "../../public/jwt";
 import { AuthToken, User } from "../../models/users";
 import { generateId, IdPrefix } from "../../utils/utils";
 import { WhitelistSignInData } from "../../public/routes/users";
+import { validateRegisterJWT } from "../../public/services/applications";
 import { close as closeModels, init as initModels } from "../../models/index";
+import { validateExternalOrderJWT } from "../../public/services/native_offers";
 import { AuthToken as ApiAuthToken, userExists, UserProfile } from "../../public/services/users";
 
 import * as helpers from "../helpers";
@@ -155,6 +158,35 @@ describe("api tests for /users", async () => {
 		expect(token.valid).toBeFalsy();
 	});
 
+	test("logout through API", async () => {
+		const myApp = await helpers.createApp(IdPrefix.App);
+		const signInData: WhitelistSignInData = {
+			sign_in_type: "whitelist",
+			api_key: myApp.apiKey,
+			device_id: "my_device_id",
+			user_id: "my_app_user_id"
+		};
+
+		let res = await mock(app)
+			.post(`/v2/users/`)
+			.send(signInData)
+			.set("x-request-id", "123");
+		const token: ApiAuthToken = res.body.auth;
+
+		await mock(app)
+			.delete("/v2/users/me/session")
+			.send()
+			.set("Authorization", `Bearer ${ token.token }`)
+			.expect(204);
+
+		res = await mock(app)
+			.post(`/v2/users/`)
+			.send(signInData)
+			.set("x-request-id", "123");
+		const newToken: ApiAuthToken = res.body.auth;
+		expect(token.token).not.toEqual(newToken.token);
+	});
+
 	test("testSign", async () => {
 		const app = await helpers.createApp(generateId(IdPrefix.App));
 		const payload = { test: "test" };
@@ -178,19 +210,19 @@ describe("api tests for /users", async () => {
 
 		payload = {};
 		jwt = await helpers.signJwt(app.id, "", payload); // InvalidExternalOrderJwt, sub is not in earn/spend/pay_to_user
-		await expect(validateExternalOrderJWT(jwt, "user_id")).rejects.toThrow();
+		await expect(validateExternalOrderJWT(jwt, "user_id", "device_id")).rejects.toThrow();
 
 		payload = {}; // no offer in earn/spend/pay_to_user JWTs
 		jwt = await helpers.signJwt(app.id, "spend", payload);
-		await expect(validateExternalOrderJWT(jwt, "user_id")).rejects.toThrow();
+		await expect(validateExternalOrderJWT(jwt, "user_id", "device_id")).rejects.toThrow();
 		payload = { offer: "offer" }; // no sender
 		jwt = await helpers.signJwt(app.id, "spend", payload);
-		await expect(validateExternalOrderJWT(jwt, "user_id")).rejects.toThrow();
+		await expect(validateExternalOrderJWT(jwt, "user_id", "device_id")).rejects.toThrow();
 		payload = { offer: "offer" }; // no recipient
 		jwt = await helpers.signJwt(app.id, "earn", payload);
-		await expect(validateExternalOrderJWT(jwt, "user_id")).rejects.toThrow();
+		await expect(validateExternalOrderJWT(jwt, "user_id", "device_id")).rejects.toThrow();
 		payload = { offer: "offer" }; // no sender, recipient
 		jwt = await helpers.signJwt(app.id, "pay_to_user", payload);
-		await expect(validateExternalOrderJWT(jwt, "user_id")).rejects.toThrow();
+		await expect(validateExternalOrderJWT(jwt, "user_id", "device_id")).rejects.toThrow();
 	});
 });

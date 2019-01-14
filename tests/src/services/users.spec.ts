@@ -156,4 +156,33 @@ describe("api tests for /users", async () => {
 		token = (await AuthToken.findOne({ userId: user.id }))!;
 		expect(token.valid).toBeFalsy();
 	});
+
+	test("logout through API", async () => {
+		const myApp = await helpers.createApp(IdPrefix.App);
+		const signInData: WhitelistSignInData = {
+			sign_in_type: "whitelist",
+			api_key: myApp.apiKey,
+			device_id: "my_device_id",
+			user_id: "my_app_user_id"
+		};
+
+		let res = await mock(app)
+			.post(`/v2/users/`)
+			.send(signInData)
+			.set("x-request-id", "123");
+		const token: ApiAuthToken = res.body.auth;
+
+		await mock(app)
+			.delete("/v2/users/me/session")
+			.send()
+			.set("Authorization", `Bearer ${ token.token }`)
+			.expect(204);
+
+		res = await mock(app)
+			.post(`/v2/users/`)
+			.send(signInData)
+			.set("x-request-id", "123");
+		const newToken: ApiAuthToken = res.body.auth;
+		expect(token.token).not.toEqual(newToken.token);
+	});
 });

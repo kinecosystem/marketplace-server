@@ -177,9 +177,8 @@ async function register(
 		metrics.userRegister(false, appId);
 	}
 
-	// XXX should be a scope object
 	let authToken = await DbAuthToken.findOne({
-		where: { userId: user.id, deviceId },
+		where: { userId: user.id, deviceId, valid: true },
 		order: { createdDate: "DESC" }
 	});
 	if (!authToken || authToken.isAboutToExpire()) {

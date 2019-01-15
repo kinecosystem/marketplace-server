@@ -183,16 +183,23 @@ export async function createOffers() {
 }
 
 async function createMalformedOffer(num: number) {
-	const offerId = generateId()
+	const offerName = generateId();
 	await createEarn(
-		`${ offerId }_earn${ num }`,
+		`${ offerName }_earn${ num }`,
 		"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
 		`earn${ num }`, `earn${ num }`, `earn${ num }`, `earn${ num }`, 100, 30, 1, `earn${ num }`, `earn${ num }`, "poll", animalPoll, ["ALL"]
 	);
 
-	const offerContents = (await OfferContent.findOneById(offerId))!;
-	offerContents.content = JSON.parse(offerContents.content);
-	await offerContents.save();
+	const offerContents = (await OfferContent.findOne({ where: { name: offerName } }))!;
+	await offerContents.save(); // TypeORM parses the offers content json and saves it back to the table (it gets in not escaped) - such offer content is malformed and has to be filtered out in every .getAll
+
+	/*	sql for check whether the db has one malformed and wellformed offer content
+		```
+			select * from (select * from offer_contents where content like '{%' limit 1)
+			union all
+			select * from (select * from offer_contents order by id limit 1)
+		```
+	 */
 }
 
 export async function completePayment(orderId: string) {

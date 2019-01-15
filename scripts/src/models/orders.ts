@@ -227,14 +227,31 @@ export const Order = {
 		return query;
 	},
 
-	getAll<T extends Order>(filters: GetOrderFilters & { userId: string }, limit?: number): Promise<T[]> {
-		const query = this.genericGet(filters);
+	/**
+	 * Gets orders by `filters` (by `user_id`) object, maps it to order ids and searching  by `IN order_ids`
+	 * First `genericGet` will be replaced by caching lookup
+	 *
+	 * @param      {GetOrderFilters & {userId: string}}  filters
+	 * @param      {number}  limit
+	 * @return     {Promise<T[]>}  filtered orders including p2p
+	 */
+	async getAll<T extends Order>(filters: GetOrderFilters & { userId?: string }, limit?: number): Promise<T[]> {
+		const allOrders = await this.genericGet(filters).getMany(); // can be replaced by cache
 
-		if (limit) {
-			query.limit(limit);
+		const ids: string[] = allOrders.map(order => order.id);
+		if (!ids.length) {
+			return []; // empty array causes sql syntax error
 		}
 
-		return query.getMany() as any;
+		delete filters.userId;
+		const userOrdersQuery = this.genericGet(filters) // this query looks for every orders returned by previous query without userId
+			.andWhere(`ordr.id IN (:ids)`, { ids });
+
+		if (limit) {
+			userOrdersQuery.limit(limit);
+		}
+
+		return userOrdersQuery.getMany() as any;
 	},
 
 	find(options?: FindManyOptions<Order>): Promise<Order[]> {
@@ -289,6 +306,7 @@ export const MarketplaceOrder = extendedOrder("marketplace") as (typeof Order) &
 export type ExternalOrder = Order;
 
 export const ExternalOrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
+export const P2POrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
 
 export type NormalOrder = Order & {
 	user: User;

@@ -422,9 +422,7 @@ export async function setFailedOrder(order: db.Order, error: MarketplaceError, f
 	order.currentStatusDate = failureDate || order.currentStatusDate;
 	order.error = error.toJson();
 
-	order.contexts.forEach(context => {
-		metrics.orderFailed(order);
-	});
+	metrics.orderFailed(order);
 
 	return await order.save();
 }

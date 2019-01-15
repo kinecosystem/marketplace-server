@@ -12,7 +12,7 @@ import { LimitConfig } from "../config";
 import { createEarn, createSpend } from "../create_data/offers";
 import { Poll, PageType } from "../public/services/offer_contents";
 import { CompletedPayment, paymentComplete } from "../internal/services";
-import { ExternalOrder, MarketplaceOrder, Order } from "../models/orders";
+import { ExternalOrder, MarketplaceOrder, Order, P2POrder } from "../models/orders";
 import * as payment from "../public/services/payment";
 import { Event } from "../analytics";
 import { getConfig } from "../internal/config";
@@ -117,6 +117,39 @@ export async function createExternalOrder(userId: string): Promise<Order> {
 		meta: {
 			title: "external order #1",
 			description: "first external order"
+		}
+	});
+	await order.save();
+
+	return order;
+}
+
+export async function createP2POrder(userId: string): Promise<Order> {
+	const sender = await User.findOneById(userId);
+	const recipient = await createUser();
+
+	const order = P2POrder.new({
+		amount: 65,
+		status: "pending",
+		offerId: "p2p offer example",
+		blockchainData: {
+			transaction_id: "A123123123123123",
+			recipient_address: "G123123123123",
+			sender_address: "G123123123123"
+		}
+	}, {
+		user: sender,
+		type: "earn",
+		meta: {
+			title: "p2p order #1",
+			description: "first p2p order"
+		}
+	}, {
+		user: recipient,
+		type: "spend",
+		meta: {
+			title: "p2p order #2",
+			description: "first p2p order"
 		}
 	});
 	await order.save();

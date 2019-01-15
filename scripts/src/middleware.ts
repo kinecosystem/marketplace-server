@@ -11,7 +11,6 @@ import { generateId, getAppIdFromRequest } from "./utils/utils";
 import { MarketplaceError } from "./errors";
 import { getDefaultLogger as logger } from "./logging";
 import { abort as restartServer } from "./server";
-import { HttpError } from "http-errors";
 
 const START_TIME = (new Date()).toISOString();
 

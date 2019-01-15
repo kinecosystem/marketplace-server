@@ -71,6 +71,8 @@ function offerDbToApi(offer: db.Offer, content: db.OfferContent, offerTranslatio
 		offerData.content = offerContents.replaceTemplateVars(offer, offerData.content);
 		return offerData;
 	} catch (e) {
+		log().error("malformed offer", { offerId: offer.id, e });
+		metrics.malformedOffer(offer, e);
 		return null;
 	}
 }

@@ -235,15 +235,16 @@ export const Order = {
 	 * @param      {number}  limit
 	 * @return     {Promise<T[]>}  filtered orders including p2p
 	 */
-	async getAll<T extends Order>(filters: GetOrderFilters & { userId: string }, limit?: number): Promise<T[]> {
+	async getAll<T extends Order>(filters: GetOrderFilters & { userId?: string }, limit?: number): Promise<T[]> {
 		const allOrders = await this.genericGet(filters).getMany(); // can be replaced by cache
 
-		const ids: string[] = allOrders.map((o: Order) => o.id);
+		const ids: string[] = allOrders.map(order => order.id);
 		if (!ids.length) {
 			return []; // empty array causes sql syntax error
 		}
 
-		const userOrdersQuery = this.genericGet(Object.assign(filters, { userId: null })) // this query looks for every orders returned by previous query without userId
+		delete filters.userId;
+		const userOrdersQuery = this.genericGet(filters) // this query looks for every orders returned by previous query without userId
 			.andWhere(`ordr.id IN (:ids)`, { ids });
 
 		if (limit) {

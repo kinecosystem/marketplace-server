@@ -1,10 +1,13 @@
+import * as path from "path";
+import * as jsonwebtoken from "jsonwebtoken";
+import * as moment from "moment";
 import { getManager } from "typeorm";
 import * as StellarSdk from "stellar-sdk";
 
-import { generateId } from "../utils/utils";
+import { generateId, readKeysDir, random } from "../utils/utils";
 import { Asset, Offer } from "../models/offers";
 import { User, AuthToken } from "../models/users";
-import { Application, ApplicationConfig } from "../models/applications";
+import { Application, ApplicationConfig, StringMap } from "../models/applications";
 import { LimitConfig } from "../config";
 import { createEarn, createSpend } from "../create_data/offers";
 import { Poll, PageType } from "../public/services/offer_contents";
@@ -12,6 +15,7 @@ import { CompletedPayment, paymentComplete } from "../internal/services";
 import { ExternalOrder, MarketplaceOrder, Order, P2POrder } from "../models/orders";
 import * as payment from "../public/services/payment";
 import { Event } from "../analytics";
+import { getConfig } from "../internal/config";
 
 const animalPoll: Poll = {
 	pages: [{
@@ -203,6 +207,22 @@ export async function clearDatabase() {
 	}
 }
 
+const CONFIG = getConfig();
+const PRIVATE_KEYS = readKeysDir(path.join(CONFIG.jwt_keys_dir, "private_keys"));
+const PUBLIC_KEYS = readKeysDir(path.join(CONFIG.jwt_keys_dir, "public_keys"));
+
+export async function signJwt(appId: string, subject: string, payload: object) {
+	const keyid = random(Object.keys(PRIVATE_KEYS));
+	const signWith = PRIVATE_KEYS[keyid];
+	return jsonwebtoken.sign(payload, signWith.key, {
+		subject,
+		keyid,
+		issuer: appId,
+		algorithm: signWith.algorithm,
+		expiresIn: moment().add(6, "hours").unix()
+	});
+}
+
 export async function createApp(appId: string, limits?: LimitConfig): Promise<Application> {
 	const address = getKeyPair().public;
 	const appConfig: ApplicationConfig = {
@@ -220,11 +240,15 @@ export async function createApp(appId: string, limits?: LimitConfig): Promise<Ap
 	if (limits) { // for RateLimits tests passed limits has low value
 		appConfig.limits = limits;
 	}
-
+	// all apps created during tests will have the same keys
+	const jwtPublicKeys: StringMap = {};
+	for (const key of Object.keys(PUBLIC_KEYS)) {
+		jwtPublicKeys[key] = PUBLIC_KEYS[key].key;
+	}
 	const app = Application.new({
 		id: appId,
 		name: appId,
-		jwtPublicKeys: {},
+		jwtPublicKeys,
 		walletAddresses: { recipient: address, sender: address },
 		config: appConfig
 	});

@@ -16,7 +16,7 @@ function getKeyForAlgorithm(alg: string): string {
 	return keyid;
 }
 
-export function sign(subject: string, payload: any, alg?: string) {
+export function sign(subject: string, payload: object, alg?: string) {
 	const keyid = getKeyForAlgorithm(alg || "es256");
 	const signWith = PRIVATE_KEYS[keyid];
 	return jsonwebtoken.sign(payload, signWith.key, {

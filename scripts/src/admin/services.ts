@@ -286,10 +286,10 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 		return `<input type="number" onchange="submitData('/offers/${ offer.id }', { amount: Number(this.value) })" value="${ offer.amount }"/>`;
 	}
 
-	const content = replaceTemplateVars(offer, ((await getOfferContent(offer.id)) || { content: "{}" }).content);
-
+	const OfferContent = ((await getOfferContent(offer.id)) || { contentType: "poll", content: "{}" });
+	const offerIdHtml = OfferContent.contentType === "coupon" ? offer.id : `<a onclick="overlayOn(this.dataset.content, '${ offer.id }')" data-content="${ escape(OfferContent.content) }">${ offer.id }</a>`;
 	return `<tr class='offer-row'>
-<td class='offer-id'><a onclick="overlayOn(this.dataset.content, '${ offer.id }')" data-content="${ escape(content) }">${ offer.id }</a></td>
+<td class='offer-id'>${offerIdHtml}</td>
 <td><a href="/orders?offer_id=${ offer.id }">orders</a></td>
 <td><a href="/polls/${ offer.id }">polls</a></td>
 <td>${ offer.name }</td>

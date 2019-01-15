@@ -151,6 +151,7 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 			overflow-y: scroll;
 			font-size: 15px;
 			max-height: 99%;
+			padding-right: 5px;
 		}
 		.overlay-content .controls {
 			flex: 1 1 auto;
@@ -169,7 +170,7 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		    animation: fadein 0.5s, fadeout 0.5s 2.5s;
 		}
 		
-		.offer-row .offer-id {
+		.offer-row .offer-id a{
 			cursor: hand;
 			color: blue;
 			text-decoration: underline;
@@ -191,6 +192,7 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		    to {bottom: 0; opacity: 0;}
 		}
 		</style>
+		<link href="https://cdn.kinmarketplace.com/admin/jsoneditor.min.css" rel="stylesheet" type="text/css">
 	</head>
 	<body>
 	
@@ -198,7 +200,7 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		<div id="toast">MSG TOAST</div>
 		<div class="overlay"">
 			<div class="overlay-content flex-row-container">
-				<pre contenteditable="true" class="text" class="wide">Overlay Text</pre>
+				<div class="text" class="wide"></div>
 				<div class="controls">
 					<button class="preview-btn btn">Refresh Preview</button>
 					<br />
@@ -212,78 +214,92 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		<div id="content">${ content }</div>
 		<div id="footer"></div>
 	
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js" async></script>
+		<script src="https://cdn.kinmarketplace.com/admin/jsoneditor.min.js" async></script>
 		
-	<script>
-		let overlayElement;
-		let overlayTextElement;
-		let toastElemnt;
-		let previewElemnt;
-		let previewBtnElemnt;
-		let publishBtnElemnt;
-		document.addEventListener("DOMContentLoaded", function() {
-			overlayElement = document.querySelector(".overlay");
-			overlayTextElement = document.querySelector(".overlay .text");
-			previewBtnElemnt = document.querySelector(".overlay .preview-btn");
-			previewElemnt = document.querySelector(".overlay .preview iframe");
-			publishBtnElemnt = document.querySelector(".overlay .publish-btn");
-			
-			toastElemnt = document.querySelector("#toast");
-			previewBtnElemnt.addEventListener("click", refreshPreviewBtnHandler)
-			publishBtnElemnt.addEventListener("click", publishBtnHandler)
-		});
-		function toast(msg) {
-		    toastElemnt.innerText = msg;
-		    toastElemnt.className = "show";
-		    setTimeout(function(){ toastElemnt.className = toastElemnt.className.replace("show", ""); }, 3000);
-		}
-		function submitData(url, data) {
-			axios.post(url, data)
-				.then(res => toast("ok"))
-				.catch(err => alert("error: " + JSON.stringify(err)));
-		}
-		function overlayOn(text, offerId) {
-			overlayElement.style.display = "block";
-			overlayElement.dataset.offerId = offerId;
-			overlayTextElement.innerText = JSON.stringify(JSON.parse(unescape(text)), null,  2);
-		}
-		function overlayOff() {
-			overlayElement.style.display = "none";
-			overlayTextElement.textContent = "";
-			previewElemnt.src = "";
-		}
+		<script>
+			let overlayElement;
+			let overlayTextElement;
+			let toastElemnt;
+			let previewElemnt;
+			let previewBtnElemnt;
+			let publishBtnElemnt;
+			var overlayJsonEditor;
 	
-		function validateJSONAndWarn(json){
-			try {
-				jsonData = JSON.stringify(JSON.parse(json));
-				return jsonData;
-			} catch {
-				toast("Invaid JSON");
-				return false;
+			document.addEventListener("DOMContentLoaded", function() {
+				overlayElement = document.querySelector(".overlay");
+				overlayTextElement = document.querySelector(".overlay .text");
+				previewBtnElemnt = document.querySelector(".overlay .preview-btn");
+				previewElemnt = document.querySelector(".overlay .preview iframe");
+				publishBtnElemnt = document.querySelector(".overlay .publish-btn");
+				
+				toastElemnt = document.querySelector("#toast");
+				previewBtnElemnt.addEventListener("click", refreshPreviewBtnHandler)
+				publishBtnElemnt.addEventListener("click", publishBtnHandler)
+			});
+			
+			
+			function toast(msg) {
+			    toastElemnt.innerText = msg;
+			    toastElemnt.className = "show";
+			    setTimeout(function(){ toastElemnt.className = toastElemnt.className.replace("show", ""); }, 3000);
 			}
-		}
+			function submitData(url, data) {
+				axios.post(url, data)
+					.then(res => toast("ok"))
+					.catch(err => alert("error: " + JSON.stringify(err)));
+			}
+			function overlayOn(text, offerId) {
+				var jsonEditorOptions = {
+					mode: 'form',
+					modes: ['view', 'form', 'tree', 'code']
+					
+				};
+				overlayElement.style.display = "block";
+				overlayElement.dataset.offerId = offerId;
+				
+				overlayJsonEditor = new JSONEditor(overlayTextElement, jsonEditorOptions, JSON.parse(unescape(text), null,  2));
+				overlayJsonEditor.expandAll();
+			}
+			function overlayOff() {
+				overlayElement.style.display = "none";
+				overlayTextElement.textContent = "";
+				previewElemnt.src = "";
+			}
 		
-		function publishBtnHandler(){
-			const json = overlayTextElement.textContent;
-			if (!validateJSONAndWarn(json)){
-				return;
+			function stringifyJson(json){
+				// This isn't really needed because the JSON editor escapes and protects but just to be on the safe side
+				try {
+					jsonData = JSON.stringify(json);
+					return jsonData;
+				} catch {
+					toast("Invaid JSON");
+					return false;
+				}
 			}
-			var data = {
-				content: json,
-			};
-			submitData("/offers/" + overlayElement.dataset.offerId, data);
-		}
-		
-		function refreshPreviewBtnHandler (){
-			refreshPreview(overlayTextElement.textContent);
-		}
-		function refreshPreview(json){
-			let jsonData = validateJSONAndWarn(json);
-			if (!jsonData){
-				return;
+			
+			
+			function publishBtnHandler(){
+				const json = stringifyJson(overlayJsonEditor.get());
+				if (!json){
+					return;
+				}
+				var data = {
+					content: json,
+				};
+				submitData("/offers/" + overlayElement.dataset.offerId, data);
 			}
-			previewElemnt.src = "${getConfig().webview}?cacheBuster=${Date.now()}&jsonData=" + encodeURIComponent(jsonData);
-		}
+			
+			function refreshPreviewBtnHandler (){
+				refreshPreview(overlayJsonEditor.get());
+			}
+			function refreshPreview(json){
+				let jsonData = stringifyJson(json);
+				if (!jsonData){
+					return;
+				}
+				previewElemnt.src = "${getConfig().webview}?cacheBuster=${Date.now()}&jsonData=" + encodeURIComponent(jsonData);
+			}
 	</script>
 	</body>
 

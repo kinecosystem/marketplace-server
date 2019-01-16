@@ -47,7 +47,8 @@ const CODES = {
 		InvalidWalletAddress: 8,
 		ExpiredJwt: 9,
 		InvalidJwtIssuedTime: 10,
-		MissingFieldJWT: 11
+		MissingFieldJWT: 11,
+		BadJWTInput: 12
 	},
 	TransactionFailed: {
 		WrongSender: 1,
@@ -208,6 +209,10 @@ export function InvalidJwtIssuedTime(iat: number) {
 
 export function MissingFieldJWT(fieldName: string) {
 	return BadRequestError(CODES.BadRequest.MissingFieldJWT, `The JWT ${ fieldName } field is missing`);
+}
+
+export function BadJWTInput(token: string) {
+	return BadRequestError(CODES.BadRequest.BadJWTInput, `JWT ${token} failed to decode`);
 }
 
 export function InvalidPollAnswers() {

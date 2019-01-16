@@ -7,7 +7,7 @@ import * as StellarSdk from "stellar-sdk";
 import { generateId, readKeysDir, random } from "../utils/utils";
 import { Asset, Offer, OfferContent } from "../models/offers";
 import { User, AuthToken } from "../models/users";
-import { Application, ApplicationConfig, StringMap } from "../models/applications";
+import { Application, ApplicationConfig, AppOffer, StringMap } from "../models/applications";
 import { LimitConfig } from "../config";
 import { createEarn, createSpend } from "../create_data/offers";
 import { Poll, PageType } from "../public/services/offer_contents";
@@ -168,7 +168,6 @@ export async function createOffers() {
 			`earn${ i }`, `earn${ i }`, `earn${ i }`, `earn${ i }`, 100, 30, 1, `earn${ i }`, `earn${ i }`, "poll", animalPoll, ["ALL"]
 		);
 	}
-	await createMalformedOffer(offersCount + 1);
 
 	for (let i = 0; i < offersCount; i += 1) {
 		await createSpend(
@@ -182,24 +181,40 @@ export async function createOffers() {
 	}
 }
 
-async function createMalformedOffer(num: number) {
-	const offerName = generateId();
+export async function createMalformedOffer(): Promise<string> {
+	const offerName = "malformed";
 	await createEarn(
-		`${ offerName }_earn${ num }`,
+		offerName,
 		"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
-		`earn${ num }`, `earn${ num }`, `earn${ num }`, `earn${ num }`, 100, 30, 1, `earn${ num }`, `earn${ num }`, "poll", animalPoll, ["ALL"]
+		"earn", "earn", "earn", "earn",
+		100,
+		30,
+		1,
+		"earn", "earn",
+		"poll", animalPoll,
+		["ALL"]
 	);
 
-	const offerContents = (await OfferContent.findOne({ where: { name: offerName } }))!;
-	await offerContents.save(); // TypeORM parses the offers content json and saves it back to the table (it gets in not escaped) - such offer content is malformed and has to be filtered out in every .getAll
+	const offer = (await Offer.findOne({ where: { name: offerName } }))!;
+	const malformedOfferContent = (await OfferContent.findOne({ where: { offerId: offer.id } }))!;
 
-	/*	sql for check whether the db has one malformed and wellformed offer content
-		```
-			select * from (select * from offer_contents where content like '{%' limit 1)
-			union all
-			select * from (select * from offer_contents order by id limit 1)
-		```
-	 */
+	malformedOfferContent.content = "{a: 1}";
+	await malformedOfferContent.save();
+
+	return offer.id;
+}
+
+export async function createAppUser(offer: Offer, appId: string): Promise<User> {
+	const app = await createApp(appId);
+	const user = await createUser({ appId: app.id });
+	await AppOffer.create({
+		appId: app.id,
+		offerId: offer.id,
+		cap: { total: 1, per_user: 1 },
+		walletAddress: "some_address"
+	}).save();
+
+	return user;
 }
 
 export async function completePayment(orderId: string) {

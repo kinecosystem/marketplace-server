@@ -39,7 +39,6 @@ function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, val
 	if (!value) {
 		return;
 	}
-
 	// in case the query is using table alias names, use it with status
 	const fieldName = alias ? `${ alias }.${ name }` : name;
 
@@ -214,7 +213,7 @@ export const Order = {
 		const query = OrderImpl.createQueryBuilder("ordr")
 			.innerJoinAndSelect("ordr.contexts", "context")
 			.leftJoinAndSelect("context.user", "user")
-			.orderBy("ordr.current_status_date", "DESC")
+			.orderBy("ordr.currentStatusDate", "DESC")
 			.addOrderBy("ordr.id", "DESC");
 
 		updateQueryWithFilter(query, "id", filters.orderId, "ordr");

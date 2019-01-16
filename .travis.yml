@@ -11,7 +11,7 @@ before_script:
   - make create-jwt-keys
   - make build-image
   - make db-docker
-  - make up-dev # clear-redis # up-dev - for test-system-docker
+  - make up
 
 script:
   - make test

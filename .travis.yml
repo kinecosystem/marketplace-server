@@ -11,7 +11,7 @@ before_script:
   - make create-jwt-keys
   - make build-image
   - make db-docker
-  - make up
+  - NODEMON_WATCH_DIRS="-w /no_such_dir" make up
 
 script:
   - make test

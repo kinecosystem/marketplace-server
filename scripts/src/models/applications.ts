@@ -60,7 +60,7 @@ export class AppOffer extends BaseEntity {
 		if (!appOffers) {
 			appOffers = await AppOffer.createQueryBuilder("app_offer")
 				.leftJoinAndSelect("app_offer.offer", "offer")
-				.where("app_id = :appId", { appId })
+				.where("app_offer.appId = :appId", { appId })
 				.andWhere("offer.type = :type", { type })
 				.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
 				.addOrderBy("offer.id", "ASC")

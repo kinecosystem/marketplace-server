@@ -4,3 +4,11 @@ scripts/bin
 docker-compose.*
 Dockerfile*
 .secrets*
+hooks
+examples
+coverage
+.travis.yml
+.git*
+data
+database.sqlite
+.idea/

@@ -30,18 +30,6 @@ export type JWTContent<T, SUB extends string> = {
 	signature: string;
 };
 
-const asyncJwtVerify =
-	(token: string, publicKey: string, options: object): Promise<object | string> => new Promise(
-		(res, rej) => {
-			jsonwebtoken.verify(token, publicKey, options, (err, decoded) => {
-				if (err || !decoded) {
-					rej(err);
-				} else {
-					res(decoded);
-				}
-			});
-		});
-
 export async function verify<T, SUB extends string>(token: string): Promise<JWTContent<T, SUB>> {
 	const decoded = jsonwebtoken.decode(token, { complete: true }) as JWTContent<T, SUB> | null;
 	if (isNothing(decoded)) {
@@ -84,4 +72,18 @@ export async function verify<T, SUB extends string>(token: string): Promise<JWTC
 	}
 
 	return decoded;
+}
+
+function asyncJwtVerify(token: string, publicKey: string, options: object) {
+	return new Promise(
+		(res, rej) => {
+			jsonwebtoken.verify(token, publicKey, options, (err, decoded) => {
+				if (err || !decoded) {
+					rej(err);
+				} else {
+					res(decoded);
+				}
+			});
+		}
+	);
 }

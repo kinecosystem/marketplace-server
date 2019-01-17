@@ -8,8 +8,8 @@ const CONFIG = getConfig();
 const PRIVATE_KEYS = readKeysDir(path.join(CONFIG.jwt_keys_dir, "private_keys"));
 export const PUBLIC_KEYS = readKeysDir(path.join(CONFIG.jwt_keys_dir, "public_keys"));
 
-const asyncJwtSign =
-	(payload: object, secretKey: string, options: object): Promise<string> => new Promise(
+function asyncJwtSign (payload: object, secretKey: string, options: object): Promise<string> {
+	return new Promise(
 		(res, rej) => {
 			jsonwebtoken.sign(payload, secretKey, options, (err, token) => {
 				if (err) {
@@ -18,7 +18,9 @@ const asyncJwtSign =
 					res(token);
 				}
 			});
-		});
+		}
+	)
+}
 
 function getKeyForAlgorithm(alg: string): string {
 	const keyid = Object.keys(PRIVATE_KEYS).find(k => PRIVATE_KEYS[k].algorithm.toUpperCase() === alg.toUpperCase());

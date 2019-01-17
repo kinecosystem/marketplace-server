@@ -426,7 +426,7 @@ export async function getApplicationOffers(params: { app_id: string }, query: Pa
 		.where("app.id = :appId", { appId: params.app_id })
 		.leftJoinAndSelect("app.appOffers", "app_offer")
 		.leftJoinAndSelect("app_offer.offer", "offer")
-		.addOrderBy("offer.created_date", "ASC")
+		.addOrderBy("offer.createdDate", "ASC")
 		.limit(take(query))
 		.offset(skip(query))
 		.getOne();
@@ -500,7 +500,12 @@ export async function getOrders(params: any, query: Paging & { status?: OpenOrde
 
 	if (query.user_id) {
 		const userOrders = await Order.genericGet({ userId: query.user_id }).getMany();
-		q.where(`ordr.id IN (:ids)`, { ids: userOrders.map(o => o.id) });
+		let orderIds = userOrders.map(o => o.id);
+		if (!orderIds.length) {
+			orderIds = ["no_orders"];
+		}
+		q.where(`ordr.id IN (:ids)`, { ids: orderIds });
+
 	}
 
 	const orders = await q.skip(skip(query)).take(take(query)).getMany();

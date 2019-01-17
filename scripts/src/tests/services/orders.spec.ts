@@ -378,8 +378,8 @@ describe("test orders", async () => {
 	test("offer cap is not shared between apps", async () => {
 		const offer = (await Offer.findOne())!;
 
-		const user1 = await helpers.createAppUser(offer, generateId(IdPrefix.App));
-		const user2 = await helpers.createAppUser(offer, generateId(IdPrefix.App));
+		const user1 = await helpers.createAppUserWithOffer(offer, generateId(IdPrefix.App));
+		const user2 = await helpers.createAppUserWithOffer(offer, generateId(IdPrefix.App));
 
 		const openOrder = await createMarketplaceOrder(offer.id, user1);
 		const order = await submitOrder(openOrder.id, user1.id, "{}", user1.walletAddress, user1.appId);
@@ -396,7 +396,7 @@ describe("test orders", async () => {
 		const app = await helpers.createApp(generateId(IdPrefix.App));
 		const offerId = await helpers.createMalformedOffer();
 
-		const user = await helpers.createAppUser((await Offer.findOne({ where: { id: offerId } }))!, app.id);
+		const user = await helpers.createAppUserWithOffer((await Offer.findOne({ where: { id: offerId } }))!, app.id);
 
 		const foundOffers = await getOffers(user.id, app.id, {});
 		console.log(foundOffers.offers);

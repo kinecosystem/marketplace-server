@@ -204,7 +204,7 @@ export async function createMalformedOffer(): Promise<string> {
 	return offer.id;
 }
 
-export async function createAppUser(offer: Offer, appId: string): Promise<User> {
+export async function createAppUserWithOffer(offer: Offer, appId: string): Promise<User> {
 	const app = await createApp(appId);
 	const user = await createUser({ appId: app.id });
 	await AppOffer.create({

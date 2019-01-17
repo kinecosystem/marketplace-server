@@ -17,7 +17,7 @@ const asyncJwtSign =
 				} else {
 					res(token);
 				}
-			})
+			});
 		});
 
 function getKeyForAlgorithm(alg: string): string {

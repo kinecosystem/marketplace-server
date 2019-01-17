@@ -39,7 +39,7 @@ const asyncJwtVerify =
 				} else {
 					res(decoded);
 				}
-			})
+			});
 		});
 
 export async function verify<T, SUB extends string>(token: string): Promise<JWTContent<T, SUB>> {

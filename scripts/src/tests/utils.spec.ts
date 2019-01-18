@@ -11,7 +11,7 @@ import { LimitConfig } from "../config";
 import { initLogger } from "../logging";
 import { MarketplaceError } from "../errors";
 import { close as closeModels, init as initModels } from "../models/index";
-import { assertRateLimitAppEarn } from "../utils/rate_limit";
+import { assertRateLimitAppEarn, RateLimit } from "../utils/rate_limit";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {
@@ -128,5 +128,21 @@ describe("util functions", () => {
 	test("remove duplicates", () => {
 		expect(utils.removeDuplicates(["1", "2", "3", "3"]).sort()).toEqual(["1", "2", "3"].sort());
 		expect(utils.removeDuplicates(["1000", "1", "1000", "1"]).sort()).toEqual(["1000", "1"].sort());
+	});
+
+	test("rate limit buckets", () => {
+		const window = moment.duration({ days: 1 });
+		const date1 = moment({ day: 18, month: 1, year: 2019, hour: 12, minute: 10 });
+		const date2 = moment({ day: 18, month: 1, year: 2019, hour: 12, minute: 20 });
+		const date3 = moment({ day: 18, month: 1, year: 2019, hour: 12, minute: 35 });
+
+		const r1 = new RateLimit("test", window, date1.valueOf());
+		const r2 = new RateLimit("test", window, date2.valueOf());
+		const r3 = new RateLimit("test", window, date3.valueOf());
+
+		expect(r1.ttl).toEqual(moment.duration({ days: 2 }).asSeconds());
+		expect(r1.bucketSize).toEqual(1440);
+		expect(r1.currentTimestampSeconds).toEqual(r2.currentTimestampSeconds);
+		expect(r1.currentTimestampSeconds).not.toEqual(r3.currentTimestampSeconds);
 	});
 });

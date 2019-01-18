@@ -35,6 +35,14 @@ export class RateLimit {
 		this.redis.expire(currentBucketName, this.ttl);
 	}
 
+	public getWindowKeys(): string[] {
+		const windowKeys: string[] = [];
+		for (let i = 0; i < this.windowSize; i += this.bucketSize) {
+			windowKeys.push(this.bucketPrefix + (this.currentTimestampSeconds - i));
+		}
+		return windowKeys;
+	}
+
 	/**
 	 * calculates possible Redis keys for this.windowSize every step (in seconds)
 	 * Redis mget returns values for all these keys
@@ -44,11 +52,7 @@ export class RateLimit {
 	 * @return     {number}  sum
 	 */
 	public async count() {
-		const windowKeys: string[] = [];
-		for (let i = 0; i < this.windowSize; i += this.bucketSize) {
-			windowKeys.push(this.bucketPrefix + (this.currentTimestampSeconds - i));
-		}
-		const bucketValues = await this.redis.async.mget(...windowKeys);
+		const bucketValues = await this.redis.async.mget(...this.getWindowKeys());
 
 		const rateSum: number = bucketValues
 			.filter((val: string) => val) // windowKeys consists of all possible keys even not existed, mget returns nulls for non-existing keys

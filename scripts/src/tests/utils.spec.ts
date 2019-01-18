@@ -130,11 +130,13 @@ describe("util functions", () => {
 		expect(utils.removeDuplicates(["1000", "1", "1000", "1"]).sort()).toEqual(["1000", "1"].sort());
 	});
 
-	test("rate limit buckets", () => {
+	test("rate limit buckets day", () => {
 		const window = moment.duration({ days: 1 });
+		// date1 and date2 are in the same bucket
 		const date1 = moment({ day: 18, month: 1, year: 2019, hour: 12, minute: 10 });
 		const date2 = moment({ day: 18, month: 1, year: 2019, hour: 12, minute: 20 });
-		const date3 = moment({ day: 18, month: 1, year: 2019, hour: 12, minute: 35 });
+		// date3 is a bucket away from date1
+		const date3 = moment({ day: 18, month: 1, year: 2019, hour: 12, minute: 30 });
 
 		const r1 = new RateLimit("test", window, date1.valueOf());
 		const r2 = new RateLimit("test", window, date2.valueOf());
@@ -144,5 +146,8 @@ describe("util functions", () => {
 		expect(r1.bucketSize).toEqual(1440);
 		expect(r1.currentTimestampSeconds).toEqual(r2.currentTimestampSeconds);
 		expect(r1.currentTimestampSeconds).not.toEqual(r3.currentTimestampSeconds);
+
+		expect(r1.getWindowKeys()).toEqual(r2.getWindowKeys());
+		expect(r1.getWindowKeys().slice(0, 59)).toEqual(r3.getWindowKeys().slice(1));
 	});
 });

@@ -1,7 +1,7 @@
 const repl = require("repl");
 // const babel = require("@babel/core");
 
-const BASE_MODULE_PATH = "./scripts/bin/";
+const BASE_MODULE_PATH = "./";
 
 const util = require("util");
 

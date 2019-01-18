@@ -94,7 +94,7 @@
 			"^.+\\.(ts|tsx)$": "ts-jest"
 		},
 		"testMatch": [
-			"<rootDir>/scripts/src/tests/**.spec.ts"
+			"<rootDir>/scripts/src/tests/translations.spec.ts"
 		],
 		"setupFiles": [
 			"<rootDir>/scripts/src/tests/init_tests.ts"
@@ -105,6 +105,6 @@
 			"!<rootDir>/scripts/src/tests/**",
 			"!<rootDir>/scripts/src/**/*.d.ts"
 		],
-		"collectCoverage": true
+		"collectCoverage": false
 	}
 }

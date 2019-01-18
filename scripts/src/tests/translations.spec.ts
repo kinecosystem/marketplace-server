@@ -4,12 +4,12 @@ import csvParse = require("csv-parse/lib/sync");
 import * as path from "path";
 import { readFileSync } from "fs";
 
-import { CsvParse, TranslationDataRow } from "../../scripts/src/admin/translations";
-import { init as initModels, close as closeModels } from "../../scripts/src/models/index";
-import { processFile as adaptCsv } from "../../scripts/src/adapt_translation_csv";
-import * as translations from "../../scripts/src/admin/translations";
-import { Offer, OfferContent } from "../../scripts/src/models/offers";
-import { OfferTranslation } from "../../scripts/src/models/translations";
+import { CsvParse, TranslationDataRow } from "../admin/translations";
+import { init as initModels, close as closeModels } from "../models/index";
+import { processFile as adaptCsv } from "../adapt_translation_csv";
+import * as translations from "../admin/translations";
+import { Offer, OfferContent } from "../models/offers";
+import { OfferTranslation } from "../models/translations";
 
 const CSV_TEMPLATE_FILE = "/tmp/translations_template.csv";
 const CSV_TRANSLATION_FILE = "/tmp/translation.csv";
@@ -44,22 +44,24 @@ describe("translations tests", async () => {
 	});
 
 	test("Adapt test translation CSV to the offers in the DB", async () => {
-		await adaptCsv(path.join(__dirname, "../../data/translations/test_pt_BR.csv"), CSV_TEMPLATE_FILE, CSV_TRANSLATION_FILE);
+		await adaptCsv(path.join(__dirname, "../../../data/translations/test_pt-BR.csv"), CSV_TEMPLATE_FILE, CSV_TRANSLATION_FILE);
 		const csv = readFileSync(CSV_TRANSLATION_FILE);
 		const parsedCsv = (csvParse as CsvParse)(csv);
+		console.log("contents of csv:\n", parsedCsv);
 		const csvData = parsedCsv.splice(1);
 		let [type, key, defaultStr, translation, charLimit] = (csvData[Math.floor(csvData.length / 2)]) as TranslationDataRow;
+		console.log(type, key, defaultStr, translation, charLimit);
 		expect(translation.length).toBeGreaterThan(0);
 		expect(translation.length).toBeLessThan(Number(charLimit));
 		const testTranslation = csvData.filter(([type, key, defaultStr, translation]: [string, string, string, string ]) => translation === "Favoritos");
 		expect(testTranslation.length).toBe(1);
 		[type, key, defaultStr, translation, charLimit] = testTranslation[0];
 		const [table, offerId, column, jsonPath] = key.split(":");
-		expect(await Offer.findOne({ id: offerId })!.meta.title).toBe("Favorites");
+		expect((await Offer.findOne({ id: offerId }))!.meta.title).toBe("Favorites");
 	});
 
-	test("processFile (import) translation CSV", async () => {
-		translations.processFile(path.join(__dirname, "../../data/translations/test_pt_BR.csv"), CSV_TEMPLATE_FILE);
-		expect(await OfferTranslation.find({ translation: "Favoritos" }));
-	});
+	// test("processFile (import) translation CSV", async () => {
+	// 	translations.processFile(path.join(__dirname, "../../../data/translations/test_pt-BR.csv"), CSV_TEMPLATE_FILE);
+	// 	expect(await OfferTranslation.find({ translation: "Favoritos" }));
+	// });
 });

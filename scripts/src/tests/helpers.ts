@@ -158,7 +158,7 @@ export async function completePayment(orderId: string) {
 	await paymentComplete(payment);
 }
 
-const TABLES = ["application_offers", "orders_contexts", "orders", "offers", "users", "assets", "auth_tokens"];
+const TABLES = ["application_offers", "orders_contexts", "orders", "offer_content_translations", "offers", "users", "assets", "auth_tokens"];
 
 export async function clearDatabase() {
 	try { // TODO: get this list dynamically

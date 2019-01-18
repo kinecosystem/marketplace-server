@@ -44,7 +44,7 @@ class RateLimit {
 	 */
 	public async count() {
 		const windowKeys: string[] = [];
-		for (let i = 0; i < this.windowSize; i += this.bucketSize) {
+		for (let i = 0; i < this.windowSize; i++) {
 			windowKeys.push(this.bucketPrefix + (this.currentTimestampSeconds - i));
 		}
 		const bucketValues = await this.redis.async.mget(...windowKeys);

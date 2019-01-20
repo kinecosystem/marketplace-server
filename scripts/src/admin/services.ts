@@ -320,11 +320,10 @@ async function orderToHtml(order: Order): Promise<string> {
 
 	for (const context of contexts) {
 		let userWallet = null;
-		if (order.blockchainData && context.type === "earn") {
-			userWallet = order.blockchainData.recipient_address;
-		}
-		if (order.blockchainData && context.type === "spend") {
-			userWallet = order.blockchainData.sender_address;
+		if (order.blockchainData) {
+			userWallet = context.type === "earn" ?
+				order.blockchainData.recipient_address :
+				order.blockchainData.sender_address;
 		}
 
 		html += `<tr>

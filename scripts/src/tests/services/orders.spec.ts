@@ -1,5 +1,4 @@
 import * as moment from "moment";
-import mock = require("supertest");
 import * as jsonwebtoken from "jsonwebtoken";
 
 import { app } from "../../public/app";
@@ -14,18 +13,20 @@ import { Application, AppOffer } from "../../models/applications";
 import { TransactionTimeout, UserHasNoWallet } from "../../errors";
 import { getOffers, Offer as OfferData } from "../../public/services/offers";
 import { close as closeModels, init as initModels } from "../../models/index";
-import { generateId, random, randomInteger, IdPrefix } from "../../utils/utils";
+import { generateId, IdPrefix, random, randomInteger } from "../../utils/utils";
 import {
 	changeOrder,
 	createMarketplaceOrder,
 	getOrder,
 	getOrderHistory,
+	Order as OrderData,
+	OrderList,
 	setFailedOrder,
-	submitOrder, OrderList,
-	Order as OrderData
+	submitOrder
 } from "../../public/services/orders";
 
 import * as helpers from "../helpers";
+import mock = require("supertest");
 
 async function completeOrder(user: User, deviceId: string) {
 	const offers = await getOffers(user.id, user.appId, {});
@@ -39,7 +40,7 @@ async function completeOrder(user: User, deviceId: string) {
 describe("test v2 orders", async () => {
 	jest.setTimeout(20000);
 
-	beforeAll(async done => {
+	beforeEach(async done => {
 		initLogger();
 		await initModels();
 		await helpers.clearDatabase();
@@ -50,7 +51,7 @@ describe("test v2 orders", async () => {
 		done();
 	});
 
-	afterAll(async done => {
+	afterEach(async done => {
 		await closeModels();
 		await metrics.destruct();
 		done();
@@ -137,6 +138,7 @@ describe("test v2 orders", async () => {
 
 	test("getAll and filters", async () => {
 		const user = await helpers.createUser({ deviceId: "test_device_id" });
+
 		const count = await helpers.createOrders(user.id);
 
 		let orders = await Order.getAll({ userId: user.id, status: "!opened" }, 25);
@@ -537,11 +539,10 @@ describe("test v2 orders", async () => {
 
 	test("multiple users on the same device with different wallets", async () => {
 		const deviceId = "test_device_id";
-		const appId = (await Application.findOne())!.id;
-		const user1 = await helpers.createUser({ deviceId, appId });
+		const user1 = await helpers.createUser({ deviceId });
 
 		let token = (await AuthToken.findOne({ userId: user1.id }))!;
-		let offers = await getOffers(user1.id, appId, {});
+		let offers = await getOffers(user1.id, user1.appId, {});
 		const offersCount = offers.offers.length;
 		const orderCount = randomInteger(1, offersCount);
 
@@ -555,11 +556,11 @@ describe("test v2 orders", async () => {
 		let history = await getHistory(token);
 		expect(history.length).toEqual(orderCount);
 
-		const user2 = await helpers.createUser({ deviceId, appId });
+		const user2 = await helpers.createUser({ deviceId, appId: user1.appId });
 		token = (await AuthToken.findOne({ userId: user2.id }))!;
 
 		// check that the orders by user1 did not affect the number of available offers to user2
-		offers = await getOffers(user2.id, appId, {});
+		offers = await getOffers(user2.id, user2.appId, {});
 		expect(offers.offers.length).toBe(offersCount);
 
 		// check that the orders by user1 did not affect the order history of user2
@@ -587,6 +588,7 @@ describe("test v2 orders", async () => {
 		const offers1 = (await getOffers(user1.id, app1.id, {})).offers;
 		const offers2 = (await getOffers(user2.id, app2.id, {})).offers;
 
+		console.log("OFFERS", offers1, offers2);
 		const orders1 = await createOrdersForUser(user1, deviceId1, app1, { offers: offers1 });
 		// make sure that at least 1 order was created for user1/app1
 		expect(orders1.length).toBeGreaterThan(0);
@@ -683,4 +685,5 @@ describe("test v2 orders", async () => {
 		expect(history1.length).toBe(history2.length);
 		history1.forEach(o => expect(history2).toContain(o));
 	});
+
 });

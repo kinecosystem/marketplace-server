@@ -13,7 +13,7 @@ import { AuthToken as ApiAuthToken, userExists, UserProfile } from "../../public
 
 import * as helpers from "../helpers";
 
-describe("api tests for /users", async () => {
+describe("api tests for v2 users", async () => {
 	beforeAll(async done => {
 		await initModels();
 		helpers.patchDependencies();

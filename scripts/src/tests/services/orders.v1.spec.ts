@@ -26,7 +26,7 @@ import { TransactionTimeout } from "../../errors";
 
 import * as helpers from "../helpers";
 
-describe("test orders", async () => {
+describe("test v1 orders", async () => {
 	jest.setTimeout(20000);
 
 	beforeAll(async done => {

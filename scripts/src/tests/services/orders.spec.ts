@@ -36,7 +36,7 @@ async function completeOrder(user: User, deviceId: string) {
 	return order;
 }
 
-describe("test orders", async () => {
+describe("test v2 orders", async () => {
 	jest.setTimeout(20000);
 
 	beforeAll(async done => {

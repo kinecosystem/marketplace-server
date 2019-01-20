@@ -152,14 +152,16 @@ export async function createP2POrder(userId: string): Promise<Order> {
 		meta: {
 			title: "p2p order #1",
 			description: "first p2p order"
-		}
+		},
+		wallet: "G123123123123"
 	}, {
 		user: recipient,
 		type: "spend",
 		meta: {
 			title: "p2p order #2",
 			description: "first p2p order"
-		}
+		},
+		wallet: "G123123123123"
 	});
 	await order.save();
 

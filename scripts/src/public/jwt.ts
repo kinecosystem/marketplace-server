@@ -66,10 +66,24 @@ export async function verify<T, SUB extends string>(token: string): Promise<JWTC
 	}
 
 	try {
-		jsonwebtoken.verify(token, publicKey, { ignoreExpiration: true }); // throws
+		await asyncJwtVerify(token, publicKey, { ignoreExpiration: true }); // throws
 	} catch (e) {
 		throw InvalidJwtSignature();
 	}
 
 	return decoded;
+}
+
+function asyncJwtVerify(token: string, publicKey: string, options: object) {
+	return new Promise(
+		(res, rej) => {
+			jsonwebtoken.verify(token, publicKey, options, (err, decoded) => {
+				if (err || !decoded) {
+					rej(err);
+				} else {
+					res(decoded);
+				}
+			});
+		}
+	);
 }

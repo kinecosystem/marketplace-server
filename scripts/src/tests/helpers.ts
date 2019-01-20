@@ -4,8 +4,8 @@ import * as moment from "moment";
 import { getManager } from "typeorm";
 import * as StellarSdk from "stellar-sdk";
 
-import { generateId, readKeysDir, random } from "../utils/utils";
 import { Asset, Offer, OfferContent } from "../models/offers";
+import { generateId, readKeysDir, random, IdPrefix } from "../utils/utils";
 import { User, AuthToken } from "../models/users";
 import { Application, ApplicationConfig, AppOffer, StringMap } from "../models/applications";
 import { LimitConfig } from "../config";
@@ -32,9 +32,14 @@ const animalPoll: Poll = {
 export async function createUser(options: { appId?: string; deviceId?: string; createWallet?: boolean } = {}): Promise<User> {
 	const uniqueId = generateId();
 	const deviceId = options.deviceId || `test_device_${ uniqueId }`;
+	if (!options.appId) {
+		const app = await createApp(generateId(IdPrefix.App));
+		await createOffers(app.id);
+		options.appId = app.id;
+	}
 	const userData = {
 		appUserId: `test_user_${ uniqueId }`,
-		appId: options.appId || (await Application.findOne())!.id
+		appId: options.appId
 	} as User;
 
 	const user = await (User.new(Object.assign(userData, { isNew: true }))).save();
@@ -168,15 +173,18 @@ export async function createP2POrder(userId: string): Promise<Order> {
 	return order;
 }
 
-export async function createOffers() {
+export async function createOffers(appId?: string) {
 	const uniqueId = generateId();
+	const appIds = appId ? [appId] : ["ALL"];
 
 	const offersCount = 5;
 	for (let i = 0; i < offersCount; i += 1) {
 		await createEarn(
 			`${ uniqueId }_earn${ i }`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
-			`earn${ i }`, `earn${ i }`, `earn${ i }`, `earn${ i }`, 100, 30, 1, `earn${ i }`, `earn${ i }`, "poll", animalPoll, ["ALL"]
+			`earn${ i }`, `earn${ i }`, `earn${ i }`, `earn${ i }`,
+			100, 30, 1, `earn${ i }`, `earn${ i }`,
+			"poll", animalPoll, appIds
 		);
 	}
 
@@ -187,7 +195,7 @@ export async function createOffers() {
 			`spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, 100, 30, 3, `spend${ i }`, `spend${ i }`,
 			`spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`,
 			`spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`,
-			[`spend${ i }_1`, `spend${ i }_2`, `spend${ i }_3`, `spend${ i }_4`, `spend${ i }_5`], ["ALL"]
+			[`spend${ i }_1`, `spend${ i }_2`, `spend${ i }_3`, `spend${ i }_4`, `spend${ i }_5`], appIds
 		);
 	}
 }
@@ -253,10 +261,13 @@ const TABLES = [
 	"user_wallets",
 	"orders_contexts",
 	"orders",
+	"offer_content_translations",
+	"offer_contents",
 	"offers",
 	"users",
 	"assets",
 	"auth_tokens",
+	"applications",
 ];
 
 export async function clearDatabase() {

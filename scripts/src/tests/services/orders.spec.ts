@@ -73,11 +73,9 @@ describe("test v2 orders", async () => {
 		const offers = options.offers || (await getOffers(user.id, app.id, {})).offers;
 		const earns = offers.filter(o => o.offer_type === "earn");
 		const spends = offers.filter(o => o.offer_type === "spend");
-		console.log(`[DEBUG 1] offers count: ${ offers.length }, earns count: ${ earns.length }, spends count: ${ spends.length }`);
 
 		const earnsCount = randomInteger(1, earns.length > 2 && options.divideBy ? earns.length / options.divideBy : earns.length);
 		const spendsCount = randomInteger(1, spends.length > 2 && options.divideBy ? spends.length / options.divideBy : spends.length);
-		console.log(`[DEBUG 2] random earns count: ${ earnsCount }, random spends count: ${ spendsCount }`);
 		const orders = [] as string[];
 		let balance = 0;
 
@@ -108,31 +106,6 @@ describe("test v2 orders", async () => {
 			orders.push(order.id);
 		}
 
-		/*for (let i = 0; i < earnsCount + spendsCount; i++) {
-			let offer: OfferData;
-
-			if (i < earnsCount) {
-				offer = earns[i];
-			} else {
-				offer = spends[i - earnsCount];
-			}
-
-			if (offer.offer_type === "spend" && balance - offer.amount <= 0) {
-				continue;
-			} else if (offer.offer_type === "spend") {
-				balance -= offer.amount;
-			} else {
-				balance += offer.amount;
-			}
-
-			const openOrder = await createMarketplaceOrder(offer.id, user, deviceId);
-			const order = await submitOrder(openOrder.id, user, deviceId, "{}");
-			await helpers.completePayment(order.id);
-
-			orders.push(order.id);
-		}*/
-
-		console.log(`[DEBUG 3] returning ${ orders.length } orders`);
 		return orders;
 	}
 
@@ -586,7 +559,6 @@ describe("test v2 orders", async () => {
 		const offers1 = (await getOffers(user1.id, app1.id, {})).offers;
 		const offers2 = (await getOffers(user2.id, app2.id, {})).offers;
 
-		console.log("OFFERS", offers1, offers2);
 		const orders1 = await createOrdersForUser(user1, deviceId1, app1, { offers: offers1 });
 		// make sure that at least 1 order was created for user1/app1
 		expect(orders1.length).toBeGreaterThan(0);

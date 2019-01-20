@@ -378,21 +378,8 @@ describe("test orders", async () => {
 	test("offer cap is not shared between apps", async () => {
 		const offer = (await Offer.findOne())!;
 
-		async function createAppUser(offer: Offer, appId: string): Promise<User> {
-			const app = await helpers.createApp(appId);
-			const user = await helpers.createUser({ appId: app.id });
-			await AppOffer.create({
-				appId: app.id,
-				offerId: offer.id,
-				cap: { total: 1, per_user: 1 },
-				walletAddress: "some_address"
-			}).save();
-
-			return user;
-		}
-
-		const user1 = await createAppUser(offer, generateId(IdPrefix.App));
-		const user2 = await createAppUser(offer, generateId(IdPrefix.App));
+		const user1 = await helpers.createAppUserWithOffer(offer, generateId(IdPrefix.App));
+		const user2 = await helpers.createAppUserWithOffer(offer, generateId(IdPrefix.App));
 
 		const openOrder = await createMarketplaceOrder(offer.id, user1);
 		const order = await submitOrder(openOrder.id, user1.id, "{}", user1.walletAddress, user1.appId);
@@ -403,5 +390,17 @@ describe("test orders", async () => {
 
 		// user2 should be able to open an order
 		await expect(createMarketplaceOrder(offer.id, user2)).resolves.toBeDefined();
+	});
+
+	test("filtering out malformed offers", async () => {
+		const app = await helpers.createApp(generateId(IdPrefix.App));
+		const offerId = await helpers.createMalformedOffer();
+
+		const user = await helpers.createAppUserWithOffer((await Offer.findOne({ where: { id: offerId } }))!, app.id);
+
+		const foundOffers = await getOffers(user.id, app.id, {});
+		console.log(foundOffers.offers);
+
+		expect(foundOffers.offers).toEqual([]);
 	});
 });

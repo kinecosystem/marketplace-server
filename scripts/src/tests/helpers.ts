@@ -5,9 +5,9 @@ import { getManager } from "typeorm";
 import * as StellarSdk from "stellar-sdk";
 
 import { generateId, readKeysDir, random } from "../utils/utils";
-import { Asset, Offer } from "../models/offers";
+import { Asset, Offer, OfferContent } from "../models/offers";
 import { User, AuthToken } from "../models/users";
-import { Application, ApplicationConfig, StringMap } from "../models/applications";
+import { Application, ApplicationConfig, AppOffer, StringMap } from "../models/applications";
 import { LimitConfig } from "../config";
 import { createEarn, createSpend } from "../create_data/offers";
 import { Poll, PageType } from "../public/services/offer_contents";
@@ -160,7 +160,8 @@ export async function createP2POrder(userId: string): Promise<Order> {
 export async function createOffers() {
 	const uniqueId = generateId();
 
-	for (let i = 0; i < 5; i += 1) {
+	const offersCount = 5;
+	for (let i = 0; i < offersCount; i += 1) {
 		await createEarn(
 			`${ uniqueId }_earn${ i }`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
@@ -168,7 +169,7 @@ export async function createOffers() {
 		);
 	}
 
-	for (let i = 0; i < 5; i += 1) {
+	for (let i = 0; i < offersCount; i += 1) {
 		await createSpend(
 			`${ uniqueId }_spend${ i }`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
@@ -178,6 +179,42 @@ export async function createOffers() {
 			[`spend${ i }_1`, `spend${ i }_2`, `spend${ i }_3`, `spend${ i }_4`, `spend${ i }_5`], ["ALL"]
 		);
 	}
+}
+
+export async function createMalformedOffer(): Promise<string> {
+	const offerName = "malformed";
+	await createEarn(
+		offerName,
+		"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
+		"earn", "earn", "earn", "earn",
+		100,
+		30,
+		1,
+		"earn", "earn",
+		"poll", animalPoll,
+		["ALL"]
+	);
+
+	const offer = (await Offer.findOne({ where: { name: offerName } }))!;
+	const malformedOfferContent = (await OfferContent.findOne({ where: { offerId: offer.id } }))!;
+
+	malformedOfferContent.content = "{a: 1}";
+	await malformedOfferContent.save();
+
+	return offer.id;
+}
+
+export async function createAppUserWithOffer(offer: Offer, appId: string): Promise<User> {
+	const app = await createApp(appId);
+	const user = await createUser({ appId: app.id });
+	await AppOffer.create({
+		appId: app.id,
+		offerId: offer.id,
+		cap: { total: 1, per_user: 1 },
+		walletAddress: "some_address"
+	}).save();
+
+	return user;
 }
 
 export async function completePayment(orderId: string) {

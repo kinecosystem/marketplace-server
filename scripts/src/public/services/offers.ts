@@ -44,20 +44,37 @@ type OfferTranslations = {
 	content: any;
 };
 
+/**
+ * Adapts offer object to api structure
+ * check malformed offers, returns null that filtered out in `filterOffers`
+ * in case of failing sends metrics:
+ *
+ * @param      {db.Offer}  offer
+ * @param      {db.OfferContent}  content
+ * @param      {OfferTranslations}  offerTranslations
+ * @param      {string}  walletAddress
+ * @return     {offerData | null}
+ */
 function offerDbToApi(offer: db.Offer, content: db.OfferContent, offerTranslations: OfferTranslations, walletAddress: string) {
-	const offerData = {
-		id: offer.id,
-		title: offerTranslations.title || offer.meta.title,
-		description: offerTranslations.description || offer.meta.description,
-		image: offer.meta.image,
-		amount: offer.amount,
-		blockchain_data: offer.type === "spend" ? { recipient_address: walletAddress } : { sender_address: walletAddress },
-		offer_type: offer.type,
-		content: offerTranslations.content || content.content,
-		content_type: content.contentType,
-	};
-	offerData.content = offerContents.replaceTemplateVars(offer, offerData.content);
-	return offerData;
+	try {
+		const offerData = {
+			id: offer.id,
+			title: offerTranslations.title || offer.meta.title,
+			description: offerTranslations.description || offer.meta.description,
+			image: offer.meta.image,
+			amount: offer.amount,
+			blockchain_data: offer.type === "spend" ? { recipient_address: walletAddress } : { sender_address: walletAddress },
+			offer_type: offer.type,
+			content: offerTranslations.content || content.content,
+			content_type: content.contentType,
+		};
+		offerData.content = offerContents.replaceTemplateVars(offer, offerData.content);
+		return offerData;
+	} catch (e) {
+		log().error("malformed offer", { offerId: offer.id, e });
+		metrics.malformedOffer(offer, e);
+		return null;
+	}
 }
 
 function getOfferTranslations(language: string | false, offerId: string, availableTranslations: OfferTranslation[]) {

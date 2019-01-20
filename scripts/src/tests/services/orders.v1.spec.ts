@@ -25,21 +25,23 @@ import {
 import { TransactionTimeout } from "../../errors";
 
 import * as helpers from "../helpers";
+import { localCache } from "../../utils/cache";
 
 describe("test v1 orders", async () => {
 	jest.setTimeout(20000);
 
-	beforeAll(async done => {
+	beforeEach(async done => {
 		initLogger();
 		await initModels();
 		await helpers.clearDatabase();
 		await helpers.createOffers();
 		helpers.patchDependencies();
 
+		localCache.clear();
 		done();
 	});
 
-	afterAll(async done => {
+	afterEach(async done => {
 		await closeModels();
 		await metrics.destruct();
 		done();
@@ -89,7 +91,6 @@ describe("test v1 orders", async () => {
 		const deviceId = "test_device_id";
 		const user = await helpers.createUser({ deviceId });
 		const offers = await getOffers(user.id, user.appId, {});
-		console.log(offers);
 
 		for (let i = 0; i < offers.offers.length && i < 4; i++) {
 			const offerId = offers.offers[i].id;

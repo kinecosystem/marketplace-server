@@ -471,9 +471,8 @@ describe("test v2 orders", async () => {
 		const user1 = await helpers.createAppUserWithOffer(offer, generateId(IdPrefix.App));
 		const user2 = await helpers.createAppUserWithOffer(offer, generateId(IdPrefix.App));
 
-		const deviceId1 = (await AuthToken.findOne({ userId: user1.id })).deviceId;
-		const deviceId2 = (await AuthToken.findOne({ userId: user2.id })).deviceId;
-
+		const deviceId1 = (await AuthToken.findOne({ userId: user1.id }))!.deviceId;
+		const deviceId2 = (await AuthToken.findOne({ userId: user2.id }))!.deviceId;
 
 		const openOrder = await createMarketplaceOrder(offer.id, user1, deviceId1);
 		const order = await submitOrder(openOrder.id, user1, deviceId1, "{}");

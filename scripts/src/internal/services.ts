@@ -86,7 +86,7 @@ async function getPaymentJWT(order: db.Order, appId: string, userId: string): Pr
 
 	return {
 		type: "payment_confirmation",
-		jwt: signJWT("payment_confirmation", payload, RS512_APPS.includes(appId) ? "rs512" : "es256") // TODO all apps should run with es256 keys
+		jwt: await signJWT("payment_confirmation", payload, RS512_APPS.includes(appId) ? "rs512" : "es256") // TODO all apps should run with es256 keys
 	};
 }
 

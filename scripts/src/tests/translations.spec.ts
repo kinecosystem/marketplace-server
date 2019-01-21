@@ -39,9 +39,7 @@ describe("translations tests", async () => {
 		};
 		initDb(scriptConfig);
 		helpers.patchDependencies();
-
 		localCache.clear();
-
 		done();
 	});
 

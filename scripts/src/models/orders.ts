@@ -39,7 +39,6 @@ function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, val
 	if (!value) {
 		return;
 	}
-
 	// in case the query is using table alias names, use it with status
 	const fieldName = alias ? `${ alias }.${ name }` : name;
 
@@ -124,18 +123,18 @@ export const Order = {
 		const statuses = options.userId ? ["pending"] : ["opened", "pending"];
 
 		const query = OrderImpl.createQueryBuilder("ordr") // don't use 'order', it messed things up
-			.select("ordr.offer_id")
+			.select("ordr.offerId as offerId")
 			.addSelect("COUNT(DISTINCT(ordr.id)) AS cnt")
 			.leftJoin("ordr.contexts", "context");
 
 		if (options.userId) {
-			query.andWhere("context.user_id = :userId", { userId: options.userId });
+			query.andWhere("context.userId = :userId", { userId: options.userId });
 		} else {
 			query.leftJoin("context.user", "user");
-			query.andWhere(`"user".app_id = :appId`, { appId });
+			query.andWhere("user.appId = :appId", { appId });
 		}
 		if (options.offerId) {
-			query.andWhere("ordr.offer_id = :offerId", { offerId: options.offerId });
+			query.andWhere("ordr.offerId = :offerId", { offerId: options.offerId });
 		}
 
 		query.andWhere(new Brackets(qb => {
@@ -143,16 +142,16 @@ export const Order = {
 				.orWhere(
 					new Brackets(qb2 => {
 						qb2.where("ordr.status IN (:statuses)", { statuses })
-							.andWhere("ordr.expiration_date > :date", { date: new Date() });
+							.andWhere("ordr.expirationDate > :date", { date: new Date() });
 					})
 				);
 		}))
-			.groupBy("ordr.offer_id");
+			.groupBy("ordr.offerId");
 
-		const results: Array<{ offer_id: string, cnt: number }> = await query.getRawMany();
+		const results: Array<{ offerId: string, cnt: number }> = await query.getRawMany();
 		const map = new Map<string, number>();
 		for (const res of results) {
-			map.set(res.offer_id, res.cnt);
+			map.set(res.offerId, res.cnt);
 		}
 		return map;
 	},
@@ -162,16 +161,16 @@ export const Order = {
 
 		const query = OrderImpl.createQueryBuilder("ordr")
 			.leftJoinAndSelect("ordr.contexts", "context")
-			.andWhere("context.user_id = :userId", { userId })
+			.andWhere("context.userId = :userId", { userId })
 			.andWhere("context.type = :type", { type })
 			.andWhere("ordr.origin = :origin", { origin })
-			.andWhere("ordr.current_status_date > :midnight", { midnight })
+			.andWhere("ordr.currentStatusDate > :midnight", { midnight })
 			.andWhere(new Brackets(qb => {
 				qb.where("ordr.status = :completed", { completed: "completed" })
 					.orWhere(
 						new Brackets(qb2 => {
 							qb2.where("ordr.status = :pending", { pending: "pending" })
-								.andWhere("ordr.expiration_date > :expiration_date", { expiration_date: new Date() });
+								.andWhere("ordr.expirationDate > :expirationDate", { expirationDate: new Date() });
 						})
 					);
 			}));
@@ -184,8 +183,8 @@ export const Order = {
 		const latestExpiration = moment().add(2, "minutes").toDate();
 
 		const query = this.genericGet({ offerId, userId });
-		query.andWhere("ordr.expiration_date > :date", { date: latestExpiration })
-			.orderBy("ordr.expiration_date", "DESC"); // if there are a few, get the one with the most time left
+		query.andWhere("ordr.expirationDate > :date", { date: latestExpiration })
+			.orderBy("ordr.expirationDate", "DESC"); // if there are a few, get the one with the most time left
 
 		const order = await (query.getOne() as Promise<T | undefined>);
 
@@ -214,15 +213,15 @@ export const Order = {
 		const query = OrderImpl.createQueryBuilder("ordr")
 			.innerJoinAndSelect("ordr.contexts", "context")
 			.leftJoinAndSelect("context.user", "user")
-			.orderBy("ordr.current_status_date", "DESC")
+			.orderBy("ordr.currentStatusDate", "DESC")
 			.addOrderBy("ordr.id", "DESC");
 
 		updateQueryWithFilter(query, "id", filters.orderId, "ordr");
 		updateQueryWithFilter(query, "status", filters.status, "ordr");
 		updateQueryWithFilter(query, "nonce", filters.nonce, "ordr");
 		updateQueryWithFilter(query, "origin", filters.origin, "ordr");
-		updateQueryWithFilter(query, "offer_id", filters.offerId, "ordr");
-		updateQueryWithFilter(query, "user_id", filters.userId, "context");
+		updateQueryWithFilter(query, "offerId", filters.offerId, "ordr");
+		updateQueryWithFilter(query, "userId", filters.userId, "context");
 
 		return query;
 	},

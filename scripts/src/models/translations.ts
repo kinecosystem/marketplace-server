@@ -34,7 +34,7 @@ export class OfferTranslation extends BaseEntity {
 			query.where("translations.language IN (:languages)", { languages });
 		}
 		if (offerId) {
-			query.andWhere("translations.offer_id = :offerId", { offerId });
+			query.andWhere("translations.offerId = :offerId", { offerId });
 		}
 		if (paths && paths.length > 0) {
 			query.andWhere("translations.path IN (:paths)", { paths });

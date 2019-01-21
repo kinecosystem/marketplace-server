@@ -121,16 +121,16 @@ export type UserProfile = {
 export async function getUserProfile(userId: string): Promise<UserProfile> {
 	const data: Array<{ type: string; last_date: string; cnt: number; }> = await Order.queryBuilder("ordr")
 		.select("context.type as type")
-		.addSelect("MAX(ordr.created_date) as last_date")
+		.addSelect("MAX(ordr.createdDate) as last_date")
 		.addSelect("COUNT(*) as cnt")
 		.leftJoin("ordr.contexts", "context")
-		.where("context.user_id = :userId", { userId })
+		.where("context.userId = :userId", { userId })
 		.andWhere(new Brackets(qb => {
 			qb.where("ordr.status = :status", { status: "completed" })
 				.orWhere(
 					new Brackets(qb2 => {
 						qb2.where("ordr.status IN (:statuses)", { statuses: ["pending", "opened"] })
-							.andWhere("ordr.expiration_date > :date", { date: new Date() });
+							.andWhere("ordr.expirationDate > :date", { date: new Date() });
 					})
 				);
 		}))

@@ -131,15 +131,16 @@ export type V1UserProfile = {
 export type UserProfile = {
 	stats: UserStats
 	created_date: string;
+	current_wallet: string | null;
 };
 
-export async function getUserProfile(userId: string): Promise<UserProfile> {
+export async function getUserProfile(userId: string, deviceId: string): Promise<UserProfile> {
 	const user = await User.findOneById(userId);
 	if (!user) {
 		throw NoSuchUser(userId);
 	}
 
-	return createUserProfileObject(user);
+	return createUserProfileObject(user, deviceId);
 }
 
 export async function logout(user: User, token: DbAuthToken) {
@@ -189,11 +190,11 @@ async function register(
 	return {
 		user,
 		token: authToken,
-		profile: await createUserProfileObject(user)
+		profile: await createUserProfileObject(user, deviceId)
 	};
 }
 
-async function createUserProfileObject(user: User): Promise<UserProfile> {
+async function createUserProfileObject(user: User, deviceId: string): Promise<UserProfile> {
 	const data: Array<{ type: string; last_date: string; cnt: number; }> = await Order.queryBuilder("ordr")
 		.select("context.type as type")
 		.addSelect("MAX(ordr.created_date) as last_date")
@@ -227,8 +228,11 @@ async function createUserProfileObject(user: User): Promise<UserProfile> {
 		}
 	}
 
+	const wallet = (await user.getWallets(deviceId)).lastUsed();
+
 	return {
 		stats,
-		created_date: user.createdDate.toISOString()
+		created_date: user.createdDate.toISOString(),
+		current_wallet: wallet ? wallet.address : null
 	};
 }

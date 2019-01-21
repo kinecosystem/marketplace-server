@@ -182,8 +182,9 @@ export const v1UserInfo = async function(req: UserInfoRequest, res: Response) {
 			res.status(404).send();
 		}
 	} else {
-		const profile = await getUserProfileService(req.context.user!.id);
+		const profile = await getUserProfileService(req.context.user!.id, req.context.token!.deviceId);
 		delete profile.created_date;
+		delete profile.current_wallet;
 		res.status(200).send(profile);
 	}
 } as any as RequestHandler;
@@ -204,7 +205,7 @@ export const userInfo = async function(req: UserInfoRequest, res: Response) {
 			res.status(404).send();
 		}
 	} else {
-		const profile = await getUserProfileService(req.context.user!.id);
+		const profile = await getUserProfileService(req.context.user!.id, req.context.token!.deviceId);
 		res.status(200).send(profile);
 	}
 } as any as RequestHandler;

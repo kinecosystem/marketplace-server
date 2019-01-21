@@ -65,6 +65,9 @@ describe("api tests for v2 users", async () => {
 				if (res.body.created_date === undefined) {
 					throw new Error("created_date missing");
 				}
+				if (res.body.current_wallet === undefined) {
+					throw new Error("current_wallet missing");
+				}
 				if (res.body.stats.earn_count === undefined) {
 					throw new Error("stats.earn_count missing");
 				}

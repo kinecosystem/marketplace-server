@@ -490,7 +490,7 @@ async function orderDbToApi(order: db.Order, userId: string, wallet: string): Pr
 		}, pick(context.meta, "title", "description", "content", "call_to_action"));
 
 		data.title = app.name;
-		data.description = order.isMarketplaceOrder() ? capitalizeFirstLetter(order.type) : "Completed";
+		data.description = order.isMarketplaceOrder() ? capitalizeFirstLetter(context.type) : "Completed";
 	}
 
 	return Object.assign({}, apiOrder, data);

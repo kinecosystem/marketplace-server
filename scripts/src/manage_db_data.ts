@@ -283,9 +283,7 @@ function confirmPrompt(message: string) {
 }
 */
 
-scriptConfig = initArgsParser();
-
-initModels(scriptConfig.create_db).then(async () => {
+export async function initDb(scriptConfig: ScriptConfig) {
 	const appsDir = scriptConfig.apps_dir;
 	if (appsDir) {
 		for (const filename of fs.readdirSync(path(appsDir))) {
@@ -331,10 +329,12 @@ initModels(scriptConfig.create_db).then(async () => {
 			const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
 			let results = [];
 			if (title === "Spend") {
-				results = await parseSpend(parsed, appList);
+				results = await
+					parseSpend(parsed, appList);
 				createOfferOptions.verbose && console.log(`created spend:${ contentType } offers`);
 			} else if (title === "Earn") {
-				results = await parseEarn(parsed, contentType, appList, createOfferOptions);
+				results = await
+					parseEarn(parsed, contentType, appList, createOfferOptions);
 				createOfferOptions.verbose && console.log(`created earn:${ contentType } offers`);
 			} else {
 				throw new Error("Failed to parse " + parsed[0][0]);
@@ -347,26 +347,39 @@ initModels(scriptConfig.create_db).then(async () => {
 		const generatedStringsFileName = "/tmp/temp_local_translations_string.csv";
 		const translationsFilename = "/tmp/translations.csv";
 		console.log("creating translations template file");
-		await translations.writeCsvTemplateToFile(generatedStringsFileName);
+		await
+			translations.writeCsvTemplateToFile(generatedStringsFileName);
 		console.log("adapting test translations file");
-		await adaptTranslations.processFile(translationsFile, generatedStringsFileName, translationsFilename);
+		await
+			adaptTranslations.processFile(translationsFile, generatedStringsFileName, translationsFilename);
 		console.log("processing translations and inserting into db");
-		await translations.processFile(translationsFilename, translationsLanguage);
+		await
+			translations.processFile(translationsFilename, translationsLanguage);
 		console.log("Done. Translations Ready.");
 	} else if (translationsFile || translationsLanguage) {
 		throw Error("Both a translations file and a translations language need to be specified.");
 	}
 
 	try {
-		await closeModels();
+		await
+			closeModels();
 	} catch (e) {
 	}
 	console.log(`done.`);
-}).catch(async (error: Error) => {
-	console.log("error: " + error.message + "\n" + error.stack);
-	try {
-		await closeModels();
-	} catch (e) {
-	}
-	console.log(`done.`);
-});
+
+}
+
+/*  Called from Cli  */
+if (require.main === module) {
+	scriptConfig = initArgsParser();
+	initModels(scriptConfig.create_db).then(async () => {
+		initDb(scriptConfig);
+	}).catch(async (error: Error) => {
+		console.log("error: " + error.message + "\n" + error.stack);
+		try {
+			await closeModels();
+		} catch (e) {
+		}
+		console.log(`done.`);
+	});
+}

@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import csvParse = require("csv-parse/lib/sync");
 
 import * as path from "path";
@@ -10,18 +9,45 @@ import { processFile as adaptCsv } from "../adapt_translation_csv";
 import * as translations from "../admin/translations";
 import { Offer, OfferContent } from "../models/offers";
 import { OfferTranslation } from "../models/translations";
+import { initLogger } from "../logging";
+import * as helpers from "./helpers";
+import { localCache } from "../utils/cache";
+import { initDb } from "../manage_db_data";
+import { start as startConsole } from "../node-console";
+import * as repl from "repl";
 
 const CSV_TEMPLATE_FILE = "/tmp/translations_template.csv";
 const CSV_TRANSLATION_FILE = "/tmp/translation.csv";
 
 describe("translations tests", async () => {
 	beforeAll(async done => {
+		initLogger();
 		await initModels();
+		await helpers.clearDatabase();
+		const scriptConfig = {
+			apps_dir: "data/apps",
+			offers_dir: "data/offers",
+			update_earn_thumbnails: false,
+			no_update: false,
+			only_update: false,
+			dry_run: false,
+			require_update_confirm: false,
+			app_list: ["ALL"],
+			create_db: true,
+			trans_file: "data/translations/pt-BR.csv",
+			trans_lang: "pt-BR",
+		};
+		initDb(scriptConfig);
+		helpers.patchDependencies();
+
+		localCache.clear();
+
 		done();
 	});
 
-	afterAll(async () => {
+	afterAll(async done => {
 		await closeModels();
+		done();
 	});
 
 	test("test writeCsvTemplateToFile", async () => {
@@ -29,12 +55,13 @@ describe("translations tests", async () => {
 		const csv = readFileSync(CSV_TEMPLATE_FILE);
 		const parsedCsv = (csvParse as CsvParse)(csv);
 		const csvData = parsedCsv.splice(1);
-		const [type, key, defaultStr, translation, charLimit] = (csvData[Math.floor(csvData.length / 2)]) as TranslationDataRow;
+		console.log("contents of csv:\n", parsedCsv);
+		const [type, key, defaultStr, translation, charLimit] = (csvData[Math.round(csvData.length / 2)]) as TranslationDataRow;  // Get a translation
 		expect(type).toMatch(/poll|quiz/);
 		const keySegments = key.split(":");
-		expect(keySegments.length).toBeGreaterThan(3);
+		expect(keySegments.length).toBeGreaterThanOrEqual(3);
 		expect(keySegments[0]).toMatch(/offer$|offer_contents/);
-		expect(keySegments[1]).toMatch(/O[\w]{20}/); // Validate user id starts with ) and is 21 chars
+		expect(keySegments[1]).toMatch(/O[\w]{20}/); // Validate offer id starts with O and is 21 chars
 		expect(keySegments[2]).toMatch(/title$|description$|orderDescription|orderTitle|content$/);
 		expect(typeof defaultStr).toBe("string");
 		expect(defaultStr.length).toBeGreaterThan(1);
@@ -44,16 +71,17 @@ describe("translations tests", async () => {
 	});
 
 	test("Adapt test translation CSV to the offers in the DB", async () => {
+		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
 		await adaptCsv(path.join(__dirname, "../../../data/translations/test_pt-BR.csv"), CSV_TEMPLATE_FILE, CSV_TRANSLATION_FILE);
 		const csv = readFileSync(CSV_TRANSLATION_FILE);
 		const parsedCsv = (csvParse as CsvParse)(csv);
 		console.log("contents of csv:\n", parsedCsv);
 		const csvData = parsedCsv.splice(1);
-		let [type, key, defaultStr, translation, charLimit] = (csvData[Math.floor(csvData.length / 2)]) as TranslationDataRow;
+		let [type, key, defaultStr, translation, charLimit] = (csvData[Math.round(csvData.length / 2)]) as TranslationDataRow; // Get a random translation
 		console.log(type, key, defaultStr, translation, charLimit);
 		expect(translation.length).toBeGreaterThan(0);
-		expect(translation.length).toBeLessThan(Number(charLimit));
-		const testTranslation = csvData.filter(([type, key, defaultStr, translation]: [string, string, string, string ]) => translation === "Favoritos");
+		expect(translation.length).toBeLessThanOrEqual(Number(charLimit));
+		const testTranslation = csvData.filter(([type, key, defaultStr, translation]: [string, string, string, string]) => translation === "Favoritos");
 		expect(testTranslation.length).toBe(1);
 		[type, key, defaultStr, translation, charLimit] = testTranslation[0];
 		const [table, offerId, column, jsonPath] = key.split(":");

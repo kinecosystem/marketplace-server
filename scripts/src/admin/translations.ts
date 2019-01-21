@@ -159,7 +159,7 @@ export async function getCsvTemplateData() {
 	};
 
 	const csvExporter = new ExportToCsv(options);
-	return csvExporter.generateCsv(await getCsvRowData(), true);
+	return csvExporter.generateCsv(getCsvRowData(), true);
 }
 
 export async function writeCsvTemplateToFile(fileName: string = "translation_template.csv") {

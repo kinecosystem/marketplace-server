@@ -3,7 +3,6 @@ import { getConfig } from "./config";
 
 import { MarketplaceError } from "./errors";
 import { Order, OrderFlowType, OrderOrigin } from "./models/orders";
-import { Offer } from "./models/offers";
 
 // XXX can add general tags to the metrics (i.e. - public/ internal, machine name etc)
 const statsd = new StatsD(Object.assign({ prefix: "marketplace_" }, getConfig().statsd));
@@ -92,18 +91,4 @@ CreatedDate: ${order.createdDate.toISOString()} | LastDate: ${(order.currentStat
 			order_origin: order.origin,
 			type: "failed_order"
 		});
-}
-
-export function malformedOffer(offer: Offer, e: Error) {
-	const message = `## Offer <${ offer.id }> is malformed:
-ID: <${ offer.id }>
-Error: malformed offer | ${ e.message }
-CreatedDate: ${offer.createdDate.toISOString()}`;
-
-	statsd.event(
-		"malformed offer",
-		message,
-		{ alert_type: "warning" },
-		{ offer_id: offer.id, }
-	);
 }

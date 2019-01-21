@@ -488,8 +488,9 @@ async function orderDbToApi(order: db.Order, userId: string, wallet: string): Pr
 		Object.assign(data, {
 			offer_type: context.type,
 		}, pick(context.meta, "title", "description", "content", "call_to_action"));
-		data.title = capitalizeFirstLetter(context.type) + " transaction in " + app.name;
-		data.description = "The transaction was created in a different app or by a different user using the same wallet";
+
+		data.title = app.name;
+		data.description = order.isMarketplaceOrder() ? capitalizeFirstLetter(order.type) : "Completed";
 	}
 
 	return Object.assign({}, apiOrder, data);

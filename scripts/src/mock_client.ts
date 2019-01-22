@@ -7,7 +7,6 @@ import { JWTContent } from "./public/jwt";
 import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
 import { Order as DbOrder } from "./models/orders";
-import { Application } from "./models/applications";
 import { generateId, randomInteger, retry } from "./utils/utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
 import { ExternalOfferPayload } from "./public/services/native_offers";
@@ -89,9 +88,7 @@ class SampleAppClient {
 	}
 }
 
-/**
- * helper function to get a specific offer
- */
+// helper function to get a specific offer
 async function getOffer(client: MarketplaceClient, offerType: OfferType, contentType?: ContentType): Promise<Offer> {
 	const offers = await client.getOffers();
 
@@ -107,6 +104,17 @@ async function getOffer(client: MarketplaceClient, offerType: OfferType, content
 		throw new Error(`did not find a ${ offerType }:${ contentType } offer`);
 	}
 	return selectedOffer;
+}
+
+// helper to expect a function to throw
+async function expectToThrow(func: () => any, error: string): Promise<Error> {
+	try {
+		await func();
+	} catch (e) {
+		// ok
+		return e;
+	}
+	throw new Error("expected to throw: " + error);
 }
 
 async function didNotApproveTOS() {
@@ -367,6 +375,8 @@ async function earnTutorial() {
 	console.log(`got order after submit`, order);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 
+	// shouldn't have another tutorial
+	await expectToThrow(() => getOffer(client, "earn", "tutorial"), "should only solve 1 tutorial");
 	console.log("OK.\n");
 }
 
@@ -411,18 +421,13 @@ async function outdatedJWT() {
 	const appClient = new SampleAppClient();
 
 	let jwt = await appClient.getRegisterJWT(userId, moment().add(1, "days").unix());
-	try {
-		await MarketplaceClient.create({ jwt });
-		throw new Error("shouldn't be able to register with JWT with iat in the future");
-	} catch (e) {
-	}
+	await expectToThrow(() => MarketplaceClient.create({ jwt }),
+		"shouldn't be able to register with JWT with iat in the future");
 
 	jwt = await appClient.getRegisterJWT(userId, moment().unix(), moment().subtract(1, "days").unix());
-	try {
-		await MarketplaceClient.create({ jwt });
-		throw new Error("shouldn't be able to register with JWT with exp in the past");
-	} catch (e) {
-	}
+
+	await expectToThrow(() => MarketplaceClient.create({ jwt }),
+		"shouldn't be able to register with JWT with exp in the past");
 
 	console.log("OK.\n");
 }
@@ -524,19 +529,9 @@ async function tryToNativeSpendTwice() {
 	// should not allow to create a new order
 	console.log(`expecting error for new order`, selectedOffer.id);
 
-	let errorThrown: boolean;
-	try {
-		await client.createExternalOrder(offerJwt2);
-		errorThrown = false;
-	} catch (e) {
-		errorThrown = true;
-		expect((e as ClientError).response!.headers.location).toEqual(`/v1/orders/${ order.id }`);
-		// ok
-	}
-
-	if (!errorThrown) {
-		throw new Error("should not allow to create more than one order");
-	}
+	const e = await expectToThrow(() => client.createExternalOrder(offerJwt2),
+		"should not allow to create more than one order");
+	expect((e as ClientError).response!.headers.location).toEqual(`/v1/orders/${ order.id }`);
 
 	console.log("OK.\n");
 }

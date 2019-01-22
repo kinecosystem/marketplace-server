@@ -62,7 +62,7 @@ export const v1SignInUser = async function(req: V1RegisterRequest, res: Response
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
 
-	const app = await Application.findOneById(context.appId);
+	const app = await Application.get(context.appId);
 	if (!app) {
 		throw NoSuchApp(context.appId);
 	}
@@ -117,7 +117,7 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
 
-	const app = await Application.findOneById(context.appId);
+	const app = (await Application.all()).get(context.appId);
 	if (!app) {
 		throw NoSuchApp(context.appId);
 	}

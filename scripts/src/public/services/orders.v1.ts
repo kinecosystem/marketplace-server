@@ -118,7 +118,7 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 		throw UserHasNoWallet(user.id, userDeviceId);
 	}
 
-	const app = (await Application.findOneById(user.appId))!;
+	const app = (await Application.get(user.appId))!;
 	if (appOffer.offer.type === "earn") {
 		await assertRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), appOffer.offer.amount);
 		await assertRateLimitAppEarn(app.id, app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);

@@ -87,7 +87,7 @@ export type UpdateUserProps = {
 export async function updateUser(user: User, props: UpdateUserProps) {
 	if (props.walletAddress) {
 		const wallets = await user.getWallets();
-		const app = await Application.findOneById(user.appId);
+		const app = await Application.get(user.appId);
 
 		if (!app) {
 			throw NoSuchApp(user.appId);

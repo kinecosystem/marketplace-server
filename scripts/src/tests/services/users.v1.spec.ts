@@ -11,6 +11,7 @@ import { close as closeModels, init as initModels } from "../../models/index";
 import { AuthToken as ApiAuthToken, userExists } from "../../public/services/users";
 
 import * as helpers from "../helpers";
+import { localCache } from "../../utils/cache";
 
 describe("api tests for v1 users", async () => {
 	beforeAll(async done => {
@@ -93,6 +94,7 @@ describe("api tests for v1 users", async () => {
 
 	test("updateUser", async () => {
 		const myApp = await helpers.createApp(generateId(IdPrefix.App));
+		localCache.clear();
 		const user1 = await helpers.createUser({ appId: myApp.id, createWallet: false });
 		const newWalletAddress = "new_address_must_be_56_characters____bla___bla___bla____";
 		const badAddress = "new_address_not_56_chars";

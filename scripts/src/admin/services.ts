@@ -393,7 +393,7 @@ export async function getApplications(params: any, query: Paging): Promise<strin
 }
 
 export async function getApplication(params: { app_id: string }, query: any): Promise<string> {
-	const app = await Application.findOneById(params.app_id);
+	const app = await Application.get(params.app_id);
 	if (!app) {
 		throw new Error("no such app: " + params.app_id);
 	}

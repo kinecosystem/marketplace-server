@@ -128,7 +128,7 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 		throw UserHasNoWallet(user.id, userDeviceId);
 	}
 
-	const app = (await Application.findOneById(user.appId))!;
+	const app = (await Application.get(user.appId))!;
 	if (appOffer.offer.type === "earn") {
 		await assertRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), appOffer.offer.amount);
 		await assertRateLimitAppEarn(app.id, app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
@@ -231,7 +231,7 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 }
 
 async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId: string, jwt: ExternalEarnOrderJWT) {
-	const app = (await Application.findOneById(recipient.appId))!;
+	const app = (await Application.all()).get(recipient.appId)!;
 	if (!app) {
 		throw NoSuchApp(recipient.appId);
 	}
@@ -262,7 +262,7 @@ async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId:
 }
 
 async function createNormalSpendExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalSpendOrderJWT) {
-	const app = await Application.findOneById(sender.appId);
+	const app = (await Application.all()).get(sender.appId);
 
 	if (!app) {
 		throw NoSuchApp(sender.appId);
@@ -483,7 +483,7 @@ async function orderDbToApi(order: db.Order, userId: string, wallet: string): Pr
 		}, pick(context.meta, "title", "description", "content", "call_to_action"));
 	} else {
 		context = order.contextForWallet(wallet)!;
-		const app = (await Application.findOneById(context.user.appId))!;  // TODO This is run inside a for loop - better remove this
+		const app = (await Application.all()).get(context.user.appId)!;
 
 		Object.assign(data, {
 			offer_type: context.type,

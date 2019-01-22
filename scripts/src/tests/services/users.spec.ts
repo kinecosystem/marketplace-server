@@ -12,6 +12,7 @@ import { validateExternalOrderJWT } from "../../public/services/native_offers";
 import { AuthToken as ApiAuthToken, userExists, UserProfile } from "../../public/services/users";
 
 import * as helpers from "../helpers";
+import { localCache } from "../../utils/cache";
 
 describe("api tests for v2 users", async () => {
 	beforeAll(async done => {
@@ -106,6 +107,7 @@ describe("api tests for v2 users", async () => {
 
 	test("updateUser", async () => {
 		const testApp = await helpers.createApp(generateId(IdPrefix.App));
+		localCache.clear();
 		const newWalletAddress = "new_address_must_be_56_characters____bla___bla___bla____";
 		const badAddress = "new_address_not_56_chars";
 		const deviceId = "test_device_id";
@@ -163,6 +165,7 @@ describe("api tests for v2 users", async () => {
 
 	test("logout through API", async () => {
 		const myApp = await helpers.createApp(IdPrefix.App);
+		localCache.clear();
 		const signInData: WhitelistSignInData = {
 			sign_in_type: "whitelist",
 			api_key: myApp.apiKey,
@@ -192,6 +195,7 @@ describe("api tests for v2 users", async () => {
 
 	test("testSign", async () => {
 		const app = await helpers.createApp(generateId(IdPrefix.App));
+		localCache.clear();
 		const payload = { test: "test" };
 		const jwt = await helpers.signJwt(app.id, "subject", payload);
 		const res = await verify<{ test: string }, "test_subject">(jwt);

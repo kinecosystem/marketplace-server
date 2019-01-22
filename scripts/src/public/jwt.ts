@@ -50,7 +50,7 @@ export async function verify<T, SUB extends string>(token: string): Promise<JWTC
 	// }
 
 	const appId = decoded.payload.iss;
-	const app = await Application.findOneById(appId);
+	const app = await Application.get(appId);
 	if (!app) {
 		throw NoSuchApp(appId);
 	}

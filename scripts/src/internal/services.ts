@@ -201,7 +201,7 @@ export async function paymentFailed(payment: FailedPayment) {
  * register to get callbacks for incoming payments for all the active offers
  */
 export async function initPaymentCallbacks(): Promise<Watcher> {
-	const [appOffers, apps] = await Promise.all([AppOffer.find(), Application.find()]);
+	const [appOffers, apps] = await Promise.all([AppOffer.find(), Application.all().then(apps => Array.from(apps.values()))]);
 	// create a list of unique addresses
 	const addresses = removeDuplicates(
 		[

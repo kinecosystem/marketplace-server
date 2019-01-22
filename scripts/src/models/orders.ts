@@ -123,8 +123,8 @@ export const Order = {
 		const statuses = options.userId ? ["pending"] : ["opened", "pending"];
 
 		const query = OrderImpl.createQueryBuilder("ordr") // don't use 'order', it messed things up
-			.select("ordr.offerId as offerId")
-			.addSelect("COUNT(DISTINCT(ordr.id)) AS cnt")
+			.select("ordr.offerId", "offerId")
+			.addSelect("COUNT(DISTINCT(ordr.id))", "cnt")
 			.leftJoin("ordr.contexts", "context");
 
 		if (options.userId) {
@@ -153,6 +153,7 @@ export const Order = {
 		for (const res of results) {
 			map.set(res.offerId, res.cnt);
 		}
+
 		return map;
 	},
 

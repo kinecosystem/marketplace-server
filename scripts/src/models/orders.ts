@@ -248,10 +248,10 @@ export const Order = {
 			.andWhere(`ordr.id IN (:ids)`, { ids });
 
 		if (limit) {
-			userOrdersQuery.limit(limit);
+			userOrdersQuery.take(limit);
 		}
-
-		return userOrdersQuery.getMany() as any;
+		const res = await userOrdersQuery.getMany() as any;
+		return res;
 	},
 
 	find(options?: FindManyOptions<Order>): Promise<Order[]> {

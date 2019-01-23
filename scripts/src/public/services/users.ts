@@ -120,9 +120,9 @@ export type UserProfile = {
 
 export async function getUserProfile(userId: string): Promise<UserProfile> {
 	const data: Array<{ type: string; last_date: string; cnt: number; }> = await Order.queryBuilder("ordr")
-		.select("context.type as type")
-		.addSelect("MAX(ordr.createdDate) as last_date")
-		.addSelect("COUNT(*) as cnt")
+		.select("context.type", "type")
+		.addSelect("MAX(ordr.createdDate)", "last_date")
+		.addSelect("COUNT(*)", "cnt")
 		.leftJoin("ordr.contexts", "context")
 		.where("context.userId = :userId", { userId })
 		.andWhere(new Brackets(qb => {

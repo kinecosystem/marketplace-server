@@ -20,27 +20,16 @@ import * as metrics from "../metrics";
 @Entity({ name: "users" })
 @Register
 @Initializer("id", () => generateId(IdPrefix.User))
-// @Initializer("walletCount", () => User.DEFAULT_WALLET_COUNT)
 // @Unique(["appId", "appUserId"]) // supported from 0.2.0
 export class User extends CreationDateModel {
-	// public static readonly DEFAULT_WALLET_COUNT = 1;
-
 	@Column({ name: "app_id" })
 	public appId!: string;
 
 	@Column({ name: "app_user_id" })
 	public appUserId!: string;
 
-	// ECO-754: db column removed
-	/*@Column({ name: "wallet_address" })
-	public walletAddress!: string;*/
-
 	@OneToMany(type => OrderContext, context => context.user)
 	public contexts!: OrderContext[];
-
-	// ECO-754: db column removed
-	/*@Column({ name: "wallet_count" })
-	public walletCount!: number;*/
 
 	public async getWallets(deviceId?: string): Promise<Wallets> {
 		const conditions: Partial<Mutable<Wallet>> = {
@@ -169,7 +158,6 @@ export class Wallets {
 	}
 }
 
-// ECO-754: table added
 @Entity({ name: "user_wallets" })
 @Register
 export class Wallet extends BaseEntity {

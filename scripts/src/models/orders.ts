@@ -561,7 +561,7 @@ export class OrderContext extends BaseEntity {
 	@Column()
 	public type!: OfferType;
 
-	// ECO-553: added field
+	@Index()
 	@Column()
 	public wallet!: string;
 

@@ -30,7 +30,7 @@ async function completeOrder(user: User) {
 	const offers = await getOffers(user.id, user.appId, {});
 	const offerId = offers.offers[0].id;
 	const openOrder = await createMarketplaceOrder(offerId, user);
-	const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+	const order = await submitOrder(openOrder.id, user, "{}");
 	await helpers.completePayment(order.id);
 	return order;
 }
@@ -103,7 +103,7 @@ describe("test orders", async () => {
 		for (let i = 0; i < offers.offers.length && i < 4; i++) {
 			const offerId = offers.offers[i].id;
 			const openOrder = await createMarketplaceOrder(offerId, user);
-			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+			const order = await submitOrder(openOrder.id, user, "{}");
 			await helpers.completePayment(order.id);
 		}
 
@@ -162,7 +162,7 @@ describe("test orders", async () => {
 		for (let i = 0; i < offers.offers.length && i < 4; i++) {
 			const offerId = offers.offers[i].id;
 			const openOrder = await createMarketplaceOrder(offerId, user);
-			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+			const order = await submitOrder(openOrder.id, user, "{}");
 			await helpers.completePayment(order.id);
 		}
 		const limit = 2;
@@ -202,7 +202,7 @@ describe("test orders", async () => {
 		}
 
 		const openOrder = await createMarketplaceOrder(offer.id, user);
-		const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+		const order = await submitOrder(openOrder.id, user, "{}");
 		await helpers.completePayment(order.id);
 
 		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(1);
@@ -213,13 +213,13 @@ describe("test orders", async () => {
 		}
 
 		const spendOpenOrder = await createMarketplaceOrder(spendOffer.id, user);
-		const spendOrder = await submitOrder(spendOpenOrder.id, user.id, undefined, user.walletAddress, user.appId);
+		const spendOrder = await submitOrder(spendOpenOrder.id, user, undefined);
 		await helpers.completePayment(spendOrder.id);
 
 		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(1);
 
 		const externalEarnOrder = await helpers.createExternalOrder(user.id);
-		const earnOrder = await submitOrder(externalEarnOrder.id, user.id, undefined, user.walletAddress, user.appId);
+		const earnOrder = await submitOrder(externalEarnOrder.id, user, undefined);
 		await helpers.completePayment(earnOrder.id);
 
 		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(1);
@@ -232,7 +232,7 @@ describe("test orders", async () => {
 
 		for (let i = 0; i < appOffer.cap.per_user && i < appOffer.cap.total; i++) {
 			const openOrder = await createMarketplaceOrder(appOffer.offerId, user);
-			const order = await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+			const order = await submitOrder(openOrder.id, user, "{}");
 			await helpers.completePayment(order.id);
 		}
 
@@ -298,7 +298,7 @@ describe("test orders", async () => {
 		const user = await helpers.createUser();
 		const offers = await getOffers(user.id, user.appId, { type: "spend" });
 		const openOrder = await createMarketplaceOrder(offers.offers[0].id, user);
-		await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+		await submitOrder(openOrder.id, user, "{}");
 		// failed to pay to blockchain
 		const error = {
 			message: "failed to submit to blockchain",
@@ -324,7 +324,7 @@ describe("test orders", async () => {
 		// not passing failureDate
 		{
 			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user);
-			await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+			await submitOrder(openOrder.id, user, "{}");
 			const dbOrder = (await Order.getOne({ orderId: openOrder.id }))!;
 			const expDate = dbOrder.expirationDate!;
 			await setFailedOrder(dbOrder, TransactionTimeout());
@@ -335,7 +335,7 @@ describe("test orders", async () => {
 		// passing expDate as failureDate
 		{
 			const openOrder = await createMarketplaceOrder(offers.offers[0].id, user);
-			await submitOrder(openOrder.id, user.id, "{}", user.walletAddress, user.appId);
+			await submitOrder(openOrder.id, user, "{}");
 			const dbOrder = (await Order.getOne({ orderId: openOrder.id }))!;
 			const expDate = dbOrder.expirationDate!;
 			await setFailedOrder(dbOrder, TransactionTimeout(), expDate);
@@ -395,7 +395,7 @@ describe("test orders", async () => {
 		const user2 = await createAppUser(offer, generateId(IdPrefix.App));
 
 		const openOrder = await createMarketplaceOrder(offer.id, user1);
-		const order = await submitOrder(openOrder.id, user1.id, "{}", user1.walletAddress, user1.appId);
+		const order = await submitOrder(openOrder.id, user1, "{}");
 		await helpers.completePayment(order.id);
 
 		// user1 should receive an error

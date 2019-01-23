@@ -86,11 +86,8 @@ export const submitOrder = async function(req: SubmitOrderRequest, res: Response
 
 	const order = await submitOrderService(
 		req.params.order_id,
-		req.context.user!.id,
-		req.body.content,
-		req.context.user!.walletAddress,
-		req.context.user!.appId,
-		req.acceptsLanguages.bind(req));
+		req.context.user!,
+		req.body.content);
 	res.status(200).send(order);
 } as any as RequestHandler;
 

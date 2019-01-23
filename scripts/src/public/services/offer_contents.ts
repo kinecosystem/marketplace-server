@@ -1,10 +1,9 @@
-import { getDefaultLogger as log } from "../../logging";
-import { Request as ExpressRequest } from "express-serve-static-core";
-
+import { getDefaultLogger as logger } from "../../logging";
 import { isNothing } from "../../utils/utils";
 import { localCache } from "../../utils/cache";
 import * as db from "../../models/offers";
-import { OfferTranslation } from "../../models/translations";
+import { InvalidPollAnswers, NoSuchOffer } from "../../errors";
+import * as dbOrder from "../../models/orders";
 
 export interface Question {
 	id: string;
@@ -117,7 +116,38 @@ export async function getAllContents(): Promise<Map<string, db.OfferContent>> {
 	return contentsMap;
 }
 
-export function isValid(offerContent: db.OfferContent, form: string | undefined): form is string {
+// check the order answers and return the new amount for the order
+export async function submitFormAndMutateMarketplaceOrder(order: dbOrder.MarketplaceOrder, form: string | undefined) {
+	const offer = await db.Offer.findOneById(order.offerId);
+	if (!offer) {
+		throw NoSuchOffer(order.offerId);
+	}
+
+	if (offer.type === "earn") {
+		const offerContent = (await getOfferContent(order.offerId))!;
+
+		switch (offerContent.contentType) {
+			case "poll":
+				// validate form
+				if (!isValid(offerContent, form)) {
+					throw InvalidPollAnswers();
+				}
+				await savePollAnswers(order.user.id, order.offerId, order.id, form); // TODO should we also save quiz results?
+				break;
+			case "quiz":
+				order.amount = await sumCorrectQuizAnswers(offerContent, form) || 1; // TODO remove || 1 - don't reward wrong answers
+				// should we replace order.meta.content
+				break;
+			case "tutorial":
+				// nothing
+				break;
+			default:
+				logger().warn(`unexpected content type ${ offerContent.contentType }`);
+		}
+	}
+}
+
+function isValid(offerContent: db.OfferContent, form: string | undefined): form is string {
 	if (isNothing(form)) {
 		return false;
 	}
@@ -132,7 +162,7 @@ export function isValid(offerContent: db.OfferContent, form: string | undefined)
 	return typeof answers === "object" && !Array.isArray(answers);
 }
 
-export async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form: string | undefined, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<number> {
+async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form: string | undefined): Promise<number> {
 	if (isNothing(form)) {
 		return 0;
 	}
@@ -144,14 +174,7 @@ export async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form:
 		return 0;
 	}
 
-	// backward support check - when answer values are string, use the old sum function
-	if (typeof Object.values(answers)[0] === "string") {
-		return sumCorrectQuizAnswersBackwardSupport(offerContent, form, acceptsLanguagesFunc);
-	}
-
-	const translatedContent = await getTranslatedQuizContent(offerContent, acceptsLanguagesFunc);
-
-	const quiz: Quiz = JSON.parse(translatedContent || offerContent.content);  // this might fail if not valid json without replaceTemplateVars
+	const quiz: Quiz = JSON.parse(offerContent.content);  // this might fail if not valid json without replaceTemplateVars
 
 	function sumQuizRightAnswersAmount(sum: number, page: QuizPage | SuccessBasedThankYouPage) {
 		if (page.type === PageType.TimedFullPageMultiChoice) {
@@ -165,64 +188,10 @@ export async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form:
 	return quiz.pages.reduce(sumQuizRightAnswersAmount, 0);
 }
 
-async function getTranslatedQuizContent(offerContent: db.OfferContent, acceptsLanguagesFunc: ExpressRequest["acceptsLanguages"] | undefined) {
-	if (!(acceptsLanguagesFunc && acceptsLanguagesFunc().length)) {
-		return null;
-	}
-
-	const [supportedLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({
-		paths: ["content"],
-		offerId: offerContent.offerId,
-		languages: acceptsLanguagesFunc(),
-	});
-	const language = acceptsLanguagesFunc(supportedLanguages);
-	const translations = availableTranslations.filter(translation => translation.language === language);
-	return translations.length ? translations[0].translation : null;
-}
-
 export async function savePollAnswers(userId: string, offerId: string, orderId: string, content: string): Promise<void> {
 	const answers = db.PollAnswer.new({
 		userId, offerId, orderId, content
 	});
 
 	await answers.save();
-}
-
-export async function sumCorrectQuizAnswersBackwardSupport(offerContent: db.OfferContent, form: string | undefined, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<number> {
-	if (isNothing(form)) {
-		return 0;
-	}
-
-	let answers: AnswersBackwardSupport;
-
-	try {
-		answers = JSON.parse(form);
-	} catch (e) {
-		return 0;
-	}
-	let translatedContent;
-	if (acceptsLanguagesFunc && acceptsLanguagesFunc().length) {
-		const [supportedLanguages, availableTranslations] = await OfferTranslation.getSupportedLanguages({
-			paths: ["content"],
-			offerId: offerContent.offerId,
-			languages: acceptsLanguagesFunc(),
-		});
-		const language = acceptsLanguagesFunc(supportedLanguages);
-		const translations = availableTranslations.filter(translation => translation.language === language);
-		translatedContent = translations.length ? translations[0].translation : null;
-	}
-
-	const quiz: Quiz = JSON.parse(translatedContent || offerContent.content);  // this might fail if not valid json without replaceTemplateVars
-	let amountSum = 0;
-
-	for (const page of quiz.pages) {
-		if (page.type === PageType.TimedFullPageMultiChoice) {
-			const p = (page as QuizPage);
-			const answerIndex = p.question.answers.indexOf(answers[p.question.id]) + 1;
-			if (answerIndex === p.rightAnswer) {
-				amountSum += p.amount;
-			}
-		}
-	}
-	return amountSum;
 }

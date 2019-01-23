@@ -188,7 +188,7 @@ async function sumCorrectQuizAnswers(offerContent: db.OfferContent, form: string
 	return quiz.pages.reduce(sumQuizRightAnswersAmount, 0);
 }
 
-export async function savePollAnswers(userId: string, offerId: string, orderId: string, content: string): Promise<void> {
+async function savePollAnswers(userId: string, offerId: string, orderId: string, content: string): Promise<void> {
 	const answers = db.PollAnswer.new({
 		userId, offerId, orderId, content
 	});

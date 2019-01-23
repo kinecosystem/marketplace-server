@@ -59,8 +59,7 @@ export async function getOrCreateUserCredentials(
 
 	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
-		await assertRateLimitRegistration(app.id, app.config.limits.hourly_registration, moment.duration({ hours: 1 }));
-		await assertRateLimitRegistration(app.id, app.config.limits.minute_registration, moment.duration({ minutes: 1 }));
+		await assertRateLimitRegistration(app);
 		try {
 			logger().info("creating a new user", { appId, appUserId });
 

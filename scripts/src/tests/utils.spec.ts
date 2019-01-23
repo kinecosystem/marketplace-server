@@ -11,7 +11,7 @@ import { LimitConfig } from "../config";
 import { initLogger } from "../logging";
 import { MarketplaceError } from "../errors";
 import { close as closeModels, init as initModels } from "../models/index";
-import { assertRateLimitAppEarn, RateLimit } from "../utils/rate_limit";
+import { assertRateLimitEarn, RateLimit } from "../utils/rate_limit";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {
@@ -53,13 +53,14 @@ describe("util functions", () => {
 				minute_total_earn: 300,
 				daily_user_earn: 500
 			};
-			const app: Application = await helpers.createApp(utils.generateId(), limits);
+			const app = await helpers.createApp(utils.generateId(), limits);
+			const user = await helpers.createUser({ appId: app.id });
 			for (let i = 0; i < 3; i++) {
-				await assertRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
+				await assertRateLimitEarn(user, 100);
 			}
 
 			try {
-				await assertRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), 100);
+				await assertRateLimitEarn(user, 100);
 				expect(true).toBeFalsy(); // should throw and not get here
 			} catch (e) {
 				if (e instanceof MarketplaceError) {

@@ -36,7 +36,7 @@ import {
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
 
-import { assertRateLimitAppEarn, assertRateLimitUserEarn, assertRateLimitWalletEarn } from "../../utils/rate_limit";
+import { assertRateLimitEarn } from "../../utils/rate_limit";
 import { submitFormAndMutateMarketplaceOrder } from "./offer_contents";
 
 export interface OrderList {
@@ -187,10 +187,6 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 
 async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
 	const app = (await Application.findOneById(recipient.appId))!;
-
-	await assertRateLimitUserEarn(recipient.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
-	await assertRateLimitWalletEarn(recipient.walletAddress, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
-
 	if (!app) {
 		throw NoSuchApp(recipient.appId);
 	}
@@ -286,16 +282,12 @@ export async function submitOrder(
 	if (order.isExpired()) {
 		throw OpenOrderExpired(orderId);
 	}
-	if (order.isEarn()) {
-		const app = (await Application.findOneById(user.appId))!;
-		await assertRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), order.amount);
-		await assertRateLimitAppEarn(app.id, app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), order.amount);
-		await assertRateLimitUserEarn(user.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), order.amount);
-		await assertRateLimitWalletEarn(user.walletAddress, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), order.amount);
-	}
-
 	if (order.isMarketplaceOrder()) {
 		await submitFormAndMutateMarketplaceOrder(order, form);
+	}
+	if (order.isEarn()) {
+		// must be after submit form because order.amount changes
+		await assertRateLimitEarn(user, order.amount);
 	}
 
 	order.setStatus("pending");

@@ -26,7 +26,7 @@ describe("api tests for v2 users", async () => {
 		await metrics.destruct();
 	});
 
-	test("exiting user migrate wallet", async () => {
+	test("existing user migrate wallet", async () => {
 		const user = await helpers.createUser({ createWallet: false });
 		const zeroWallets = await user.getWallets();
 		expect(zeroWallets.count).toEqual(0);

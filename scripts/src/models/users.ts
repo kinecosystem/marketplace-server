@@ -53,13 +53,13 @@ export class User extends CreationDateModel {
 			}))!.deviceId;
 			logger().info(`lazy migrate user ${ this.id } device ${ deviceId } wallet: ${ this.walletAddress }`);
 			const now = new Date();
-			await Wallet.create({
+			await (Wallet.create({
 				deviceId,
 				userId: this.id,
 				createdDate: now,
 				lastUsedDate: now,
 				address: this.walletAddress
-			});
+			})).save();
 		}
 
 		return new Wallets(await Wallet.find(conditions));

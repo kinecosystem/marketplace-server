@@ -1,17 +1,25 @@
+import * as moment from "moment";
+import { Brackets } from "typeorm";
+
 import * as metrics from "../../metrics";
-import { getDefaultLogger as logger } from "../../logging";
-import { MaxWalletsExceeded } from "../../errors";
 import { Order } from "../../models/orders";
+import { normalizeError, readUTCDate } from "../../utils/utils";
 import { Application } from "../../models/applications";
+import { getDefaultLogger as logger } from "../../logging";
 import { User, AuthToken as DbAuthToken } from "../../models/users";
+import { MaxWalletsExceeded, NoSuchUser, NoSuchApp } from "../../errors";
+import { create as createUserRegistrationFailed } from "../../analytics/events/user_registration_failed";
+import { create as createUserLoginServerRequested } from "../../analytics/events/user_login_server_requested";
+import { create as createUserLoginServerSucceeded } from "../../analytics/events/user_login_server_succeeded";
+import { create as createUserRegistrationRequested } from "../../analytics/events/user_registration_requested";
+import { create as createUserRegistrationSucceeded } from "../../analytics/events/user_registration_succeeded";
+import { create as createUserLogoutServerRequested } from "../../analytics/events/user_logout_server_requested";
+import { create as createWalletAddressUpdateSucceeded } from "../../analytics/events/wallet_address_update_succeeded";
 
 import * as payment from "./payment";
-import { readUTCDate } from "../../utils/utils";
-import { Brackets } from "typeorm";
 import { assertRateLimitRegistration } from "../../utils/rate_limit";
-import * as moment from "moment";
 
-export type AuthToken = {
+export type V1AuthToken = {
 	token: string;
 	activated: boolean;
 	expiration_date: string;
@@ -20,7 +28,7 @@ export type AuthToken = {
 	ecosystem_user_id: string;
 };
 
-function AuthTokenDbToApi(authToken: DbAuthToken, user: User): AuthToken {
+function V1AuthTokenDbToApi(authToken: DbAuthToken, user: User): V1AuthToken {
 	return {
 		token: authToken.id,
 		activated: true, // always true - activation not needed
@@ -31,71 +39,80 @@ function AuthTokenDbToApi(authToken: DbAuthToken, user: User): AuthToken {
 	};
 }
 
+export async function v1GetOrCreateUserCredentials(
+	app: Application,
+	appUserId: string,
+	walletAddress: string,
+	deviceId: string): Promise<V1AuthToken> {
+
+	const data = await register(app, appUserId, app.id, deviceId);
+	await data.user.updateWallet(deviceId, walletAddress);
+	await payment.createWallet(walletAddress, app.id, appUserId);
+
+	return V1AuthTokenDbToApi(data.token, data.user);
+}
+
+export type AuthToken = {
+	token: string;
+	app_id: string;
+	user_id: string;
+	activated: boolean;
+	expiration_date: string;
+	ecosystem_user_id: string;
+};
+
+function AuthTokenDbToApi(authToken: DbAuthToken, user: User): AuthToken {
+	return {
+		activated: true, // always true - activation not needed
+		app_id: user.appId,
+		token: authToken.id,
+		user_id: user.appUserId,
+		ecosystem_user_id: user.id,
+		expiration_date: authToken.expireDate.toISOString()
+	};
+}
+
 export async function getOrCreateUserCredentials(
 	app: Application,
 	appUserId: string,
-	appId: string,
-	walletAddress: string,
-	deviceId: string): Promise<AuthToken> {
+	deviceId: string): Promise<{ auth: AuthToken, user: UserProfile; }> {
 
-	async function handleExistingUser(existingUser: User) {
-		logger().info("found existing user", { appId, appUserId, userId: existingUser.id });
-		if (existingUser.walletAddress !== walletAddress) {
-			logger().warn(`existing user registered with new wallet ${ existingUser.walletAddress } !== ${ walletAddress }`);
-			if (!app.allowsNewWallet(existingUser.walletCount)) {
-				metrics.maxWalletsExceeded(appId);
-				throw MaxWalletsExceeded();
-			}
-			existingUser.walletCount += 1;
-			existingUser.walletAddress = walletAddress;
-			await existingUser.save();
-			await payment.createWallet(existingUser.walletAddress, existingUser.appId, existingUser.id);
-			metrics.userRegister(false, true, appId);
-		} else {
-			metrics.userRegister(false, false, appId);
-		}
-		logger().info(`returning existing user ${ existingUser.id }`);
-	}
+	const data = await register(app, appUserId, app.id, deviceId);
 
-	let user = await User.findOne({ appId, appUserId });
-	if (!user) {
-		await assertRateLimitRegistration(app);
-		try {
-			logger().info("creating a new user", { appId, appUserId });
-
-			user = User.new({ appUserId, appId, walletAddress, isNew: true });
-			await user.save();
-			logger().info(`creating stellar wallet for new user ${ user.id }: ${ user.walletAddress }`);
-			await payment.createWallet(user.walletAddress, user.appId, user.id);
-			metrics.userRegister(true, true, appId);
-		} catch (e) {
-			// maybe caught a "violates unique constraint" error, check by finding the user again
-			user = await User.findOne({ appId, appUserId });
-			if (user) {
-				logger().warn("solved user registration race condition");
-				await handleExistingUser(user);
-			} else {
-				throw e; // some other error
-			}
-		}
-	} else {
-		await handleExistingUser(user);
-	}
-
-	// XXX should be a scope object
-	let authToken = await DbAuthToken.findOne({
-		where: { userId: user.id, deviceId },
-		order: { createdDate: "DESC" }
-	});
-	if (!authToken || authToken.isAboutToExpire()) {
-		authToken = await (DbAuthToken.new({ userId: user.id, deviceId }).save());
-	}
-
-	return AuthTokenDbToApi(authToken, user);
+	return {
+		user: data.profile,
+		auth: AuthTokenDbToApi(data.token, data.user)
+	};
 }
 
-export async function activateUser(
-	authToken: DbAuthToken, user: User): Promise<AuthToken> {
+export type UpdateUserProps = {
+	deviceId: string;
+	walletAddress: string;
+};
+
+export async function updateUser(user: User, props: UpdateUserProps) {
+	if (props.walletAddress) {
+		const wallets = await user.getWallets();
+		const app = await Application.get(user.appId);
+
+		if (!app) {
+			throw NoSuchApp(user.appId);
+		}
+
+		if (!app.allowsNewWallet(wallets.count)) {
+			metrics.maxWalletsExceeded(app.id);
+			throw MaxWalletsExceeded();
+		}
+
+		await user.updateWallet(props.deviceId, props.walletAddress);
+		logger().info(`creating stellar wallet for user ${ user.id }: ${ props.walletAddress }`);
+		await payment.createWallet(props.walletAddress, user.appId, user.id);
+
+		createWalletAddressUpdateSucceeded(user.id, props.deviceId).report();
+	}
+}
+
+export async function activateUser(authToken: DbAuthToken, user: User): Promise<AuthToken> {
 	// no activation needed anymore
 	return AuthTokenDbToApi(authToken, user);
 }
@@ -113,17 +130,87 @@ export type UserStats = {
 	last_spend_date?: string;
 };
 
-export type UserProfile = {
+export type V1UserProfile = {
 	stats: UserStats
 };
 
-export async function getUserProfile(userId: string): Promise<UserProfile> {
+export type UserProfile = {
+	stats: UserStats
+	created_date: string;
+	current_wallet: string | null;
+};
+
+export async function getUserProfile(userId: string, deviceId: string): Promise<UserProfile> {
+	const user = await User.findOneById(userId);
+	if (!user) {
+		throw NoSuchUser(userId);
+	}
+
+	return createUserProfileObject(user, deviceId);
+}
+
+export async function logout(user: User, token: DbAuthToken) {
+	token.valid = false;
+	createUserLogoutServerRequested(user.id, token.deviceId);
+	await token.save();
+}
+
+async function register(
+	app: Application,
+	appUserId: string,
+	appId: string,
+	deviceId: string) {
+
+	let user = await User.findOne({ appId, appUserId });
+	if (!user) {
+		createUserRegistrationRequested(null as any, deviceId).report();
+		await assertRateLimitRegistration(app);
+		try {
+			logger().info("creating a new user", { appId, appUserId });
+			user = User.new({ appUserId, appId });
+			await user.save();
+			metrics.userRegister(true, appId);
+			createUserRegistrationSucceeded(user.id, deviceId).report();
+		} catch (e) {
+			// maybe caught a "violates unique constraint" error, check by finding the user again
+			user = await User.findOne({ appId, appUserId });
+			if (user) {
+				logger().warn("solved user registration race condition");
+				metrics.userRegister(false, appId);
+			} else {
+				createUserRegistrationFailed(null as any, deviceId, normalizeError(e)).report();
+				throw e; // some other error
+			}
+		}
+	} else {
+		metrics.userRegister(false, appId);
+	}
+
+	// XXX should be a scope object
+	let authToken = await DbAuthToken.findOne({
+		where: { deviceId, userId: user.id, valid: true },
+		order: { createdDate: "DESC" }
+	});
+	if (!authToken || authToken.isAboutToExpire()) {
+		createUserLoginServerRequested(user.id, deviceId).report();
+		createUserLoginServerSucceeded(user.id, deviceId).report();
+		authToken = await (DbAuthToken.new({ userId: user.id, deviceId }).save());
+	}
+
+	return {
+		user,
+		token: authToken,
+		profile: await createUserProfileObject(user, deviceId)
+	};
+}
+
+async function createUserProfileObject(user: User, deviceId: string): Promise<UserProfile> {
 	const data: Array<{ type: string; last_date: string; cnt: number; }> = await Order.queryBuilder("ordr")
 		.select("context.type", "type")
 		.addSelect("MAX(ordr.createdDate)", "last_date")
 		.addSelect("COUNT(*)", "cnt")
 		.leftJoin("ordr.contexts", "context")
-		.where("context.userId = :userId", { userId })
+		.where("context.userId = :userId", { userId: user.id })
 		.andWhere(new Brackets(qb => {
 			qb.where("ordr.status = :status", { status: "completed" })
 				.orWhere(
@@ -151,5 +238,11 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
 		}
 	}
 
-	return { stats };
+	const wallet = (await user.getWallets(deviceId)).lastUsed();
+
+	return {
+		stats,
+		created_date: user.createdDate.toISOString(),
+		current_wallet: wallet ? wallet.address : null
+	};
 }

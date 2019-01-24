@@ -165,3 +165,7 @@ export function readUTCDate(date: string | Date): Date {
 export function getAppIdFromRequest(req: RequestWithContext): string {
 	return req.context && req.context.user ? req.context.user.appId : "";
 }
+
+export function capitalizeFirstLetter(str: string) {
+	return str.charAt(0).toUpperCase() + str.slice(1);
+}

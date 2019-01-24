@@ -1,43 +1,33 @@
 import * as moment from "moment";
+import mock = require("supertest");
 import * as jsonwebtoken from "jsonwebtoken";
 
 import { app } from "../../public/app";
-import * as metrics from "../..//metrics";
+import * as metrics from "../../metrics";
 import { initLogger } from "../../logging";
 import { JWTContent } from "../../public/jwt";
-import { localCache } from "../../utils/cache";
+import { AppOffer } from "../../models/applications";
 import { AuthToken, User } from "../../models/users";
 import { JWTValue, Offer } from "../../models/offers";
+import { getOffers } from "../../public/services/offers";
 import { ExternalOrder, Order } from "../../models/orders";
-import { Application, AppOffer } from "../../models/applications";
-import { TransactionTimeout, UserHasNoWallet } from "../../errors";
-import { getOffers, Offer as OfferData } from "../../public/services/offers";
+import { generateId, random, IdPrefix } from "../../utils/utils";
 import { close as closeModels, init as initModels } from "../../models/index";
-import { generateId, IdPrefix, random, randomInteger } from "../../utils/utils";
 import {
-	changeOrder,
-	createMarketplaceOrder,
 	getOrder,
-	getOrderHistory,
-	Order as OrderData,
 	OrderList,
+	changeOrder,
+	submitOrder,
 	setFailedOrder,
-	submitOrder
+	getOrderHistory,
+	createMarketplaceOrder
 } from "../../public/services/orders";
+import { TransactionTimeout } from "../../errors";
 
 import * as helpers from "../helpers";
-import mock = require("supertest");
+import { localCache } from "../../utils/cache";
 
-async function completeOrder(user: User, deviceId: string) {
-	const offers = await getOffers(user.id, user.appId, {});
-	const offerId = offers.offers[0].id;
-	const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
-	const order = await submitOrder(openOrder.id, user, deviceId, "{}");
-	await helpers.completePayment(order.id);
-	return order;
-}
-
-describe("test v2 orders", async () => {
+describe("test v1 orders", async () => {
 	jest.setTimeout(20000);
 
 	beforeEach(async done => {
@@ -57,61 +47,8 @@ describe("test v2 orders", async () => {
 		done();
 	});
 
-	async function getHistory(token: AuthToken) {
-		return (await mock(app)
-			.get("/v2/orders")
-			.set("x-request-id", "123")
-			.set("Authorization", `Bearer ${ token.id }`)).body.orders as OrderData[];
-	}
-
-	type CreateOrdersOptions = {
-		divideBy?: number;
-		offers?: OfferData[];
-	};
-
-	async function createOrdersForUser(user: User, deviceId: string, app: Application, options: CreateOrdersOptions = {}) {
-		const offers = options.offers || (await getOffers(user.id, app.id, {})).offers;
-		const earns = offers.filter(o => o.offer_type === "earn");
-		const spends = offers.filter(o => o.offer_type === "spend");
-
-		const earnsCount = randomInteger(1, earns.length > 2 && options.divideBy ? earns.length / options.divideBy : earns.length);
-		const spendsCount = randomInteger(1, spends.length > 2 && options.divideBy ? spends.length / options.divideBy : spends.length);
-		const orders = [] as string[];
-		let balance = 0;
-
-		for (let i = 0; i < earnsCount; i++) {
-			const offer = earns[i];
-			balance += offer.amount;
-
-			const openOrder = await createMarketplaceOrder(offer.id, user, deviceId);
-			const order = await submitOrder(openOrder.id, user, deviceId, "{}");
-			await helpers.completePayment(order.id);
-
-			orders.push(order.id);
-		}
-
-		for (let i = 0; i < spendsCount; i++) {
-			const offer = spends[i];
-
-			if (balance - offer.amount <= 0) {
-				continue;
-			}
-
-			balance -= offer.amount;
-
-			const openOrder = await createMarketplaceOrder(offer.id, user, deviceId);
-			const order = await submitOrder(openOrder.id, user, deviceId, "{}");
-			await helpers.completePayment(order.id);
-
-			orders.push(order.id);
-		}
-
-		return orders;
-	}
-
 	test("getAll and filters", async () => {
-		const user = await helpers.createUser({ deviceId: "test_device_id" });
-
+		const user = await helpers.createUser();
 		const count = await helpers.createOrders(user.id);
 
 		let orders = await Order.getAll({ userId: user.id, status: "!opened" }, 25);
@@ -142,7 +79,7 @@ describe("test v2 orders", async () => {
 			throw Error("failed to find earn order");
 		}
 
-		const order = await createMarketplaceOrder(offer.id, user, deviceId);
+		await createMarketplaceOrder(offer.id, user, deviceId);
 
 		const offers2 = await getOffers(user.id, user.appId, {});
 		const foundOffer = offers2.offers.find(x => x.id === offer.id);
@@ -150,38 +87,11 @@ describe("test v2 orders", async () => {
 		expect(foundOffer).toBeTruthy();
 	});
 
-	test("getOrderHistory returns only orders for current wallet", async () => {
-		const deviceId = "test_device_id";
-		const user = await helpers.createUser({ deviceId });
-		const offers = await getOffers(user.id, user.appId, {});
-		const firstIteration = Math.floor(offers.offers.length / 2);
-
-		for (let i = 0; i < firstIteration; i++) {
-			const offerId = offers.offers[i].id;
-			const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
-			const order = await submitOrder(openOrder.id, user, deviceId, "{}");
-			await helpers.completePayment(order.id);
-		}
-
-		const history1 = (await getOrderHistory(user, deviceId, {})).orders.map(order => order.id);
-		await user.updateWallet(deviceId, `wallet-${ generateId() }`);
-
-		for (let i = firstIteration; i < offers.offers.length; i++) {
-			const offerId = offers.offers[i].id;
-			const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
-			const order = await submitOrder(openOrder.id, user, deviceId, "{}");
-			await helpers.completePayment(order.id);
-		}
-
-		const history2 = (await getOrderHistory(user, deviceId, {})).orders.map(order => order.id);
-		expect(history1.length + history2.length).toBe(offers.offers.length);
-		history1.forEach(id => expect(history2).not.toContain(id));
-	});
-
 	test("filter order by offer_id", async () => {
 		const deviceId = "test_device_id";
 		const user = await helpers.createUser({ deviceId });
 		const offers = await getOffers(user.id, user.appId, {});
+
 		for (let i = 0; i < offers.offers.length && i < 4; i++) {
 			const offerId = offers.offers[i].id;
 			const openOrder = await createMarketplaceOrder(offerId, user, deviceId);
@@ -197,45 +107,13 @@ describe("test v2 orders", async () => {
 		// test with the API
 		const token: AuthToken = (await AuthToken.findOne({ userId: user.id }))!;
 		const res = await mock(app)
-			.get(`/v2/orders?offer_id=${ offerId }`)
+			.get(`/v1/orders?offer_id=${ offerId }`)
 			.set("x-request-id", "123")
 			.set("Authorization", `Bearer ${ token.id }`);
 
 		const orderHistory: OrderList = res.body;
 		expect(orderHistory.orders.length).toEqual(1);
 		expect(orderHistory.orders[0].offer_id).toEqual(offerId);
-	});
-
-	test("create and find p2p order", async () => {
-		const user = await helpers.createUser();
-
-		await helpers.createP2POrder(user.id);
-		const orders = await Order.getAll({ origin: "external", userId: user.id, status: "!opened" });
-
-		expect(orders.length).toEqual(1);
-		expect(orders[0].contexts.length).toEqual(2);
-	});
-
-	test("getOrder returns only my orders", async () => {
-		const user1 = await helpers.createUser();
-		const user2 = await helpers.createUser();
-
-		const user1token = (await AuthToken.findOne({ userId: user1.id }))!;
-		const user2token = (await AuthToken.findOne({ userId: user2.id }))!;
-
-		const user1order = await completeOrder(user1, user1token.deviceId);
-
-		await mock(app)
-			.get(`/v2/orders/${ user1order.id }`)
-			.set("x-request-id", "123")
-			.set("Authorization", `Bearer ${ user1token.id }`)
-			.expect(200);
-
-		await mock(app)
-			.get(`/v2/orders/${ user1order.id }`)
-			.set("x-request-id", "123")
-			.set("Authorization", `Bearer ${ user2token.id }`)
-			.expect(404);
 	});
 
 	test("getOrderHistory limit", async () => {
@@ -257,7 +135,7 @@ describe("test v2 orders", async () => {
 		// test with the API
 		const token: AuthToken = (await AuthToken.findOne({ userId: user.id }))!;
 		const res = await mock(app)
-			.get(`/v2/orders?limit=${ limit }`)
+			.get(`/v1/orders?limit=${ limit }`)
 			.set("x-request-id", "123")
 			.set("Authorization", `Bearer ${ token.id }`);
 
@@ -469,9 +347,10 @@ describe("test v2 orders", async () => {
 	test("offer cap is not shared between apps", async () => {
 		const offer = (await Offer.findOne())!;
 
-		async function createAppUser(offer: Offer, appId: string): Promise<User> {
+		async function createAppUser(offer: Offer, appId: string): Promise<[User, string]> {
+			const deviceId = generateId();
 			const app = await helpers.createApp(appId);
-			const user = await helpers.createUser({ appId: app.id });
+			const user = await helpers.createUser({ appId: app.id, deviceId });
 			await AppOffer.create({
 				appId: app.id,
 				offerId: offer.id,
@@ -479,14 +358,11 @@ describe("test v2 orders", async () => {
 				walletAddress: "some_address"
 			}).save();
 
-			return user;
+			return [user, deviceId];
 		}
 
-		const user1 = await createAppUser(offer, generateId(IdPrefix.App));
-		const user2 = await createAppUser(offer, generateId(IdPrefix.App));
-
-		const deviceId1 = (await AuthToken.findOne({ userId: user1.id }))!.deviceId;
-		const deviceId2 = (await AuthToken.findOne({ userId: user2.id }))!.deviceId;
+		const [user1, deviceId1] = await createAppUser(offer, generateId(IdPrefix.App));
+		const [user2, deviceId2] = await createAppUser(offer, generateId(IdPrefix.App));
 
 		const openOrder = await createMarketplaceOrder(offer.id, user1, deviceId1);
 		const order = await submitOrder(openOrder.id, user1, deviceId1, "{}");
@@ -498,163 +374,4 @@ describe("test v2 orders", async () => {
 		// user2 should be able to open an order
 		await expect(createMarketplaceOrder(offer.id, user2, deviceId2)).resolves.toBeDefined();
 	});
-
-	test("fail to create an order when user has no wallet", async () => {
-		const deviceId = "test_device_id";
-		const user = await helpers.createUser({ deviceId, createWallet: false });
-		const offers = await getOffers(user.id, user.appId, {});
-
-		await expect(createMarketplaceOrder(offers.offers[0].id, user, deviceId))
-			.rejects
-			.toThrow(UserHasNoWallet(user.id, deviceId).message);
-	});
-
-	test("multiple users on the same device with different wallets", async () => {
-		const deviceId = "test_device_id";
-		const user1 = await helpers.createUser({ deviceId });
-
-		let token = (await AuthToken.findOne({ userId: user1.id }))!;
-		let offers = await getOffers(user1.id, user1.appId, {});
-		const offersCount = offers.offers.length;
-		const orderCount = randomInteger(1, offersCount);
-
-		for (let i = 0; i < orderCount; i++) {
-			const offerId = offers.offers[i].id;
-			const openOrder = await createMarketplaceOrder(offerId, user1, deviceId);
-			const order = await submitOrder(openOrder.id, user1, deviceId, "{}");
-			await helpers.completePayment(order.id);
-		}
-
-		let history = await getHistory(token);
-		expect(history.length).toEqual(orderCount);
-
-		const user2 = await helpers.createUser({ deviceId, appId: user1.appId });
-		token = (await AuthToken.findOne({ userId: user2.id }))!;
-
-		// check that the orders by user1 did not affect the number of available offers to user2
-		offers = await getOffers(user2.id, user2.appId, {});
-		expect(offers.offers.length).toBe(offersCount);
-
-		// check that the orders by user1 did not affect the order history of user2
-		history = await getHistory(token);
-		expect(history.length).toEqual(0);
-	});
-
-	test("shared wallet across apps", async () => {
-		const walletAddress = `wallet-${ generateId() }`;
-
-		async function create(appName: string): Promise<[User, string, Application]> {
-			const deviceId = `device_${ generateId() }`;
-			const app = await helpers.createApp(appName);
-			const user = await helpers.createUser({ deviceId, appId: app.id, createWallet: false });
-			await user.updateWallet(deviceId, walletAddress);
-
-			return [user, deviceId, app];
-		}
-
-		const [user1, deviceId1, app1] = await create("app1");
-		const [user2, deviceId2, app2] = await create("app2");
-
-		await helpers.createOffers();
-
-		const offers1 = (await getOffers(user1.id, app1.id, {})).offers;
-		const offers2 = (await getOffers(user2.id, app2.id, {})).offers;
-
-		const orders1 = await createOrdersForUser(user1, deviceId1, app1, { offers: offers1 });
-		// make sure that at least 1 order was created for user1/app1
-		expect(orders1.length).toBeGreaterThan(0);
-
-		const orders2 = await createOrdersForUser(user2, deviceId2, app2, { offers: offers2 });
-		// make sure that at least 1 order was created for user2/app2
-		expect(orders2.length).toBeGreaterThan(0);
-
-		const totalOrdersCount = orders1.length + orders2.length;
-
-		const token1 = (await AuthToken.findOne({ userId: user1.id }))!;
-		const token2 = (await AuthToken.findOne({ userId: user2.id }))!;
-
-		const history1 = await getHistory(token1);
-		// make sure that the history of user1 is the same as the amount of both user1 and user2 orders
-		expect(history1.length).toEqual(totalOrdersCount);
-
-		const history2 = await getHistory(token2);
-		// make sure that the history of user2 is the same as the amount of both user1 and user2 orders
-		expect(history2.length).toEqual(totalOrdersCount);
-
-		const historyIds1 = history1.map(o => o.id);
-		const historyIds2 = history2.map(o => o.id);
-		// make sure that both histories contain the exact same orders
-		historyIds1.forEach(o => expect(historyIds2).toContain(o));
-
-		// make sure that orders created in the other app have a modified title
-		history1
-			.filter(o => !orders1.includes(o.id))
-			.forEach(o => expect(o.title.endsWith(` transaction in ${ app2.name }`)));
-
-		history2
-			.filter(o => !orders2.includes(o.id))
-			.forEach(o => expect(o.title.endsWith(` transaction in ${ app1.name }`)));
-	});
-
-	test("one user, two wallets on two devices", async () => {
-		const app = await helpers.createApp("myapp");
-		await helpers.createOffers();
-
-		const deviceId1 = `device_${ generateId() }`;
-		const deviceId2 = `device_${ generateId() }`;
-		const walletAddress1 = `wallet-${ generateId() }`;
-		const walletAddress2 = `wallet-${ generateId() }`;
-
-		const user = await helpers.createUser({ deviceId: deviceId1, appId: app.id, createWallet: false });
-		await user.updateWallet(deviceId1, walletAddress1);
-		const orders1 = await createOrdersForUser(user, deviceId1, app, { divideBy: 2 });
-		expect(orders1.length).toBeGreaterThan(0);
-
-		const token1 = (await AuthToken.findOne({ userId: user.id }))!;
-		const token2 = await (AuthToken.new({
-			userId: user.id,
-			deviceId: deviceId2
-		})).save();
-		await user.updateWallet(deviceId2, walletAddress2);
-		const orders2 = await createOrdersForUser(user, deviceId2, app, { divideBy: 2 });
-		expect(orders2.length).toBeGreaterThan(0);
-
-		expect((await user.getWallets()).count).toBe(2);
-
-		const history1 = (await getHistory(token1)).map(o => o.id);
-		const history2 = (await getHistory(token2)).map(o => o.id);
-		history1.forEach(o => expect(history2).not.toContain(o));
-		history2.forEach(o => expect(history1).not.toContain(o));
-	});
-
-	test("one user, one wallet on two devices", async () => {
-		const app = await helpers.createApp("myapp");
-		await helpers.createOffers();
-
-		const deviceId1 = `device_${ generateId() }`;
-		const walletAddress = `wallet-${ generateId() }`;
-		const user = await helpers.createUser({ deviceId: deviceId1, appId: app.id, createWallet: false });
-		await user.updateWallet(deviceId1, walletAddress);
-		const token1 = (await AuthToken.findOne({ userId: user.id }))!;
-		const orders1 = await createOrdersForUser(user, deviceId1, app, { divideBy: 2 });
-		expect(orders1.length).toBeGreaterThan(0);
-
-		const deviceId2 = `device_${ generateId() }`;
-		const token2 = await (AuthToken.new({
-			userId: user.id,
-			deviceId: deviceId2
-		})).save();
-		await user.updateWallet(deviceId2, walletAddress);
-		const orders2 = await createOrdersForUser(user, deviceId2, app, { divideBy: 2 });
-		expect(orders2.length).toBeGreaterThan(0);
-
-		expect((await user.getWallets()).count).toBe(2);
-		expect(new Set((await user.getWallets()).all().map(w => w.address)).size).toBe(1);
-
-		const history1 = (await getHistory(token1)).map(o => o.id);
-		const history2 = (await getHistory(token2)).map(o => o.id);
-		expect(history1.length).toBe(history2.length);
-		history1.forEach(o => expect(history2).toContain(o));
-	});
-
 });

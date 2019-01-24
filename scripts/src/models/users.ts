@@ -7,10 +7,9 @@ import {
 	JoinColumn,
 	getManager,
 	BaseEntity,
-	PrimaryColumn,
-	FindManyOptions
+	PrimaryColumn
 } from "typeorm";
-
+import { getDefaultLogger as logger } from "../logging";
 import { generateId, IdPrefix, Mutable } from "../utils/utils";
 
 import { OrderContext } from "./orders";
@@ -31,6 +30,9 @@ export class User extends CreationDateModel {
 	@OneToMany(type => OrderContext, context => context.user)
 	public contexts!: OrderContext[];
 
+	@Column({ name: "wallet_address", nullable: true })
+	public walletAddress!: string;
+
 	public async getWallets(deviceId?: string): Promise<Wallets> {
 		const conditions: Partial<Mutable<Wallet>> = {
 			userId: this.id
@@ -38,6 +40,12 @@ export class User extends CreationDateModel {
 
 		if (deviceId) {
 			conditions.deviceId = deviceId;
+		}
+
+		const wallets = await Wallet.find(conditions);
+		if (wallets.length === 0 && this.walletAddress) {
+			deviceId = deviceId || (await AuthToken.findOne({ userId: this.id }))!.deviceId;
+			wallets.push(await this.updateWallet(deviceId, this.walletAddress));
 		}
 
 		return new Wallets(await Wallet.find(conditions));
@@ -67,7 +75,21 @@ export class User extends CreationDateModel {
 		}
 
 		metrics.walletAddressUpdate(this.appId, newWallet);
-		return wallet.save();
+		try {
+			return wallet.save();
+		} catch (e) {
+			// maybe caught a "violates unique constraint" error, check by finding the wallet again
+			wallet = await Wallet.findOne({
+				deviceId,
+				userId: this.id,
+				address: walletAddress
+			});
+			if (wallet) {
+				logger().warn("solved user registration race condition");
+				return wallet;
+			} // otherwise throw
+			throw e;
+		}
 	}
 
 	/**
@@ -76,19 +98,23 @@ export class User extends CreationDateModel {
 	 * It generates id and tries to insert it to the table, up to 3 tries, and breaks the loops on success
 	 */
 	public async save(): Promise<this> {
-		if (!this.isNew) { return await super.save(); }
+		if (!this.isNew) {
+			return await super.save();
+		}
 
 		let errorCount = 0;
 		const triesCount = 3;
 		while (true) {
-			if (errorCount > triesCount) { throw new Error(`user generated with the same id more than ${ triesCount } times or some another error`); }
+			if (errorCount > triesCount) {
+				throw new Error(`user generated with the same id more than ${ triesCount } times or some another error`);
+			}
 
 			try { // tries to insert a new user with generated id
 				await getManager()
 					.createQueryBuilder()
 					.insert()
 					.into(User)
-					.values([ this ])
+					.values([this])
 					.execute();
 				break; // breaks the while loop in case of success
 			} catch (e) {

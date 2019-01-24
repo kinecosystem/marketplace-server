@@ -26,6 +26,19 @@ describe("api tests for v2 users", async () => {
 		await metrics.destruct();
 	});
 
+	test("exiting user migrate wallet", async () => {
+		const user = await helpers.createUser({ createWallet: false });
+		const zeroWallets = await user.getWallets();
+		expect(zeroWallets.count).toEqual(0);
+
+		user.walletAddress = "OLD_WALLET";
+		await user.save();
+
+		const oneWallet = await user.getWallets();
+		expect(oneWallet.count).toEqual(1);
+		expect(oneWallet.first!.address).toEqual("OLD_WALLET");
+	});
+
 	test("user register whitelist", async () => {
 		const myApp = await helpers.createApp(generateId(IdPrefix.App));
 		const signInData: WhitelistSignInData = {
@@ -211,7 +224,54 @@ describe("api tests for v2 users", async () => {
 		jwt = await helpers.signJwt(app.id, "subject", payload);
 		await expect(validateRegisterJWT(jwt)).rejects.toThrow();
 
-		payload = { "0": "{", "1": "u", "2": "s", "3": "e", "4": "r", "5": "_", "6": "i", "7": "d", "8": "=", "9": "d", "10": "0", "11": "2", "12": "e", "13": "4", "14": "5", "15": "b", "16": "3", "17": "-", "18": "0", "19": "d", "20": "2", "21": "1", "22": "-", "23": "4", "24": "2", "25": "e", "26": "e", "27": "-", "28": "8", "29": "1", "30": "3", "31": "4", "32": "-", "33": "b", "34": "6", "35": "6", "36": "c", "37": "3", "38": "9", "39": "1", "40": "4", "41": "e", "42": "b", "43": "3", "44": "2", "45": "}" }; // jwt from failed request
+		payload = {
+			"0": "{",
+			"1": "u",
+			"2": "s",
+			"3": "e",
+			"4": "r",
+			"5": "_",
+			"6": "i",
+			"7": "d",
+			"8": "=",
+			"9": "d",
+			"10": "0",
+			"11": "2",
+			"12": "e",
+			"13": "4",
+			"14": "5",
+			"15": "b",
+			"16": "3",
+			"17": "-",
+			"18": "0",
+			"19": "d",
+			"20": "2",
+			"21": "1",
+			"22": "-",
+			"23": "4",
+			"24": "2",
+			"25": "e",
+			"26": "e",
+			"27": "-",
+			"28": "8",
+			"29": "1",
+			"30": "3",
+			"31": "4",
+			"32": "-",
+			"33": "b",
+			"34": "6",
+			"35": "6",
+			"36": "c",
+			"37": "3",
+			"38": "9",
+			"39": "1",
+			"40": "4",
+			"41": "e",
+			"42": "b",
+			"43": "3",
+			"44": "2",
+			"45": "}"
+		}; // jwt from failed request
 		jwt = await helpers.signJwt(app.id, "subject", payload);
 		await expect(validateRegisterJWT(jwt)).rejects.toThrow();
 

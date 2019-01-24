@@ -388,7 +388,7 @@ export async function submitOrder(
 
 	if (order.isEarn()) {
 		await payment.payTo(wallet.address, user.appId, order.amount, order.id);
-		createEarnTransactionBroadcastToBlockchainSubmitted(order.contexts[0].user.id, order.offerId, order.id).report();
+		createEarnTransactionBroadcastToBlockchainSubmitted(order.contexts[0].user.id, userDeviceId, order.offerId, order.id).report();
 	}
 
 	metrics.submitOrder(order.origin, order.flowType(), user.appId);

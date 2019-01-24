@@ -3,11 +3,17 @@ import { Brackets } from "typeorm";
 
 import * as metrics from "../../metrics";
 import { Order } from "../../models/orders";
-import { readUTCDate } from "../../utils/utils";
+import { normalizeError, readUTCDate } from "../../utils/utils";
 import { Application } from "../../models/applications";
 import { getDefaultLogger as logger } from "../../logging";
 import { User, AuthToken as DbAuthToken } from "../../models/users";
 import { MaxWalletsExceeded, NoSuchUser, NoSuchApp } from "../../errors";
+import { create as createUserRegistrationFailed } from "../../analytics/events/user_registration_failed";
+import { create as createUserLoginServerRequested } from "../../analytics/events/user_login_server_requested";
+import { create as createUserLoginServerSucceeded } from "../../analytics/events/user_login_server_succeeded";
+import { create as createUserRegistrationRequested } from "../../analytics/events/user_registration_requested";
+import { create as createUserRegistrationSucceeded } from "../../analytics/events/user_registration_succeeded";
+import { create as createUserLogoutServerRequested } from "../../analytics/events/user_logout_server_requested";
 import { create as createWalletAddressUpdateSucceeded } from "../../analytics/events/wallet_address_update_succeeded";
 
 import * as payment from "./payment";
@@ -102,7 +108,7 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 		logger().info(`creating stellar wallet for user ${ user.id }: ${ props.walletAddress }`);
 		await payment.createWallet(props.walletAddress, user.appId, user.id);
 
-		createWalletAddressUpdateSucceeded(user.id).report();
+		createWalletAddressUpdateSucceeded(user.id, props.deviceId).report();
 	}
 }
 
@@ -145,6 +151,7 @@ export async function getUserProfile(userId: string, deviceId: string): Promise<
 
 export async function logout(user: User, token: DbAuthToken) {
 	token.valid = false;
+	createUserLogoutServerRequested(user.id, token.deviceId);
 	await token.save();
 }
 
@@ -156,6 +163,7 @@ async function register(
 
 	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
+		createUserRegistrationRequested(null as any, deviceId).report();
 		await assertRateLimitRegistration(app.id, app.config.limits.hourly_registration, moment.duration({ hours: 1 }));
 		await assertRateLimitRegistration(app.id, app.config.limits.minute_registration, moment.duration({ minutes: 1 }));
 
@@ -164,6 +172,7 @@ async function register(
 			user = User.new({ appUserId, appId });
 			await user.save();
 			metrics.userRegister(true, appId);
+			createUserRegistrationSucceeded(user.id, deviceId).report();
 		} catch (e) {
 			// maybe caught a "violates unique constraint" error, check by finding the user again
 			user = await User.findOne({ appId, appUserId });
@@ -171,6 +180,7 @@ async function register(
 				logger().warn("solved user registration race condition");
 				metrics.userRegister(false, appId);
 			} else {
+				createUserRegistrationFailed(null as any, deviceId, normalizeError(e)).report();
 				throw e; // some other error
 			}
 		}
@@ -184,6 +194,8 @@ async function register(
 		order: { createdDate: "DESC" }
 	});
 	if (!authToken || authToken.isAboutToExpire()) {
+		createUserLoginServerRequested(user.id, deviceId).report();
+		createUserLoginServerSucceeded(user.id, deviceId).report();
 		authToken = await (DbAuthToken.new({ userId: user.id, deviceId }).save());
 	}
 

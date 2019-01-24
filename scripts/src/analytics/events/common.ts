@@ -8,16 +8,18 @@ export type Common = {
 	schema_version: string;
 	event_id: string;
 	version: string;
+	device_id: string | null;
 	user_id: string;
 	timestamp: string;
 	platform: "iOS" | "Android" | "Web" | "Server";
 };
 
-export function create(userId: string): Common {
+export function create(userId: string, deviceId?: string): Common {
 	return {
-		schema_version: "8f20fa0048d59aca4cb0aac313729e7b8ecb1394",
+		schema_version: "e98699d6f5dd88a66fc3d31e368a090e7312d7a6",
 		event_id: uuid(),
 		version: getConfig().commit!,
+		device_id: deviceId || null,
 		user_id: userId,
 		timestamp: Date.now().toString(),
 		platform: "Server"

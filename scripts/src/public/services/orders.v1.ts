@@ -42,8 +42,7 @@ import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
-
-import { assertRateLimitAppEarn, assertRateLimitUserEarn, assertRateLimitWalletEarn } from "../../utils/rate_limit";
+import { submitOrder as v2SubmitOrder } from "./orders";
 
 export interface OrderList {
 	orders: Order[];
@@ -116,14 +115,6 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 	const wallet = (await user.getWallets(userDeviceId)).lastUsed();
 	if (!wallet) {
 		throw UserHasNoWallet(user.id, userDeviceId);
-	}
-
-	const app = (await Application.get(user.appId))!;
-	if (appOffer.offer.type === "earn") {
-		await assertRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), appOffer.offer.amount);
-		await assertRateLimitAppEarn(app.id, app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
-		await assertRateLimitUserEarn(user.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), appOffer.offer.amount);
-		await assertRateLimitWalletEarn(wallet.address, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), appOffer.offer.amount);
 	}
 
 	if (await appOffer.didExceedCap(user.id)) {
@@ -224,13 +215,10 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
 	const app = (await Application.findOneById(recipient.appId))!;
 
-	await assertRateLimitUserEarn(recipient.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
-
 	const wallet = (await recipient.getWallets()).lastUsed();
 	if (!wallet) {
 		throw UserHasNoWallet(recipient.id);
 	}
-	await assertRateLimitWalletEarn(wallet.address, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
 
 	if (!app) {
 		throw NoSuchApp(recipient.appId);
@@ -326,7 +314,7 @@ export async function submitOrder(
 	form: string | undefined,
 	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
 
-	logger().info("submitOrder", { orderId });
+	/*logger().info("submitOrder", { orderId });
 	const order = await db.Order.getOne({ orderId }) as db.MarketplaceOrder | db.ExternalOrder;
 	const wallet = (await user.getWallets(userDeviceId)).lastUsed();
 	if (!wallet) {
@@ -384,7 +372,8 @@ export async function submitOrder(
 	}
 
 	metrics.submitOrder(order.origin, order.flowType(), user.appId);
-	return orderDbToApi(order, user.id);
+	return orderDbToApi(order, user.id);*/
+	return v2SubmitOrder(orderId, user, userDeviceId, form);
 }
 
 export async function cancelOrder(orderId: string): Promise<void> {

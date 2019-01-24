@@ -129,8 +129,6 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 		throw UserHasNoWallet(user.id, userDeviceId);
 	}
 
-	const app = (await Application.findOneById(user.appId))!;
-
 	if (await appOffer.didExceedCap(user.id)) {
 		return undefined;
 	}
@@ -324,13 +322,16 @@ export async function submitOrder(
 	user: User,
 	userDeviceId: string,
 	form: string | undefined): Promise<Order> {
-
 	const order = await db.Order.getOne({ orderId });
-	if (!order || order.contextFor(user.id) === null) {
+
+	if (!order || order.contextForUser(user.id) === null) {
 		throw NoSuchOrder(orderId);
 	}
+	const context = order.contextForUser(user.id)!;
+	const walletAddress = context.wallet;
+
 	if (order.status !== "opened") {
-		return orderDbToApi(order, user.id);
+		return orderDbToApi(order, user.id, walletAddress);
 	}
 	if (order.isExpired()) {
 		throw OpenOrderExpired(orderId);
@@ -340,22 +341,20 @@ export async function submitOrder(
 	}
 	if (order.isEarn()) {
 		// must be after submit form because order.amount changes
-		await assertRateLimitEarn(user, order.amount);
+		await assertRateLimitEarn(user, walletAddress, order.amount);
 	}
 
 	order.setStatus("pending");
 	await order.save();
 	logger().info("order changed to pending", { orderId });
 
-	const context = order.contextForUser(user.id)!;
-	const walletAddress = context.wallet;
 	if (order.isEarn()) {
 		await payment.payTo(walletAddress, user.appId, order.amount, order.id);
 		createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 	}
 
 	metrics.submitOrder(order.origin, order.flowType(), user.appId);
-	return await orderDbToApi(order, user.id);
+	return await orderDbToApi(order, user.id, walletAddress);
 }
 
 export async function cancelOrder(orderId: string, userId: string): Promise<void> {
@@ -399,8 +398,8 @@ export async function getOrderHistory(
 				after: "MTAxNTExOTQ1MjAwNzI5NDE",
 				before: "NDMyNzQyODI3OTQw",
 			},
-			previous: "https://api.kinmarketplace.com/v1/orders?limit=25&before=NDMyNzQyODI3OTQw",
-			next: "https://api.kinmarketplace.com/v1/orders?limit=25&after=MTAxNTExOTQ1MjAwNzI5NDE=",
+			previous: "https://api.kinmarketplace.com/v2/orders?limit=25&before=NDMyNzQyODI3OTQw",
+			next: "https://api.kinmarketplace.com/v2/orders?limit=25&after=MTAxNTExOTQ1MjAwNzI5NDE=",
 		},
 	};
 }

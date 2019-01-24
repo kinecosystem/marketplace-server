@@ -87,13 +87,13 @@ async function checkRateLimitWalletEarn(wallet: string, limit: number, duration:
 	return await checkRateLimit(`wallet_earn:${ wallet }:${ duration.asSeconds() }`, duration, limit, TooMuchEarnOrdered, amount);
 }
 
-export async function assertRateLimitEarn(user: User, amount: number) {
+export async function assertRateLimitEarn(user: User, walletAddress: string, amount: number) {
 	const app = (await Application.findOneById(user.appId))!;
 	const limiters = [
 		await checkRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), amount),
 		await checkRateLimitAppEarn(app.id, app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), amount),
 		await checkRateLimitUserEarn(user.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), amount),
-		await checkRateLimitWalletEarn(user.walletAddress, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), amount)
+		await checkRateLimitWalletEarn(walletAddress, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), amount)
 	];
 	await Promise.all(limiters.map(limiter => limiter.inc(amount)));
 }

@@ -56,7 +56,6 @@ export class User extends CreationDateModel {
 	}
 
 	public async updateWallet(deviceId: string, walletAddress: string): Promise<boolean> {
-		await this.getWallets(deviceId); // to migrate old wallets
 		const now = new Date();
 		let isNewWallet: boolean;
 		let wallet = await Wallet.findOne({

@@ -55,12 +55,14 @@ describe("util functions", () => {
 			};
 			const app = await helpers.createApp(utils.generateId(), limits);
 			const user = await helpers.createUser({ appId: app.id });
+			const wallet = (await user.getWallets()).lastUsed()!.address;
+
 			for (let i = 0; i < 3; i++) {
-				await assertRateLimitEarn(user, 100);
+				await assertRateLimitEarn(user, wallet, 100);
 			}
 
 			try {
-				await assertRateLimitEarn(user, 100);
+				await assertRateLimitEarn(user, wallet, 100);
 				expect(true).toBeFalsy(); // should throw and not get here
 			} catch (e) {
 				if (e instanceof MarketplaceError) {

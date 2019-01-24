@@ -64,8 +64,8 @@ export type JWTBodyPaymentConfirmation = {
 	}
 };
 
-async function getPaymentJWT(order: db.Order, appId: string, userId: string): Promise<OrderValue> {
-	const loggedInContext = order.contextFor(userId)!;
+async function getPaymentJWT(order: db.Order, appId: string, user: User): Promise<OrderValue> {
+	const loggedInContext = order.contextForUser(user.id)!;
 	const payload: JWTBodyPaymentConfirmation = {
 		nonce: order.nonce,
 		offer_id: order.offerId,
@@ -131,7 +131,7 @@ export async function paymentComplete(payment: CompletedPayment) {
 	}
 
 	if (order.blockchainData!.sender_address !== payment.sender_address) {
-		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }> ` +
 			`addresses sender mismatch ${ order.blockchainData!.sender_address } !== ${ payment.sender_address }`);
 
 		await setFailedOrder(order, WrongSender());
@@ -154,9 +154,9 @@ export async function paymentComplete(payment: CompletedPayment) {
 			}
 		}
 	} else if (order.isP2P()) {
-		order.value = await getPaymentJWT(order, payment.app_id, order.sender.id);
+		order.value = await getPaymentJWT(order, payment.app_id, order.sender);
 	} else if (order.isNormal()) {
-		order.value = await getPaymentJWT(order, payment.app_id, order.user.id);
+		order.value = await getPaymentJWT(order, payment.app_id, order.user);
 	}
 
 	if (order.status !== "pending") {
@@ -201,7 +201,7 @@ export async function paymentFailed(payment: FailedPayment) {
  * register to get callbacks for incoming payments for all the active offers
  */
 export async function initPaymentCallbacks(): Promise<Watcher> {
-	const [appOffers, apps] = await Promise.all([AppOffer.find(), Application.find()]);
+	const [appOffers, apps] = await Promise.all([AppOffer.find(), Application.all().then(apps => Array.from(apps.values()))]);
 	// create a list of unique addresses
 	const addresses = removeDuplicates(
 		[

@@ -29,8 +29,9 @@ const CODES = {
 	},
 	Conflict: {
 		ExternalOrderAlreadyCompleted: 1,
-		ExternalEarnOfferByDifferentUser: 2,
+		ExternalOrderByDifferentUser: 2,
 		CompletedOrderCantTransitionToFailed: 3,
+		ExternalOrderByDifferentDevice: 4
 	},
 	InternalServerError: {
 		OpenedOrdersOnly: 1,
@@ -56,7 +57,8 @@ const CODES = {
 		WrongAmount: 3,
 		AssetUnavailable: 4,
 		BlockchainError: 5,
-		TransactionTimeout: 6
+		TransactionTimeout: 6,
+		UserHasNoWallet: 7
 	},
 	TooManyRequests: {
 		Registrations: 1,
@@ -157,14 +159,19 @@ export function ExternalOrderAlreadyCompleted(orderId: string) {
 	return error;
 }
 
-export function ExternalEarnOfferByDifferentUser(loggedInUser: string, payToUser: string) {
-	const message = `Pay to user (${ payToUser }) is not the logged in user (${ loggedInUser })`;
-	return ConflictError(CODES.Conflict.ExternalEarnOfferByDifferentUser, message);
+export function ExternalOrderByDifferentUser(loggedInUser: string, payToUser: string) {
+	const message = `User (${ payToUser }) is not the logged in user (${ loggedInUser })`;
+	return ConflictError(CODES.Conflict.ExternalOrderByDifferentUser, message);
 }
 
 export function CompletedOrderCantTransitionToFailed() {
 	const message = "cant set an error message to a completed order";
 	return ConflictError(CODES.Conflict.CompletedOrderCantTransitionToFailed, message);
+}
+
+export function ExternalOrderByDifferentDevice(loggedDeviceId: string, deviceId: string) {
+	const message = `Device (${ deviceId }) is not the logged in device (${ loggedDeviceId })`;
+	return ConflictError(CODES.Conflict.ExternalOrderByDifferentUser, message);
 }
 
 export function OfferCapReached(id: string) {
@@ -262,6 +269,15 @@ export function BlockchainError(message?: string) {
 
 export function TransactionTimeout() {
 	return TransactionFailed(CODES.TransactionFailed.TransactionTimeout, "Transaction Timeout");
+}
+
+export function UserHasNoWallet(userId: string, deviceId?: string) {
+	let message = `No wallet was set for user ${ userId }`;
+	if (deviceId) {
+		message += ` for device ${ deviceId }`;
+	}
+
+	return TransactionFailed(CODES.TransactionFailed.UserHasNoWallet, message);
 }
 
 function TooManyRequests(index: number, message: string): MarketplaceError {

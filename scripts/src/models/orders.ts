@@ -39,6 +39,7 @@ function updateQueryWithFilter(query: SelectQueryBuilder<any>, name: string, val
 	if (!value) {
 		return;
 	}
+
 	// in case the query is using table alias names, use it with status
 	const fieldName = alias ? `${ alias }.${ name }` : name;
 
@@ -55,6 +56,7 @@ export type GetOrderFilters = {
 	offerId?: string;
 	nonce?: string;
 	origin?: OrderOrigin;
+	walletAddress?: string;
 	status?: OrderStatusAndNegation;
 };
 
@@ -79,7 +81,9 @@ export interface Order {
 
 	forEachContext(fn: (context: OrderContext) => void): void;
 
-	contextFor(userId: string): OrderContext | null;
+	contextForUser(userId: string): OrderContext | null;
+
+	contextForWallet(userId: string): OrderContext | null;
 
 	setStatus(status: OpenOrderStatus): void;
 
@@ -223,6 +227,7 @@ export const Order = {
 		updateQueryWithFilter(query, "origin", filters.origin, "ordr");
 		updateQueryWithFilter(query, "offerId", filters.offerId, "ordr");
 		updateQueryWithFilter(query, "userId", filters.userId, "context");
+		updateQueryWithFilter(query, "wallet", filters.walletAddress, "context");
 
 		return query;
 	},
@@ -378,6 +383,7 @@ class OrderImpl extends CreationDateModel implements Order {
 				(context as Mutable<OrderContext>).orderId = this.id;
 				(context as Mutable<OrderContext>).userId = context.user.id;
 			}
+
 			await mgr.save(this);
 		});
 
@@ -430,9 +436,19 @@ class OrderImpl extends CreationDateModel implements Order {
 		return !this.isP2P();
 	}
 
-	public contextFor(userId: string): OrderContext | null {
+	public contextForUser(userId: string): OrderContext | null {
 		for (const context of this.contexts) {
 			if (context.user.id === userId) {
+				return context;
+			}
+		}
+
+		return null;
+	}
+
+	public contextForWallet(walletAddress: string): OrderContext | null {
+		for (const context of this.contexts) {
+			if (context.wallet === walletAddress) {
 				return context;
 			}
 		}
@@ -544,6 +560,10 @@ export class OrderContext extends BaseEntity {
 
 	@Column()
 	public type!: OfferType;
+
+	@Index()
+	@Column()
+	public wallet!: string;
 
 	@Column("simple-json")
 	public readonly meta!: OrderMeta;

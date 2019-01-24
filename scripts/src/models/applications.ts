@@ -23,6 +23,22 @@ export class Application extends CreationDateModel {
 	// XXX testing purposes
 	public static SAMPLE_API_KEY = "A28hNcn2wp77QyaM8kB2C";
 
+	public static async all(): Promise<Map<string, Application>> {
+		const cacheKey = "apps";
+		let apps = localCache.get<Application[]>(cacheKey);
+
+		if (!apps) {
+			apps = await Application.find();
+			localCache.set(cacheKey, apps);
+		}
+
+		return new Map(apps.map(app => [app.id, app]) as Array<[string, Application]>);
+	}
+
+	public static async get(id: string): Promise<Application | undefined> {
+		return (await this.all()).get(id);
+	}
+
 	@Column({ name: "name" })
 	public name!: string;
 

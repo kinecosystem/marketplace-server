@@ -37,7 +37,7 @@
 		"winston": "^2.4.0"
 	},
 	"devDependencies": {
-		"@kinecosystem/kin.js": "^1.0.6",
+		"@kinecosystem/kin.js": "^1.0.7",
 		"@types/argparse": "^1.0.35",
 		"@types/body-parser": "^1.16.8",
 		"@types/csv-parse": "^1.1.11",
@@ -75,6 +75,7 @@
 		"start-marketplace-internal": "node scripts/bin/internal/index",
 		"start-marketplace-admin": "node scripts/bin/admin/index",
 		"manage-db-data": "node scripts/bin/manage_db_data",
+		"start-admin": "node scripts/bin/admin/index",
 		"restart": "npm-run-all build start",
 		"test-system": "node scripts/bin/mock_client",
 		"test": "jest --forceExit --runInBand --detectOpenHandles"

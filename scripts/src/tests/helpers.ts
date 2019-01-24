@@ -4,8 +4,8 @@ import * as moment from "moment";
 import { getManager } from "typeorm";
 import * as StellarSdk from "stellar-sdk";
 
-import { generateId, readKeysDir, random } from "../utils/utils";
-import { Asset, Offer } from "../models/offers";
+import { Asset, Offer, OfferContent } from "../models/offers";
+import { generateId, readKeysDir, random, IdPrefix } from "../utils/utils";
 import { User, AuthToken } from "../models/users";
 import { Application, ApplicationConfig, StringMap } from "../models/applications";
 import { LimitConfig } from "../config";
@@ -29,26 +29,36 @@ const animalPoll: Poll = {
 	}],
 };
 
-export async function createUser(options: { appId?: string } = {}): Promise<User> {
+export async function createUser(options: { appId?: string; deviceId?: string; createWallet?: boolean } = {}): Promise<User> {
 	const uniqueId = generateId();
+	const deviceId = options.deviceId || `test_device_${ uniqueId }`;
+	if (!options.appId) {
+		const app = await createApp(generateId(IdPrefix.App));
+		await createOffers(app.id);
+		options.appId = app.id;
+	}
 	const userData = {
-		appUserId: `test_${ uniqueId }`,
-		appId: options.appId || (await Application.findOne())!.id,
-		walletAddress: `test_${ uniqueId }`
+		appUserId: `test_user_${ uniqueId }`,
+		appId: options.appId
 	} as User;
 
 	const user = await (User.new(Object.assign(userData, { isNew: true }))).save();
+	if (options.createWallet === undefined || options.createWallet) {
+		await user.updateWallet(deviceId, `test_wallet_${ uniqueId }`);
+	}
 
-	const authToken = await (AuthToken.new({
-		userId: user.id,
-		deviceId: `test_${ uniqueId }`
+	await (AuthToken.new({
+		deviceId,
+		userId: user.id
 	})).save();
 
 	return user;
 }
 
 async function orderFromOffer(offer: Offer, userId: string): Promise<MarketplaceOrder> {
-	const user = await User.findOneById(userId);
+	const user = (await User.findOneById(userId))!;
+	const wallet = (await user.getWallets()).all()[0];
+
 	return MarketplaceOrder.new({
 		offerId: offer.id,
 		amount: offer.amount,
@@ -61,6 +71,7 @@ async function orderFromOffer(offer: Offer, userId: string): Promise<Marketplace
 	}, {
 		user,
 		type: offer.type,
+		wallet: wallet.address,
 		meta: offer.meta.order_meta
 	}) as MarketplaceOrder;
 }
@@ -101,7 +112,9 @@ export async function createOrders(userId: string): Promise<number> {
 }
 
 export async function createExternalOrder(userId: string): Promise<Order> {
-	const user = await User.findOneById(userId);
+	const user = (await User.findOneById(userId))!;
+	const wallet = (await user.getWallets()).all()[0];
+
 	const order = ExternalOrder.new({
 		amount: 65,
 		status: "pending",
@@ -114,6 +127,7 @@ export async function createExternalOrder(userId: string): Promise<Order> {
 	}, {
 		user,
 		type: "earn",
+		wallet: wallet.address,
 		meta: {
 			title: "external order #1",
 			description: "first external order"
@@ -143,28 +157,33 @@ export async function createP2POrder(userId: string): Promise<Order> {
 		meta: {
 			title: "p2p order #1",
 			description: "first p2p order"
-		}
+		},
+		wallet: "G123123123123"
 	}, {
 		user: recipient,
 		type: "spend",
 		meta: {
 			title: "p2p order #2",
 			description: "first p2p order"
-		}
+		},
+		wallet: "G123123123123"
 	});
 	await order.save();
 
 	return order;
 }
 
-export async function createOffers() {
+export async function createOffers(appId?: string) {
 	const uniqueId = generateId();
+	const appIds = appId ? [appId] : ["ALL"];
 
 	for (let i = 0; i < 5; i += 1) {
 		await createEarn(
 			`${ uniqueId }_earn${ i }`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
-			`earn${ i }`, `earn${ i }`, `earn${ i }`, `earn${ i }`, 100, 30, 1, `earn${ i }`, `earn${ i }`, "poll", animalPoll, ["ALL"]
+			`earn${ i }`, `earn${ i }`, `earn${ i }`, `earn${ i }`,
+			100, 30, 1, `earn${ i }`, `earn${ i }`,
+			"poll", animalPoll, appIds
 		);
 	}
 
@@ -175,7 +194,7 @@ export async function createOffers() {
 			`spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, 100, 30, 3, `spend${ i }`, `spend${ i }`,
 			`spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`,
 			`spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`, `spend${ i }`,
-			[`spend${ i }_1`, `spend${ i }_2`, `spend${ i }_3`, `spend${ i }_4`, `spend${ i }_5`], ["ALL"]
+			[`spend${ i }_1`, `spend${ i }_2`, `spend${ i }_3`, `spend${ i }_4`, `spend${ i }_5`], appIds
 		);
 	}
 }
@@ -195,15 +214,34 @@ export async function completePayment(orderId: string) {
 	await paymentComplete(payment);
 }
 
-const TABLES = ["application_offers", "orders_contexts", "orders", "offers", "users", "assets", "auth_tokens"];
+/**
+ * the order of the tables here matters.
+ * the `clearDatabase` function deletes the content of the tables in this list by this order.
+ * if the order is incorrect, a sql constraint error will be thrown.
+ */
+const TABLES = [
+	"application_offers",
+	"user_wallets",
+	"orders_contexts",
+	"orders",
+	"offer_content_translations",
+	"offer_contents",
+	"offers",
+	"users",
+	"assets",
+	"auth_tokens",
+	"applications",
+];
 
 export async function clearDatabase() {
+	let tableName!: string;
+
 	try { // TODO: get this list dynamically
-		for (const tableName of TABLES) {
+		for (tableName of TABLES) {
 			await getManager().query(`DELETE FROM ${ tableName };`);
 		}
 	} catch (error) {
-		throw new Error(`ERROR: Cleaning test db: ${ error }`);
+		throw new Error(`ERROR: Cleaning test db (table: "${ tableName }"): ${ error }`);
 	}
 }
 

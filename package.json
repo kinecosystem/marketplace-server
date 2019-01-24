@@ -103,6 +103,13 @@
 		"coverageDirectory": "<rootDir>/coverage/",
 		"collectCoverageFrom": [
 			"<rootDir>/scripts/src/**/*.ts",
+			"!<rootDir>/scripts/src/analytics/**",
+			"!<rootDir>/scripts/src/admin/**",
+			"!<rootDir>/scripts/src/create_data/**",
+			"!<rootDir>/scripts/src/mock_client.ts",
+			"!<rootDir>/scripts/src/manage_db_data.ts",
+			"!<rootDir>/scripts/src/adapt_translation_csv.ts",
+			"!<rootDir>/scripts/src/node-console.ts",
 			"!<rootDir>/scripts/src/tests/**",
 			"!<rootDir>/scripts/src/**/*.d.ts"
 		],

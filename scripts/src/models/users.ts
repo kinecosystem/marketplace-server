@@ -76,7 +76,7 @@ export class User extends CreationDateModel {
 
 		metrics.walletAddressUpdate(this.appId, newWallet);
 		try {
-			return wallet.save();
+			return await wallet.save();
 		} catch (e) {
 			// maybe caught a "violates unique constraint" error, check by finding the wallet again
 			wallet = await Wallet.findOne({

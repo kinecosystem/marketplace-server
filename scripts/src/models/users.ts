@@ -30,6 +30,9 @@ export class User extends CreationDateModel {
 	@OneToMany(type => OrderContext, context => context.user)
 	public contexts!: OrderContext[];
 
+	@Column({ name: "wallet_count" })
+	public walletCount!: number;
+
 	@Column({ name: "wallet_address", nullable: true })
 	public walletAddress!: string;
 
@@ -45,15 +48,15 @@ export class User extends CreationDateModel {
 		const wallets = await Wallet.find(conditions);
 		if (wallets.length === 0 && this.walletAddress) {
 			deviceId = deviceId || (await AuthToken.findOne({ userId: this.id }))!.deviceId;
-			wallets.push(await this.updateWallet(deviceId, this.walletAddress));
+			await this.updateWallet(deviceId, this.walletAddress);
 		}
 
 		return new Wallets(await Wallet.find(conditions));
 	}
 
-	public async updateWallet(deviceId: string, walletAddress: string): Promise<Wallet> {
+	public async updateWallet(deviceId: string, walletAddress: string): Promise<boolean> {
 		const now = new Date();
-		let newWallet: boolean;
+		let isNewWallet: boolean;
 		let wallet = await Wallet.findOne({
 			deviceId,
 			userId: this.id,
@@ -61,10 +64,10 @@ export class User extends CreationDateModel {
 		});
 
 		if (wallet) {
-			newWallet = false;
+			isNewWallet = false;
 			wallet.lastUsedDate = now;
 		} else {
-			newWallet = true;
+			isNewWallet = true;
 			wallet = Wallet.create({
 				deviceId,
 				userId: this.id,
@@ -74,9 +77,10 @@ export class User extends CreationDateModel {
 			});
 		}
 
-		metrics.walletAddressUpdate(this.appId, newWallet);
+		metrics.walletAddressUpdate(this.appId, isNewWallet);
 		try {
-			return await wallet.save();
+			await wallet.save();
+			return isNewWallet;
 		} catch (e) {
 			// maybe caught a "violates unique constraint" error, check by finding the wallet again
 			wallet = await Wallet.findOne({
@@ -86,7 +90,7 @@ export class User extends CreationDateModel {
 			});
 			if (wallet) {
 				logger().warn("solved user registration race condition");
-				return wallet;
+				return false;
 			} // otherwise throw
 			throw e;
 		}

@@ -46,8 +46,7 @@ export async function v1GetOrCreateUserCredentials(
 	deviceId: string): Promise<V1AuthToken> {
 
 	const data = await register(app, appUserId, app.id, deviceId);
-	await data.user.updateWallet(deviceId, walletAddress);
-	await payment.createWallet(walletAddress, app.id, appUserId);
+	await updateUser(data.user, { walletAddress, deviceId });
 
 	return V1AuthTokenDbToApi(data.token, data.user);
 }
@@ -99,14 +98,16 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 			throw NoSuchApp(user.appId);
 		}
 
-		if (!app.allowsNewWallet(wallets.count)) {
+		if (!app.allowsNewWallet(wallets.count + user.walletCount)) {
 			metrics.maxWalletsExceeded(app.id);
 			throw MaxWalletsExceeded();
 		}
 
-		await user.updateWallet(props.deviceId, props.walletAddress);
-		logger().info(`creating stellar wallet for user ${ user.id }: ${ props.walletAddress }`);
-		await payment.createWallet(props.walletAddress, user.appId, user.id);
+		const isNew = await user.updateWallet(props.deviceId, props.walletAddress);
+		if (isNew) {
+			logger().info(`creating stellar wallet for user ${ user.id }: ${ props.walletAddress }`);
+			await payment.createWallet(props.walletAddress, user.appId, user.id);
+		}
 
 		createWalletAddressUpdateSucceeded(user.id, props.deviceId).report();
 	}

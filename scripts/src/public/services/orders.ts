@@ -17,7 +17,7 @@ import {
 	NoSuchUser,
 	CompletedOrderCantTransitionToFailed,
 	ExternalOrderAlreadyCompleted,
-	InvalidPollAnswers, MarketplaceError,
+	MarketplaceError,
 	NoSuchOffer,
 	NoSuchOrder,
 	OfferCapReached,
@@ -30,14 +30,14 @@ import {
 import { Paging } from "./index";
 import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
-import * as offerContents from "./offer_contents";
 import { ExternalEarnOrderJWT, ExternalPayToUserOrderJwt, ExternalSpendOrderJWT } from "./native_offers";
 import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
 
-import { assertRateLimitAppEarn, assertRateLimitUserEarn, assertRateLimitWalletEarn } from "../../utils/rate_limit";
+import { assertRateLimitEarn } from "../../utils/rate_limit";
+import { submitFormAndMutateMarketplaceOrder } from "./offer_contents";
 
 export interface OrderList {
 	orders: Order[];
@@ -102,12 +102,6 @@ export async function changeOrder(orderId: string, userId: string, change: Parti
 
 async function createOrder(appOffer: AppOffer, user: User, orderTranslations = {} as OrderTranslations) {
 	const app = (await Application.findOneById(user.appId))!;
-	if (appOffer.offer.type === "earn") {
-		await assertRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), appOffer.offer.amount);
-		await assertRateLimitAppEarn(app.id, app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), appOffer.offer.amount);
-		await assertRateLimitUserEarn(user.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), appOffer.offer.amount);
-		await assertRateLimitWalletEarn(user.walletAddress, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), appOffer.offer.amount);
-	}
 
 	if (await appOffer.didExceedCap(user.id)) {
 		return undefined;
@@ -193,10 +187,6 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 
 async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
 	const app = (await Application.findOneById(recipient.appId))!;
-
-	await assertRateLimitUserEarn(recipient.id, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
-	await assertRateLimitWalletEarn(recipient.walletAddress, app.config.limits.daily_user_earn, moment.duration({ days: 1 }), jwt.offer.amount);
-
 	if (!app) {
 		throw NoSuchApp(recipient.appId);
 	}
@@ -279,54 +269,25 @@ export async function createExternalOrder(jwt: string, user: User): Promise<Open
 
 export async function submitOrder(
 	orderId: string,
-	userId: string,
-	form: string | undefined,
-	walletAddress: string,
-	appId: string,
-	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
+	user: User,
+	form: string | undefined): Promise<Order> {
 
-	logger().info("submitOrder", { orderId });
 	const order = await db.Order.getOne({ orderId });
-
-	if (!order || order.contextFor(userId) === null) {
+	if (!order || order.contextFor(user.id) === null) {
 		throw NoSuchOrder(orderId);
 	}
 	if (order.status !== "opened") {
-		return orderDbToApi(order, userId);
+		return orderDbToApi(order, user.id);
 	}
 	if (order.isExpired()) {
 		throw OpenOrderExpired(orderId);
 	}
-
 	if (order.isMarketplaceOrder()) {
-		const offer = await offerDb.Offer.findOneById(order.offerId);
-		if (!offer) {
-			throw NoSuchOffer(order.offerId);
-		}
-
-		if (order.type === "earn") {
-			const offerContent = (await offerContents.getOfferContent(order.offerId))!;
-
-			switch (offerContent.contentType) {
-				// TODO this switch-case should be inside the offerContents module
-				case "poll":
-					// validate form
-					if (!offerContents.isValid(offerContent, form)) {
-						throw InvalidPollAnswers();
-					}
-					await offerContents.savePollAnswers(order.user.id, order.offerId, orderId, form); // TODO should we also save quiz results?
-					break;
-				case "quiz":
-					order.amount = await offerContents.sumCorrectQuizAnswers(offerContent, form, acceptsLanguagesFunc) || 1; // TODO remove || 1 - don't give idiots kin
-					// should we replace order.meta.content
-					break;
-				case "tutorial":
-					// nothing
-					break;
-				default:
-					logger().warn(`unexpected content type ${ offerContent.contentType }`);
-			}
-		}
+		await submitFormAndMutateMarketplaceOrder(order, form);
+	}
+	if (order.isEarn()) {
+		// must be after submit form because order.amount changes
+		await assertRateLimitEarn(user, order.amount);
 	}
 
 	order.setStatus("pending");
@@ -334,12 +295,12 @@ export async function submitOrder(
 	logger().info("order changed to pending", { orderId });
 
 	if (order.isEarn()) {
-		await payment.payTo(walletAddress, appId, order.amount, order.id);
+		await payment.payTo(user.walletAddress, user.appId, order.amount, order.id);
 		createEarnTransactionBroadcastToBlockchainSubmitted(order.contexts[0].user.id, order.offerId, order.id).report();
 	}
 
-	metrics.submitOrder(order.origin, order.flowType(), appId);
-	return orderDbToApi(order, userId);
+	metrics.submitOrder(order.origin, order.flowType(), user.appId);
+	return orderDbToApi(order, user.id);
 }
 
 export async function cancelOrder(orderId: string, userId: string): Promise<void> {

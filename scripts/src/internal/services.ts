@@ -161,7 +161,7 @@ export async function paymentComplete(payment: CompletedPayment) {
 
 	if (order.status !== "pending") {
 		// can be either failed or opened
-		logger().info("a non pending order turned completed", { order, status: order.status });
+		logger().info("a non pending order turned completed", { orderId: order.id, status: order.status });
 		order.error = null;
 	}
 

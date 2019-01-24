@@ -14,7 +14,6 @@ import { generateId, IdPrefix, Mutable } from "../utils/utils";
 
 import { OrderContext } from "./orders";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
-import * as metrics from "../metrics";
 
 @Entity({ name: "users" })
 @Register
@@ -48,8 +47,19 @@ export class User extends CreationDateModel {
 
 		const wallets = await Wallet.find(conditions);
 		if (wallets.length === 0 && this.walletAddress) {
-			deviceId = deviceId || (await AuthToken.findOne({ userId: this.id }))!.deviceId;
-			await this.updateWallet(deviceId, this.walletAddress);
+			deviceId = deviceId || (await AuthToken.findOne({
+				where: { userId: this.id },
+				order: { createdDate: "DESC" }
+			}))!.deviceId;
+			logger().info(`lazy migrate user ${ this.id } device ${ deviceId } wallet: ${ this.walletAddress }`);
+			const now = new Date();
+			await Wallet.create({
+				deviceId,
+				userId: this.id,
+				createdDate: now,
+				lastUsedDate: now,
+				address: this.walletAddress
+			});
 		}
 
 		return new Wallets(await Wallet.find(conditions));
@@ -78,7 +88,6 @@ export class User extends CreationDateModel {
 			});
 		}
 
-		metrics.walletAddressUpdate(this.appId, isNewWallet);
 		try {
 			await wallet.save();
 			return isNewWallet;

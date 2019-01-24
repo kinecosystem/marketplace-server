@@ -31,6 +31,9 @@ export class User extends CreationDateModel {
 	@OneToMany(type => OrderContext, context => context.user)
 	public contexts!: OrderContext[];
 
+	@Column({ name: "wallet_address", nullable: true })
+	public walletAddress!: string;
+
 	public async getWallets(deviceId?: string): Promise<Wallets> {
 		const conditions: Partial<Mutable<Wallet>> = {
 			userId: this.id
@@ -40,7 +43,19 @@ export class User extends CreationDateModel {
 			conditions.deviceId = deviceId;
 		}
 
-		return new Wallets(await Wallet.find(conditions));
+		const wallets = await Wallet.find(conditions);
+		if (wallets.length === 0 && this.walletAddress) {
+			wallets.push(Wallet.create({
+				user: this,
+				deviceId: null as any,
+				address: this.walletAddress,
+				userId: this.id,
+				createdDate: this.createdDate,
+				lastUsedDate: new Date()
+			}));
+		}
+
+		return new Wallets(wallets);
 	}
 
 	public async updateWallet(deviceId: string, walletAddress: string): Promise<Wallet> {

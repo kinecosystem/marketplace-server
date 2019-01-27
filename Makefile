@@ -26,6 +26,9 @@ test:
 test-system:
 	npm run test-system
 
+run-security:
+	npm audit
+
 db:
 	rm -f database.sqlite
 	npm run manage-db-data -- --apps-dir data/apps --offers-dir data/offers --app-list ALL --create-db

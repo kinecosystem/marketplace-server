@@ -164,13 +164,13 @@ async function register(
 
 	let user = await User.findOne({ appId, appUserId });
 	if (!user) {
-		createUserRegistrationRequested(null as any, deviceId).report();
 		await assertRateLimitRegistration(app);
 		try {
 			logger().info("creating a new user", { appId, appUserId });
 			user = User.new({ appUserId, appId });
 			await user.save();
 			metrics.userRegister(true, appId);
+			createUserRegistrationRequested(null as any, deviceId).report();
 			createUserRegistrationSucceeded(user.id, deviceId).report();
 		} catch (e) {
 			// maybe caught a "violates unique constraint" error, check by finding the user again
@@ -179,6 +179,7 @@ async function register(
 				logger().warn("solved user registration race condition");
 				metrics.userRegister(false, appId);
 			} else {
+				createUserRegistrationRequested(null as any, deviceId).report();
 				createUserRegistrationFailed(null as any, deviceId, normalizeError(e)).report();
 				throw e; // some other error
 			}

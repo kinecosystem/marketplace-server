@@ -1,4 +1,3 @@
-import * as moment from "moment";
 import { Brackets } from "typeorm";
 
 import * as metrics from "../../metrics";
@@ -18,6 +17,7 @@ import { create as createWalletAddressUpdateSucceeded } from "../../analytics/ev
 
 import * as payment from "./payment";
 import { assertRateLimitRegistration } from "../../utils/rate_limit";
+import { setHttpContext } from "../auth";
 
 export type V1AuthToken = {
 	token: string;
@@ -198,6 +198,7 @@ async function register(
 		createUserLoginServerSucceeded(user.id, deviceId).report();
 		authToken = await (DbAuthToken.new({ userId: user.id, deviceId }).save());
 	}
+	setHttpContext(authToken, user);
 
 	return {
 		user,

@@ -26,9 +26,7 @@ async function getTokenAndUser(req: express.Request): Promise<[db.AuthToken, db.
 	return [token, user];
 }
 
-export const authenticateUser = async function(req: express.Request, res: express.Response, next: express.NextFunction) {
-	const [token, user] = await getTokenAndUser(req);
-	// set token, user for req.context
+export function setHttpContext(token: AuthToken, user: User) {
 	httpContext.set("token", token);
 	httpContext.set("user", user);
 
@@ -36,6 +34,11 @@ export const authenticateUser = async function(req: express.Request, res: expres
 	httpContext.set("userId", token.userId);
 	httpContext.set("deviceId", token.deviceId);
 	httpContext.set("appId", user.appId);
+}
+
+export const authenticateUser = async function(req: express.Request, res: express.Response, next: express.NextFunction) {
+	const [token, user] = await getTokenAndUser(req);
+	setHttpContext(token, user);
 
 	req.context = {
 		get user(): User {

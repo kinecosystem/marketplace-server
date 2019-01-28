@@ -103,11 +103,12 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 			throw MaxWalletsExceeded();
 		}
 
-		const isNew = await user.updateWallet(props.deviceId, props.walletAddress);
-		if (isNew) {
+		const isNewWallet = await user.updateWallet(props.deviceId, props.walletAddress);
+		if (isNewWallet) {
 			logger().info(`creating stellar wallet for user ${ user.id }: ${ props.walletAddress }`);
 			await payment.createWallet(props.walletAddress, user.appId, user.id);
 		}
+		metrics.walletAddressUpdate(user.appId, isNewWallet);
 
 		createWalletAddressUpdateSucceeded(user.id, props.deviceId).report();
 	}
@@ -167,7 +168,7 @@ async function register(
 		await assertRateLimitRegistration(app);
 		try {
 			logger().info("creating a new user", { appId, appUserId });
-			user = User.new({ appUserId, appId });
+			user = User.new({ appUserId, appId, isNew: true });
 			await user.save();
 			metrics.userRegister(true, appId);
 			createUserRegistrationRequested(null as any, deviceId).report();

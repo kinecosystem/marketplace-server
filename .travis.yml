@@ -6,6 +6,7 @@ node_js:
   - "10"
 
 before_script:
+  - make install
   - make run-security
   - make build db # db - for make test
   - make generate-funding-address

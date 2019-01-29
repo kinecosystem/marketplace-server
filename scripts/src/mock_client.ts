@@ -1227,7 +1227,7 @@ async function p2p() {
 		recipient_description: "money received from p2p testing"
 	});
 
-	const openOrder = await senderClient.createExternalOrder(jwt);
+	let openOrder = await senderClient.createExternalOrder(jwt);
 	expect(openOrder.offer_type).toBe("spend");
 	expect(openOrder.blockchain_data.sender_address).toEqual(senderWalletAddress);
 
@@ -1237,11 +1237,11 @@ async function p2p() {
 	await senderClient.submitOrder(openOrder.id);
 
 	// poll on order payment
-	const order = await retry(() => senderClient.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	let order = await retry(() => senderClient.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 	console.log(`completion date: ${ order.completion_date }`);
 
 	// find payment on blockchain
-	const payment = (await retry(() => senderClient.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+	let payment = (await retry(() => senderClient.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
 	expect(payment).toBeDefined();
 	expect(payment.sender_address).toEqual(senderWalletAddress);
 
@@ -1261,6 +1261,31 @@ async function p2p() {
 	expect(jwtPayload.header.kid).toBeDefined();
 	expect(jwtPayload.payload.iss).toEqual("kin");
 	expect(await appClient.isValidSignature(paymentJwt)).toBeTruthy();
+
+	// check that paying yourself doesn't create an earn offer and causing you to earn kin
+	const balanceBefore = await senderClient.wallet!.balance.update();
+	jwt = await appClient.getP2PJWT({
+		offer_id: "p2p2self",
+		amount: 10,
+		user_id: senderId,
+		device_id: senderDeviceId,
+		sender_title: "sent moneys",
+		sender_description: "money sent to test p2p",
+		recipient_id: senderId,
+		recipient_title: "get moneys",
+		recipient_description: "money received from p2p testing"
+	});
+	openOrder = await senderClient.createExternalOrder(jwt);
+	expect(openOrder.blockchain_data.sender_address).toEqual(senderWalletAddress);
+	await senderClient.pay(openOrder.blockchain_data.recipient_address!, 10, openOrder.id);
+	await senderClient.submitOrder(openOrder.id);
+	order = await retry(() => senderClient.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	console.log(`completion date: ${ order.completion_date }`);
+	payment = (await retry(() => senderClient.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+	expect(payment).toBeDefined();
+	expect(payment.sender_address).toEqual(senderWalletAddress);
+	expect(isValidPayment(order, senderClient.appId, payment)).toBeTruthy();
+	expect(balanceBefore).toBe(await senderClient.wallet!.balance.update());
 
 	console.log("OK.\n");
 }

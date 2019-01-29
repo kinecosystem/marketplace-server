@@ -558,15 +558,15 @@ export class OrderContext extends BaseEntity {
 	@JoinColumn({ name: "user_id" })
 	public readonly user!: User;
 
-	@Column()
-	public type!: OfferType;
-
 	@Index()
 	@Column()
 	public wallet!: string;
 
 	@Column("simple-json")
 	public readonly meta!: OrderMeta;
+
+	@PrimaryColumn()
+	public type!: OfferType;
 
 	@PrimaryColumn({ name: "order_id" })
 	public readonly orderId!: string;

@@ -341,28 +341,24 @@ export async function initDb(scriptConfig: ScriptConfig) {
 			}
 		}
 	}
-	const translationsFile = scriptConfig.trans_file;
-	const translationsLanguage = scriptConfig.trans_lang;
-	if (translationsFile && translationsLanguage) {
-		const generatedStringsFileName = "/tmp/temp_local_translations_string.csv";
-		const translationsFilename = "/tmp/translations.csv";
-		console.log("creating translations template file");
-		await
-			translations.writeCsvTemplateToFile(generatedStringsFileName);
-		console.log("adapting test translations file");
-		await
-			adaptTranslations.processFile(translationsFile, generatedStringsFileName, translationsFilename);
-		console.log("processing translations and inserting into db");
-		await
-			translations.processFile(translationsFilename, translationsLanguage);
-		console.log("Done. Translations Ready.");
-	} else if (translationsFile || translationsLanguage) {
-		throw Error("Both a translations file and a translations language need to be specified.");
-	}
-
+	// const translationsFile = scriptConfig.trans_file;
+	// const translationsLanguage = scriptConfig.trans_lang;
+	// if (translationsFile && translationsLanguage) {
+	// 	const generatedStringsFileName = "/tmp/local_translations_template-by_manage_db_script.csv";
+	// 	const translationsFilename = "/tmp/translations-by_manage_db_script.csv";
+	// 	console.log("creating translations template file");
+	// 	await translations.writeCsvTemplateToFile(generatedStringsFileName);
+	// 	console.log("adapting test translations file");
+	// 	await adaptTranslations.processFile(translationsFile, generatedStringsFileName, translationsFilename);
+	// 	console.log("processing translations and inserting into db");
+	// 	await translations.processFile(translationsFilename, translationsLanguage);
+	// 	console.log("Done. Translations Ready.");
+	// } else if (translationsFile || translationsLanguage) {
+	// 	throw Error("Both a translations file and a translations language need to be specified.");
+	// }
+	//
 	try {
-		await
-			closeModels();
+		//await closeModels();
 	} catch (e) {
 	}
 	console.log(`done.`);

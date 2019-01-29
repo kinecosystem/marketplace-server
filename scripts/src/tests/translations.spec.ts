@@ -13,14 +13,12 @@ import { initLogger } from "../logging";
 import * as helpers from "./helpers";
 import { localCache } from "../utils/cache";
 import { initDb } from "../manage_db_data";
-import { start as startConsole } from "../node-console";
-import * as repl from "repl";
 
-const CSV_TEMPLATE_FILE = "/tmp/translations_template.csv";
-const CSV_TRANSLATION_FILE = "/tmp/translation.csv";
+const CSV_TEMPLATE_FILE = "/tmp/translations_template-by_tests.csv";
+const CSV_TRANSLATION_FILE = "/tmp/translations-by_tests.csv";  // The file the adapted translations will be written to
 
 describe("translations tests", async () => {
-	beforeAll(async done => {
+	beforeEach(async done => {
 		initLogger();
 		await initModels();
 		await helpers.clearDatabase();
@@ -34,16 +32,16 @@ describe("translations tests", async () => {
 			require_update_confirm: false,
 			app_list: ["ALL"],
 			create_db: true,
-			trans_file: "data/translations/pt-BR.csv",
-			trans_lang: "pt-BR",
+			trans_file: null,
+			trans_lang: null,
 		};
-		initDb(scriptConfig);
+		await initDb(scriptConfig);
 		helpers.patchDependencies();
 		localCache.clear();
 		done();
 	});
 
-	afterAll(async done => {
+	afterEach(async done => {
 		await closeModels();
 		done();
 	});
@@ -53,7 +51,6 @@ describe("translations tests", async () => {
 		const csv = readFileSync(CSV_TEMPLATE_FILE);
 		const parsedCsv = (csvParse as CsvParse)(csv);
 		const csvData = parsedCsv.splice(1);
-		console.log("contents of csv:\n", parsedCsv);
 		const [type, key, defaultStr, translation, charLimit] = (csvData[Math.round(csvData.length / 2)]) as TranslationDataRow;  // Get a translation
 		expect(type).toMatch(/poll|quiz/);
 		const keySegments = key.split(":");
@@ -73,7 +70,6 @@ describe("translations tests", async () => {
 		await adaptCsv(path.join(__dirname, "../../../data/translations/test_pt-BR.csv"), CSV_TEMPLATE_FILE, CSV_TRANSLATION_FILE);
 		const csv = readFileSync(CSV_TRANSLATION_FILE);
 		const parsedCsv = (csvParse as CsvParse)(csv);
-		console.log("contents of csv:\n", parsedCsv);
 		const csvData = parsedCsv.splice(1);
 		let [type, key, defaultStr, translation, charLimit] = (csvData[Math.round(csvData.length / 2)]) as TranslationDataRow; // Get a random translation
 		console.log(type, key, defaultStr, translation, charLimit);
@@ -86,8 +82,10 @@ describe("translations tests", async () => {
 		expect((await Offer.findOne({ id: offerId }))!.meta.title).toBe("Favorites");
 	});
 
-	// test("processFile (import) translation CSV", async () => {
-	// 	translations.processFile(path.join(__dirname, "../../../data/translations/test_pt-BR.csv"), CSV_TEMPLATE_FILE);
-	// 	expect(await OfferTranslation.find({ translation: "Favoritos" }));
-	// });
+	test("processFile (import) translation CSV", async () => {
+		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
+		await adaptCsv(path.join(__dirname, "../../../data/translations/test_pt-BR.csv"), CSV_TEMPLATE_FILE, CSV_TRANSLATION_FILE);
+		translations.processFile(CSV_TRANSLATION_FILE, "pt-BR");
+		expect(await OfferTranslation.find({ translation: "Favoritos" }));
+	});
 });

@@ -122,6 +122,25 @@ async function didNotApproveTOS() {
 	console.log("OK.\n");
 }
 
+async function getOfferTranslations() {
+	console.log("=====================================getOfferTranslations=====================================");
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId);
+
+	const client = await MarketplaceClient.create({ jwt },
+		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ",
+		{ headers: { "accept-language": "pt-BR" } });
+
+	const offers = await client.getOffers();
+	//  We don't know the order of the offers received but some must have this title
+	expect(offers.offers.filter((o) => {
+		return o.title === "Faça um teste";
+	}).length).toBeGreaterThan(0);
+
+	console.log("OK.\n", offers.offers.slice(0, 4));
+}
+
 async function spendFlow() {
 	console.log("=====================================spend=====================================");
 
@@ -740,22 +759,23 @@ async function userProfile() {
 }
 
 async function main() {
-	await registerJWT();
-	await outdatedJWT();
-	await updateWallet();
-	await userProfile();
-	await extraTrustlineIsOK();
-	await earnPollFlow();
-	await earnTutorial();
-	await spendFlow();
-	await earnQuizFlow();
-	await nativeEarnFlow();
-	await nativeSpendFlow();
-	await didNotApproveTOS();
-	await testRegisterNewUser();
-	await tryToNativeSpendTwice();
-	await tryToNativeSpendTwiceWithNonce();
-	await p2p();
+	// await registerJWT();
+	// await outdatedJWT();
+	// await updateWallet();
+	// await userProfile();
+	// await extraTrustlineIsOK();
+	// await earnPollFlow();
+	// await earnTutorial();
+	// await spendFlow();
+	// await earnQuizFlow();
+	// await nativeEarnFlow();
+	// await nativeSpendFlow();
+	// await didNotApproveTOS();
+	// await testRegisterNewUser();
+	// await tryToNativeSpendTwice();
+	// await tryToNativeSpendTwiceWithNonce();
+	// await p2p();
+	await getOfferTranslations();
 }
 
 main()

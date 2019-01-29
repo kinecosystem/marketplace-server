@@ -5,7 +5,7 @@ split:
 	tmux new-session 'make run-internal' \; split-window 'sleep 1 && make run' \;
 
 install:
-	npm install --no-audit
+	npm i
 
 build:
 	npm run build

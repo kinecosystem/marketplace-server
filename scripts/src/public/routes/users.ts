@@ -1,35 +1,100 @@
 import { Request, RequestHandler, Response } from "express";
-import { InvalidWalletAddress, NoSuchApp, UnknownSignInType } from "../../errors";
+
+import { Application } from "../../models/applications";
 import { getDefaultLogger as logger } from "../../logging";
+import { InvalidWalletAddress, NoSuchApp, UnknownSignInType } from "../../errors";
 
 import {
-	activateUser as activateUserService,
+	logout as logoutService,
 	getOrCreateUserCredentials,
-	getUserProfile as getUserProfileService,
-	userExists as userExistsService
+	userExists as userExistsService,
+	updateUser as updateUserService,
+	activateUser as activateUserService,
+	v1GetOrCreateUserCredentials,
+	getUserProfile as getUserProfileService
 } from "../services/users";
-import * as metrics from "../../metrics";
-import { SignInContext, validateRegisterJWT, validateWhitelist } from "../services/applications";
-import { Application, SignInType } from "../../models/applications";
-import { getConfig } from "../config";
-import { create as createWalletAddressUpdateSucceeded } from "../../analytics/events/wallet_address_update_succeeded";
+import {
+	SignInContext,
+	V1SignInContext,
+	validateRegisterJWT,
+	v1ValidateRegisterJWT,
+	validateWhitelist,
+	v1ValidateWhitelist,
+} from "../services/applications";
 
-export type WalletData = { wallet_address: string };
+export type V1WalletData = {
+	wallet_address: string;
+};
 
-export type CommonSignInData = WalletData & {
+export type V1CommonSignInData = V1WalletData & {
 	sign_in_type: "jwt" | "whitelist";
 	device_id: string;
 };
 
-export type JwtSignInData = CommonSignInData & {
-	sign_in_type: "jwt";
+export type V1JwtSignInData = V1CommonSignInData & {
 	jwt: string;
+	sign_in_type: "jwt";
+};
+
+export type V1WhitelistSignInData = V1CommonSignInData & {
+	sign_in_type: "whitelist";
+	user_id: string;
+	api_key: string;
+};
+
+export type V1RegisterRequest = Request & { body: V1WhitelistSignInData | V1JwtSignInData };
+
+/**
+ * sign in a user,
+ * allow either registration with JWT or plain userId to be checked against a whitelist from the given app
+ */
+export const v1SignInUser = async function(req: V1RegisterRequest, res: Response) {
+	let context: V1SignInContext;
+	const data: V1WhitelistSignInData | V1JwtSignInData = req.body;
+
+	logger().info("signing in user", { data });
+	// XXX should also check which sign in types does the application allow
+	if (data.sign_in_type === "jwt") {
+		context = await v1ValidateRegisterJWT(data.jwt!);
+	} else if (data.sign_in_type === "whitelist") {
+		context = await v1ValidateWhitelist(data.user_id, data.api_key);
+	} else {
+		throw UnknownSignInType((data as any).sign_in_type);
+	}
+
+	const app = await Application.get(context.appId);
+	if (!app) {
+		throw NoSuchApp(context.appId);
+	}
+	if (!app.supportsSignInType(data.sign_in_type)) {
+		throw UnknownSignInType(data.sign_in_type);
+	}
+
+	const authToken = await v1GetOrCreateUserCredentials(
+		app,
+		context.appUserId,
+		data.wallet_address,
+		data.device_id);
+
+	res.status(200).send(authToken);
+} as any as RequestHandler;
+
+export type WalletData = {};
+
+export type CommonSignInData = WalletData & {
+	sign_in_type: "jwt" | "whitelist";
+};
+
+export type JwtSignInData = CommonSignInData & {
+	jwt: string;
+	sign_in_type: "jwt";
 };
 
 export type WhitelistSignInData = CommonSignInData & {
 	sign_in_type: "whitelist";
 	user_id: string;
 	api_key: string;
+	device_id: string;
 };
 
 export type RegisterRequest = Request & { body: WhitelistSignInData | JwtSignInData };
@@ -47,12 +112,12 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	if (data.sign_in_type === "jwt") {
 		context = await validateRegisterJWT(data.jwt!);
 	} else if (data.sign_in_type === "whitelist") {
-		context = await validateWhitelist(data.user_id, data.api_key);
+		context = await validateWhitelist(data.user_id, data.device_id, data.api_key);
 	} else {
 		throw UnknownSignInType((data as any).sign_in_type);
 	}
 
-	const app = await Application.findOneById(context.appId);
+	const app = (await Application.all()).get(context.appId);
 	if (!app) {
 		throw NoSuchApp(context.appId);
 	}
@@ -63,9 +128,7 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	const authToken = await getOrCreateUserCredentials(
 		app,
 		context.appUserId,
-		context.appId,
-		data.wallet_address,
-		data.device_id);
+		context.deviceId);
 
 	res.status(200).send(authToken);
 } as any as RequestHandler;
@@ -73,20 +136,18 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 export type UpdateUserRequest = Request & { body: WalletData };
 
 export const updateUser = async function(req: UpdateUserRequest, res: Response) {
-	const context = req.context;
+	const user = req.context.user!;
+	const deviceId = req.body.device_id || req.context.token!.deviceId;
 	const walletAddress = req.body.wallet_address;
-	const userId = context.user!.id;
-	logger().info(`updating user ${ walletAddress }`, { walletAddress, userId });
+
+	logger().info(`updating user ${ user.id }`, { walletAddress, deviceId });
 
 	if (!walletAddress || walletAddress.length !== 56) {
 		throw InvalidWalletAddress(walletAddress);
 	}
 
-	context.user!.walletAddress = walletAddress;
-	await context.user!.save();
+	await updateUserService(user, { deviceId, walletAddress });
 
-	createWalletAddressUpdateSucceeded(userId).report();
-	metrics.walletAddressUpdate(context.user!.appId);
 	res.status(204).send();
 } as any as RequestHandler;
 
@@ -110,6 +171,29 @@ export const activateUser = async function(req: Request, res: Response) {
 
 export type UserInfoRequest = Request & { params: { user_id: string; } };
 
+export const v1UserInfo = async function(req: UserInfoRequest, res: Response) {
+	logger().debug(`userInfo userId: ${ req.params.user_id }`);
+
+	if (req.context.user!.appUserId !== req.params.user_id) {
+		const userFound = await userExistsService(req.context.user!.appId, req.params.user_id);
+		if (userFound) {
+			res.status(200).send({});
+		} else {
+			res.status(404).send();
+		}
+	} else {
+		const profile = await getUserProfileService(req.context.user!.id, req.context.token!.deviceId);
+		delete profile.created_date;
+		delete profile.current_wallet;
+		res.status(200).send(profile);
+	}
+} as any as RequestHandler;
+
+export const v1MyUserInfo = async function(req: Request, res: Response) {
+	req.params.user_id = req.context.user!.appUserId;
+	await (v1UserInfo as any)(req as UserInfoRequest, res);
+} as any as RequestHandler;
+
 export const userInfo = async function(req: UserInfoRequest, res: Response) {
 	logger().debug(`userInfo userId: ${ req.params.user_id }`);
 
@@ -121,7 +205,7 @@ export const userInfo = async function(req: UserInfoRequest, res: Response) {
 			res.status(404).send();
 		}
 	} else {
-		const profile = await getUserProfileService(req.context.user!.id);
+		const profile = await getUserProfileService(req.context.user!.id, req.context.token!.deviceId);
 		res.status(200).send(profile);
 	}
 } as any as RequestHandler;
@@ -129,4 +213,9 @@ export const userInfo = async function(req: UserInfoRequest, res: Response) {
 export const myUserInfo = async function(req: Request, res: Response) {
 	req.params.user_id = req.context.user!.appUserId;
 	await (userInfo as any)(req as UserInfoRequest, res);
+} as any as RequestHandler;
+
+export const logoutUser = async function(req: Request, res: Response) {
+	await logoutService(req.context.user!, req.context.token!);
+	res.status(204).send();
 } as any as RequestHandler;

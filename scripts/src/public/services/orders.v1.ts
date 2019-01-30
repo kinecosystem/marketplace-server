@@ -2,13 +2,13 @@ import * as moment from "moment";
 import { Request as ExpressRequest } from "express-serve-static-core";
 
 import { lock } from "../../redis";
+import { pick } from "../../utils/utils";
 import * as metrics from "../../metrics";
 import { User } from "../../models/users";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
 import { getDefaultLogger as logger } from "../../logging";
-import { pick, capitalizeFirstLetter } from "../../utils/utils";
 import { Application, AppOffer } from "../../models/applications";
 import {
 	isPayToUser,
@@ -16,14 +16,14 @@ import {
 	ExternalEarnOrderJWT,
 	ExternalSpendOrderJWT,
 	validateExternalOrderJWT,
-	ExternalPayToUserOrderJWT } from "./native_offers";
+	ExternalPayToUserOrderJWT } from "./native_offers.v1";
 import {
 	ApiError,
 	NoSuchApp,
 	NoSuchUser,
 	CompletedOrderCantTransitionToFailed,
 	ExternalOrderAlreadyCompleted,
-	MarketplaceError,
+	InvalidPollAnswers, MarketplaceError,
 	NoSuchOffer,
 	NoSuchOrder,
 	UserHasNoWallet,
@@ -42,9 +42,7 @@ import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
-
-import { assertRateLimitEarn } from "../../utils/rate_limit";
-import { submitFormAndMutateMarketplaceOrder } from "./offer_contents";
+import { submitOrder as v2SubmitOrder } from "./orders";
 
 export interface OrderList {
 	orders: Order[];
@@ -76,19 +74,14 @@ export interface Order extends BaseOrder {
 	origin: db.OrderOrigin;
 }
 
-export async function getOrder(orderId: string, user: User): Promise<Order> {
-	const order = await db.Order.getOne({ orderId, status: "!opened" });
+export async function getOrder(orderId: string, userId: string): Promise<Order> {
+	const order = await db.Order.getOne({ orderId, status: "!opened" }) as db.MarketplaceOrder | db.ExternalOrder;
 
-	if (!order || order.contextForUser(user.id) === null) {
+	if (!order) {
 		throw NoSuchOrder(orderId);
 	}
 
 	checkIfTimedOut(order); // no need to wait for the promise
-
-	const wallet = (await user.getWallets()).lastUsed();
-	if (!wallet) {
-		throw UserHasNoWallet(user.id);
-	}
 
 	logger().debug("getOne returning", {
 		orderId,
@@ -97,13 +90,13 @@ export async function getOrder(orderId: string, user: User): Promise<Order> {
 		contexts: order.contexts
 	});
 
-	return await orderDbToApi(order, user.id, wallet.address);
+	return orderDbToApi(order, userId);
 }
 
-export async function changeOrder(orderId: string, user: User, change: Partial<Order>): Promise<Order> {
-	const order = await db.Order.getOne({ orderId, status: "!opened" });
+export async function changeOrder(orderId: string, userId: string, change: Partial<Order>): Promise<Order> {
+	const order = await db.Order.getOne({ orderId, status: "!opened" }) as db.MarketplaceOrder | db.ExternalOrder;
 
-	if (!order || order.contextForUser(user.id) === null) {
+	if (!order) {
 		throw NoSuchOrder(orderId);
 	}
 	if (order.status === "completed") {
@@ -114,13 +107,8 @@ export async function changeOrder(orderId: string, user: User, change: Partial<O
 	order.status = "failed";
 	await order.save();
 
-	const wallet = (await user.getWallets()).lastUsed();
-	if (!wallet) {
-		throw UserHasNoWallet(user.id);
-	}
-
 	logger().debug("order patched with error", { orderId, contexts: order.contexts, error: change.error });
-	return await orderDbToApi(order, user.id, wallet.address);
+	return orderDbToApi(order, userId);
 }
 
 async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string, orderTranslations = {} as OrderTranslations) {
@@ -182,13 +170,14 @@ export async function createMarketplaceOrder(offerId: string, user: User, userDe
 	return openOrderDbToApi(order, user.id);
 }
 
-async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalPayToUserOrderJWT): Promise<db.ExternalOrder> {
-	const senderWallet = (await sender.getWallets(senderDeviceId)).lastUsed();
+async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJWT): Promise<db.ExternalOrder> {
+	const senderWallet = (await sender.getWallets()).lastUsed();
 	if (!senderWallet) {
-		throw UserHasNoWallet(sender.id, senderDeviceId);
+		throw UserHasNoWallet(sender.id);
 	}
 
 	const recipient = await User.findOne({ appId: sender.appId, appUserId: jwt.recipient.user_id });
+
 	if (!recipient) {
 		throw NoSuchUser(jwt.recipient.user_id);
 	}
@@ -223,15 +212,16 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 	return order;
 }
 
-async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId: string, jwt: ExternalEarnOrderJWT) {
+async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
 	const app = (await Application.findOneById(recipient.appId))!;
-	if (!app) {
-		throw NoSuchApp(recipient.appId);
+
+	const wallet = (await recipient.getWallets()).lastUsed();
+	if (!wallet) {
+		throw UserHasNoWallet(recipient.id);
 	}
 
-	const wallet = (await recipient.getWallets(recipientDeviceId)).lastUsed();
-	if (!wallet) {
-		throw UserHasNoWallet(recipient.id, recipientDeviceId);
+	if (!app) {
+		throw NoSuchApp(recipient.appId);
 	}
 
 	return db.ExternalOrder.new({
@@ -251,16 +241,16 @@ async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId:
 	});
 }
 
-async function createNormalSpendExternalOrder(sender: User, senderDeviceId: string, jwt: ExternalSpendOrderJWT) {
-	const app = (await Application.all()).get(sender.appId);
+async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOrderJWT) {
+	const app = await Application.findOneById(sender.appId);
 
 	if (!app) {
 		throw NoSuchApp(sender.appId);
 	}
 
-	const wallet = (await sender.getWallets(senderDeviceId)).lastUsed();
+	const wallet = (await sender.getWallets()).lastUsed();
 	if (!wallet) {
-		throw UserHasNoWallet(sender.id, senderDeviceId);
+		throw UserHasNoWallet(sender.id);
 	}
 
 	const order = db.ExternalOrder.new({
@@ -284,9 +274,9 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 	return order;
 }
 
-export async function createExternalOrder(jwt: string, user: User, userDeviceId: string): Promise<OpenOrder> {
+export async function createExternalOrder(jwt: string, user: User): Promise<OpenOrder> {
 	logger().info("createExternalOrder", { jwt });
-	const payload = await validateExternalOrderJWT(jwt, user.appUserId, userDeviceId);
+	const payload = await validateExternalOrderJWT(jwt, user.appUserId);
 	const nonce = payload.nonce || db.Order.DEFAULT_NONCE;
 
 	const orders = await db.Order.getAll({ offerId: payload.offer.id, userId: user.id, nonce });
@@ -294,11 +284,11 @@ export async function createExternalOrder(jwt: string, user: User, userDeviceId:
 
 	if (!order || order.status === "failed") {
 		if (isPayToUser(payload)) {
-			order = await createP2PExternalOrder(user, userDeviceId, payload);
+			order = await createP2PExternalOrder(user, payload);
 		} else if (isExternalEarn(payload)) {
-			order = await createNormalEarnExternalOrder(user, userDeviceId, payload);
+			order = await createNormalEarnExternalOrder(user, payload);
 		} else {
-			order = await createNormalSpendExternalOrder(user, userDeviceId, payload);
+			order = await createNormalSpendExternalOrder(user, payload);
 		}
 
 		await order.save();
@@ -321,27 +311,55 @@ export async function submitOrder(
 	orderId: string,
 	user: User,
 	userDeviceId: string,
-	form: string | undefined): Promise<Order> {
-	const order = await db.Order.getOne({ orderId });
+	form: string | undefined,
+	acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<Order> {
 
-	if (!order || order.contextForUser(user.id) === null) {
+	/*logger().info("submitOrder", { orderId });
+	const order = await db.Order.getOne({ orderId }) as db.MarketplaceOrder | db.ExternalOrder;
+	const wallet = (await user.getWallets(userDeviceId)).lastUsed();
+	if (!wallet) {
+		throw UserHasNoWallet(user.id, userDeviceId);
+	}
+
+	if (!order) {
 		throw NoSuchOrder(orderId);
 	}
-	const context = order.contextForUser(user.id)!;
-	const walletAddress = context.wallet;
-
 	if (order.status !== "opened") {
-		return orderDbToApi(order, user.id, walletAddress);
+		return orderDbToApi(order, user.id);
 	}
 	if (order.isExpired()) {
 		throw OpenOrderExpired(orderId);
 	}
+
 	if (order.isMarketplaceOrder()) {
-		await submitFormAndMutateMarketplaceOrder(order, form);
-	}
-	if (order.isEarn()) {
-		// must be after submit form because order.amount changes
-		await assertRateLimitEarn(user, walletAddress, order.amount);
+		const offer = await offerDb.Offer.findOneById(order.offerId);
+		if (!offer) {
+			throw NoSuchOffer(order.offerId);
+		}
+
+		if (order.type === "earn") {
+			const offerContent = (await offerContents.getOfferContent(order.offerId))!;
+
+			switch (offerContent.contentType) {
+				// TODO this switch-case should be inside the offerContents module
+				case "poll":
+					// validate form
+					if (!offerContents.isValid(offerContent, form)) {
+						throw InvalidPollAnswers();
+					}
+					await offerContents.savePollAnswers(order.user.id, order.offerId, orderId, form); // TODO should we also save quiz results?
+					break;
+				case "quiz":
+					order.amount = await offerContents.sumCorrectQuizAnswers(offerContent, form, acceptsLanguagesFunc) || 1; // TODO remove || 1 - don't give idiots kin
+					// should we replace order.meta.content
+					break;
+				case "tutorial":
+					// nothing
+					break;
+				default:
+					logger().warn(`unexpected content type ${ offerContent.contentType }`);
+			}
+		}
 	}
 
 	order.setStatus("pending");
@@ -349,18 +367,19 @@ export async function submitOrder(
 	logger().info("order changed to pending", { orderId });
 
 	if (order.isEarn()) {
-		await payment.payTo(walletAddress, user.appId, order.amount, order.id);
-		createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
+		await payment.payTo(wallet.address, user.appId, order.amount, order.id);
+		createEarnTransactionBroadcastToBlockchainSubmitted(order.contexts[0].user.id, userDeviceId, order.offerId, order.id).report();
 	}
 
 	metrics.submitOrder(order.origin, order.flowType(), user.appId);
-	return await orderDbToApi(order, user.id, walletAddress);
+	return orderDbToApi(order, user.id);*/
+	return v2SubmitOrder(orderId, user, userDeviceId, form);
 }
 
-export async function cancelOrder(orderId: string, userId: string): Promise<void> {
+export async function cancelOrder(orderId: string): Promise<void> {
 	// you can only delete an open order - not a pending order
 	const order = await db.Order.getOne({ orderId, status: "opened" });
-	if (!order || order.contextForUser(userId) === null) {
+	if (!order) {
 		throw NoSuchOrder(orderId);
 	}
 
@@ -382,24 +401,23 @@ export async function getOrderHistory(
 		throw UserHasNoWallet(user.id, deviceId);
 	}
 
-	const orders = await db.Order.getAll({
-		...filters,
-		status,
-		walletAddress: wallet.address
-	}, limit);
+	const orders = await db.Order.getAll(
+		Object.assign({}, filters, { userId: user.id, walletAddress: wallet.address, status }),
+		limit
+	) as Array<db.MarketplaceOrder | db.ExternalOrder>;
 
 	return {
-		orders: await Promise.all(orders.map(async order => {
+		orders: orders.map(order => {
 			checkIfTimedOut(order); // no need to wait for the promise
-			return await orderDbToApi(order, user.id, wallet.address);
-		})),
+			return orderDbToApi(order, user.id);
+		}),
 		paging: {
 			cursors: {
 				after: "MTAxNTExOTQ1MjAwNzI5NDE",
 				before: "NDMyNzQyODI3OTQw",
 			},
-			previous: "https://api.kinmarketplace.com/v2/orders?limit=25&before=NDMyNzQyODI3OTQw",
-			next: "https://api.kinmarketplace.com/v2/orders?limit=25&after=MTAxNTExOTQ1MjAwNzI5NDE=",
+			previous: "https://api.kinmarketplace.com/v1/orders?limit=25&before=NDMyNzQyODI3OTQw",
+			next: "https://api.kinmarketplace.com/v1/orders?limit=25&after=MTAxNTExOTQ1MjAwNzI5NDE=",
 		},
 	};
 }
@@ -423,39 +441,23 @@ function openOrderDbToApi(order: db.Order, userId: string): OpenOrder {
 	};
 }
 
-async function orderDbToApi(order: db.Order, userId: string, wallet: string): Promise<Order> {
+function orderDbToApi(order: db.Order, userId: string): Order {
 	if (order.status === "opened") {
 		throw OpenedOrdersUnreturnable();
 	}
 
+	const context = order.contextForUser(userId)!;
 	const apiOrder = Object.assign(
 		pick(order, "id", "origin", "status", "amount"), {
 			result: order.value,
+			offer_type: context.type,
 			offer_id: order.offerId,
 			error: order.error as ApiError,
 			blockchain_data: order.blockchainData,
 			completion_date: (order.currentStatusDate || order.createdDate).toISOString()
-		}) as Order;
+		}, pick(context.meta, "title", "description", "content", "call_to_action")) as Order;
 
-	const data: any = {};
-	let context = order.contextForUser(userId)!;
-	if (context) {
-		Object.assign(data, {
-			offer_type: context.type,
-		}, pick(context.meta, "title", "description", "content", "call_to_action"));
-	} else {
-		context = order.contextForWallet(wallet)!;
-		const app = (await Application.all()).get(context.user.appId)!;
-
-		Object.assign(data, {
-			offer_type: context.type,
-		}, pick(context.meta, "title", "description", "content", "call_to_action"));
-
-		data.title = app.name;
-		data.description = order.isMarketplaceOrder() ? capitalizeFirstLetter(context.type) : "Completed";
-	}
-
-	return Object.assign({}, apiOrder, data);
+	return apiOrder;
 }
 
 export async function setFailedOrder(order: db.Order, error: MarketplaceError, failureDate?: Date): Promise<db.Order> {
@@ -463,7 +465,9 @@ export async function setFailedOrder(order: db.Order, error: MarketplaceError, f
 	order.currentStatusDate = failureDate || order.currentStatusDate;
 	order.error = error.toJson();
 
-	metrics.orderFailed(order);
+	order.contexts.forEach(context => {
+		metrics.orderFailed(order);
+	});
 
 	return await order.save();
 }

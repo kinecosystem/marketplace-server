@@ -119,7 +119,7 @@ async function filterOffers(userId: string, appId: string, appOffers: AppOffer[]
 }
 
 export async function getOffers(userId: string, appId: string, filters: ModelFilters<db.Offer>, acceptsLanguagesFunc?: ExpressRequest["acceptsLanguages"]): Promise<OfferList> {
-	const app = await Application.findOneById(appId);
+	const app = await Application.get(appId);
 	if (!app) {
 		throw NoSuchApp(appId);
 	}

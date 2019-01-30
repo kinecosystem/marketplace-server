@@ -69,6 +69,9 @@ export const notFoundHandler = function(req: Request, res: Response) {
 export function generalErrorHandler(err: any, req: Request, res: Response, next: express.NextFunction) {
 	if (err instanceof MarketplaceError) {
 		clientErrorHandler(err, req as express.Request, res);
+	} else if (err.status && err.status < 500) {
+		const mpErr = new MarketplaceError(err.status, 0, err.type || err.message, err.message);
+		clientErrorHandler(mpErr, req as express.Request, res);
 	} else {
 		serverErrorHandler(err, req as express.Request, res);
 	}

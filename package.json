@@ -37,7 +37,7 @@
 		"winston": "^2.4.0"
 	},
 	"devDependencies": {
-		"@kinecosystem/kin.js": "^1.0.6",
+		"@kinecosystem/kin.js": "^1.0.7",
 		"@types/argparse": "^1.0.35",
 		"@types/body-parser": "^1.16.8",
 		"@types/csv-parse": "^1.1.11",
@@ -68,13 +68,14 @@
 		"transpile": "tsc -p .",
 		"lint": "./node_modules/.bin/tslint -p .",
 		"build": "npm-run-all clean lint transpile",
-		"start": "nodemon scripts/bin/public/index",
-		"start-internal": "nodemon scripts/bin/internal/index",
-		"start-admin": "nodemon scripts/bin/admin/index",
+		"start": "nodemon $NODEMON_WATCH_DIRS scripts/bin/public/index",
+		"start-internal": "nodemon $NODEMON_WATCH_DIRS scripts/bin/internal/index",
+		"start-admin": "nodemon $NODEMON_WATCH_DIRS scripts/bin/admin/index",
 		"start-marketplace-public": "node scripts/bin/public/index",
 		"start-marketplace-internal": "node scripts/bin/internal/index",
 		"start-marketplace-admin": "node scripts/bin/admin/index",
 		"manage-db-data": "node scripts/bin/manage_db_data",
+		"start-admin": "node scripts/bin/admin/index",
 		"restart": "npm-run-all build start",
 		"test-system": "node scripts/bin/mock_client",
 		"test": "jest --forceExit --runInBand --detectOpenHandles"
@@ -102,6 +103,13 @@
 		"coverageDirectory": "<rootDir>/coverage/",
 		"collectCoverageFrom": [
 			"<rootDir>/scripts/src/**/*.ts",
+			"!<rootDir>/scripts/src/analytics/**",
+			"!<rootDir>/scripts/src/admin/**",
+			"!<rootDir>/scripts/src/create_data/**",
+			"!<rootDir>/scripts/src/mock_client.ts",
+			"!<rootDir>/scripts/src/manage_db_data.ts",
+			"!<rootDir>/scripts/src/adapt_translation_csv.ts",
+			"!<rootDir>/scripts/src/node-console.ts",
 			"!<rootDir>/scripts/src/tests/**",
 			"!<rootDir>/scripts/src/**/*.d.ts"
 		],

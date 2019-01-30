@@ -6,9 +6,8 @@ import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
 import { IdPrefix, isNothing } from "../utils/utils";
 import * as payment from "../public/services/payment";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
-import { getDefaultLogger as log } from "../logging";
 import { getOffers as getUserOffersService } from "../public/services/offers";
-import { getOfferContent, replaceTemplateVars } from "../public/services/offer_contents";
+import { getOfferContent } from "../public/services/offer_contents";
 
 type OfferStats = {
 	id: string
@@ -88,6 +87,7 @@ const ORDER_HEADERS = `<tr>
 <th>content</th>
 <th>offerId</a></th>
 <th>transaction_id</th>
+<th>userWallet</th>
 <th>date</th>
 <th>payment confirmation</th>
 </tr>`;
@@ -286,10 +286,10 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 		return `<input type="number" onchange="submitData('/offers/${ offer.id }', { amount: Number(this.value) })" value="${ offer.amount }"/>`;
 	}
 
-	const content = replaceTemplateVars(offer, ((await getOfferContent(offer.id)) || { content: "{}" }).content);
-
+	const OfferContent = ((await getOfferContent(offer.id)) || { contentType: "poll", content: "{}" });
+	const offerIdHtml = OfferContent.contentType === "coupon" ? offer.id : `<a onclick="overlayOn(this.dataset.content, '${ offer.id }')" data-content="${ escape(OfferContent.content) }">${ offer.id }</a>`;
 	return `<tr class='offer-row'>
-<td class='offer-id'><a onclick="overlayOn(this.dataset.content, '${ offer.id }')" data-content="${ escape(content) }">${ offer.id }</a></td>
+<td class='offer-id'>${ offerIdHtml }</td>
 <td><a href="/orders?offer_id=${ offer.id }">orders</a></td>
 <td><a href="/polls/${ offer.id }">polls</a></td>
 <td>${ offer.name }</td>
@@ -319,6 +319,13 @@ async function orderToHtml(order: Order): Promise<string> {
 	let html = "";
 
 	for (const context of contexts) {
+		let userWallet = null;
+		if (order.blockchainData) {
+			userWallet = context.type === "earn" ?
+				order.blockchainData.recipient_address :
+				order.blockchainData.sender_address;
+		}
+
 		html += `<tr>
 <td><a href="/orders/${ order.id }">${ order.id }</a></td>
 <td class="status_${ order.status }"><a href="/orders?status=${ order.status }">${ order.status }</a></td>
@@ -332,6 +339,7 @@ async function orderToHtml(order: Order): Promise<string> {
 <td><pre>${ context.meta.content }</pre></td>
 <td><a href="/offers/${ order.offerId }">${ order.offerId }</a></td>
 <td><a href="${ BLOCKCHAIN.horizon_url }/transactions/${ transactionId }">${ transactionId }</a></td>
+<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ userWallet }">${ userWallet }</a></td>
 <td>${ (order.currentStatusDate || order.createdDate).toISOString() }</td>
 <td><pre><a href="https://jwt.io?token=${ payJwt }">${ payJwt }</a></pre></td>
 </tr>`;
@@ -341,20 +349,24 @@ async function orderToHtml(order: Order): Promise<string> {
 }
 
 async function userToHtml(user: User): Promise<string> {
+	const accounts = (await user.getWallets()).all().map(wallet => {
+		return `
+		<a href="${ BLOCKCHAIN.horizon_url}/accounts/${ wallet.address }">${ wallet.address }</a>
+		<a href="/wallets/${ wallet.address }">balance</a>
+		<a href="/wallets/${ wallet.address }/payments">kin transactions</a>
+		`;
+	}).join("<br/>");
+
 	return `
 <ul>
-<li>ecosystem id: <a href="/users/${ user.id }">${ user.id }</a></li>
-<li>appId: ${ user.appId }</li>
-<li>appUserId: ${ user.appUserId }</li>
-<li>stellar account:
-<a href="${ BLOCKCHAIN.horizon_url }/accounts/${ user.walletAddress }">${ user.walletAddress }</a>
-<a href="/wallets/${ user.walletAddress }">balance</a>
-<a href="/wallets/${ user.walletAddress }/payments">kin transactions</a>
-</li>
-<li>created: ${ user.createdDate }</li>
-<li><a href="/orders?user_id=${ user.id }">orders</a></li>
-<li><a href="/users/${ user.id }/offers">offers</a></li>
-<li><a href="https://analytics.amplitude.com/kinecosystem/project/204515/search/${ user.id }">client events</a></li>
+	<li>ecosystem id: <a href="/users/${ user.id }">${ user.id }</a></li>
+	<li>appId: ${ user.appId }</li>
+	<li>appUserId: ${ user.appUserId }</li>
+	<li>stellar accounts:<br/>${ accounts }</li>
+	<li>created: ${ user.createdDate }</li>
+	<li><a href="/orders?user_id=${ user.id }">orders</a></li>
+	<li><a href="/users/${ user.id }/offers">offers</a></li>
+	<li><a href="https://analytics.amplitude.com/kinecosystem/project/204515/search/${ user.id }">client events</a></li>
 </ul>`;
 }
 
@@ -381,7 +393,7 @@ export async function getApplications(params: any, query: Paging): Promise<strin
 }
 
 export async function getApplication(params: { app_id: string }, query: any): Promise<string> {
-	const app = await Application.findOneById(params.app_id);
+	const app = await Application.get(params.app_id);
 	if (!app) {
 		throw new Error("no such app: " + params.app_id);
 	}
@@ -417,7 +429,7 @@ export async function getApplicationOffers(params: { app_id: string }, query: Pa
 		.where("app.id = :appId", { appId: params.app_id })
 		.leftJoinAndSelect("app.appOffers", "app_offer")
 		.leftJoinAndSelect("app_offer.offer", "offer")
-		.addOrderBy("offer.created_date", "ASC")
+		.addOrderBy("offer.createdDate", "ASC")
 		.limit(take(query))
 		.offset(skip(query))
 		.getOne();
@@ -487,23 +499,19 @@ export async function getApplicationUserData(params: { app_user_id: string, app_
 }
 
 export async function getOrders(params: any, query: Paging & { status?: OpenOrderStatus, user_id?: string, offer_id?: string }): Promise<string> {
-	const q = await Order.queryBuilder("order");
+	const q = Order.genericGet({ offerId: query.offer_id, status: query.status });
 
-	if (query.offer_id) {
-		q.andWhere("offer_id = :offer_id", { offer_id: query.offer_id });
-	}
-	if (query.status) {
-		q.andWhere("status = :status", { status: query.status });
-	}
 	if (query.user_id) {
-		const contexts = await OrderContext.find({ userId: query.user_id });
-		if (contexts.length > 0) {
-			q.andWhere("id in (:ids)", { ids: contexts.map(c => c.orderId) });
-		} else {
-			q.andWhere("id = 'no-such-id' ");
+		const userOrders = await Order.genericGet({ userId: query.user_id }).getMany();
+		let orderIds = userOrders.map(o => o.id);
+		if (!orderIds.length) {
+			orderIds = ["no_orders"];
 		}
+		q.where(`ordr.id IN (:ids)`, { ids: orderIds });
+
 	}
-	const orders = await q.orderBy("current_status_date", "DESC").skip(skip(query)).take(take(query)).getMany();
+
+	const orders = await q.skip(skip(query)).take(take(query)).getMany();
 
 	let ret = `<table>${ ORDER_HEADERS }`;
 	for (const order of orders) {
@@ -537,19 +545,19 @@ window.setTimeout(function(){
 </div>`;
 }
 
-export async function retryUserWallet(params: { user_id: string }, query: any): Promise<string> {
+export async function retryUserWallet(params: { user_id: string; wallet: string; }, query: any): Promise<string> {
 	const user = await User.findOneById(params.user_id);
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
-	await payment.createWallet(user.walletAddress, user.appId, user.id);
+	await payment.createWallet(params.wallet, user.appId, user.id);
 	return `<h3>Retrying...</h3>
 <div><a href="/users/${ user.id }">Go Back</a>
 <script>
-window.setTimeout(function(){
-        // Move to a new location or you can do something else
-        window.location.href = "/users/${ user.id }";
-    }, 5000);
+	window.setTimeout(function(){
+		// Move to a new location or you can do something else
+		window.location.replace("/users/${ user.id }");
+	}, 5000);
 </script>
 </div>`;
 }

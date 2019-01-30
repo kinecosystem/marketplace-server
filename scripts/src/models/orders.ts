@@ -56,6 +56,7 @@ export type GetOrderFilters = {
 	offerId?: string;
 	nonce?: string;
 	origin?: OrderOrigin;
+	walletAddress?: string;
 	status?: OrderStatusAndNegation;
 };
 
@@ -80,7 +81,9 @@ export interface Order {
 
 	forEachContext(fn: (context: OrderContext) => void): void;
 
-	contextFor(userId: string): OrderContext | null;
+	contextForUser(userId: string): OrderContext | null;
+
+	contextForWallet(userId: string): OrderContext | null;
 
 	setStatus(status: OpenOrderStatus): void;
 
@@ -124,18 +127,18 @@ export const Order = {
 		const statuses = options.userId ? ["pending"] : ["opened", "pending"];
 
 		const query = OrderImpl.createQueryBuilder("ordr") // don't use 'order', it messed things up
-			.select("ordr.offer_id")
-			.addSelect("COUNT(DISTINCT(ordr.id)) AS cnt")
+			.select("ordr.offerId", "offerId")
+			.addSelect("COUNT(DISTINCT(ordr.id))", "cnt")
 			.leftJoin("ordr.contexts", "context");
 
 		if (options.userId) {
-			query.andWhere("context.user_id = :userId", { userId: options.userId });
+			query.andWhere("context.userId = :userId", { userId: options.userId });
 		} else {
 			query.leftJoin("context.user", "user");
-			query.andWhere(`"user".app_id = :appId`, { appId });
+			query.andWhere("user.appId = :appId", { appId });
 		}
 		if (options.offerId) {
-			query.andWhere("ordr.offer_id = :offerId", { offerId: options.offerId });
+			query.andWhere("ordr.offerId = :offerId", { offerId: options.offerId });
 		}
 
 		query.andWhere(new Brackets(qb => {
@@ -143,17 +146,18 @@ export const Order = {
 				.orWhere(
 					new Brackets(qb2 => {
 						qb2.where("ordr.status IN (:statuses)", { statuses })
-							.andWhere("ordr.expiration_date > :date", { date: new Date() });
+							.andWhere("ordr.expirationDate > :date", { date: new Date() });
 					})
 				);
 		}))
-			.groupBy("ordr.offer_id");
+			.groupBy("ordr.offerId");
 
-		const results: Array<{ offer_id: string, cnt: number }> = await query.getRawMany();
+		const results: Array<{ offerId: string, cnt: number }> = await query.getRawMany();
 		const map = new Map<string, number>();
 		for (const res of results) {
-			map.set(res.offer_id, res.cnt);
+			map.set(res.offerId, res.cnt);
 		}
+
 		return map;
 	},
 
@@ -162,16 +166,16 @@ export const Order = {
 
 		const query = OrderImpl.createQueryBuilder("ordr")
 			.leftJoinAndSelect("ordr.contexts", "context")
-			.andWhere("context.user_id = :userId", { userId })
+			.andWhere("context.userId = :userId", { userId })
 			.andWhere("context.type = :type", { type })
 			.andWhere("ordr.origin = :origin", { origin })
-			.andWhere("ordr.current_status_date > :midnight", { midnight })
+			.andWhere("ordr.currentStatusDate > :midnight", { midnight })
 			.andWhere(new Brackets(qb => {
 				qb.where("ordr.status = :completed", { completed: "completed" })
 					.orWhere(
 						new Brackets(qb2 => {
 							qb2.where("ordr.status = :pending", { pending: "pending" })
-								.andWhere("ordr.expiration_date > :expiration_date", { expiration_date: new Date() });
+								.andWhere("ordr.expirationDate > :expirationDate", { expirationDate: new Date() });
 						})
 					);
 			}));
@@ -184,8 +188,8 @@ export const Order = {
 		const latestExpiration = moment().add(2, "minutes").toDate();
 
 		const query = this.genericGet({ offerId, userId });
-		query.andWhere("ordr.expiration_date > :date", { date: latestExpiration })
-			.orderBy("ordr.expiration_date", "DESC"); // if there are a few, get the one with the most time left
+		query.andWhere("ordr.expirationDate > :date", { date: latestExpiration })
+			.orderBy("ordr.expirationDate", "DESC"); // if there are a few, get the one with the most time left
 
 		const order = await (query.getOne() as Promise<T | undefined>);
 
@@ -214,27 +218,45 @@ export const Order = {
 		const query = OrderImpl.createQueryBuilder("ordr")
 			.innerJoinAndSelect("ordr.contexts", "context")
 			.leftJoinAndSelect("context.user", "user")
-			.orderBy("ordr.current_status_date", "DESC")
+			.orderBy("ordr.currentStatusDate", "DESC")
 			.addOrderBy("ordr.id", "DESC");
 
 		updateQueryWithFilter(query, "id", filters.orderId, "ordr");
 		updateQueryWithFilter(query, "status", filters.status, "ordr");
 		updateQueryWithFilter(query, "nonce", filters.nonce, "ordr");
 		updateQueryWithFilter(query, "origin", filters.origin, "ordr");
-		updateQueryWithFilter(query, "offer_id", filters.offerId, "ordr");
-		updateQueryWithFilter(query, "user_id", filters.userId, "context");
+		updateQueryWithFilter(query, "offerId", filters.offerId, "ordr");
+		updateQueryWithFilter(query, "userId", filters.userId, "context");
+		updateQueryWithFilter(query, "wallet", filters.walletAddress, "context");
 
 		return query;
 	},
 
-	getAll<T extends Order>(filters: GetOrderFilters & { userId: string }, limit?: number): Promise<T[]> {
-		const query = this.genericGet(filters);
+	/**
+	 * Gets orders by `filters` (by `user_id`) object, maps it to order ids and searching  by `IN order_ids`
+	 * First `genericGet` will be replaced by caching lookup
+	 *
+	 * @param      {GetOrderFilters & {userId: string}}  filters
+	 * @param      {number}  limit
+	 * @return     {Promise<T[]>}  filtered orders including p2p
+	 */
+	async getAll<T extends Order>(filters: GetOrderFilters & { userId?: string }, limit?: number): Promise<T[]> {
+		const allOrders = await this.genericGet(filters).getMany(); // can be replaced by cache
 
-		if (limit) {
-			query.limit(limit);
+		const ids: string[] = allOrders.map(order => order.id);
+		if (!ids.length) {
+			return []; // empty array causes sql syntax error
 		}
 
-		return query.getMany() as any;
+		delete filters.userId;
+		const userOrdersQuery = this.genericGet(filters) // this query looks for every orders returned by previous query without userId
+			.andWhere(`ordr.id IN (:ids)`, { ids });
+
+		if (limit) {
+			userOrdersQuery.limit(limit);
+		}
+
+		return userOrdersQuery.getMany() as any;
 	},
 
 	find(options?: FindManyOptions<Order>): Promise<Order[]> {
@@ -289,6 +311,7 @@ export const MarketplaceOrder = extendedOrder("marketplace") as (typeof Order) &
 export type ExternalOrder = Order;
 
 export const ExternalOrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
+export const P2POrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
 
 export type NormalOrder = Order & {
 	user: User;
@@ -360,6 +383,7 @@ class OrderImpl extends CreationDateModel implements Order {
 				(context as Mutable<OrderContext>).orderId = this.id;
 				(context as Mutable<OrderContext>).userId = context.user.id;
 			}
+
 			await mgr.save(this);
 		});
 
@@ -412,9 +436,19 @@ class OrderImpl extends CreationDateModel implements Order {
 		return !this.isP2P();
 	}
 
-	public contextFor(userId: string): OrderContext | null {
+	public contextForUser(userId: string): OrderContext | null {
 		for (const context of this.contexts) {
 			if (context.user.id === userId) {
+				return context;
+			}
+		}
+
+		return null;
+	}
+
+	public contextForWallet(walletAddress: string): OrderContext | null {
+		for (const context of this.contexts) {
+			if (context.wallet === walletAddress) {
 				return context;
 			}
 		}
@@ -524,11 +558,15 @@ export class OrderContext extends BaseEntity {
 	@JoinColumn({ name: "user_id" })
 	public readonly user!: User;
 
+	@Index()
 	@Column()
-	public type!: OfferType;
+	public wallet!: string;
 
 	@Column("simple-json")
 	public readonly meta!: OrderMeta;
+
+	@PrimaryColumn()
+	public type!: OfferType;
 
 	@PrimaryColumn({ name: "order_id" })
 	public readonly orderId!: string;

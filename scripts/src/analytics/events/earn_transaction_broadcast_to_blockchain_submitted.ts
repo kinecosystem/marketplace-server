@@ -18,11 +18,11 @@ export interface EarnTransactionBroadcastToBlockchainSubmitted extends EventData
 	order_id: string;
 }
 
-export function create(user_id: string, offer_id: string, order_id: string): Event<EarnTransactionBroadcastToBlockchainSubmitted> {
+export function create(user_id: string, device_id: string, offer_id: string, order_id: string): Event<EarnTransactionBroadcastToBlockchainSubmitted> {
 	return new Event<EarnTransactionBroadcastToBlockchainSubmitted>({
 		event_name: "earn_transaction_broadcast_to_blockchain_submitted",
 		event_type: "log",
-		common: createCommon(user_id),
+		common: createCommon(user_id, device_id),
 		offer_id,
 		order_id
 	});

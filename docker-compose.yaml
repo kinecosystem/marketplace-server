@@ -4,7 +4,7 @@ services:
 
   marketplace-public:
     image: kinecosystem/marketplace-server:latest
-    command: ./tests/wait-for marketplace-internal:3000 -- npm run start
+    command: ./tests/wait-for -t 60 marketplace-internal:3000 -- npm run start
     restart: "no"
     volumes:
       - .:/opt/app
@@ -31,11 +31,12 @@ services:
       APP_DB_PORT: 5432
       APP_DB_HOST: postgres
       APP_DB_DATABASE: ecosystem
+      NODEMON_WATCH_DIRS: ${NODEMON_WATCH_DIRS}
 
   marketplace-admin:
     image: kinecosystem/marketplace-server:latest
     restart: "no"
-    command: ./tests/wait-for marketplace-public:3000 -- npm run start-admin
+    command: ./tests/wait-for -t 60 marketplace-public:3000 -- npm run start-admin
     volumes:
       - .:/opt/app
     ports:
@@ -52,7 +53,7 @@ services:
   marketplace-internal:
     image: kinecosystem/marketplace-server:latest
     restart: "no"
-    command: ./tests/wait-for postgres:5432 -- npm run start-internal
+    command: ./tests/wait-for -t 60 postgres:5432 -- npm run start-internal
     volumes:
       - .:/opt/app
     ports:

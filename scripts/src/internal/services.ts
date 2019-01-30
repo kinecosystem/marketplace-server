@@ -16,7 +16,7 @@ import { AssetUnavailable, BlockchainError, WrongAmount, WrongRecipient, WrongSe
 import { setFailedOrder } from "../public/services/orders";
 import { Application, AppOffer } from "../models/applications";
 
-const BLOCKCHAIN = "stellar-testnet";
+const BLOCKCHAIN = "kin-prod";
 const RS512_APPS = ["test", "smpl"];
 
 export type WalletCreationSuccessData = {
@@ -64,8 +64,8 @@ export type JWTBodyPaymentConfirmation = {
 	}
 };
 
-async function getPaymentJWT(order: db.Order, appId: string, userId: string): Promise<OrderValue> {
-	const loggedInContext = order.contextFor(userId)!;
+async function getPaymentJWT(order: db.Order, appId: string, user: User): Promise<OrderValue> {
+	const loggedInContext = order.contextForUser(user.id)!;
 	const payload: JWTBodyPaymentConfirmation = {
 		nonce: order.nonce,
 		offer_id: order.offerId,
@@ -86,7 +86,7 @@ async function getPaymentJWT(order: db.Order, appId: string, userId: string): Pr
 
 	return {
 		type: "payment_confirmation",
-		jwt: signJWT("payment_confirmation", payload, RS512_APPS.includes(appId) ? "rs512" : "es256") // TODO all apps should run with es256 keys
+		jwt: await signJWT("payment_confirmation", payload, RS512_APPS.includes(appId) ? "rs512" : "es256") // TODO all apps should run with es256 keys
 	};
 }
 
@@ -131,7 +131,7 @@ export async function paymentComplete(payment: CompletedPayment) {
 	}
 
 	if (order.blockchainData!.sender_address !== payment.sender_address) {
-		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
+		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }> ` +
 			`addresses sender mismatch ${ order.blockchainData!.sender_address } !== ${ payment.sender_address }`);
 
 		await setFailedOrder(order, WrongSender());
@@ -154,14 +154,14 @@ export async function paymentComplete(payment: CompletedPayment) {
 			}
 		}
 	} else if (order.isP2P()) {
-		order.value = await getPaymentJWT(order, payment.app_id, order.sender.id);
+		order.value = await getPaymentJWT(order, payment.app_id, order.sender);
 	} else if (order.isNormal()) {
-		order.value = await getPaymentJWT(order, payment.app_id, order.user.id);
+		order.value = await getPaymentJWT(order, payment.app_id, order.user);
 	}
 
 	if (order.status !== "pending") {
 		// can be either failed or opened
-		logger().info("a non pending order turned completed", { order, status: order.status });
+		logger().info("a non pending order turned completed", { orderId: order.id, status: order.status });
 		order.error = null;
 	}
 
@@ -201,7 +201,7 @@ export async function paymentFailed(payment: FailedPayment) {
  * register to get callbacks for incoming payments for all the active offers
  */
 export async function initPaymentCallbacks(): Promise<Watcher> {
-	const [appOffers, apps] = await Promise.all([AppOffer.find(), Application.find()]);
+	const [appOffers, apps] = await Promise.all([AppOffer.find(), Application.all().then(apps => Array.from(apps.values()))]);
 	// create a list of unique addresses
 	const addresses = removeDuplicates(
 		[

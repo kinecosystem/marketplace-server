@@ -8,18 +8,18 @@ import { Common, create as createCommon } from "./common";
  */
 
 /**
- * Wallet address updated successfully
+ * Only for NEW users - only once per user_id
  */
-export interface WalletAddressUpdateSucceeded extends EventData {
-	event_name: "wallet_address_update_succeeded";
-	event_type: "log";
+export interface UserRegistrationRequested extends EventData {
+	event_name: "user_registration_requested";
+	event_type: "business";
 	common: Common;
 }
 
-export function create(user_id: string, device_id: string): Event<WalletAddressUpdateSucceeded> {
-	return new Event<WalletAddressUpdateSucceeded>({
-		event_name: "wallet_address_update_succeeded",
-		event_type: "log",
+export function create(user_id: string, device_id: string): Event<UserRegistrationRequested> {
+	return new Event<UserRegistrationRequested>({
+		event_name: "user_registration_requested",
+		event_type: "business",
 		common: createCommon(user_id, device_id)
 	});
 }

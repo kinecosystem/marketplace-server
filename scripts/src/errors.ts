@@ -63,6 +63,9 @@ const CODES = {
 	TooManyRequests: {
 		Registrations: 1,
 		Amounts: 2
+	},
+	Deprecated: {
+		BlockchainEndpointChanged: 1,
 	}
 };
 
@@ -290,4 +293,12 @@ export function TooManyRegistrations(message: string): MarketplaceError {
 
 export function TooMuchEarnOrdered(message: string): MarketplaceError {
 	return TooManyRequests(CODES.TooManyRequests.Amounts, message);
+}
+
+function DeprecationError(index: number, message: string): MarketplaceError {
+	return new MarketplaceError(410, index, "Request to a deprecated resource", message);
+}
+
+export function BlockchainEndpointChanged(message: string): MarketplaceError {
+	return TooManyRequests(CODES.Deprecated.BlockchainEndpointChanged, message);
 }

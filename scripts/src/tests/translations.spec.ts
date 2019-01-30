@@ -35,7 +35,7 @@ describe("translations tests", async () => {
 			trans_file: null,
 			trans_lang: null,
 		};
-		await initDb(scriptConfig);
+		await initDb(scriptConfig, false);
 		helpers.patchDependencies();
 		localCache.clear();
 		done();

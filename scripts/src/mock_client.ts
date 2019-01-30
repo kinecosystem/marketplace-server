@@ -223,9 +223,7 @@ async function getOfferTranslations() {
 
 	const offers = await client.getOffers();
 	//  We don't know the order of the offers received but some must have this title
-	expect(offers.offers.filter(o => {
-		return o.title === "Faça um teste";
-	}).length).toBeGreaterThan(0);
+	expect(offers.offers.filter(o => o.title === "Faça um teste").length).toBeGreaterThan(0);
 
 	console.log("OK.\n", offers.offers.slice(0, 4));
 }

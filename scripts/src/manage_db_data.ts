@@ -7,7 +7,7 @@ import * as fs from "fs";
 import { join } from "path";
 import { Keypair } from "@kinecosystem/kin.js";
 
-import { close as closeModels, init as initModels } from "./models";
+import { close as closeDbConnection, init as initModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
 import { createEarn, createSpend, EarnOptions } from "./create_data/offers";
 import { ContentType, Offer } from "./models/offers";
@@ -283,7 +283,7 @@ function confirmPrompt(message: string) {
 }
 */
 
-export async function initDb(scriptConfig: ScriptConfig) {
+export async function initDb(scriptConfig: ScriptConfig, closeConnectionWhenDone: boolean = true) {
 	const appsDir = scriptConfig.apps_dir;
 	if (appsDir) {
 		for (const filename of fs.readdirSync(path(appsDir))) {
@@ -341,25 +341,27 @@ export async function initDb(scriptConfig: ScriptConfig) {
 			}
 		}
 	}
-	// const translationsFile = scriptConfig.trans_file;
-	// const translationsLanguage = scriptConfig.trans_lang;
-	// if (translationsFile && translationsLanguage) {
-	// 	const generatedStringsFileName = "/tmp/local_translations_template-by_manage_db_script.csv";
-	// 	const translationsFilename = "/tmp/translations-by_manage_db_script.csv";
-	// 	console.log("creating translations template file");
-	// 	await translations.writeCsvTemplateToFile(generatedStringsFileName);
-	// 	console.log("adapting test translations file");
-	// 	await adaptTranslations.processFile(translationsFile, generatedStringsFileName, translationsFilename);
-	// 	console.log("processing translations and inserting into db");
-	// 	await translations.processFile(translationsFilename, translationsLanguage);
-	// 	console.log("Done. Translations Ready.");
-	// } else if (translationsFile || translationsLanguage) {
-	// 	throw Error("Both a translations file and a translations language need to be specified.");
-	// }
-	//
-	try {
-		// await closeModels();
-	} catch (e) {
+	const translationsFile = scriptConfig.trans_file;
+	const translationsLanguage = scriptConfig.trans_lang;
+	if (translationsFile && translationsLanguage) {
+		const generatedStringsFileName = "/tmp/local_translations_template-by_manage_db_script.csv";
+		const translationsFilename = "/tmp/translations-by_manage_db_script.csv";
+		console.log("creating translations template file");
+		await translations.writeCsvTemplateToFile(generatedStringsFileName);
+		console.log("adapting test translations file");
+		await adaptTranslations.processFile(translationsFile, generatedStringsFileName, translationsFilename);
+		console.log("processing translations and inserting into db");
+		await translations.processFile(translationsFilename, translationsLanguage);
+		console.log("Done. Translations Ready.");
+	} else if (translationsFile || translationsLanguage) {
+		throw Error("Both a translations file and a translations language need to be specified.");
+	}
+
+	if (closeConnectionWhenDone) {
+		try {
+			await closeDbConnection();
+		} catch (e) {
+		}
 	}
 	console.log(`done.`);
 
@@ -373,7 +375,7 @@ if (require.main === module) {
 	}).catch(async (error: Error) => {
 		console.log("error: " + error.message + "\n" + error.stack);
 		try {
-			await closeModels();
+			await closeDbConnection();
 		} catch (e) {
 		}
 		console.log(`done.`);

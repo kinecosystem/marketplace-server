@@ -358,7 +358,7 @@ export async function initDb(scriptConfig: ScriptConfig) {
 	// }
 	//
 	try {
-		//await closeModels();
+		// await closeModels();
 	} catch (e) {
 	}
 	console.log(`done.`);

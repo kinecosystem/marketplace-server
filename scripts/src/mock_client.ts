@@ -12,7 +12,7 @@ import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
 import { Order as DbOrder } from "./models/orders";
 import { Client as V1MarketplaceClient } from "./client.v1";
-import { delay, generateId, randomInteger, retry } from "./utils/utils";
+import { generateId, randomInteger, retry } from "./utils/utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { Client as MarketplaceClient, ClientError, JWTPayload } from "./client";
@@ -214,9 +214,9 @@ async function getOfferTranslations() {
 	console.log("=====================================getOfferTranslations=====================================");
 	const userId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId);
+	const jwt = await appClient.getV1RegisterJWT(userId);
 
-	const client = await MarketplaceClient.create({ jwt },
+	const client = await V1MarketplaceClient.create({ jwt },
 		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ",
 		{ headers: { "accept-language": "pt-BR" } });
 
@@ -233,10 +233,9 @@ async function spendFlow() {
 	console.log("===================================== spendFlow =====================================");
 
 	const userId = generateId();
-	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getRegisterJWT(userId, deviceId);
-	const client = await MarketplaceClient.create({ jwt });
+	const jwt = await appClient.getV1RegisterJWT(userId);
+	const client = await V1MarketplaceClient.create({ jwt });
 	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
 	await client.activate();
@@ -1559,7 +1558,7 @@ async function main() {
 	await v1TryToNativeSpendTwiceWithNonce();
 	await p2p();
 	await v1P2p();
-  await getOfferTranslations();
+	await getOfferTranslations();
 
 	// multiple users/devices/wallets flows
 	await twoUsersSharingWallet();

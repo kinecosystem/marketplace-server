@@ -4,7 +4,7 @@ import * as httpContext from "express-http-context";
 
 import { logRequest, reportMetrics, requestLogger } from "../middleware";
 
-export * from "../middleware";
+export { notFoundHandler, generalErrorHandler, statusHandler } from "../middleware";
 
 export function init(app: express.Express) {
 	app.use(httpContext.middleware as express.RequestHandler);

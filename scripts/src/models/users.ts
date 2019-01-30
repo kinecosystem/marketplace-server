@@ -47,12 +47,7 @@ export class User extends CreationDateModel {
 
 		const wallets = await Wallet.find(conditions);
 		if (wallets.length === 0 && this.walletAddress) {
-			deviceId = deviceId || (await AuthToken.findOne({
-				where: { userId: this.id },
-				order: { createdDate: "DESC" }
-			}))!.deviceId;
-			logger().info(`lazy migrate user ${ this.id } device ${ deviceId } wallet: ${ this.walletAddress }`);
-			await this.updateWallet(deviceId, this.walletAddress);
+			await this.lazyMigrateWallet(deviceId);
 		}
 
 		return new Wallets(await Wallet.find(conditions));
@@ -130,6 +125,22 @@ export class User extends CreationDateModel {
 			}
 		}
 		return this;
+	}
+
+	// migrate wallet from user table to user_wallets
+	private async lazyMigrateWallet(deviceId?: string) {
+		if (!deviceId) {
+			const token = await AuthToken.findOne({
+				where: { userId: this.id },
+				order: { createdDate: "DESC" }
+			});
+			if (!token) {
+				return;
+			}
+			deviceId = token.deviceId;
+		}
+		logger().info(`lazy migrate user ${ this.id } device ${ deviceId } wallet: ${ this.walletAddress }`);
+		await this.updateWallet(deviceId, this.walletAddress);
 	}
 }
 

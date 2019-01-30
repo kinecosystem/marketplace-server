@@ -5,6 +5,7 @@ import * as jsonwebtoken from "jsonwebtoken";
 
 // it's important to have this at the start
 import { getConfig } from "./public/config";
+
 getConfig();
 
 import { JWTContent } from "./public/jwt";
@@ -233,9 +234,10 @@ async function spendFlow() {
 	console.log("===================================== spendFlow =====================================");
 
 	const userId = generateId();
+	const deviceId = generateId();
 	const appClient = new SampleAppClient();
-	const jwt = await appClient.getV1RegisterJWT(userId);
-	const client = await V1MarketplaceClient.create({ jwt });
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
 
 	await client.activate();
@@ -1503,7 +1505,10 @@ async function twoUsersSharingWallet() {
 	const orders1 = (await client1.getOrders()).orders.map(o => o.id);
 	const orders2 = (await client2.getOrders()).orders.map(o => o.id);
 	expect(orders1.length).toBe(orders2.length);
-	orders1.every(id => { expect(orders2.includes(id)); return true; });
+	orders1.every(id => {
+		expect(orders2.includes(id));
+		return true;
+	});
 
 	console.log("OK.\n");
 }

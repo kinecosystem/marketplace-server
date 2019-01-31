@@ -129,178 +129,178 @@ export class MarketplaceError extends Error {
 	}
 }
 
-function UnauthorizedError(index: number, message: string) {
-	return new MarketplaceError(CODES.Unauthorized.code, index, "Unauthorized Request", message);
+function UnauthorizedError(key: keyof typeof CODES.Unauthorized.types, message: string) {
+	return new MarketplaceError(CODES.Unauthorized.code, CODES.Unauthorized.types[key], "Unauthorized Request", message);
 }
 
 export function MissingToken() {
-	return UnauthorizedError(CODES.Unauthorized.types.MissingToken, "Request missing token");
+	return UnauthorizedError("MissingToken", "Request missing token");
 }
 
 export function InvalidToken(token: string) {
-	return UnauthorizedError(CODES.Unauthorized.types.InvalidToken, `Invalid token: ${ token }`);
+	return UnauthorizedError("InvalidToken", `Invalid token: ${ token }`);
 }
 
 export function InvalidApiKey(apiKey: string) {
-	return UnauthorizedError(CODES.Unauthorized.types.InvalidApiKey, `Invalid api key: ${ apiKey }`);
+	return UnauthorizedError("InvalidApiKey", `Invalid api key: ${ apiKey }`);
 }
 
 export function TOSMissingOrOldToken() {
-	return UnauthorizedError(CODES.Unauthorized.types.TOSMissingOrOldToken, "User did not approve TOS or using a pre activated token");
+	return UnauthorizedError("TOSMissingOrOldToken", "User did not approve TOS or using a pre activated token");
 }
 
-function NotFoundError(index: number, message: string) {
-	return new MarketplaceError(CODES.NotFound.code, index, "Not Found", message);
+function NotFoundError(key: keyof typeof CODES.NotFound.types, message: string) {
+	return new MarketplaceError(CODES.NotFound.code, CODES.NotFound.types[key], "Not Found", message);
 }
 
 export function NoSuchApp(id: string) {
-	return NotFoundError(CODES.NotFound.types.App, `No such app: ${ id }`);
+	return NotFoundError("App", `No such app: ${ id }`);
 }
 
 export function NoSuchUser(id: string) {
-	return NotFoundError(CODES.NotFound.types.User, `No such user: ${ id }`);
+	return NotFoundError("User", `No such user: ${ id }`);
 }
 
 export function NoSuchOffer(id: string) {
-	return NotFoundError(CODES.NotFound.types.Offer, `No such offer: ${ id }`);
+	return NotFoundError("Offer", `No such offer: ${ id }`);
 }
 
 export function NoSuchOrder(id: string) {
-	return NotFoundError(CODES.NotFound.types.Order, `No such order: ${ id }`);
+	return NotFoundError("Order", `No such order: ${ id }`);
 }
 
 export function NoSuchPublicKey(appId: string, keyid: string) {
-	return NotFoundError(CODES.NotFound.types.App, `Key "${ keyid }" not found for iss "${ appId }"`);
+	return NotFoundError("App", `Key "${ keyid }" not found for iss "${ appId }"`);
 }
 
-function RequestTimeoutError(index: number, message: string) {
-	return new MarketplaceError(CODES.RequestTimeout.code, index, "Request Timeout", message);
+function RequestTimeoutError(key: keyof typeof CODES.RequestTimeout.types, message: string) {
+	return new MarketplaceError(CODES.RequestTimeout.code, CODES.RequestTimeout.types[key], "Request Timeout", message);
 }
 
 export function OpenOrderExpired(orderId: string) {
-	return RequestTimeoutError(CODES.RequestTimeout.types.OpenOrderExpired, `open order ${ orderId } has expired`);
+	return RequestTimeoutError("OpenOrderExpired", `open order ${ orderId } has expired`);
 }
 
-function ConflictError(index: number, message: string) {
-	return new MarketplaceError(CODES.Conflict.code, index, "Conflict", message);
+function ConflictError(key: keyof typeof CODES.Conflict.types, message: string) {
+	return new MarketplaceError(CODES.Conflict.code, CODES.Conflict.types[key], "Conflict", message);
 }
 
 export function ExternalOrderAlreadyCompleted(orderId: string) {
-	const error = ConflictError(CODES.Conflict.types.ExternalOrderAlreadyCompleted, "User already completed offer, or has a pending order");
+	const error = ConflictError("ExternalOrderAlreadyCompleted", "User already completed offer, or has a pending order");
 	error.setHeader("Location", `/v1/orders/${ orderId }`);
 	return error;
 }
 
 export function ExternalOrderByDifferentUser(loggedInUser: string, payToUser: string) {
 	const message = `User (${ payToUser }) is not the logged in user (${ loggedInUser })`;
-	return ConflictError(CODES.Conflict.types.ExternalOrderByDifferentUser, message);
+	return ConflictError("ExternalOrderByDifferentUser", message);
 }
 
 export function CompletedOrderCantTransitionToFailed() {
 	const message = "cant set an error message to a completed order";
-	return ConflictError(CODES.Conflict.types.CompletedOrderCantTransitionToFailed, message);
+	return ConflictError("CompletedOrderCantTransitionToFailed", message);
 }
 
 export function ExternalOrderByDifferentDevice(loggedDeviceId: string, deviceId: string) {
 	const message = `Device (${ deviceId }) is not the logged in device (${ loggedDeviceId })`;
-	return ConflictError(CODES.Conflict.types.ExternalOrderByDifferentUser, message);
+	return ConflictError("ExternalOrderByDifferentUser", message);
 }
 
 export function OfferCapReached(id: string) {
-	return NotFoundError(CODES.NotFound.types.OfferCapReached, `Cap reached for offer: ${ id }`);
+	return NotFoundError("OfferCapReached", `Cap reached for offer: ${ id }`);
 }
 
-function InternalServerError(index: number, message: string) {
-	return new MarketplaceError(CODES.InternalServerError.code, index, "Internal Server Error", message);
+function InternalServerError(key: keyof typeof CODES.InternalServerError.types, message: string) {
+	return new MarketplaceError(CODES.InternalServerError.code, CODES.InternalServerError.types[key], "Internal Server Error", message);
 }
 
 export function OpenedOrdersOnly() {
-	return InternalServerError(CODES.InternalServerError.types.OpenedOrdersOnly, "Only opened orders should be returned");
+	return InternalServerError("OpenedOrdersOnly", "Only opened orders should be returned");
 }
 
 export function OpenedOrdersUnreturnable() {
-	return InternalServerError(CODES.InternalServerError.types.OpenedOrdersUnreturnable, "Opened orders should not be returned");
+	return InternalServerError("OpenedOrdersUnreturnable", "Opened orders should not be returned");
 }
 
-function BadRequestError(index: number, message: string) {
-	return new MarketplaceError(CODES.BadRequest.code, index, "Bad Request", message);
+function BadRequestError(key: keyof typeof CODES.BadRequest.types, message: string) {
+	return new MarketplaceError(CODES.BadRequest.code, CODES.BadRequest.types[key], "Bad Request", message);
 }
 
 export function UnknownSignInType(type: string) {
-	return BadRequestError(CODES.BadRequest.types.UnknownSignInType, `Unknown sign-in type: ${ type }`);
+	return BadRequestError("UnknownSignInType", `Unknown sign-in type: ${ type }`);
 }
 
 export function WrongJwtAlgorithm(type: string) {
-	return BadRequestError(CODES.BadRequest.types.UnknownSignInType, `Algorithm type ("${ type }") not supported`);
+	return BadRequestError("UnknownSignInType", `Algorithm type ("${ type }") not supported`);
 }
 
 export function InvalidJwtSignature() {
-	return BadRequestError(CODES.BadRequest.types.InvalidJwtSignature, "The JWT failed to verify");
+	return BadRequestError("InvalidJwtSignature", "The JWT failed to verify");
 }
 
 export function ExpiredJwt(exp: number) {
-	return BadRequestError(CODES.BadRequest.types.ExpiredJwt, `The JWT 'exp' field (${ exp }) is in the past`);
+	return BadRequestError("ExpiredJwt", `The JWT 'exp' field (${ exp }) is in the past`);
 }
 
 export function InvalidJwtIssuedTime(iat: number) {
-	return BadRequestError(CODES.BadRequest.types.InvalidJwtIssuedTime, `The JWT 'iat' field (${ iat }) is in the future`);
+	return BadRequestError("InvalidJwtIssuedTime", `The JWT 'iat' field (${ iat }) is in the future`);
 }
 
 export function MissingFieldJWT(fieldName: string) {
-	return BadRequestError(CODES.BadRequest.types.MissingFieldJWT, `The JWT ${ fieldName } field is missing`);
+	return BadRequestError("MissingFieldJWT", `The JWT ${ fieldName } field is missing`);
 }
 
 export function BadJWTInput(token: string) {
-	return BadRequestError(CODES.BadRequest.types.BadJWTInput, `JWT ${ token } failed to decode`);
+	return BadRequestError("BadJWTInput", `JWT ${ token } failed to decode`);
 }
 
 export function InvalidPollAnswers() {
-	return BadRequestError(CODES.BadRequest.types.InvalidPollAnswers, "Submitted form is invalid");
+	return BadRequestError("InvalidPollAnswers", "Submitted form is invalid");
 }
 
 export function InvalidExternalOrderJwt() {
-	return BadRequestError(CODES.BadRequest.types.InvalidExternalOrderJwt, `Subject can be either "earn" or "spend"`);
+	return BadRequestError("InvalidExternalOrderJwt", `Subject can be either "earn" or "spend"`);
 }
 
 export function JwtKidMissing() {
-	return BadRequestError(CODES.BadRequest.types.JwtKidMissing, "kid is missing from the JWT");
+	return BadRequestError("JwtKidMissing", "kid is missing from the JWT");
 }
 
 export function MaxWalletsExceeded() {
-	return BadRequestError(CODES.BadRequest.types.MaxWalletsExceeded, "No more wallet creations allowed");
+	return BadRequestError("MaxWalletsExceeded", "No more wallet creations allowed");
 }
 
 export function InvalidWalletAddress(address: string) {
-	return BadRequestError(CODES.BadRequest.types.InvalidWalletAddress, `Invalid (not 56 characters) wallet address: ${ address }`);
+	return BadRequestError("InvalidWalletAddress", `Invalid (not 56 characters) wallet address: ${ address }`);
 }
 
-function TransactionFailed(index: number, message: string) {
-	return new MarketplaceError(CODES.TransactionFailed.code, index, "Transaction Failed", message);
+function TransactionFailed(key: keyof typeof CODES.TransactionFailed.types, message: string) {
+	return new MarketplaceError(CODES.TransactionFailed.code, CODES.TransactionFailed.types[key], "Transaction Failed", message);
 }
 
 export function WrongSender() {
-	return TransactionFailed(CODES.TransactionFailed.types.WrongSender, "Wrong Sender");
+	return TransactionFailed("WrongSender", "Wrong Sender");
 }
 
 export function WrongRecipient() {
-	return TransactionFailed(CODES.TransactionFailed.types.WrongRecipient, "Wrong Recipient");
+	return TransactionFailed("WrongRecipient", "Wrong Recipient");
 }
 
 export function WrongAmount() {
-	return TransactionFailed(CODES.TransactionFailed.types.WrongAmount, "Wrong Amount");
+	return TransactionFailed("WrongAmount", "Wrong Amount");
 }
 
 export function AssetUnavailable() {
-	return TransactionFailed(CODES.TransactionFailed.types.AssetUnavailable, "Unavailable Asset");
+	return TransactionFailed("AssetUnavailable", "Unavailable Asset");
 }
 
 export function BlockchainError(message?: string) {
 	message = message ? (": " + message) : "";
-	return TransactionFailed(CODES.TransactionFailed.types.BlockchainError, "Blockchain Error: " + message);
+	return TransactionFailed("BlockchainError", "Blockchain Error: " + message);
 }
 
 export function TransactionTimeout() {
-	return TransactionFailed(CODES.TransactionFailed.types.TransactionTimeout, "Transaction Timeout");
+	return TransactionFailed("TransactionTimeout", "Transaction Timeout");
 }
 
 export function UserHasNoWallet(userId: string, deviceId?: string) {
@@ -309,25 +309,25 @@ export function UserHasNoWallet(userId: string, deviceId?: string) {
 		message += ` for device ${ deviceId }`;
 	}
 
-	return TransactionFailed(CODES.TransactionFailed.types.UserHasNoWallet, message);
+	return TransactionFailed("UserHasNoWallet", message);
 }
 
-function TooManyRequests(index: number, message: string): MarketplaceError {
-	return new MarketplaceError(CODES.TooManyRequests.code, index, "Too Many Requests", message);
+function TooManyRequests(key: keyof typeof CODES.TooManyRequests.types, message: string): MarketplaceError {
+	return new MarketplaceError(CODES.TooManyRequests.code, CODES.TooManyRequests.types[key], "Too Many Requests", message);
 }
 
 export function TooManyRegistrations(message: string): MarketplaceError {
-	return TooManyRequests(CODES.TooManyRequests.types.Registrations, message);
+	return TooManyRequests("Registrations", message);
 }
 
 export function TooMuchEarnOrdered(message: string): MarketplaceError {
-	return TooManyRequests(CODES.TooManyRequests.types.Amounts, message);
+	return TooManyRequests("Amounts", message);
 }
 
-function DeprecationError(index: number, message: string): MarketplaceError {
-	return new MarketplaceError(CODES.GONE.code, index, "Request to a deprecated resource", message);
+function DeprecationError(key: keyof typeof CODES.GONE.types, message: string): MarketplaceError {
+	return new MarketplaceError(CODES.GONE.code, CODES.GONE.types[key], "Request to a deprecated resource", message);
 }
 
 export function BlockchainEndpointChanged(message: string): MarketplaceError {
-	return DeprecationError(CODES.GONE.types.BlockchainEndpointChanged, message);
+	return DeprecationError("BlockchainEndpointChanged", message);
 }

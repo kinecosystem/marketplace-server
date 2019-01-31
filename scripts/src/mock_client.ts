@@ -327,7 +327,8 @@ async function earnPollFlow() {
 	const content = JSON.stringify(choosePollAnswers(poll));
 	console.log("answers " + content);
 
-	await client.submitOrder(openOrder.id, content);
+	const submittedOrder = await client.submitOrder(openOrder.id, content);
+	expect(typeof submittedOrder.amount).toBe("number");
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");

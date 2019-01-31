@@ -287,7 +287,12 @@ describe("test v2 orders", async () => {
 		}
 
 		const openOrder = await createMarketplaceOrder(offer.id, user, deviceId);
+		expect(typeof openOrder.amount).toBe("number");
+
 		const order = await submitOrder(openOrder.id, user, deviceId, "{}");
+
+		expect(typeof 100).toBe("number");
+
 		await helpers.completePayment(order.id);
 
 		expect(await Order.countToday(user.id, "earn", "marketplace")).toEqual(1);

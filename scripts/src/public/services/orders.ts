@@ -1,6 +1,3 @@
-import * as moment from "moment";
-import { Request as ExpressRequest } from "express-serve-static-core";
-
 import { lock } from "../../redis";
 import * as metrics from "../../metrics";
 import { User } from "../../models/users";
@@ -37,7 +34,6 @@ import {
 import { Paging } from "./index";
 import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
-import * as offerContents from "./offer_contents";
 import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
@@ -452,7 +448,12 @@ async function orderDbToApi(order: db.Order, userId: string, wallet: string): Pr
 		}, pick(context.meta, "title", "description", "content", "call_to_action"));
 
 		data.title = app.name;
-		data.description = order.isMarketplaceOrder() ? capitalizeFirstLetter(context.type) : "Completed";
+		if (order.isMarketplaceOrder) {
+			const offerContent = (await offerDb.OfferContent.get(order.offerId))!;
+			data.description = capitalizeFirstLetter(offerContent.contentType);
+		} else {
+			data.description = "Completed";
+		}
 	}
 
 	return Object.assign({}, apiOrder, data);

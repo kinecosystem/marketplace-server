@@ -8,7 +8,7 @@ import * as dbOrders from "../../models/orders";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import { Application, AppOffer } from "../../models/applications";
-import { ContentType, OfferType } from "../../models/offers";
+import { ContentType, OfferContent, OfferType } from "../../models/offers";
 import { getConfig } from "../config";
 import { Order } from "../../models/orders";
 import { OfferTranslation } from "../../models/translations";
@@ -91,7 +91,7 @@ async function filterOffers(userId: string, appId: string, appOffers: AppOffer[]
 	const [/*totalOfferCounts*/, userOfferCounts, contents, [language, availableTranslations]] = await Promise.all([
 		/*Order.countAllByOffer(appId)*/,
 		Order.countAllByOffer(appId, { userId }),
-		offerContents.getAllContents(),
+		OfferContent.all(),
 		getLanguage(acceptsLanguagesFunc)
 	]);
 

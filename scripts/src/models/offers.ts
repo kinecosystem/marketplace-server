@@ -99,7 +99,7 @@ export class OfferContent extends Model {
 			localCache.set(cacheKey, contents);
 		}
 
-		return new Map(contents.map(app => [app.id, app]) as Array<[string, OfferContent]>);
+		return new Map(contents.map(content => [content.offerId, content]) as Array<[string, OfferContent]>);
 	}
 
 	@PrimaryColumn({ name: "offer_id" })

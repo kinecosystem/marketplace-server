@@ -448,7 +448,7 @@ async function orderDbToApi(order: db.Order, userId: string, wallet: string): Pr
 		}, pick(context.meta, "title", "description", "content", "call_to_action"));
 
 		data.title = app.name;
-		if (order.isMarketplaceOrder) {
+		if (order.isMarketplaceOrder()) {
 			const offerContent = (await offerDb.OfferContent.get(order.offerId))!;
 			data.description = capitalizeFirstLetter(offerContent.contentType);
 		} else {

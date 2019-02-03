@@ -667,7 +667,7 @@ function isInOffer(key: string, offer: Offer): key is keyof Offer {
 }
 
 export async function changeOffer(body: ChangeOfferData, params: { offer_id: string }, query: any): Promise<any> {
-	const offer = await Offer.get(params.offer_id);
+	const offer = await Offer.findOneById(params.offer_id);
 	console.log("changeOffer:", offer, "with:", body);
 	if (!offer) {
 		throw new Error("no such offer: " + params.offer_id);

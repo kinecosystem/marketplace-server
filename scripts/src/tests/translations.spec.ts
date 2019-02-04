@@ -64,7 +64,7 @@ describe("translations tests", async () => {
 		expect(translation.length).toBe(0);
 		expect(Number(charLimit)).toBeGreaterThan(0);
 		done();
-	});
+	}, 30000);
 
 	test("Adapt test translation CSV to the offers in the DB", async done => {
 		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
@@ -82,7 +82,7 @@ describe("translations tests", async () => {
 		const [table, offerId, column, jsonPath] = key.split(":");
 		expect((await Offer.findOne({ id: offerId }))!.meta.title).toBe("Favorites");
 		done();
-	});
+	}, 30000);
 
 	test("processFile (import) translation CSV", async done => {
 		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
@@ -90,5 +90,5 @@ describe("translations tests", async () => {
 		translations.processFile(CSV_TRANSLATION_FILE, "pt-BR");
 		expect(await OfferTranslation.find({ translation: "Favoritos" }));
 		done();
-	});
+	}, 30000);
 });

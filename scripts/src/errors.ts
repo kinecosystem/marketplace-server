@@ -61,10 +61,11 @@ const CODES = {
 			ExternalOrderAlreadyCompleted: 1,
 			ExternalOrderByDifferentUser: 2,
 			CompletedOrderCantTransitionToFailed: 3,
-			ExternalOrderByDifferentDevice: 4
+			ExternalOrderByDifferentDevice: 4,
+			UserHasNoWallet: 5
 		}
 	},
-	GONE: {
+	Gone: {
 		code: HttpCodes.GONE,
 		types: {
 			BlockchainEndpointChanged: 1,
@@ -92,8 +93,7 @@ const CODES = {
 			WrongAmount: 3,
 			AssetUnavailable: 4,
 			BlockchainError: 5,
-			TransactionTimeout: 6,
-			UserHasNoWallet: 7 // TODO move to a 400 error
+			TransactionTimeout: 6
 		}
 	},
 };
@@ -206,6 +206,15 @@ export function ExternalOrderByDifferentDevice(loggedDeviceId: string, deviceId:
 	return ConflictError("ExternalOrderByDifferentUser", message);
 }
 
+export function UserHasNoWallet(userId: string, deviceId?: string) {
+	let message = `No wallet was set for user ${ userId }`;
+	if (deviceId) {
+		message += ` for device ${ deviceId }`;
+	}
+
+	return ConflictError("UserHasNoWallet", message);
+}
+
 export function OfferCapReached(id: string) {
 	return NotFoundError("OfferCapReached", `Cap reached for offer: ${ id }`);
 }
@@ -303,15 +312,6 @@ export function TransactionTimeout() {
 	return TransactionFailed("TransactionTimeout", "Transaction Timeout");
 }
 
-export function UserHasNoWallet(userId: string, deviceId?: string) {
-	let message = `No wallet was set for user ${ userId }`;
-	if (deviceId) {
-		message += ` for device ${ deviceId }`;
-	}
-
-	return TransactionFailed("UserHasNoWallet", message);
-}
-
 function TooManyRequests(key: keyof typeof CODES.TooManyRequests.types, message: string): MarketplaceError {
 	return new MarketplaceError(CODES.TooManyRequests.code, CODES.TooManyRequests.types[key], "Too Many Requests", message);
 }
@@ -324,8 +324,8 @@ export function TooMuchEarnOrdered(message: string): MarketplaceError {
 	return TooManyRequests("Amounts", message);
 }
 
-function DeprecationError(key: keyof typeof CODES.GONE.types, message: string): MarketplaceError {
-	return new MarketplaceError(CODES.GONE.code, CODES.GONE.types[key], "Request to a deprecated resource", message);
+function DeprecationError(key: keyof typeof CODES.Gone.types, message: string): MarketplaceError {
+	return new MarketplaceError(CODES.Gone.code, CODES.Gone.types[key], "Request to a deprecated resource", message);
 }
 
 export function BlockchainEndpointChanged(message: string): MarketplaceError {

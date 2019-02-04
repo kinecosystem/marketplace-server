@@ -10,7 +10,7 @@ export type AuthContext = {
 	readonly token: AuthToken;
 };
 
-export type TokenedRequest = express.Request & {
+type TokenedRequest = express.Request & {
 	readonly token: string;
 };
 
@@ -18,7 +18,7 @@ export type AuthenticatedRequest = TokenedRequest & {
 	readonly context: AuthContext;
 };
 
-export function isTokenedRequest(req: express.Request): req is TokenedRequest {
+function isTokenedRequest(req: express.Request): req is TokenedRequest {
 	return (req as AuthenticatedRequest).token !== undefined;
 }
 

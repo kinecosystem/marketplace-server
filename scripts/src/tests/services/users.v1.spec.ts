@@ -52,23 +52,17 @@ describe("api tests for v1 users", async () => {
 		const user2 = await helpers.createUser({ appId });
 		const token: AuthToken = (await AuthToken.findOne({ userId: user1.id }))!;
 
-		console.log("moo 1");
-
 		await mock(app)
 			.get(`/v1/users/non_user`)
 			.set("x-request-id", "123")
 			.set("Authorization", `Bearer ${ token.id }`)
 			.expect(404, {});
 
-		console.log("moo 2");
-
 		await mock(app)
 			.get(`/v1/users/${ user1.appUserId }`)
 			.set("x-request-id", "123")
 			.set("Authorization", `Bearer ${ token.id }`)
 			.expect(200, { stats: { earn_count: 0, spend_count: 0 } });
-
-		console.log("moo 3");
 
 		await mock(app)
 			.get(`/v1/users/${ user2.appUserId }`)

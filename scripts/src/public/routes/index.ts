@@ -1,6 +1,5 @@
 import * as express from "express";
 
-import * as db from "../../models/users";
 import { statusHandler } from "../middleware";
 
 import { getOffers } from "./offers";
@@ -28,19 +27,6 @@ import {
 	submitOrder
 } from "./orders";
 import { authenticateUser } from "../auth";
-
-/*export type Context = {
-	user: db.User | undefined;
-	token: db.AuthToken | undefined;
-};*/
-
-// augment the express request object
-/*declare module "express" {
-	interface Request {
-		token: string;
-		context: Context;
-	}
-}*/
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
 	function prefix(path: string): string {

@@ -223,10 +223,14 @@ async function getOfferTranslations() {
 
 	const offers = await client.getOffers();
 	//  We don't know the order of the offers received but some must have this title
-	console.log("offers.offers:", offers.offers);
-	expect(offers.offers.filter(o => o.title === "Faça um teste").length).toBeGreaterThan(0);
+	// console.log("offers.offers:", offers.offers);
+	console.log("Title text (at least some should be translated):");
+	expect(offers.offers.filter(o => {
+		console.log("offer id: %s, title: ", o.id, o.title);
+		return o.title === "Faça um teste";
+	}).length).toBeGreaterThan(0);
 
-	console.log("OK.\n", offers.offers.slice(0, 4));
+	console.log("OK.\n");
 }
 
 async function spendFlow() {
@@ -1530,42 +1534,42 @@ async function walletSharedAcrossApps() {
 }
 
 async function main() {
-	// await registerJWT();
-	// await v1RegisterJWT();
-	// await outdatedJWT();
-	// await v1OutdatedJWT();
-	// await updateWallet();
-	// await v1UpdateWallet();
-	// await userProfile();
-	// await v1UserProfile();
-	// await extraTrustlineIsOK();
-	// await v1ExtraTrustlineIsOK();
-	// await earnPollFlow();
-	// await v1EarnPollFlow();
-	// await earnTutorial();
-	// await v1EarnTutorial();
-	// await spendFlow();
-	// await v1SpendFlow();
-	// await earnQuizFlow();
-	// await v1EarnQuizFlow();
-	// await nativeEarnFlow();
-	// await v1NativeEarnFlow();
-	// await nativeSpendFlow();
-	// await v1NativeSpendFlow();
-	// await didNotApproveTOS();
-	// await v1DidNotApproveTOS();
-	// await testRegisterNewUser();
-	// await v1TestRegisterNewUser();
-	// await tryToNativeSpendTwice();
-	// await v1TryToNativeSpendTwice();
-	// await tryToNativeSpendTwiceWithNonce();
-	// await v1TryToNativeSpendTwiceWithNonce();
-	// await p2p();
-	// await v1P2p();
+	await registerJWT();
+	await v1RegisterJWT();
+	await outdatedJWT();
+	await v1OutdatedJWT();
+	await updateWallet();
+	await v1UpdateWallet();
+	await userProfile();
+	await v1UserProfile();
+	await extraTrustlineIsOK();
+	await v1ExtraTrustlineIsOK();
+	await earnPollFlow();
+	await v1EarnPollFlow();
+	await earnTutorial();
+	await v1EarnTutorial();
+	await spendFlow();
+	await v1SpendFlow();
+	await earnQuizFlow();
+	await v1EarnQuizFlow();
+	await nativeEarnFlow();
+	await v1NativeEarnFlow();
+	await nativeSpendFlow();
+	await v1NativeSpendFlow();
+	await didNotApproveTOS();
+	await v1DidNotApproveTOS();
+	await testRegisterNewUser();
+	await v1TestRegisterNewUser();
+	await tryToNativeSpendTwice();
+	await v1TryToNativeSpendTwice();
+	await tryToNativeSpendTwiceWithNonce();
+	await v1TryToNativeSpendTwiceWithNonce();
+	await p2p();
+	await v1P2p();
 	await getOfferTranslations();
 
 	// multiple users/devices/wallets flows
-	// await twoUsersSharingWallet();
+	await twoUsersSharingWallet();
 }
 
 main()

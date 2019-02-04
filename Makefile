@@ -31,6 +31,7 @@ db:
 	npm run manage-db-data -- --apps-dir data/apps --offers-dir data/offers --trans-file data/translations/pt-BR.csv --trans-lang pt-BR --app-list ALL --create-db
 
 con:
+console:
 	node --experimental-repl-await ./scripts/bin/node-console.js
 
 # "make down  up" will not work sometimes, adding sleep after "down" fixes it 
@@ -83,6 +84,9 @@ test-system-docker: clear-db db-docker clear-redis
 
 generate-funding-address:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run generate-funding-address
+
+console-docker:
+	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm marketplace-console
 
 create-jwt-keys:
 	./operational/create_keys.sh .

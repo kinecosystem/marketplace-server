@@ -47,6 +47,7 @@ describe("translations tests", async () => {
 	});
 
 	test("test writeCsvTemplateToFile", async () => {
+		jest.setTimeout(10000);
 		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
 		const csv = readFileSync(CSV_TEMPLATE_FILE);
 		const parsedCsv = (csvParse as CsvParse)(csv);
@@ -66,6 +67,7 @@ describe("translations tests", async () => {
 	});
 
 	test("Adapt test translation CSV to the offers in the DB", async () => {
+		jest.setTimeout(10000);
 		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
 		await adaptCsv(path.join(__dirname, "../../../data/translations/test_pt-BR.csv"), CSV_TEMPLATE_FILE, CSV_TRANSLATION_FILE);
 		const csv = readFileSync(CSV_TRANSLATION_FILE);
@@ -83,6 +85,7 @@ describe("translations tests", async () => {
 	});
 
 	test("processFile (import) translation CSV", async () => {
+		jest.setTimeout(10000);
 		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
 		await adaptCsv(path.join(__dirname, "../../../data/translations/test_pt-BR.csv"), CSV_TEMPLATE_FILE, CSV_TRANSLATION_FILE);
 		translations.processFile(CSV_TRANSLATION_FILE, "pt-BR");

@@ -63,7 +63,7 @@ export class ClientError extends Error {
 export class ClientRequests {
 	public static async create(data: { device_id: string; wallet_address: string; }, headers?: StringMap) {
 		const res = await axios.post<AuthToken>(MARKETPLACE_BASE + "/v1/users", data, { headers });
-		return new ClientRequests(res.data);
+		return new ClientRequests(res.data, headers);
 	}
 
 	public static async getConfig(): Promise<ConfigResponse> {
@@ -72,9 +72,14 @@ export class ClientRequests {
 	}
 
 	public authToken: AuthToken;
+	private headers: StringMap | undefined;
 
-	private constructor(authToken: AuthToken) {
+	private constructor(authToken: AuthToken, headers?: StringMap) {
 		this.authToken = authToken;
+		this.headers = Object.assign(headers, {
+			"x-request-id": uuid(),
+			"Authorization": this.auth ? `Bearer ${ this.auth.token }` : "",
+		});
 	}
 
 	public get auth() {
@@ -124,10 +129,7 @@ export class ClientRequests {
 
 	private getConfig() {
 		return {
-			headers: {
-				"x-request-id": uuid(),
-				"Authorization": this.auth ? `Bearer ${ this.auth.token }` : "",
-			},
+			headers: this.headers
 		};
 	}
 }

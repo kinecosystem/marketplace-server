@@ -1,16 +1,8 @@
 import * as _path from "path";
 import * as fs from "fs";
 import * as crypto from "crypto";
-import { promisify } from "util";
-
-import { Express } from "express";
-import { Context } from "../public/routes";
 
 import { path } from "./path";
-
-export interface RequestWithContext extends Express.Request {
-	context?: Context;
-}
 
 export type ServerError = Error & { syscall: string; code: string; };
 
@@ -160,10 +152,6 @@ export function readUTCDate(date: string | Date): Date {
 		return new Date(date);
 	}
 	return new Date(date + "Z");
-}
-
-export function getAppIdFromRequest(req: RequestWithContext): string {
-	return req.context && req.context.user ? req.context.user.appId : "";
 }
 
 export function capitalizeFirstLetter(str: string) {

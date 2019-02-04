@@ -29,18 +29,18 @@ import {
 } from "./orders";
 import { authenticateUser } from "../auth";
 
-export type Context = {
+/*export type Context = {
 	user: db.User | undefined;
 	token: db.AuthToken | undefined;
-};
+};*/
 
 // augment the express request object
-declare module "express" {
+/*declare module "express" {
 	interface Request {
 		token: string;
 		context: Context;
 	}
-}
+}*/
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
 	function prefix(path: string): string {

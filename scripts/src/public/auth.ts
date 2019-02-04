@@ -1,21 +1,42 @@
 import * as express from "express";
-
-import * as db from "../models/users";
-import { MissingToken, InvalidToken, TOSMissingOrOldToken } from "../errors";
 import * as httpContext from "express-http-context";
-import { AuthToken, User } from "../models/users";
 
-async function getTokenAndUser(req: express.Request): Promise<[db.AuthToken, db.User]> {
-	if (!req.token) {
+import { Mutable } from "../utils/utils";
+import { AuthToken, User } from "../models/users";
+import { MissingToken, InvalidToken, TOSMissingOrOldToken } from "../errors";
+
+export type AuthContext = {
+	readonly user: User;
+	readonly token: AuthToken;
+};
+
+export type TokenedRequest = express.Request & {
+	readonly token: string;
+};
+
+export type AuthenticatedRequest = TokenedRequest & {
+	readonly context: AuthContext;
+};
+
+export function isTokenedRequest(req: express.Request): req is TokenedRequest {
+	return (req as AuthenticatedRequest).token !== undefined;
+}
+
+export function isAuthenticatedRequest(req: express.Request): req is AuthenticatedRequest {
+	return isTokenedRequest(req) && (req as AuthenticatedRequest).context !== undefined;
+}
+
+async function getTokenAndUser(req: express.Request): Promise<[AuthToken, User]> {
+	if (!isTokenedRequest(req)) {
 		throw MissingToken();
 	}
 
-	const token = await db.AuthToken.findOneById(req.token);
+	const token = await AuthToken.findOneById(req.token);
 	if (!token || !token.valid || token.isExpired()) {
 		throw InvalidToken(req.token);
 	}
 
-	const user = await db.User.findOneById(token.userId);
+	const user = await User.findOneById(token.userId);
 	httpContext.set("user", user);
 
 	if (!user) {
@@ -40,7 +61,7 @@ export const authenticateUser = async function(req: express.Request, res: expres
 	const [token, user] = await getTokenAndUser(req);
 	setHttpContext(token, user);
 
-	req.context = {
+	(req as any as Mutable<AuthenticatedRequest>).context = {
 		get user(): User {
 			return httpContext.get("user");
 		},

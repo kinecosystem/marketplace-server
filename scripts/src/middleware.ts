@@ -7,16 +7,21 @@ import { Request, Response } from "express-serve-static-core";
 
 import * as metrics from "./metrics";
 import { getConfig } from "./config";
-import { generateId, getAppIdFromRequest } from "./utils/utils";
+import { generateId } from "./utils/utils";
 import { MarketplaceError } from "./errors";
-import { getDefaultLogger as logger } from "./logging";
 import { abort as restartServer } from "./server";
+import { isAuthenticatedRequest } from "./public/auth";
+import { getDefaultLogger as logger } from "./logging";
 
 const START_TIME = (new Date()).toISOString();
 
 const RESTART_ERROR_COUNT = 5;  // Amount of errors to occur in time frame to trigger restart
 const RESTART_MAX_TIMEFRAME = 20;  // In seconds
 let serverErrorTimeStamps: number[] = [];
+
+function getAppIdFromRequest(req: Request): string {
+	return isAuthenticatedRequest(req) ? req.context.user.appId : "";
+}
 
 /**
  * augments the request object with a request-id and a logger.
@@ -118,7 +123,7 @@ function serverErrorHandler(error: any, req: express.Request, res: express.Respo
 }
 
 export const statusHandler = async function(req: express.Request, res: express.Response) {
-	logger().info(`status called`, { blah: req.context });
+	logger().info("status called", { context: isAuthenticatedRequest(req) ? req.context : null });
 	res.status(200).send(
 		{
 			status: "ok",

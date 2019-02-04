@@ -1,6 +1,7 @@
 import { Request, RequestHandler, Response } from "express";
 import { getDefaultLogger as logger } from "../../logging";
 
+import { AuthenticatedRequest } from "../auth";
 import { OfferTranslation } from "../../models/translations";
 import {
 	Order,
@@ -14,7 +15,7 @@ import {
 } from "../services/orders";
 import { createExternalOrder as v1CreateExternalOrderService } from "../services/orders.v1";
 
-export type CreateMarketplaceOrderRequest = Request & {
+export type CreateMarketplaceOrderRequest = AuthenticatedRequest & {
 	params: {
 		offer_id: string;
 	}
@@ -40,11 +41,11 @@ export const createMarketplaceOrder = async function(req: CreateMarketplaceOrder
 		return dict;
 	}, {} as OrderTranslations);
 
-	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user!, req.context.token!.deviceId, orderTranslations);
+	const order = await createMarketplaceOrderService(req.params.offer_id, req.context.user, req.context.token.deviceId, orderTranslations);
 	res.status(201).send(order);
 } as any as RequestHandler;
 
-export type CreateExternalOrderRequest = Request & {
+export type CreateExternalOrderRequest = AuthenticatedRequest & {
 	body: {
 		jwt: string;
 	}
@@ -53,15 +54,15 @@ export type CreateExternalOrderRequest = Request & {
  * create an order for a native offer
  */
 export const v1CreateExternalOrder = async function(req: CreateExternalOrderRequest, res: Response) {
-	const order = await v1CreateExternalOrderService(req.body.jwt, req.context.user!);
+	const order = await v1CreateExternalOrderService(req.body.jwt, req.context.user);
 	res.status(201).send(order);
 } as any as RequestHandler;
 export const createExternalOrder = async function(req: CreateExternalOrderRequest, res: Response) {
-	const order = await createExternalOrderService(req.body.jwt, req.context.user!, req.context.token!.deviceId);
+	const order = await createExternalOrderService(req.body.jwt, req.context.user, req.context.token.deviceId);
 	res.status(201).send(order);
 } as any as RequestHandler;
 
-export type GetOrderRequest = Request & {
+export type GetOrderRequest = AuthenticatedRequest & {
 	params: {
 		order_id: string;
 	}
@@ -70,11 +71,11 @@ export type GetOrderRequest = Request & {
  * get an order
  */
 export const getOrder = async function(req: GetOrderRequest, res: Response) {
-	const order = await getOrderService(req.params.order_id, req.context.user!);
+	const order = await getOrderService(req.params.order_id, req.context.user);
 	res.status(200).send(order);
 } as any as RequestHandler;
 
-export type SubmitOrderRequest = Request & {
+export type SubmitOrderRequest = AuthenticatedRequest & {
 	params: {
 		order_id: string;
 	},
@@ -88,12 +89,12 @@ export type SubmitOrderRequest = Request & {
  * check that order hasn't passed expiration + grace period
  */
 export const submitOrder = async function(req: SubmitOrderRequest, res: Response) {
-	logger().info("submit order", { userId: req.context.user!.id, orderId: req.params.order_id });
+	logger().info("submit order", { userId: req.context.user.id, orderId: req.params.order_id });
 
 	const order = await submitOrderService(
 		req.params.order_id,
-		req.context.user!,
-		req.context.token!.deviceId,
+		req.context.user,
+		req.context.token.deviceId,
 		req.body.content);
 	res.status(200).send(order);
 } as any as RequestHandler;
@@ -102,11 +103,11 @@ export const submitOrder = async function(req: SubmitOrderRequest, res: Response
  * cancel an order
  */
 export const cancelOrder = async function(req: GetOrderRequest, res: Response) {
-	await cancelOrderService(req.params.order_id, req.context.user!.id);
+	await cancelOrderService(req.params.order_id, req.context.user.id);
 	res.status(204).send();
 } as any as RequestHandler;
 
-export type changeOrderRequest = Request & {
+export type changeOrderRequest = AuthenticatedRequest & {
 	params: {
 		order_id: string;
 	},
@@ -116,11 +117,11 @@ export type changeOrderRequest = Request & {
  * change an order - add an error
  */
 export const changeOrder = async function(req: changeOrderRequest, res: Response) {
-	const order = await changeOrderService(req.params.order_id, req.context.user!, req.body);
+	const order = await changeOrderService(req.params.order_id, req.context.user, req.body);
 	res.status(200).send(order);
 } as any as RequestHandler;
 
-export type GetOrderHistoryRequest = Request & {
+export type GetOrderHistoryRequest = AuthenticatedRequest & {
 	query: {
 		origin?: string;
 		offer_id?: string;
@@ -135,6 +136,6 @@ export const getOrderHistory = async function(req: GetOrderHistoryRequest, res: 
 		origin: req.query.origin,
 		offerId: req.query.offer_id
 	};
-	const orderList = await getOrderHistoryService(req.context.user!, req.context.token!.deviceId, filters, req.query.limit);
+	const orderList = await getOrderHistoryService(req.context.user, req.context.token.deviceId, filters, req.query.limit);
 	res.status(200).send(orderList);
 } as any as RequestHandler;

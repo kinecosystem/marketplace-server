@@ -7,7 +7,6 @@ import { IdPrefix, isNothing } from "../utils/utils";
 import * as payment from "../public/services/payment";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getOffers as getUserOffersService } from "../public/services/offers";
-import { getOfferContent } from "../public/services/offer_contents";
 
 type OfferStats = {
 	id: string
@@ -286,8 +285,8 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 		return `<input type="number" onchange="submitData('/offers/${ offer.id }', { amount: Number(this.value) })" value="${ offer.amount }"/>`;
 	}
 
-	const OfferContent = ((await getOfferContent(offer.id)) || { contentType: "poll", content: "{}" });
-	const offerIdHtml = OfferContent.contentType === "coupon" ? offer.id : `<a onclick="overlayOn(this.dataset.content, '${ offer.id }')" data-content="${ escape(OfferContent.content) }">${ offer.id }</a>`;
+	const offerContent = ((await OfferContent.get(offer.id)) || { contentType: "poll", content: "{}" });
+	const offerIdHtml = offerContent.contentType === "coupon" ? offer.id : `<a onclick="overlayOn(this.dataset.content, '${ offer.id }')" data-content="${ escape(offerContent.content) }">${ offer.id }</a>`;
 	return `<tr class='offer-row'>
 <td class='offer-id'>${ offerIdHtml }</td>
 <td><a href="/orders?offer_id=${ offer.id }">orders</a></td>
@@ -449,7 +448,7 @@ export async function getApplicationOffers(params: { app_id: string }, query: Pa
 }
 
 export async function getOffer(params: { offer_id: string }, query: any): Promise<string> {
-	const offer = await Offer.findOneById(params.offer_id);
+	const offer = await Offer.get(params.offer_id);
 	if (!offer) {
 		throw new Error("no such offer: " + params.offer_id);
 	}

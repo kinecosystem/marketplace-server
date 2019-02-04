@@ -70,7 +70,7 @@ export class Application extends CreationDateModel {
 @Register
 export class AppOffer extends BaseEntity {
 	public static async getAppOffers(appId: string, type: OfferType): Promise<AppOffer[]> {
-		const cacheKey = `appOffers:${appId}:${type}`;
+		const cacheKey = `appOffers:${ appId }:${ type }`;
 		let appOffers = localCache.get<AppOffer[]>(cacheKey);
 
 		if (!appOffers) {

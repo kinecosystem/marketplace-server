@@ -142,7 +142,7 @@ describe("test v2 orders", async () => {
 			throw Error("failed to find earn order");
 		}
 
-		const order = await createMarketplaceOrder(offer.id, user, deviceId);
+		await createMarketplaceOrder(offer.id, user, deviceId);
 
 		const offers2 = await getOffers(user.id, user.appId, {});
 		const foundOffer = offers2.offers.find(x => x.id === offer.id);
@@ -661,5 +661,4 @@ describe("test v2 orders", async () => {
 		expect(history1.length).toBe(history2.length);
 		history1.forEach(o => expect(history2).toContain(o));
 	});
-
 });

@@ -50,32 +50,23 @@ describe("translations tests", async () => {
 		console.log("test writeCsvTemplateToFile START");
 		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
 		const csv = readFileSync(CSV_TEMPLATE_FILE);
-		console.log("1");
 		const parsedCsv = (csvParse as CsvParse)(csv);
-		console.log("2");
 		const csvData = parsedCsv.splice(1);
-		console.log("3");
 		const [type, key, defaultStr, translation, charLimit] = (csvData[Math.round(csvData.length / 2)]) as TranslationDataRow;  // Get a translation
 		expect(type).toMatch(/poll|quiz/);
 		const keySegments = key.split(":");
-		console.log("4");
 		expect(keySegments.length).toBeGreaterThanOrEqual(3);
-		console.log("5");
 		expect(keySegments[0]).toMatch(/offer$|offer_contents/);
 		expect(keySegments[1]).toMatch(/O[\w]{20}/); // Validate offer id starts with O and is 21 chars
-		console.log("6");
 		expect(keySegments[2]).toMatch(/title$|description$|orderDescription|orderTitle|content$/);
 		expect(typeof defaultStr).toBe("string");
 		expect(defaultStr.length).toBeGreaterThan(1);
-		console.log("7");
 		expect(typeof translation).toBe("string");
 		expect(translation.length).toBe(0);
-		console.log("8");
 		expect(Number(charLimit)).toBeGreaterThan(0);
-		console.log("9");
 		console.log("test writeCsvTemplateToFile DONE");
 		done();
-	}, 30000);
+	}, 60000);
 
 	test("Adapt test translation CSV to the offers in the DB", async done => {
 		console.log("Adapt test translation CSV... START");
@@ -85,7 +76,6 @@ describe("translations tests", async () => {
 		const parsedCsv = (csvParse as CsvParse)(csv);
 		const csvData = parsedCsv.splice(1);
 		let [type, key, defaultStr, translation, charLimit] = (csvData[Math.round(csvData.length / 2)]) as TranslationDataRow; // Get a random translation
-		console.log(type, key, defaultStr, translation, charLimit);
 		expect(translation.length).toBeGreaterThan(0);
 		expect(translation.length).toBeLessThanOrEqual(Number(charLimit));
 		const testTranslation = csvData.filter(([type, key, defaultStr, translation]: [string, string, string, string]) => translation === "Favoritos");
@@ -95,7 +85,7 @@ describe("translations tests", async () => {
 		expect((await Offer.findOne({ id: offerId }))!.meta.title).toBe("Favorites");
 		console.log("Adapt test translation CSV... DONE");
 		done();
-	}, 30000);
+	}, 60000);
 
 	test("processFile (import) translation CSV", async done => {
 		console.log("processFile (import) translation CSV START");
@@ -105,5 +95,5 @@ describe("translations tests", async () => {
 		expect(await OfferTranslation.find({ translation: "Favoritos" }));
 		console.log("processFile (import) translation CSV DONE");
 		done();
-	}, 30000);
+	}, 60000);
 });

@@ -18,7 +18,7 @@ const CSV_TEMPLATE_FILE = "/tmp/translations_template-by_tests.csv";
 const CSV_TRANSLATION_FILE = "/tmp/translations-by_tests.csv";  // The file the adapted translations will be written to
 
 describe("translations tests", async () => {
-	beforeEach(async done => {
+	beforeAll(async done => {
 		initLogger();
 		await initModels();
 		await helpers.clearDatabase();
@@ -41,12 +41,13 @@ describe("translations tests", async () => {
 		done();
 	});
 
-	afterEach(async done => {
+	afterAll(async done => {
 		await closeModels();
 		done();
 	});
 
 	test("test writeCsvTemplateToFile", async done => {
+		console.log("test writeCsvTemplateToFile START");
 		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
 		const csv = readFileSync(CSV_TEMPLATE_FILE);
 		console.log("1");
@@ -77,6 +78,7 @@ describe("translations tests", async () => {
 	}, 30000);
 
 	test("Adapt test translation CSV to the offers in the DB", async done => {
+		console.log("Adapt test translation CSV... START");
 		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
 		await adaptCsv(path.join(__dirname, "../../../data/translations/test_pt-BR.csv"), CSV_TEMPLATE_FILE, CSV_TRANSLATION_FILE);
 		const csv = readFileSync(CSV_TRANSLATION_FILE);
@@ -96,6 +98,7 @@ describe("translations tests", async () => {
 	}, 30000);
 
 	test("processFile (import) translation CSV", async done => {
+		console.log("processFile (import) translation CSV START");
 		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
 		await adaptCsv(path.join(__dirname, "../../../data/translations/test_pt-BR.csv"), CSV_TEMPLATE_FILE, CSV_TRANSLATION_FILE);
 		translations.processFile(CSV_TRANSLATION_FILE, "pt-BR");

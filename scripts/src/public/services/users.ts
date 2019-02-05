@@ -98,7 +98,7 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 			throw NoSuchApp(user.appId);
 		}
 
-		if (!app.allowsNewWallet(wallets.count + user.walletCount)) {
+		if (!app.allowsNewWallet(wallets.uniqueCount + user.walletCount)) {
 			metrics.maxWalletsExceeded(app.id);
 			throw MaxWalletsExceeded();
 		}

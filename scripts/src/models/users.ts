@@ -181,6 +181,10 @@ export class Wallets {
 		return this.items.length;
 	}
 
+	public get uniqueCount() {
+		return new Set(this.items.map(w => w.address)).size;
+	}
+
 	public all(): Wallet[] {
 		return this.items;
 	}

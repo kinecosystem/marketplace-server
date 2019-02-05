@@ -3,7 +3,7 @@ import mock = require("supertest");
 import { app } from "../../public/app";
 import * as metrics from "../../metrics";
 import { verify } from "../../public/jwt";
-import { AuthToken, User } from "../../models/users";
+import { AuthToken, User, Wallet, Wallets } from "../../models/users";
 import { generateId, IdPrefix } from "../../utils/utils";
 import { WhitelistSignInData } from "../../public/routes/users";
 import { validateRegisterJWT } from "../../public/services/applications";
@@ -310,5 +310,15 @@ describe("api tests for v2 users", async () => {
 		payload = { offer: "offer" }; // no sender, recipient
 		jwt = await helpers.signJwt(app.id, "pay_to_user", payload);
 		await expect(validateExternalOrderJWT(jwt, "user_id", "device_id")).rejects.toThrow();
+	});
+
+	test("wallet unique count", async () => {
+		const now = new Date();
+		const walletA = Wallet.create({ address: "A", createdDate: now, lastUsedDate: now, deviceId: "123" });
+		const walletB = Wallet.create({ address: "B", createdDate: now, lastUsedDate: now, deviceId: "1234" });
+		const walletC = Wallet.create({ address: "A", createdDate: now, lastUsedDate: now, deviceId: "12345" });
+		const walletD = Wallet.create({ address: "D", createdDate: now, lastUsedDate: now, deviceId: "123456" });
+		const w = new Wallets([walletA, walletB, walletC, walletD]);
+		expect(w.uniqueCount).toBe(3);
 	});
 });

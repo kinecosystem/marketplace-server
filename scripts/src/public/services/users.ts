@@ -153,7 +153,7 @@ export async function getUserProfile(userId: string, deviceId: string): Promise<
 
 export async function logout(user: User, token: DbAuthToken) {
 	token.valid = false;
-	createUserLogoutServerRequested(user.id, token.deviceId);
+	createUserLogoutServerRequested(user.id, token.deviceId).report();
 	await token.save();
 }
 

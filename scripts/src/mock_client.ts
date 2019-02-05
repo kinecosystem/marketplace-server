@@ -1508,8 +1508,32 @@ async function walletSharedAcrossApps() {
 	console.log("OK.\n");
 }
 
+async function checkValidTokenAfterLoginRightAfterLogout() {
+	console.log("===================================== checkValidTokenAfterLoginRightAfterLogout =====================================");
+
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient();
+	let jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	await client.activate();
+
+	await client.getOffers();
+	console.log("got offers");
+
+	jwt = await appClient.getRegisterJWT(userId, deviceId);
+	client.logout();
+	console.log("logout");
+	await client.login({ jwt });
+	const offers = await client.getOffers();
+	expect(offers.offers.length).toBeGreaterThan(0);
+
+	console.log("OK.\n");
+}
+
 async function main() {
-	await registerJWT();
+	/*await registerJWT();
 	await v1RegisterJWT();
 	await outdatedJWT();
 	await v1OutdatedJWT();
@@ -1543,7 +1567,9 @@ async function main() {
 	await v1P2p();
 
 	// multiple users/devices/wallets flows
-	await twoUsersSharingWallet();
+	await twoUsersSharingWallet();*/
+
+	checkValidTokenAfterLoginRightAfterLogout();
 }
 
 main()

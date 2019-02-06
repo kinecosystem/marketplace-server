@@ -1520,11 +1520,11 @@ async function checkValidTokenAfterLoginRightAfterLogout() {
 	await client.activate();
 
 	await client.getOffers();
-	console.log("got offers");
 
 	jwt = await appClient.getRegisterJWT(userId, deviceId);
+	// do not wait for it! otherwise there's no race condition
 	client.logout();
-	console.log("logout");
+
 	await client.login({ jwt });
 	const offers = await client.getOffers();
 	expect(offers.offers.length).toBeGreaterThan(0);
@@ -1533,7 +1533,7 @@ async function checkValidTokenAfterLoginRightAfterLogout() {
 }
 
 async function main() {
-	/*await registerJWT();
+	await registerJWT();
 	await v1RegisterJWT();
 	await outdatedJWT();
 	await v1OutdatedJWT();
@@ -1567,9 +1567,9 @@ async function main() {
 	await v1P2p();
 
 	// multiple users/devices/wallets flows
-	await twoUsersSharingWallet();*/
+	await twoUsersSharingWallet();
 
-	checkValidTokenAfterLoginRightAfterLogout();
+	await checkValidTokenAfterLoginRightAfterLogout();
 }
 
 main()

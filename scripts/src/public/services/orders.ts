@@ -450,7 +450,7 @@ async function orderDbToApi(order: db.Order, userId: string, wallet: string): Pr
 		data.title = app.name;
 		if (order.isMarketplaceOrder()) {
 			const offerContent = (await offerDb.OfferContent.get(order.offerId))!;
-			data.description = capitalizeFirstLetter(offerContent.contentType);
+			data.description = offerContent && offerContent.contentType ? capitalizeFirstLetter(offerContent.contentType) : "Completed";
 		} else {
 			data.description = "Completed";
 		}

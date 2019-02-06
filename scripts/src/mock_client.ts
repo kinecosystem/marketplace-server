@@ -1508,6 +1508,48 @@ async function walletSharedAcrossApps() {
 	console.log("OK.\n");
 }
 
+async function testP2PAmountAsString() {
+	console.log("===================================== testP2PAmountAsString =====================================");
+
+	const offer = {
+		id: "offer-id",
+		amount: "2",
+	};
+	const appClient = new SampleAppClient();
+	const senderId = "test:rich_user:" + generateId();
+	const senderDeviceId = generateId();
+	let jwt = await appClient.getRegisterJWT(senderId, senderDeviceId);
+
+	const senderPrivateKey = "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR";
+	const senderWalletAddress = "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ";
+	const senderClient = await MarketplaceClient.create({ jwt });
+	await senderClient.updateWallet(senderPrivateKey);
+	await senderClient.activate();
+
+	const recipientId = "test:" + generateId();
+	const recipientDeviceId = generateId();
+	jwt = await appClient.getRegisterJWT(recipientId, recipientDeviceId);
+	const recipientClient = await MarketplaceClient.create({ jwt });
+	await recipientClient.updateWallet();
+	await recipientClient.activate();
+
+	jwt = await appClient.getArbitraryJWT("pay_to_user",{
+		offer_id: offer.id,
+		amount: offer.amount,
+		user_id: senderId,
+		device_id: senderDeviceId,
+		sender_title: "sent moneys",
+		sender_description: "money sent to test p2p",
+		recipient_id: recipientId,
+		recipient_title: "get moneys",
+		recipient_description: "money received from p2p testing"
+	});
+
+	const res = await senderClient.createExternalOrder(jwt);
+	console.log(res);
+	console.log("OK.\n");
+}
+
 async function main() {
 	await registerJWT();
 	await v1RegisterJWT();

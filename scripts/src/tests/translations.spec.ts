@@ -48,7 +48,6 @@ describe("translations tests", async () => {
 	});
 
 	test("test writeCsvTemplateToFile", async done => {
-		jest.setTimeout(30000);
 		console.log("test writeCsvTemplateToFile START");
 		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
 		const csv = readFileSync(CSV_TEMPLATE_FILE);

@@ -330,7 +330,7 @@ async function orderToHtml(order: Order): Promise<string> {
 <td class="status_${ order.status }"><a href="/orders?status=${ order.status }">${ order.status }</a></td>
 <td><pre>${ JSON.stringify(order.error) }</pre></td>
 <td>${ order.origin }</td>
-<td>${ context.type }</td>
+<td>${ order.flowType() }: ${ context.type }</td>
 <td><a href="/users/${ context.userId }">${ context.userId }</a></td>
 <td>${ order.amount }</td>
 <td>${ context.meta.title }</td>

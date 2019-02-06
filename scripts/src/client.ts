@@ -10,6 +10,7 @@ import { ConfigResponse } from "./public/routes/config";
 import { BlockchainConfig } from "./public/services/payment";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { StringMap } from "./models/applications";
+import { Mutable } from "./utils/utils";
 
 const MEMO_VERSION = "1";
 const MARKETPLACE_BASE = process.env.MARKETPLACE_BASE;
@@ -98,11 +99,15 @@ export class ClientRequests {
 
 				return await promise;
 			} catch (e) {
-				const apiError: ApiError = e.response!.data;
-				const error = new ClientError(`server error for "${ url }" ${ e.response!.status }(${ apiError.code }): ${ apiError.error }, ${ apiError.message }`);
-				error.response = e.response;
+				if (!e.response) {
+					throw e;
+				} else {
+					const apiError: ApiError = e.response!.data;
+					const error = new ClientError(`server error for "${url}" ${e.response!.status}(${apiError.code}): ${apiError.error}, ${apiError.message}`);
+					error.response = e.response;
 
-				throw error;
+					throw error;
+				}
 			}
 		};
 
@@ -143,33 +148,37 @@ export class Client {
 			this.blockchainConfig.asset_issuer,
 			this.blockchainConfig.horizon_url);
 
-		const data = {};
-
-		if (isJWT(signInPayload)) {
-			Object.assign(data, { sign_in_type: "jwt", jwt: signInPayload.jwt });
-		} else {
-			Object.assign(data, {
-				sign_in_type: "whitelist",
-				user_id: signInPayload.userId,
-				api_key: signInPayload.apiKey
-			});
-		}
+		const data = Client.normalizeSignInPayload(signInPayload);
 
 		const requests = await ClientRequests.create(data, config ? config.headers : {});
 
-		return new Client(network, requests);
+		return new Client(network, requests, config);
 	}
 
 	private static blockchainConfig: BlockchainConfig;
+
+	private static normalizeSignInPayload(signInPayload: SignInPayload): any {
+		if (isJWT(signInPayload)) {
+			return { sign_in_type: "jwt", jwt: signInPayload.jwt };
+		} else {
+			return {
+				sign_in_type: "whitelist",
+				user_id: signInPayload.userId,
+				api_key: signInPayload.apiKey
+			};
+		}
+	}
 
 	public readonly appId: string;
 	public readonly wallets: KinWallet[];
 	public readonly requests: ClientRequests;
 
 	private readonly network: KinNetwork;
+	private readonly config: { headers?: StringMap } | undefined;
 
-	private constructor(network: KinNetwork, requests: ClientRequests) {
+	private constructor(network: KinNetwork, requests: ClientRequests, config: { headers?: StringMap } | undefined) {
 		this.wallets = [];
+		this.config = config;
 		this.network = network;
 		this.requests = requests;
 		this.appId = requests.auth.app_id;
@@ -181,6 +190,14 @@ export class Client {
 
 	public get active(): boolean {
 		return this.requests.auth.activated;
+	}
+
+	/**
+	 * no need to call this unless you call logout first
+	 */
+	public async login(signInPayload: SignInPayload) {
+		const data = Client.normalizeSignInPayload(signInPayload);
+		(this as Mutable<Client>).requests = await ClientRequests.create(data, this.config ? this.config.headers : {});
 	}
 
 	public async activate() {
@@ -355,5 +372,9 @@ export class Client {
 		}
 
 		await this.wallet.trustKin();
+	}
+
+	public async logout() {
+		await this.requests.request("/v2/users/me/session").delete();
 	}
 }

@@ -5,6 +5,7 @@ import * as jsonwebtoken from "jsonwebtoken";
 
 // it's important to have this at the start
 import { getConfig } from "./public/config";
+
 getConfig();
 
 import { JWTContent } from "./public/jwt";
@@ -28,6 +29,7 @@ import {
 } from "./public/services/offer_contents";
 import { AnswersBackwardSupport } from "./public/services/offer_contents";
 import * as StellarSdk from "stellar-sdk";
+import { signJwt } from "./tests/helpers";
 
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
 
@@ -1486,7 +1488,10 @@ async function twoUsersSharingWallet() {
 	const orders1 = (await client1.getOrders()).orders.map(o => o.id);
 	const orders2 = (await client2.getOrders()).orders.map(o => o.id);
 	expect(orders1.length).toBe(orders2.length);
-	orders1.every(id => { expect(orders2.includes(id)); return true; });
+	orders1.every(id => {
+		expect(orders2.includes(id));
+		return true;
+	});
 
 	console.log("OK.\n");
 }
@@ -1533,7 +1538,7 @@ async function testP2PAmountAsString() {
 	await recipientClient.updateWallet();
 	await recipientClient.activate();
 
-	jwt = await appClient.getArbitraryJWT("pay_to_user",{
+	jwt = await signJwt("test", "pay_to_user", {
 		offer_id: offer.id,
 		amount: offer.amount,
 		user_id: senderId,

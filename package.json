@@ -99,6 +99,9 @@
 		"setupFiles": [
 			"<rootDir>/scripts/src/tests/init_tests.ts"
 		],
+		"setupFilesAfterEnv": [
+			"<rootDir>/scripts/src/tests/init_tests_after_env_setup.ts"
+		],
 		"coverageDirectory": "<rootDir>/coverage/",
 		"collectCoverageFrom": [
 			"<rootDir>/scripts/src/**/*.ts",

@@ -18,6 +18,7 @@ const CSV_TEMPLATE_FILE = "/tmp/translations_template-by_tests.csv";
 const CSV_TRANSLATION_FILE = "/tmp/translations-by_tests.csv";  // The file the adapted translations will be written to
 
 describe("translations tests", async () => {
+	jest.setTimeout(30000);
 	beforeAll(async done => {
 		initLogger();
 		await initModels();
@@ -47,6 +48,7 @@ describe("translations tests", async () => {
 	});
 
 	test("test writeCsvTemplateToFile", async done => {
+		jest.setTimeout(30000);
 		console.log("test writeCsvTemplateToFile START");
 		await translations.writeCsvTemplateToFile(CSV_TEMPLATE_FILE);
 		const csv = readFileSync(CSV_TEMPLATE_FILE);
@@ -66,7 +68,7 @@ describe("translations tests", async () => {
 		expect(Number(charLimit)).toBeGreaterThan(0);
 		console.log("test writeCsvTemplateToFile DONE");
 		done();
-	}, 60000);
+	});
 
 	test("Adapt test translation CSV to the offers in the DB", async done => {
 		console.log("Adapt test translation CSV... START");
@@ -85,7 +87,7 @@ describe("translations tests", async () => {
 		expect((await Offer.findOne({ id: offerId }))!.meta.title).toBe("Favorites");
 		console.log("Adapt test translation CSV... DONE");
 		done();
-	}, 60000);
+	});
 
 	test("processFile (import) translation CSV", async done => {
 		console.log("processFile (import) translation CSV START");
@@ -95,5 +97,5 @@ describe("translations tests", async () => {
 		expect(await OfferTranslation.find({ translation: "Favoritos" }));
 		console.log("processFile (import) translation CSV DONE");
 		done();
-	}, 60000);
+	});
 });

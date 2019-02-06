@@ -1,9 +1,9 @@
 import { getDefaultLogger as logger } from "../../logging";
 import { isNothing } from "../../utils/utils";
-import { localCache } from "../../utils/cache";
 import * as db from "../../models/offers";
 import { InvalidPollAnswers, NoSuchOffer } from "../../errors";
 import * as dbOrder from "../../models/orders";
+import { OfferContent } from "../../models/offers";
 
 export interface Question {
 	id: string;
@@ -64,8 +64,6 @@ export interface Tutorial {
 	pages: Array<TutorialPage | EarnThankYouPage>;
 }
 
-export const TUTORIAL_DESCRIPTION = "Kin Tutorial";
-
 export type Answers = { [key: string]: number };
 export type AnswersBackwardSupport = { [key: string]: string };
 
@@ -98,33 +96,15 @@ export function replaceTemplateVars(args: { amount: number }, template: string) 
 		.replace(/\${amount.raw}/g, args.amount.toString());
 }
 
-export async function getOfferContent(offerId: string): Promise<db.OfferContent | undefined> {
-	return await db.OfferContent.findOne({ offerId });
-}
-
-export async function getAllContents(): Promise<Map<string, db.OfferContent>> {
-	const cacheKey = "offerContents";
-	let contentsMap = localCache.get<Map<string, db.OfferContent>>(cacheKey);
-	if (!contentsMap) {
-		contentsMap = new Map<string, db.OfferContent>();
-		for (const res of await db.OfferContent.find()) {
-			contentsMap.set(res.offerId, res);
-		}
-		localCache.set(cacheKey, contentsMap);
-	}
-
-	return contentsMap;
-}
-
 // check the order answers and return the new amount for the order
 export async function submitFormAndMutateMarketplaceOrder(order: dbOrder.MarketplaceOrder, form: string | undefined) {
-	const offer = await db.Offer.findOneById(order.offerId);
+	const offer = await db.Offer.get(order.offerId);
 	if (!offer) {
 		throw NoSuchOffer(order.offerId);
 	}
 
 	if (offer.type === "earn") {
-		const offerContent = (await getOfferContent(order.offerId))!;
+		const offerContent = (await OfferContent.get(order.offerId))!;
 
 		switch (offerContent.contentType) {
 			case "poll":

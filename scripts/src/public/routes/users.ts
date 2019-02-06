@@ -22,6 +22,8 @@ import {
 	v1ValidateWhitelist,
 } from "../services/applications";
 
+import { AuthenticatedRequest } from "../auth";
+
 export type V1WalletData = {
 	wallet_address: string;
 };
@@ -133,11 +135,11 @@ export const signInUser = async function(req: RegisterRequest, res: Response) {
 	res.status(200).send(authToken);
 } as any as RequestHandler;
 
-export type UpdateUserRequest = Request & { body: WalletData };
+export type UpdateUserRequest = AuthenticatedRequest & { body: WalletData };
 
 export const updateUser = async function(req: UpdateUserRequest, res: Response) {
-	const user = req.context.user!;
-	const deviceId = req.body.device_id || req.context.token!.deviceId;
+	const user = req.context.user;
+	const deviceId = req.body.device_id || req.context.token.deviceId;
 	const walletAddress = req.body.wallet_address;
 
 	logger().info(`updating user ${ user.id }`, { walletAddress, deviceId });
@@ -151,10 +153,10 @@ export const updateUser = async function(req: UpdateUserRequest, res: Response) 
 	res.status(204).send();
 } as any as RequestHandler;
 
-export type UserExistsRequest = Request & { query: { user_id: string; } };
+export type UserExistsRequest = AuthenticatedRequest & { query: { user_id: string; } };
 
 export const userExists = async function(req: UserExistsRequest, res: Response) {
-	const appId = req.context.user!.appId;
+	const appId = req.context.user.appId;
 	logger().debug(`userExists appId: ${ appId }`);
 
 	const userFound = await userExistsService(appId, req.query.user_id);
@@ -164,58 +166,58 @@ export const userExists = async function(req: UserExistsRequest, res: Response) 
 /**
  * user activates by approving TOS
  */
-export const activateUser = async function(req: Request, res: Response) {
-	const authToken = await activateUserService(req.context.token!, req.context.user!);
+export const activateUser = async function(req: AuthenticatedRequest, res: Response) {
+	const authToken = await activateUserService(req.context.token, req.context.user);
 	res.status(200).send(authToken);
 } as any as RequestHandler;
 
-export type UserInfoRequest = Request & { params: { user_id: string; } };
+export type UserInfoRequest = AuthenticatedRequest & { params: { user_id: string; } };
 
 export const v1UserInfo = async function(req: UserInfoRequest, res: Response) {
 	logger().debug(`userInfo userId: ${ req.params.user_id }`);
 
-	if (req.context.user!.appUserId !== req.params.user_id) {
-		const userFound = await userExistsService(req.context.user!.appId, req.params.user_id);
+	if (req.context.user.appUserId !== req.params.user_id) {
+		const userFound = await userExistsService(req.context.user.appId, req.params.user_id);
 		if (userFound) {
 			res.status(200).send({});
 		} else {
 			res.status(404).send();
 		}
 	} else {
-		const profile = await getUserProfileService(req.context.user!.id, req.context.token!.deviceId);
+		const profile = await getUserProfileService(req.context.user.id, req.context.token.deviceId);
 		delete profile.created_date;
 		delete profile.current_wallet;
 		res.status(200).send(profile);
 	}
 } as any as RequestHandler;
 
-export const v1MyUserInfo = async function(req: Request, res: Response) {
-	req.params.user_id = req.context.user!.appUserId;
+export const v1MyUserInfo = async function(req: AuthenticatedRequest, res: Response) {
+	req.params.user_id = req.context.user.appUserId;
 	await (v1UserInfo as any)(req as UserInfoRequest, res);
 } as any as RequestHandler;
 
 export const userInfo = async function(req: UserInfoRequest, res: Response) {
 	logger().debug(`userInfo userId: ${ req.params.user_id }`);
 
-	if (req.context.user!.appUserId !== req.params.user_id) {
-		const userFound = await userExistsService(req.context.user!.appId, req.params.user_id);
+	if (req.context.user.appUserId !== req.params.user_id) {
+		const userFound = await userExistsService(req.context.user.appId, req.params.user_id);
 		if (userFound) {
 			res.status(200).send({});
 		} else {
 			res.status(404).send();
 		}
 	} else {
-		const profile = await getUserProfileService(req.context.user!.id, req.context.token!.deviceId);
+		const profile = await getUserProfileService(req.context.user.id, req.context.token.deviceId);
 		res.status(200).send(profile);
 	}
 } as any as RequestHandler;
 
-export const myUserInfo = async function(req: Request, res: Response) {
-	req.params.user_id = req.context.user!.appUserId;
+export const myUserInfo = async function(req: AuthenticatedRequest, res: Response) {
+	req.params.user_id = req.context.user.appUserId;
 	await (userInfo as any)(req as UserInfoRequest, res);
 } as any as RequestHandler;
 
-export const logoutUser = async function(req: Request, res: Response) {
-	await logoutService(req.context.user!, req.context.token!);
+export const logoutUser = async function(req: AuthenticatedRequest, res: Response) {
+	await logoutService(req.context.user, req.context.token);
 	res.status(204).send();
 } as any as RequestHandler;

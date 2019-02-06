@@ -5,6 +5,7 @@ import { generateId, IdPrefix } from "../utils/utils";
 import { OrderMeta } from "./orders";
 import { OfferTranslation } from "./translations";
 import { AppOffer } from "./applications";
+import { localCache } from "../utils/cache";
 
 export type BlockchainData = {
 	transaction_id?: string;
@@ -42,6 +43,21 @@ export class OfferOwner extends Model {
 @Register
 @Initializer("id", () => generateId(IdPrefix.Offer))
 export class Offer extends CreationDateModel {
+	public static async get(id: string): Promise<Offer | undefined> {
+		const cacheKey = `offer:${ id }`;
+		let offer = localCache.get<Offer>(cacheKey) || undefined;
+
+		if (!offer) {
+			offer = await Offer.findOneById(id);
+
+			if (offer) {
+				localCache.set(cacheKey, offer);
+			}
+		}
+
+		return offer;
+	}
+
 	@Column({ name: "name", unique: true })
 	public name!: string;
 
@@ -70,6 +86,22 @@ export class Offer extends CreationDateModel {
 @Entity({ name: "offer_contents" })
 @Register
 export class OfferContent extends Model {
+	public static async get(offerId: string): Promise<OfferContent | undefined> {
+		return (await this.all()).get(offerId);
+	}
+
+	public static async all(): Promise<Map<string, OfferContent>> {
+		const cacheKey = "offer_contents";
+		let contents = localCache.get<OfferContent[]>(cacheKey);
+
+		if (!contents) {
+			contents = await OfferContent.find();
+			localCache.set(cacheKey, contents);
+		}
+
+		return new Map(contents.map(content => [content.offerId, content]) as Array<[string, OfferContent]>);
+	}
+
 	@PrimaryColumn({ name: "offer_id" })
 	public offerId!: string;
 

@@ -1519,17 +1519,15 @@ async function testP2PAmountAsString() {
 		id: "offer-id",
 		amount: "2",
 	};
+	console.log("Creating appClient and sender");
 	const appClient = new SampleAppClient();
 	const senderId = "test:rich_user:" + generateId();
 	const senderDeviceId = generateId();
 	let jwt = await appClient.getRegisterJWT(senderId, senderDeviceId);
 
-	const senderPrivateKey = "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR";
-	const senderWalletAddress = "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ";
 	const senderClient = await MarketplaceClient.create({ jwt });
-	await senderClient.updateWallet(senderPrivateKey);
 	await senderClient.activate();
-
+	console.log("creating recipientClient");
 	const recipientId = "test:" + generateId();
 	const recipientDeviceId = generateId();
 	jwt = await appClient.getRegisterJWT(recipientId, recipientDeviceId);
@@ -1537,6 +1535,7 @@ async function testP2PAmountAsString() {
 	await recipientClient.updateWallet();
 	await recipientClient.activate();
 
+	console.log("Creating JWT");
 	jwt = await appClient.getArbitraryJWT("pay_to_user", {
 		offer_id: offer.id,
 		amount: offer.amount,
@@ -1548,7 +1547,7 @@ async function testP2PAmountAsString() {
 		recipient_title: "get moneys",
 		recipient_description: "money received from p2p testing"
 	});
-
+	console.log("sending JWT");
 	const res = await senderClient.createExternalOrder(jwt);
 	console.log(res);
 	console.log("OK.\n");

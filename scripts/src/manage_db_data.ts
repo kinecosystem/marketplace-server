@@ -7,7 +7,7 @@ import * as fs from "fs";
 import { join } from "path";
 import { Keypair } from "@kinecosystem/kin.js";
 
-import { close as closeModels, init as initModels } from "./models";
+import { close as closeDbConnection, init as initModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
 import { createEarn, createSpend, EarnOptions } from "./create_data/offers";
 import { ContentType, Offer } from "./models/offers";
@@ -16,6 +16,8 @@ import { path } from "./utils/path";
 
 import "./models/orders";
 import "./models/users";
+import * as translations from "./admin/translations";
+import * as adaptTranslations from "./adapt_translation_csv";
 
 getConfig();  // App Config
 
@@ -29,6 +31,8 @@ type ScriptConfig = {
 	dry_run: boolean;
 	require_update_confirm: boolean;
 	create_db: boolean;
+	trans_file: string | null;
+	trans_lang: string | null;
 };
 let scriptConfig: ScriptConfig;
 
@@ -246,6 +250,12 @@ function initArgsParser(): ScriptConfig {
 		help: `Create tables/schemes if needed. ${ "\x1b[41m" /* red */ }USUALLY SHOULD NOT BE RUN IN PRODUCTION${ "\x1b[0m" /* reset */ }`,
 		action: "storeTrue"
 	});
+	parser.addArgument(["--trans-file"], {
+		help: "Location of a translations csv file"
+	});
+	parser.addArgument(["--trans-lang"], {
+		help: "case-SENSITIVE Translations language (e.g, pt-BR)"
+	});
 
 	/*
 	//  implementation of a confirmation prompt function is below
@@ -273,9 +283,7 @@ function confirmPrompt(message: string) {
 }
 */
 
-scriptConfig = initArgsParser();
-
-initModels(scriptConfig.create_db).then(async () => {
+export async function initDb(scriptConfig: ScriptConfig, closeConnectionWhenDone: boolean = true) {
 	const appsDir = scriptConfig.apps_dir;
 	if (appsDir) {
 		for (const filename of fs.readdirSync(path(appsDir))) {
@@ -321,26 +329,55 @@ initModels(scriptConfig.create_db).then(async () => {
 			const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
 			let results = [];
 			if (title === "Spend") {
-				results = await parseSpend(parsed, appList);
+				results = await
+					parseSpend(parsed, appList);
 				createOfferOptions.verbose && console.log(`created spend:${ contentType } offers`);
 			} else if (title === "Earn") {
-				results = await parseEarn(parsed, contentType, appList, createOfferOptions);
+				results = await
+					parseEarn(parsed, contentType, appList, createOfferOptions);
 				createOfferOptions.verbose && console.log(`created earn:${ contentType } offers`);
 			} else {
 				throw new Error("Failed to parse " + parsed[0][0]);
 			}
 		}
 	}
-	try {
-		await closeModels();
-	} catch (e) {
+	const translationsFile = scriptConfig.trans_file;
+	const translationsLanguage = scriptConfig.trans_lang;
+	if (translationsFile && translationsLanguage) {
+		const generatedStringsFileName = "/tmp/local_translations_template-by_manage_db_script.csv";
+		const translationsFilename = "/tmp/translations-by_manage_db_script.csv";
+		console.log("creating translations template file");
+		await translations.writeCsvTemplateToFile(generatedStringsFileName);
+		console.log("adapting test translations file");
+		await adaptTranslations.processFile(translationsFile, generatedStringsFileName, translationsFilename);
+		console.log("processing translations and inserting into db");
+		await translations.processFile(translationsFilename, translationsLanguage);
+		console.log("Done. Translations Ready.");
+	} else if (translationsFile || translationsLanguage) {
+		throw Error("Both a translations file and a translations language need to be specified.");
+	}
+
+	if (closeConnectionWhenDone) {
+		try {
+			await closeDbConnection();
+		} catch (e) {
+		}
 	}
 	console.log(`done.`);
-}).catch(async (error: Error) => {
-	console.log("error: " + error.message + "\n" + error.stack);
-	try {
-		await closeModels();
-	} catch (e) {
-	}
-	console.log(`done.`);
-});
+
+}
+
+/*  Called from Cli  */
+if (require.main === module) {
+	scriptConfig = initArgsParser();
+	initModels(scriptConfig.create_db).then(async () => {
+		initDb(scriptConfig);
+	}).catch(async (error: Error) => {
+		console.log("error: " + error.message + "\n" + error.stack);
+		try {
+			await closeDbConnection();
+		} catch (e) {
+		}
+		console.log(`done.`);
+	});
+}

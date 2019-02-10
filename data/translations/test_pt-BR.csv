@@ -1,0 +1,25 @@
+Type,Key,Default,Translation,Character Limit
+poll,offer:OKKmC7OHkK2GztnaD3VF3:title,Favorites,Favoritos,14
+poll,offer:OKKmC7OHkK2GztnaD3VF3:description,Let us know!,Avise-nos!,18
+poll,offer:OKKmC7OHkK2GztnaD3VF3:orderTitle,Poll,Enquete,8
+poll,offer:OKKmC7OHkK2GztnaD3VF3:orderDescription,Completed,Concluído,24
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].title,Choose your favorite city,Escolha sua cidade preferida,38
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[0],San Francisco,São Francisco,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[1],New York City,Cidade de Nova York,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[2],Miami,Miami,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[3],Austin,Austin,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].title,Choose your favorite flower,Escolha sua flor preferida,38
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[0],Rose,Rosa,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[1],Daffodil,Narciso,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[2],Petunia,Petúnia,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[3],Daisy,Margarida,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[2].title,Choose your favorite brand of candy,Escolha sua marca preferida de doces,38
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[2].question.answers[0],Nestle,Nestlé,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[2].question.answers[1],Hershey,Hershey’s,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[2].question.answers[2],Wonka,Wonka,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[2].question.answers[3],Wrigley,Wrigley,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[3].title,Choose your favorite movie monster,Escolha seu monstro de filme preferido,38
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[3].question.answers[0],Vampire,Vampiro,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[3].question.answers[1],Frankenstein,Frankenstein,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[3].question.answers[2],Godzilla,Godzilla,22
+poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[3].question.answers[3],Mummy,Múmia,22

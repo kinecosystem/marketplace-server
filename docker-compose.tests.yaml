@@ -21,12 +21,28 @@ services:
       - .:/opt/app
     links:
       - postgres
-    command: npm run manage-db-data -- --apps-dir data/apps --offers-dir data/offers --app-list ALL --create-db
+    command: npm run manage-db-data -- --apps-dir data/apps --offers-dir data/offers --trans-file data/translations/pt-BR.csv --trans-lang pt-BR --app-list ALL --create-db
     environment:
       APP_DB_TYPE: postgres
       APP_DB_USERNAME: user
       APP_DB_PASSWORD: pass
       APP_DB_PORT: 5432 
+      APP_DB_HOST: postgres
+      APP_DB_DATABASE: ecosystem
+      STELLAR_ADDRESS: ${STELLAR_ADDRESS}
+
+  marketplace-console:
+    image: kinecosystem/marketplace-server:latest
+    volumes:
+      - .:/opt/app
+    links:
+      - postgres
+    command: node --experimental-repl-await ./scripts/bin/node-console.js
+    environment:
+      APP_DB_TYPE: postgres
+      APP_DB_USERNAME: user
+      APP_DB_PASSWORD: pass
+      APP_DB_PORT: 5432
       APP_DB_HOST: postgres
       APP_DB_DATABASE: ecosystem
       STELLAR_ADDRESS: ${STELLAR_ADDRESS}

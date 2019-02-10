@@ -29,7 +29,6 @@ import {
 } from "./public/services/offer_contents";
 import { AnswersBackwardSupport } from "./public/services/offer_contents";
 import * as StellarSdk from "stellar-sdk";
-import { signJwt } from "./tests/helpers";
 
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
 
@@ -1538,7 +1537,7 @@ async function testP2PAmountAsString() {
 	await recipientClient.updateWallet();
 	await recipientClient.activate();
 
-	jwt = await signJwt("test", "pay_to_user", {
+	jwt = await appClient.getArbitraryJWT("pay_to_user", {
 		offer_id: offer.id,
 		amount: offer.amount,
 		user_id: senderId,
@@ -1612,6 +1611,7 @@ async function main() {
 	await v1TryToNativeSpendTwiceWithNonce();
 	await p2p();
 	await v1P2p();
+	await testP2PAmountAsString();
 
 	// multiple users/devices/wallets flows
 	await twoUsersSharingWallet();

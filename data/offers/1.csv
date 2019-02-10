@@ -36,3 +36,8 @@ GAFN4KBWYIXQDCBTADICHKSIBIV7NYY67GREXTHMZPMQRGBDZCT3CKOD,Kik,Kik Poll #1,30,Answ
 ,,,,,,,,,,,4,FullPageMultiChoice,What's your favorite thing to do on Kik?,Complete the poll to earn ${amount} Kin,Chatting 1:1 with friends,Using chat bots,Chatting 1:1 with new people,Group chats
 ,,,,,,,,,,,5,FullPageMultiChoice,How did you first hear about Kik?,Complete the poll to earn ${amount} Kin,Friends/Family,Social media,Website/Search engine,Ads
 ,,,,,,,,,,,,EarnThankYou,,${amount},,,,
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Generic Poll #340,20,Favorites,Let us know!,https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/favorites.png,Poll,Completed,1000,1,1,FullPageMultiChoice,Choose your favorite city,,San Francisco,New York City,Miami,Austin
+,,,,,,,,,,,2,FullPageMultiChoice,Choose your favorite flower,,Rose,Daffodil,Petunia,Daisy
+,,,,,,,,,,,3,FullPageMultiChoice,Choose your favorite brand of candy,,Nestle,Hershey,Wonka,Wrigley
+,,,,,,,,,,,4,FullPageMultiChoice,Choose your favorite movie monster,,Vampire,Frankenstein,Godzilla,Mummy
+,,,,,,,,,,,,EarnThankYou,,,,,,

@@ -13,7 +13,7 @@ import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
 import { Order as DbOrder } from "./models/orders";
 import { Client as V1MarketplaceClient } from "./client.v1";
-import { delay, generateId, randomInteger, retry } from "./utils/utils";
+import { generateId, randomInteger, retry } from "./utils/utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { Client as MarketplaceClient, ClientError, JWTPayload } from "./client";
@@ -208,6 +208,28 @@ async function v1DidNotApproveTOS() {
 
 	const offers = await client.getOffers();
 	await client.createOrder(offers.offers[0].id); // should not throw - we removed need of activate
+	console.log("OK.\n");
+}
+
+async function getOfferTranslations() {
+	console.log("=====================================getOfferTranslations=====================================");
+	const userId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getV1RegisterJWT(userId);
+
+	const client = await V1MarketplaceClient.create({ jwt },
+		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ",
+		{ headers: { "accept-language": "pt-BR" } });
+
+	const offers = await client.getOffers();
+	//  We don't know the order of the offers received but some must have this title
+	// console.log("offers.offers:", offers.offers);
+	console.log("Title text (at least some should be translated):");
+	expect(offers.offers.filter(o => {
+		console.log("offer id: %s, title: ", o.id, o.title);
+		return o.title === "Faça um teste";
+	}).length).toBeGreaterThan(0);
+
 	console.log("OK.\n");
 }
 
@@ -1610,6 +1632,7 @@ async function main() {
 	await v1TryToNativeSpendTwiceWithNonce();
 	await p2p();
 	await v1P2p();
+	await getOfferTranslations();
 	await testP2PAmountAsString();
 
 	// multiple users/devices/wallets flows

@@ -54,7 +54,7 @@
 		"@types/supertest": "^2.0.4",
 		"@types/uuid": "^3.4.4",
 		"codecov": "^3.1.0",
-		"jest": "^23.6.0",
+		"jest": "^24.1.0",
 		"npm-run-all": "^4.0.1",
 		"rimraf": "2.6.1",
 		"sqlite3": "^4.0.4",
@@ -99,6 +99,9 @@
 		],
 		"setupFiles": [
 			"<rootDir>/scripts/src/tests/init_tests.ts"
+		],
+		"setupFilesAfterEnv": [
+			"<rootDir>/scripts/src/tests/init_tests_after_env_setup.ts"
 		],
 		"coverageDirectory": "<rootDir>/coverage/",
 		"collectCoverageFrom": [

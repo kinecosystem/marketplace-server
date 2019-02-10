@@ -123,7 +123,6 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 	if (!app) {
 		throw NoSuchApp(appId);
 	}
-
 	async function getEarn() {
 		if (!filters.type || filters.type === "earn") {
 			const offers = await filterOffers(

@@ -319,6 +319,6 @@ describe("api tests for v2 users", async () => {
 		const walletC = Wallet.create({ address: "A", createdDate: now, lastUsedDate: now, deviceId: "12345" });
 		const walletD = Wallet.create({ address: "D", createdDate: now, lastUsedDate: now, deviceId: "123456" });
 		const w = new Wallets([walletA, walletB, walletC, walletD]);
-		expect(w.uniqueCount).toBe(3);
+		expect(w.count).toBe(3);
 	});
 });

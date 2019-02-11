@@ -285,7 +285,7 @@ async function processTranslationData(csvDataRows: TranslationData) {
 		if (table === "offer") {
 			offerTranslations[column] = translation;
 		} else {
-			const evalString = `offerTranslations.content.${jsonPath}='${translation}'`;
+			const evalString = `offerTranslations.content.${jsonPath}=translation`;
 			try {
 				/* tslint:disable-next-line:no-eval */
 				eval(evalString);
@@ -300,13 +300,20 @@ async function processTranslationData(csvDataRows: TranslationData) {
 
 //  rowOffset is a 0 base index of the row to start with
 export async function processFile(filename: string, languageCode: string, rowOffset = 1) {
-	if (!filename || !languageCode) {
-		console.error("Both filename and language code are required");
-		return;
-	}
-	const csv = readFileSync(path(filename));
-	const parsedCsv = (csvParse as CsvParse)(csv);
-	parsedCsv.splice(0, rowOffset);
-	const data = await processTranslationData(parsedCsv);
-	insertIntoDb(data, languageCode);
+	return new Promise(async (resolve, reject) => {
+		if (!filename || !languageCode) {
+			console.error("Both filename and language code are required");
+			reject("Both filename and language code are required");
+			return;
+		}
+		const csv = readFileSync(path(filename));
+		const parsedCsv = (csvParse as CsvParse)(csv);
+		parsedCsv.splice(0, rowOffset);
+		try {
+			const data = await processTranslationData(parsedCsv);
+			insertIntoDb(data, languageCode);
+		} catch (e) {
+			reject(e);
+		}
+	});
 }

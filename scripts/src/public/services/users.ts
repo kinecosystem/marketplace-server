@@ -188,16 +188,9 @@ async function register(
 		metrics.userRegister(false, appId);
 	}
 
-	// XXX should be a scope object
-	let authToken = await DbAuthToken.findOne({
-		where: { deviceId, userId: user.id, valid: true },
-		order: { createdDate: "DESC" }
-	});
-	if (!authToken || authToken.isAboutToExpire()) {
-		createUserLoginServerRequested(user.id, deviceId).report();
-		createUserLoginServerSucceeded(user.id, deviceId).report();
-		authToken = await (DbAuthToken.new({ userId: user.id, deviceId }).save());
-	}
+	createUserLoginServerRequested(user.id, deviceId).report();
+	createUserLoginServerSucceeded(user.id, deviceId).report();
+	const authToken = await (DbAuthToken.new({ userId: user.id, deviceId }).save());
 	setHttpContext(authToken, user);
 
 	return {

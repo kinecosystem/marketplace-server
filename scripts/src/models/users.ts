@@ -178,7 +178,7 @@ export class Wallets {
 	}
 
 	public get count() {
-		return this.items.length;
+		return new Set(this.items.map(w => w.address)).size;
 	}
 
 	public all(): Wallet[] {

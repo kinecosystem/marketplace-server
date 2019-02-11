@@ -653,7 +653,7 @@ describe("test v2 orders", async () => {
 		const orders2 = await createOrdersForUser(user, deviceId2, app, { divideBy: 2 });
 		expect(orders2.length).toBeGreaterThan(0);
 
-		expect((await user.getWallets()).count).toBe(2);
+		expect((await user.getWallets()).count).toBe(1);
 		expect(new Set((await user.getWallets()).all().map(w => w.address)).size).toBe(1);
 
 		const history1 = (await getHistory(token1)).map(o => o.id);

@@ -86,8 +86,8 @@ export async function validateExternalOrderJWT(jwt: string, appUserId: string, d
 	if (!payload.offer) {
 		throw MissingFieldJWT("offer");
 	}
-
 	if (typeof payload.offer.amount !== "number") {
+		console.log("throwing");
 		throw InvalidExternalOrderJwt("amount field must be a number");
 	}
 	switch (payload.sub) {

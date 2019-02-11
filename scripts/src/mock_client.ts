@@ -1534,47 +1534,6 @@ async function walletSharedAcrossApps() {
 	console.log("OK.\n");
 }
 
-async function testP2PAmountAsString() {
-	console.log("===================================== testP2PAmountAsString =====================================");
-
-	const offer = {
-		id: "offer-id",
-		amount: "2",
-	};
-	console.log("Creating appClient and sender");
-	const appClient = new SampleAppClient();
-	const senderId = "test:rich_user:" + generateId();
-	const senderDeviceId = generateId();
-	let jwt = await appClient.getRegisterJWT(senderId, senderDeviceId);
-
-	const senderClient = await MarketplaceClient.create({ jwt });
-	await senderClient.activate();
-	console.log("creating recipientClient");
-	const recipientId = "test:" + generateId();
-	const recipientDeviceId = generateId();
-	jwt = await appClient.getRegisterJWT(recipientId, recipientDeviceId);
-	const recipientClient = await MarketplaceClient.create({ jwt });
-	await recipientClient.updateWallet();
-	await recipientClient.activate();
-
-	console.log("Creating JWT");
-	jwt = await appClient.getArbitraryJWT("pay_to_user", {
-		offer_id: offer.id,
-		amount: offer.amount,
-		user_id: senderId,
-		device_id: senderDeviceId,
-		sender_title: "sent moneys",
-		sender_description: "money sent to test p2p",
-		recipient_id: recipientId,
-		recipient_title: "get moneys",
-		recipient_description: "money received from p2p testing"
-	});
-	console.log("sending JWT");
-	const res = await senderClient.createExternalOrder(jwt);
-	console.log(res);
-	console.log("OK.\n");
-}
-
 async function checkValidTokenAfterLoginRightAfterLogout() {
 	console.log("===================================== checkValidTokenAfterLoginRightAfterLogout =====================================");
 
@@ -1633,7 +1592,6 @@ async function main() {
 	await p2p();
 	await v1P2p();
 	await getOfferTranslations();
-	await testP2PAmountAsString();
 
 	// multiple users/devices/wallets flows
 	await twoUsersSharingWallet();

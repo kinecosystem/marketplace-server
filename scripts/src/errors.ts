@@ -267,8 +267,8 @@ export function InvalidPollAnswers() {
 	return BadRequestError("InvalidPollAnswers", "Submitted form is invalid");
 }
 
-export function InvalidExternalOrderJwt() {
-	return BadRequestError("InvalidExternalOrderJwt", `Subject can be either "earn" or "spend"`);
+export function InvalidExternalOrderJwt(message: string) {
+	return BadRequestError("InvalidExternalOrderJwt", message);
 }
 
 export function JwtKidMissing() {

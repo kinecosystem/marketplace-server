@@ -47,11 +47,15 @@ export async function validateExternalOrderJWT(jwt: string, appUserId: string): 
 	const decoded = await verifyJWT<Partial<PayToUserPayload>, "spend" | "earn" | "pay_to_user">(jwt);
 
 	if (decoded.payload.sub !== "earn" && decoded.payload.sub !== "spend" && decoded.payload.sub !== "pay_to_user") {
-		throw InvalidExternalOrderJwt();
+		throw InvalidExternalOrderJwt(`Subject can be either "earn", "spend' or "pay_to_user"`);
 	}
 
 	// offer field has to exist in earn/spend/pay_to_user JWTs
 	if (!decoded.payload.offer) { throw MissingFieldJWT("offer"); }
+
+	if (typeof decoded.payload.offer.amount !== "number") {
+		throw InvalidExternalOrderJwt("amount field must be a number");
+	}
 
 	switch (decoded.payload.sub) {
 		case "spend":

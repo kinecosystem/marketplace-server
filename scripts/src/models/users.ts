@@ -18,7 +18,7 @@ import { CreationDateModel, register as Register, initializer as Initializer } f
 @Entity({ name: "users" })
 @Register
 @Initializer("id", () => generateId(IdPrefix.User))
-@Initializer("walletCount", () => 1)
+@Initializer("walletCount", () => 0)
 // @Unique(["appId", "appUserId"]) // supported from 0.2.0
 export class User extends CreationDateModel {
 	@Column({ name: "app_id" })

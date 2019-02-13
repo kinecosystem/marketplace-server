@@ -19,10 +19,9 @@ Note that we have a code of conduct, which we ask you follow in all your interac
 
 1. Create your own fork of the code
 1. Do the changes in your fork
-1. If you like the change and think the project could use it 
-2. Be sure you have followed the code style for the project
-2. Make sure you add unit tests to any new code you wrote
-2. Send a pull request
+1. Be sure you have followed the code style for the project
+1. Make sure you add unit tests to any new code you wrote
+1. Send a pull request
 
 ## How to report a bug
 

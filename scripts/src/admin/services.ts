@@ -1,4 +1,4 @@
-import { RequestHandler, Request, Response} from 'express';
+import { RequestHandler, Request, Response } from "express";
 
 import { Application, AppOffer } from "../models/applications";
 import { Cap, Offer, OfferContent, PollAnswer } from "../models/offers";
@@ -694,12 +694,12 @@ export async function changeOffer(body: ChangeOfferData, params: { offer_id: str
 }
 
 export const updateAppConfig = async function(req: Request, res: Response) {
-	const app = (await Application.findOne({id: req.params.application_id}))!;
+	const app = (await Application.findOne({ id: req.params.application_id }))!;
 	try {
 		app.config = req.body;
 		await app.save();
 	} catch (e) {
-		res.status(500).send(e.message)
+		res.status(500).send(e.message);
 	}
 	res.status(204).send();
 

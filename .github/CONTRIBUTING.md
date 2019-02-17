@@ -7,21 +7,13 @@ so please don't be shy and share your help with us. Even the tiniest contributio
 These guidelines briefly explain how to contribute in an effective manner, making sure to keep high
 quality standards and making it easier for your contributions to make through.
 
-There are many ways to contribute, from writing tutorials or [blog posts](https://medium.com/kinblog), improving the [documentation](https://partners.kinecosystem.com), asking and answering questions on [stackoverflow](https://stackoverflow.com/questions/tagged/kin), submitting bug reports and feature requests or writing code.
+There are many ways to contribute, from writing tutorials, improving the [documentation](https://partners.kinecosystem.com), asking and answering questions on [stackoverflow](https://stackoverflow.com/questions/tagged/kin), submitting bug reports and feature requests to writing code.
 
 Kin has many public [Github repositories](https://github.com/kinecosystem) for an arrary of products. Before openning an issue, please make sure you are in the right reposity. 
 
 If you have any product questions please join [our community on reddit](https://www.reddit.com/r/KinFoundation/).
 
 Note that we have a code of conduct, which we ask you follow in all your interactions with the project.
-
-## Getting Started
-
-1. Create your own fork of the code
-1. Do the changes in your fork
-1. Be sure you have followed the code style for the project
-1. Make sure you add unit tests to any new code you wrote
-1. Send a pull request
 
 ## How to report a bug
 
@@ -32,6 +24,14 @@ When filing an issue, make sure to answer these questions:
 1. What did you do?
 1. What did you expect to see?
 1. What did you see instead?
+
+## Getting Started Contributing Code
+
+1. Create your own fork of the code
+1. Do the changes in your fork
+1. Be sure you have followed the code style for the project
+1. Make sure you add unit tests to any new code you wrote
+1. Send a pull request
 
 ## Code review process
 

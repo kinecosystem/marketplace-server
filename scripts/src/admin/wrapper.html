@@ -6,14 +6,10 @@
 			font-family: Arial;
 			background: #ffffff;
 		}
-		td {
-			vertical-align: bottom;
-		}
-		tr:nth-child(even) {background: #FFFFFF}
-		tr:nth-child(odd) {background: #FFEEEE}
-		img {
-			height: 50px;
-		}
+		td { vertical-align: bottom; }
+		tr:nth-child(even) { background: #FFFFFF; }
+		tr:nth-child(odd) { background: #FFEEEE; }
+		img { height: 50px; }
 		pre {
 			font-family: "Courier New";
 			background: #eeeeee;
@@ -50,33 +46,31 @@
 			height: 70px;
 			width: 100%;
 		}
-		</style>
-		<style>
-		.flex-row-container {
-		    display: flex;
-		    flex-direction: row;
-		    flex-wrap: nowrap;
-		    justify-content: center;
-		    align-content: stretch;
-		    align-items: center;
-	    }
 
+		.flex-row-container {
+			display: flex;
+			flex-direction: row;
+			flex-wrap: nowrap;
+			justify-content: center;
+			align-content: stretch;
+			align-items: center;
+		}
 
 		#toast {
-		    visibility: hidden;
-		    min-width: 250px;
-		    margin-left: -125px;
-		    background-color: #0a2;
-		    font-weight: bold;
-		    color: #fff;
-		    text-align: center;
-		    border-radius: 2px;
-		    padding: 16px;
-		    position: fixed;
-		    z-index: 100000;
-		    left: 50%;
-		    bottom: 30px;
-		    font-size: 17px;
+			visibility: hidden;
+			min-width: 250px;
+			margin-left: -125px;
+			background-color: #0a2;
+			font-weight: bold;
+			color: #fff;
+			text-align: center;
+			border-radius: 2px;
+			padding: 16px;
+			position: fixed;
+			z-index: 100000;
+			left: 50%;
+			bottom: 30px;
+			font-size: 17px;
 		}
 
 		.btn {
@@ -88,7 +82,7 @@
 		}
 
 		.overlay {
-            position: fixed;
+			position: fixed;
 			display: none;
 			width: 100%;
 			height: 100%;
@@ -109,8 +103,8 @@
 			padding: 2%;
 			color: black;
 			background-color: white;
-			transform: translate(-50%,-50%);
 			-ms-transform: translate(-50%,-50%);
+			transform: translate(-50%,-50%);
 		}
 
 		.overlay-content div {
@@ -136,9 +130,9 @@
 			width: 100%;
 		}
 		#toast.show {
-		    visibility: visible;
-		    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
-		    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+			visibility: visible;
+			-webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+			animation: fadein 0.5s, fadeout 0.5s 2.5s;
 		}
 
 		.offer-row .offer-id a{
@@ -147,20 +141,20 @@
 			text-decoration: underline;
 		}
 		@-webkit-keyframes fadein {
-		    from {bottom: 0; opacity: 0;}
-		    to {bottom: 30px; opacity: 1;}
+			from {bottom: 0; opacity: 0;}
+			to {bottom: 30px; opacity: 1;}
 		}
 		@keyframes fadein {
-		    from {bottom: 0; opacity: 0;}
-		    to {bottom: 30px; opacity: 1;}
+			from {bottom: 0; opacity: 0;}
+			to {bottom: 30px; opacity: 1;}
 		}
 		@-webkit-keyframes fadeout {
-		    from {bottom: 30px; opacity: 1;}
-		    to {bottom: 0; opacity: 0;}
+			from {bottom: 30px; opacity: 1;}
+			to {bottom: 0; opacity: 0;}
 		}
 		@keyframes fadeout {
-		    from {bottom: 30px; opacity: 1;}
-		    to {bottom: 0; opacity: 0;}
+			from {bottom: 30px; opacity: 1;}
+			to {bottom: 0; opacity: 0;}
 		}
 
 		td[onclick] div.jsoneditor-tree div.jsoneditor-tree-inner { padding-bottom: 0; }
@@ -223,11 +217,10 @@
 				publishBtnElemnt.addEventListener("click", publishBtnHandler)
 			});
 
-
 			function toast(msg) {
-			    toastElemnt.innerText = msg;
-			    toastElemnt.className = "show";
-			    setTimeout(function(){ toastElemnt.className = toastElemnt.className.replace("show", ""); }, 3000);
+				toastElemnt.innerText = msg;
+				toastElemnt.className = "show";
+				setTimeout(function(){ toastElemnt.className = toastElemnt.className.replace("show", ""); }, 3000);
 			}
 			function submitData(url, data) {
 				axios.post(url, data)

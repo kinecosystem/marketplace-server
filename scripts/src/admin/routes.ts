@@ -30,9 +30,10 @@ function jsonResponse(func: (body: any, params: any, query: any) => Promise<stri
 }
 
 function wrapService(func: (params: any, query: any) => Promise<string>): RequestHandler {
+	const genericServiceTemplatePath = "../../src/admin/wrapper.html";
 	return async function(req: Request, res: Response) {
 		const content = await func(req.params, req.query);
-		const html = (await readFile(path.join(__dirname, "../../src/admin/wrapper.html"), { encoding: "utf8" }))
+		const html = (await readFile(path.join(__dirname, genericServiceTemplatePath), { encoding: "utf8" }))
 			.replace("${ content }", content)
 			.replace("${ webview }", getConfig().webview)
 			.replace("${ now }", Date.now().toString());

@@ -1,6 +1,6 @@
 import { RequestHandler, Request, Response } from "express";
 
-import { Application, AppOffer } from "../models/applications";
+import { Application, AppOffer, ApplicationConfig } from "../models/applications";
 import { Cap, Offer, OfferContent, PollAnswer } from "../models/offers";
 import { getManager } from "typeorm";
 import { User } from "../models/users";
@@ -693,7 +693,11 @@ export async function changeOffer(body: ChangeOfferData, params: { offer_id: str
 	await offer.save();
 }
 
-export const updateAppConfig = async function(req: Request, res: Response) {
+type UpdateAppConfigRequest = Request & {
+	body: ApplicationConfig
+};
+
+export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: Response) {
 	const app = (await Application.findOne({ id: req.params.application_id }))!;
 	try {
 		app.config = req.body;

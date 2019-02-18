@@ -1,4 +1,6 @@
-import { Application, AppOffer } from "../models/applications";
+import { RequestHandler, Request, Response } from "express";
+
+import { Application, AppOffer, ApplicationConfig } from "../models/applications";
 import { Cap, Offer, OfferContent, PollAnswer } from "../models/offers";
 import { getManager } from "typeorm";
 import { User } from "../models/users";
@@ -244,18 +246,19 @@ function appStatsToHtml(stats: AppStats) {
 }
 
 async function appToHtml(app: Application): Promise<string> {
-	return `<tr>
-<td>${ app.id }</td>
-<td>${ app.name }</td>
-<td>${ app.apiKey }</td>
-<td><a href="/applications/${ app.id }/users">users</a></td>
-<td><a href="/applications/${ app.id }/offers">offers</a></td>
-<td><a href="/applications/${ app.id }/stats">stats</a></td>
-<td><a href="/applications/${ app.id }/offers/stats">offer stats</a></td>
-<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.sender }">sender wallet (earn)</a></td>
-<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.recipient }">recipient wallet (spend)</a></td>
-<td><pre>${ JSON.stringify(app.jwtPublicKeys, null, 2) }</pre></td>
-<td><pre>${ JSON.stringify(app.config, null, 2) }</pre></td>
+	return `
+<tr>
+	<td>${ app.id }</td>
+	<td>${ app.name }</td>
+	<td>${ app.apiKey }</td>
+	<td><a href="/applications/${ app.id }/users">users</a></td>
+	<td><a href="/applications/${ app.id }/offers">offers</a></td>
+	<td><a href="/applications/${ app.id }/stats">stats</a></td>
+	<td><a href="/applications/${ app.id }/offers/stats">offer stats</a></td>
+	<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.sender }">sender wallet (earn)</a></td>
+	<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.recipient }">recipient wallet (spend)</a></td>
+	<td><pre>${ JSON.stringify(app.jwtPublicKeys, null, 2) }</pre></td>
+	<td onclick="openEditor(this, '${ app.id }')"><pre>${ JSON.stringify(app.config, null, 2) }</pre></td>
 </tr>`;
 }
 
@@ -689,3 +692,19 @@ export async function changeOffer(body: ChangeOfferData, params: { offer_id: str
 
 	await offer.save();
 }
+
+type UpdateAppConfigRequest = Request & {
+	body: ApplicationConfig
+};
+
+export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: Response) {
+	const app = (await Application.findOne({ id: req.params.application_id }))!;
+	try {
+		app.config = req.body;
+		await app.save();
+	} catch (e) {
+		res.status(500).send(e.message);
+	}
+	res.status(204).send();
+
+} as any as RequestHandler;

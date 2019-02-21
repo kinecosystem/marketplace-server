@@ -5,8 +5,8 @@ import { Order } from "../../models/orders";
 import { normalizeError, readUTCDate } from "../../utils/utils";
 import { Application } from "../../models/applications";
 import { getDefaultLogger as logger } from "../../logging";
-import { User, AuthToken as DbAuthToken } from "../../models/users";
-import { MaxWalletsExceeded, NoSuchUser, NoSuchApp } from "../../errors";
+import { User, AuthToken as DbAuthToken, WalletApplication } from "../../models/users";
+import { MaxWalletsExceeded, NoSuchUser, NoSuchApp, CrossAppWallet } from "../../errors";
 import { create as createUserRegistrationFailed } from "../../analytics/events/user_registration_failed";
 import { create as createUserLoginServerRequested } from "../../analytics/events/user_login_server_requested";
 import { create as createUserLoginServerSucceeded } from "../../analytics/events/user_login_server_succeeded";
@@ -92,23 +92,38 @@ export type UpdateUserProps = {
 export async function updateUser(user: User, props: UpdateUserProps) {
 	if (props.walletAddress) {
 		const wallets = await user.getWallets();
-		const app = await Application.get(user.appId);
+		const appId = user.appId;
+		const app = await Application.get(appId);
+		const totalWalletCount = wallets.count + user.walletCount;
+		const walletAddress = props.walletAddress;
+
+		/*  Start of Cross-app restore check */
+		const appWallet = await WalletApplication.findOne({ walletAddress });
+		if (!appWallet) {
+			const newWallet = WalletApplication.create({ walletAddress, appId });
+			await newWallet.save();
+		} else {
+			if (appWallet.appId !== appId) {
+				throw CrossAppWallet();
+			}
+		}
+		/*  End of Cross-app restore check */
 
 		if (!app) {
-			throw NoSuchApp(user.appId);
+			throw NoSuchApp(appId);
 		}
 
-		if (!app.allowsNewWallet(wallets.count + user.walletCount)) {
-			metrics.maxWalletsExceeded(app.id);
+		if (!app.allowsNewWallet(totalWalletCount)) {
+			metrics.maxWalletsExceeded(appId);
 			throw MaxWalletsExceeded();
 		}
 
-		const isNewWallet = await user.updateWallet(props.deviceId, props.walletAddress);
+		const isNewWallet = await user.updateWallet(props.deviceId, walletAddress);
 		if (isNewWallet) {
-			logger().info(`creating stellar wallet for user ${ user.id }: ${ props.walletAddress }`);
-			await payment.createWallet(props.walletAddress, user.appId, user.id);
+			logger().info(`creating stellar wallet for user ${appId}: ${props.walletAddress}`);
+			await payment.createWallet(walletAddress, appId, user.id);
 		}
-		metrics.walletAddressUpdate(user.appId, isNewWallet);
+		metrics.walletAddressUpdate(appId, isNewWallet);
 
 		createWalletAddressUpdateSucceeded(user.id, props.deviceId).report();
 	}
@@ -121,7 +136,7 @@ export async function activateUser(authToken: DbAuthToken, user: User): Promise<
 
 export async function userExists(appId: string, appUserId: string): Promise<boolean> {
 	const user = await User.findOne({ appId, appUserId });
-	logger().debug(`userExists service appId: ${ appId }, appUserId: ${ appUserId }, user: `, user);
+	logger().debug(`userExists service appId: ${appId}, appUserId: ${appUserId}, user: `, user);
 	return user !== undefined;
 }
 

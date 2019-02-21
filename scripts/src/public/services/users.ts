@@ -97,7 +97,7 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 		const totalWalletCount = wallets.count + user.walletCount;
 		const walletAddress = props.walletAddress;
 
-		/*  Start of Cross-app restore check */
+		/*  Start of Cross-app restore check (when removing, remove test too) */
 		const appWallet = await WalletApplication.findOne({ walletAddress });
 		if (!appWallet) {
 			const newWallet = WalletApplication.create({ walletAddress, appId });

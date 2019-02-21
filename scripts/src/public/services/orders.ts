@@ -17,6 +17,7 @@ import {
 import {
 	ApiError,
 	NoSuchApp,
+
 	NoSuchUser,
 	CompletedOrderCantTransitionToFailed,
 	ExternalOrderAlreadyCompleted,
@@ -38,6 +39,8 @@ import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
+
+import { getAppBlockchainVersion } from "./applications";
 
 import { assertRateLimitEarn } from "../../utils/rate_limit";
 import { submitFormAndMutateMarketplaceOrder } from "./offer_contents";
@@ -133,13 +136,17 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 	orderMeta.title = orderTranslations.orderTitle || orderMeta.title;
 	orderMeta.description = orderTranslations.orderDescription || orderMeta.description;
 
+	const recipientAddress = appOffer.offer.type === "spend" ? appOffer.walletAddress : wallet.address;
+	const senderAddress = appOffer.offer.type === "spend" ? wallet.address : appOffer.walletAddress;
+
 	const order = db.MarketplaceOrder.new({
 		status: "opened",
 		offerId: appOffer.offer.id,
 		amount: appOffer.offer.amount,
 		blockchainData: {
-			sender_address: appOffer.offer.type === "spend" ? wallet.address : appOffer.walletAddress,
-			recipient_address: appOffer.offer.type === "spend" ? appOffer.walletAddress : wallet.address
+			blockchain_version: appOffer.app.config.blockchain_version,
+			sender_address: senderAddress,
+			recipient_address: recipientAddress,
 		}
 	}, {
 		user,
@@ -149,6 +156,12 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 		// replaceTemplateVars(offer, offer.meta.order_meta.content!)
 		meta: orderMeta
 	});
+
+	console.log(order);
+	if (order.isSpend() && recipientAddress) {
+		await addWatcherEndpoint(recipientAddress, order.id, order.blockchainData.blockchain_version!);
+	}
+
 	await order.save();
 
 	metrics.createOrder("marketplace", appOffer.offer.type, appOffer.offer.id, user.appId);
@@ -159,9 +172,16 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 export async function createMarketplaceOrder(offerId: string, user: User, userDeviceId: string, orderTranslations?: OrderTranslations): Promise<OpenOrder> {
 	logger().info("creating marketplace order for", { offerId, userId: user.id });
 
-	const appOffer = await AppOffer.findOne({ offerId, appId: user.appId });
+	const offer = await offerDb.Offer.get(offerId); // cached
+	if (!offer) {
+		throw NoSuchOffer(offerId);
+	}
+
+	const appOffers = await AppOffer.getAppOffers(user.appId, offer.type); // cached
+	const appOffer = appOffers.find(app_offer => app_offer.offerId === offerId);
 	if (!appOffer) {
 		throw NoSuchOffer(offerId);
+
 	}
 
 	const order = await lock(getLockResource("get", offerId, user.id), async () =>
@@ -200,6 +220,7 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 		status: "opened",
 		nonce: jwt.nonce,
 		blockchainData: {
+			blockchain_version: senderWallet.blockchainVersion,
 			sender_address: senderWallet.address,
 			recipient_address: recipientWallet.address
 		}
@@ -215,7 +236,7 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 		meta: pick(jwt.sender, "title", "description")
 	});
 
-	await addWatcherEndpoint(recipientWallet.address, order.id);
+	await addWatcherEndpoint(recipientWallet.address, order.id, senderWallet.blockchainVersion);
 	return order;
 }
 
@@ -236,6 +257,7 @@ async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId:
 		nonce: jwt.nonce,
 		status: "opened",
 		blockchainData: {
+			blockchain_version: app.config.blockchain_version,
 			sender_address: app.walletAddresses.sender,
 			recipient_address: wallet.address
 		}
@@ -265,6 +287,7 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 		status: "opened",
 		nonce: jwt.nonce,
 		blockchainData: {
+			blockchain_version: app.config.blockchain_version,
 			sender_address: wallet.address,
 			recipient_address: app.walletAddresses.recipient
 		}
@@ -275,7 +298,7 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 		meta: pick(jwt.sender, "title", "description")
 	});
 
-	await addWatcherEndpoint(app.walletAddresses.recipient, order.id);
+	await addWatcherEndpoint(app.walletAddresses.recipient, order.id, app.config.blockchain_version);
 
 	return order;
 }

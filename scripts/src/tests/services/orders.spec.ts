@@ -342,6 +342,7 @@ describe("test v2 orders", async () => {
 				amount: 1,
 				status: "opened",
 				blockchainData: {
+					blockchain_version: wallet.blockchainVersion,
 					sender_address: "sender",
 					recipient_address: "recipient"
 				}

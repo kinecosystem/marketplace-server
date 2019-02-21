@@ -5,6 +5,7 @@ import { performance } from "perf_hooks";
 import { getDefaultLogger as logger } from "../../logging";
 
 import { getConfig } from "../config";
+import { BlockchainVersion } from "../../models/offers";
 
 const axiosRetry = require("axios-retry"); // TODO: nitzan this fails the tests: import axiosRetry from "axios-retry";
 
@@ -104,8 +105,9 @@ export async function setWatcherEndpoint(addresses: string[]): Promise<Watcher> 
 	return res.data;
 }
 
-export async function addWatcherEndpoint(address: string, paymentId: string): Promise<Watcher> {
-	const res = await client.put(`${config.payment_service}/services/${SERVICE_ID}/watchers/${address}/payments/${paymentId}`);
+export async function addWatcherEndpoint(address: string, paymentId: string, blockchainVersion: BlockchainVersion): Promise<Watcher> {
+	const res = await client.put(`${ config.payment_service }/services/${SERVICE_ID}/watchers/${address}/payments/${paymentId}`);
+	// const res = await client.put(`${getPaymentServiceUrl(blockchainVersion)}/services/${SERVICE_ID}/watchers/${address}/payments/${paymentId}`);
 	return res.data;
 }
 
@@ -116,7 +118,14 @@ export type BlockchainConfig = {
 	asset_code: string;
 };
 
-export async function getBlockchainConfig(): Promise<BlockchainConfig> {
+export async function getBlockchainConfig(blockchainVersion: BlockchainVersion): Promise<BlockchainConfig> {
 	const res = await client.get(`${config.payment_service}/config`);
 	return res.data;
+}
+
+function getPaymentServiceUrl(blockchainVersion: BlockchainVersion): string {
+	if (blockchainVersion === "3") {
+		return config.payment_service_v3;
+	}
+	return config.payment_service;
 }

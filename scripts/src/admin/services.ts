@@ -34,7 +34,7 @@ type AppStats = {
 };
 
 let BLOCKCHAIN: BlockchainConfig;
-getBlockchainConfig().then(data => BLOCKCHAIN = data);
+getBlockchainConfig("2").then(data => BLOCKCHAIN = data);
 
 const OFFER_HEADERS = `<tr>
 <th>ID</th>

@@ -120,7 +120,7 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 
 		const isNewWallet = await user.updateWallet(props.deviceId, walletAddress);
 		if (isNewWallet) {
-			logger().info(`creating stellar wallet for user ${appId}: ${props.walletAddress}`);
+			logger().info(`creating stellar wallet for user ${ appId }: ${ props.walletAddress }`);
 			await payment.createWallet(walletAddress, appId, user.id);
 		}
 		metrics.walletAddressUpdate(appId, isNewWallet);
@@ -136,7 +136,7 @@ export async function activateUser(authToken: DbAuthToken, user: User): Promise<
 
 export async function userExists(appId: string, appUserId: string): Promise<boolean> {
 	const user = await User.findOne({ appId, appUserId });
-	logger().debug(`userExists service appId: ${appId}, appUserId: ${appUserId}, user: `, user);
+	logger().debug(`userExists service appId: ${ appId }, appUserId: ${ appUserId }, user: `, user);
 	return user !== undefined;
 }
 

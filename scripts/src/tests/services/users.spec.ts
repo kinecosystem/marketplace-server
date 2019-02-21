@@ -69,13 +69,13 @@ describe("api tests for v2 users", async () => {
 		await mock(expressApp)
 			.get(`/v2/users/non_user`)
 			.set("x-request-id", "123")
-			.set("Authorization", `Bearer ${token.id}`)
+			.set("Authorization", `Bearer ${ token.id }`)
 			.expect(404, {});
 
 		await mock(expressApp)
-			.get(`/v2/users/${user1.appUserId}`)
+			.get(`/v2/users/${ user1.appUserId }`)
 			.set("x-request-id", "123")
-			.set("Authorization", `Bearer ${token.id}`)
+			.set("Authorization", `Bearer ${ token.id }`)
 			.expect((res: { body: UserProfile; }) => {
 				if (res.body.created_date === undefined) {
 					throw new Error("created_date missing");
@@ -92,17 +92,17 @@ describe("api tests for v2 users", async () => {
 			});
 
 		await mock(expressApp)
-			.get(`/v2/users/${user2.appUserId}`)
+			.get(`/v2/users/${ user2.appUserId }`)
 			.set("x-request-id", "123")
-			.set("Authorization", `Bearer ${token.id}`)
+			.set("Authorization", `Bearer ${ token.id }`)
 			.expect(200, {});
 
 		await helpers.createOrders(user1.id); // creates 1 pending and 1 completed and 1 failed of earn and spend
 
 		await mock(expressApp)
-			.get(`/v2/users/${user1.appUserId}`)
+			.get(`/v2/users/${ user1.appUserId }`)
 			.set("x-request-id", "123")
-			.set("Authorization", `Bearer ${token.id}`)
+			.set("Authorization", `Bearer ${ token.id }`)
 			.expect(200)
 			.expect((res: mock.Response) => {
 				if (res.body.stats.earn_count !== 2 || res.body.stats.spend_count !== 2) {
@@ -113,9 +113,9 @@ describe("api tests for v2 users", async () => {
 		// different appId
 		const user3 = await helpers.createUser({ appId: generateId(IdPrefix.App) });
 		await mock(expressApp)
-			.get(`/v2/users/${user3.appUserId}`)
+			.get(`/v2/users/${ user3.appUserId }`)
 			.set("x-request-id", "123")
-			.set("Authorization", `Bearer ${token.id}`)
+			.set("Authorization", `Bearer ${ token.id }`)
 			.expect(404);
 	});
 
@@ -132,7 +132,7 @@ describe("api tests for v2 users", async () => {
 			.patch("/v2/users/me")
 			.send({ wallet_address: newWalletAddress })
 			.set("content-type", "application/json")
-			.set("Authorization", `Bearer ${token.id}`)
+			.set("Authorization", `Bearer ${ token.id }`)
 			.expect(204);
 
 		user = (await User.findOne({ id: user.id }))!;
@@ -145,7 +145,7 @@ describe("api tests for v2 users", async () => {
 			.patch("/v2/users/me")
 			.send({ wallet_address: badAddress })
 			.set("content-type", "applications/json")
-			.set("Authorization", `Bearer ${token.id}`)
+			.set("Authorization", `Bearer ${ token.id }`)
 			.expect(400);
 
 		user = (await User.findOne({ id: user.id }))!;
@@ -169,7 +169,7 @@ describe("api tests for v2 users", async () => {
 		await mock(expressApp)
 			.delete("/v2/users/me/session")
 			.send()
-			.set("Authorization", `Bearer ${token.id}`)
+			.set("Authorization", `Bearer ${ token.id }`)
 			.expect(204);
 
 		token = (await AuthToken.findOne({ userId: user.id }))!;
@@ -194,7 +194,7 @@ describe("api tests for v2 users", async () => {
 		await mock(expressApp)
 			.delete("/v2/users/me/session")
 			.send()
-			.set("Authorization", `Bearer ${token.token}`)
+			.set("Authorization", `Bearer ${ token.token }`)
 			.expect(204);
 
 		res = await mock(expressApp)
@@ -220,13 +220,13 @@ describe("api tests for v2 users", async () => {
 
 		let res = await mock(expressApp)
 			.get(`/v2/users/me`)
-			.set("Authorization", `Bearer ${token.id}`)
+			.set("Authorization", `Bearer ${ token.id }`)
 			.set("x-request-id", "123");
 		expect(res.status).toBe(200);
 
 		res = await mock(expressApp)
 			.get(`/v2/users/me`)
-			.set("Authorization", `Bearer ${token.id}`)
+			.set("Authorization", `Bearer ${ token.id }`)
 			.set("x-request-id", "123")
 			.set("x-simulate-deprecation-error", "true");
 
@@ -335,22 +335,19 @@ describe("api tests for v2 users", async () => {
 			.patch("/v2/users/me")
 			.send({ wallet_address: (await user1.getWallets()).first!.address })
 			.set("content-type", "application/json")
-			.set("Authorization", `Bearer ${token1.id}`);
-
-		// console.log(await WalletApplication.find());
-		// console.log("user2", (await user2.getWallets()).first!.address);
-		await mock(expressApp)
-			.patch("/v2/users/me")
-			.send({ wallet_address: (await user2.getWallets()).first!.address })
-			.set("content-type", "application/json")
-			.set("Authorization", `Bearer ${token2.id}`);
+			.set("Authorization", `Bearer ${ token1.id }`);
 
 		await mock(expressApp)
 			.patch("/v2/users/me")
 			.send({ wallet_address: (await user2.getWallets()).first!.address })
 			.set("content-type", "application/json")
-			.set("Authorization", `Bearer ${token1.id}`)
+			.set("Authorization", `Bearer ${ token2.id }`);
+
+		await mock(expressApp)
+			.patch("/v2/users/me")
+			.send({ wallet_address: (await user2.getWallets()).first!.address })
+			.set("content-type", "application/json")
+			.set("Authorization", `Bearer ${ token1.id }`)
 			.expect(401);
-		// console.log(await WalletApplication.find());
 	});
 });

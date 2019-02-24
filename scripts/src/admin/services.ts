@@ -698,13 +698,23 @@ type UpdateAppConfigRequest = Request & {
 };
 
 export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: Response) {
+	const config = req.body;
+	if (
+		!config.limits
+		|| !Object.keys(config.limits).every( // keys of config.limits have to be numbers
+			limitName => typeof config.limits[limitName] === "number"
+		)
+	) {
+		res.status(400).send("Config data is incorrect");
+		return false;
+	}
+
 	const app = (await Application.findOne({ id: req.params.application_id }))!;
 	try {
-		app.config = req.body;
+		app.config = config;
 		await app.save();
 	} catch (e) {
 		res.status(500).send(e.message);
 	}
 	res.status(204).send();
-
 } as any as RequestHandler;

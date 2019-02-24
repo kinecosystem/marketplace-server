@@ -333,6 +333,16 @@
 				const appId = editor.frame.parentNode.dataset.appId;
 				try {
 					json = editor.get();
+					if (
+						!json.limits
+						|| !Object.keys(json.limits).every( // keys of config.limits have to be numbers
+							limitName => typeof json.limits[limitName] === 'number'
+						)
+					) {
+						toast('config limits got incorrect format')
+						return false;
+					}
+
 					const response = await fetch(`/applications/${appId}/config`, {
 						method: 'PUT',
 						body: JSON.stringify(json),
@@ -340,8 +350,10 @@
 					})
 					if (response.ok) {
 						closeEditor(editor)
+					} else {
+						toast('config is incorrect')
 					}
-				} catch (e) { console.log('invalid json'); }
+				} catch (e) { toast('smth is wrong'); }
 			}
 
 			function closeEditor(editor) {

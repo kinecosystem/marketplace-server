@@ -701,7 +701,7 @@ export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: 
 	const config = req.body;
 	if (
 		!config.limits
-		|| !Object.keys(config.limits).every( // keys of config.limits have to be numbers
+		|| !Object.keys(config.limits).every( // values of config.limits have to be numbers
 			limitName => typeof config.limits[limitName] === "number"
 		)
 	) {

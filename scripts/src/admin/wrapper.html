@@ -335,7 +335,7 @@
 					json = editor.get();
 					if (
 						!json.limits
-						|| !Object.keys(json.limits).every( // keys of config.limits have to be numbers
+						|| !Object.keys(json.limits).every( // values of config.limits have to be numbers
 							limitName => typeof json.limits[limitName] === 'number'
 						)
 					) {

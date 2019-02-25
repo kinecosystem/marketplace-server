@@ -693,13 +693,12 @@ export async function changeOffer(body: ChangeOfferData, params: { offer_id: str
 	await offer.save();
 }
 
-type UpdateAppConfigRequest = Request & {
-	body: ApplicationConfig
-};
+type AppConfig = ApplicationConfig & { [limits: string]: number };
+type UpdateAppConfigRequest = Request & { body: AppConfig; };
 
 export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: Response) {
-	const config = req.body;
-	const isLimitsNumbers = (obj: any, limitName: string) => typeof obj.limits[limitName] === "number";
+	const config: AppConfig = req.body;
+	const isLimitsNumbers = (configObj: AppConfig, limitName: string) => typeof configObj.limits[limitName as keyof AppConfig["limits"]] === "number";
 	if (!config.limits || !Object.keys(config.limits).every(isLimitsNumbers.bind(null, config))) {
 		res.status(400).send("Config data is incorrect");
 		return false;

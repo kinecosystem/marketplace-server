@@ -699,7 +699,7 @@ type UpdateAppConfigRequest = Request & {
 
 export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: Response) {
 	const config = req.body;
-	const isLimitsNumbers = (obj, limitName) => typeof obj.limits[limitName] === "number";
+	const isLimitsNumbers = (obj: any, limitName: string) => typeof obj.limits[limitName] === "number";
 	if (!config.limits || !Object.keys(config.limits).every(isLimitsNumbers.bind(null, config))) {
 		res.status(400).send("Config data is incorrect");
 		return false;

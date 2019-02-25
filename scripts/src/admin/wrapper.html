@@ -333,12 +333,8 @@
 				const appId = editor.frame.parentNode.dataset.appId;
 				try {
 					json = editor.get();
-					if (
-						!json.limits
-						|| !Object.keys(json.limits).every( // values of config.limits have to be numbers
-							limitName => typeof json.limits[limitName] === 'number'
-						)
-					) {
+					const isLimitsNumbers = (obj, limitName) => typeof obj.limits[limitName] === 'number';
+					if (!json.limits || !Object.keys(json.limits).every(isLimitsNumbers.bind(null, json))) {
 						toast('config limits got incorrect format')
 						return false;
 					}
@@ -353,7 +349,9 @@
 					} else {
 						toast('config is incorrect')
 					}
-				} catch (e) { toast('smth is wrong'); }
+				} catch (e) {
+					toast('smth is wrong');
+				}
 			}
 
 			function closeEditor(editor) {

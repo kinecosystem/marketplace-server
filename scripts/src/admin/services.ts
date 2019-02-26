@@ -693,18 +693,23 @@ export async function changeOffer(body: ChangeOfferData, params: { offer_id: str
 	await offer.save();
 }
 
-type UpdateAppConfigRequest = Request & {
-	body: ApplicationConfig
-};
+type AppConfig = ApplicationConfig & { [limits: string]: number };
+type UpdateAppConfigRequest = Request & { body: AppConfig; };
 
 export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: Response) {
+	const config: AppConfig = req.body;
+	const isLimitsNumbers = (configObj: AppConfig, limitName: string) => typeof configObj.limits[limitName as keyof AppConfig["limits"]] === "number";
+	if (!config.limits || !Object.keys(config.limits).every(isLimitsNumbers.bind(null, config))) {
+		res.status(400).send("Config data is invalid");
+		return false;
+	}
+
 	const app = (await Application.findOne({ id: req.params.application_id }))!;
 	try {
-		app.config = req.body;
+		app.config = config;
 		await app.save();
 	} catch (e) {
 		res.status(500).send(e.message);
 	}
 	res.status(204).send();
-
 } as any as RequestHandler;

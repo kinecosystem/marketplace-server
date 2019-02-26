@@ -4,7 +4,7 @@ import { app as expressApp } from "../../public/app";
 import * as metrics from "../../metrics";
 import { verify } from "../../public/jwt";
 import { AuthToken, User, Wallet, WalletApplication, Wallets } from "../../models/users";
-import { generateId, IdPrefix } from "../../utils/utils";
+import { generateId, generateRandomString, IdPrefix } from "../../utils/utils";
 import { WhitelistSignInData } from "../../public/routes/users";
 import { validateRegisterJWT } from "../../public/services/applications";
 import { close as closeModels, init as initModels } from "../../models/index";
@@ -121,7 +121,7 @@ describe("api tests for v2 users", async () => {
 
 	test("updateUser", async () => {
 		const testApp = await helpers.createApp(generateId(IdPrefix.App));
-		const newWalletAddress = `test_wallet_123456789012345678901234${ generateId() }`;
+		const newWalletAddress = generateRandomString({ length: 56 });
 		const badAddress = "new_address_not_56_chars";
 		const deviceId = "test_device_id";
 

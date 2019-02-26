@@ -89,7 +89,7 @@ export function generateRandomString(options: GenerateRandomStringOptions = {}):
 		options.minLength || 0
 	);
 	if (length < 0) {
-		throw Error("Requested Length can't be equal or less than prefix length");
+		throw Error("Requested Length can't be equal or less than prefix length or 0");
 	}
 	const buffer = Buffer.alloc(length);
 	const randomInts = new Uint8Array(crypto.randomFillSync(buffer)); // not async function for keeping existing function interface the same

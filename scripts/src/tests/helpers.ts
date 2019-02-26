@@ -44,7 +44,7 @@ export async function createUser(options: { appId?: string; deviceId?: string; c
 
 	const user = await (User.new(Object.assign(userData, { isNew: true }))).save();
 	if (options.createWallet === undefined || options.createWallet) {
-		await user.updateWallet(deviceId, generateRandomString({ prefix: uniqueId, length: 56 }));
+		await user.updateWallet(deviceId, generateRandomString( { length: 56 }));
 	}
 
 	await (AuthToken.new({

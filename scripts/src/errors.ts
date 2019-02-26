@@ -13,7 +13,7 @@ export type HeaderValue = number | string | string[];
  */
 const CODES = {
 	BadRequest: {
-		code: HttpCodes.BAD_REQUEST,
+		code: HttpCodes.BAD_REQUEST, // 400
 		types: {
 			UnknownSignInType: 1,
 			WrongJwtAlgorithm: 2,
@@ -30,7 +30,7 @@ const CODES = {
 		}
 	},
 	Unauthorized: {
-		code: HttpCodes.UNAUTHORIZED,
+		code: HttpCodes.UNAUTHORIZED, // 401
 		types: {
 			MissingToken: 1,
 			InvalidToken: 2,
@@ -39,7 +39,7 @@ const CODES = {
 		}
 	},
 	NotFound: {
-		code: HttpCodes.NOT_FOUND,
+		code: HttpCodes.NOT_FOUND, // 404
 		types: {
 			App: 1,
 			Offer: 2,
@@ -50,13 +50,13 @@ const CODES = {
 		}
 	},
 	RequestTimeout: {
-		code: HttpCodes.REQUEST_TIMEOUT,
+		code: HttpCodes.REQUEST_TIMEOUT, // 408
 		types: {
 			OpenOrderExpired: 1,
 		}
 	},
 	Conflict: {
-		code: HttpCodes.CONFLICT,
+		code: HttpCodes.CONFLICT, // 409
 		types: {
 			ExternalOrderAlreadyCompleted: 1,
 			ExternalOrderByDifferentUser: 2,
@@ -66,27 +66,27 @@ const CODES = {
 		}
 	},
 	Gone: {
-		code: HttpCodes.GONE,
+		code: HttpCodes.GONE, // 410
 		types: {
 			BlockchainEndpointChanged: 1,
 		}
 	},
 	TooManyRequests: {
-		code: HttpCodes.TOO_MANY_REQUESTS,
+		code: HttpCodes.TOO_MANY_REQUESTS, // 429
 		types: {
 			Registrations: 1,
 			Amounts: 2
 		}
 	},
 	InternalServerError: {
-		code: HttpCodes.BAD_REQUEST,
+		code: HttpCodes.BAD_REQUEST, // 400
 		types: {
 			OpenedOrdersOnly: 1,
 			OpenedOrdersUnreturnable: 2,
 		}
 	},
 	TransactionFailed: { // 700 - these errors aren't thrown, they are set to the order.error field
-		code: HttpCodes.BAD_REQUEST,
+		code: HttpCodes.BAD_REQUEST, // 400
 		types: {
 			WrongSender: 1,
 			WrongRecipient: 2,

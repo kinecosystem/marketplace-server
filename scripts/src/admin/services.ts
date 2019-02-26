@@ -700,7 +700,7 @@ export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: 
 	const config: AppConfig = req.body;
 	const isLimitsNumbers = (configObj: AppConfig, limitName: string) => typeof configObj.limits[limitName as keyof AppConfig["limits"]] === "number";
 	if (!config.limits || !Object.keys(config.limits).every(isLimitsNumbers.bind(null, config))) {
-		res.status(400).send("Config data is incorrect");
+		res.status(400).send("Config data is invalid");
 		return false;
 	}
 

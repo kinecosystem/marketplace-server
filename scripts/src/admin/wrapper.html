@@ -335,7 +335,7 @@
 					json = editor.get();
 					const isLimitsNumbers = (obj, limitName) => typeof obj.limits[limitName] === 'number';
 					if (!json.limits || !Object.keys(json.limits).every(isLimitsNumbers.bind(null, json))) {
-						toast('config limits got incorrect format')
+						toast('Invalid app limits format')
 						return false;
 					}
 
@@ -347,7 +347,7 @@
 					if (response.ok) {
 						closeEditor(editor)
 					} else {
-						toast('config is incorrect')
+						toast('Config is incorrect (rejected by server)')
 					}
 				} catch (e) {
 					toast('smth is wrong');

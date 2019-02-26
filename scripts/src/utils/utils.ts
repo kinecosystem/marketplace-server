@@ -75,7 +75,7 @@ export function generateId(prefix: IdPrefix | string = IdPrefix.None): string {
 	return generateRandomString({ prefix, minLength: ID_LENGTH });
 }
 
-type GenerateRandomStringOptions = {
+export type GenerateRandomStringOptions = {
 	prefix?: string,
 	length?: number,
 	minLength?: number,

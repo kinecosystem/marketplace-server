@@ -1,4 +1,3 @@
-import * as expect from "expect";
 import mock = require("supertest");
 import { Response } from "supertest";
 

@@ -90,7 +90,6 @@ export function generateRandomString(options: GenerateRandomStringOptions = {}):
 		length = options.length - prefix.length;
 	}
 	length = Math.max(length, options.minLength || 0);
-	console.log("length:", length);
 	if (length <= 0) {
 		throw Error("Requested Length can't be equal or less than prefix length or 0");
 	}

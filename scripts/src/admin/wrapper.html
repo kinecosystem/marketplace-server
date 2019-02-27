@@ -355,12 +355,12 @@
 			}
 
 			function closeEditor(editor) {
-				const jsonArea = editor.frame.parentNode.querySelector('pre');
+				const jsonArea = editor.frame.parentNode;
 				const configJson = JSON.stringify(editor.get(), null, 2);
 				editor.destroy();
-				Array.from(document.querySelectorAll('.editor-btn')).forEach(btn => { btn.remove(); })
-				jsonArea.textContent = configJson;
-				jsonArea.removeAttribute('hidden')
+				Array.from(jsonArea.querySelectorAll('.editor-btn')).forEach(btn => { btn.remove(); })
+				jsonArea.querySelector('pre').textContent = configJson;
+				jsonArea.querySelector('pre').removeAttribute('hidden')
 			}
 
 			function attachEditorKeyboardEvents(editor, e) {

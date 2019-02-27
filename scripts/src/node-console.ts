@@ -97,6 +97,7 @@ export function start() {
 	context.AuthToken = (r("models/users")).AuthToken;
 	context.Application = (r("models/applications")).Application;
 	context.AppOffer = r("models/applications").AppOffer;
+	context.utils = r("utils/utils");
 
 	/* Add shortcut REPL commands for loading the marketplace apps */
 	replServer.defineCommand("admin", {

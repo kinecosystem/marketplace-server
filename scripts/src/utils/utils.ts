@@ -14,7 +14,7 @@ export function isSimpleObject(obj: any): obj is SimpleObject {
 
 export type Nothing = null | undefined;
 
-export type Mutable<T> = { -readonly [P in keyof T ]: T[P] };
+export type Mutable<T> = { -readonly [P in keyof T]: T[P] };
 
 export function isNothing(obj: any): obj is Nothing {
 	return obj === null || obj === undefined;
@@ -72,12 +72,32 @@ const ID_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
  * @return     {string}  random string of ID_LENGTH length
  */
 export function generateId(prefix: IdPrefix | string = IdPrefix.None): string {
-	const buffer = Buffer.alloc(ID_LENGTH);
-	const randomInts = new Uint8Array(crypto.randomFillSync(buffer)); // not async function for saving existing function interface the same
+	return generateRandomString({ prefix, baseLength: ID_LENGTH });
+}
+
+export type GenerateRandomStringOptions = {
+	prefix?: string,
+	minLength?: number,  // Minimum length of the string. Any affix (like prefix) length will be in addition
+	baseLength?: number,  // Like minLength but disables random length
+	length?: number, //  includes the length of any prefix (or other affix) has precedence over baseLength
+};
+
+export function generateRandomString(options: GenerateRandomStringOptions = {}): string {
+	const MAXIMUM_RANDOM_LENGTH = 100;
+	const prefix = options.prefix || "";
+	let length = options.baseLength || Math.floor(Math.random() * MAXIMUM_RANDOM_LENGTH);
+	if (options.length) {
+		length = options.length - prefix.length;
+	}
+	length = Math.max(length, options.minLength || 0);
+	if (length <= 0) {
+		throw Error("Requested Length can't be equal or less than prefix length or 0");
+	}
+	const buffer = Buffer.alloc(length);
+	const randomInts = new Uint8Array(crypto.randomFillSync(buffer)); // not async function for keeping existing function interface the same
 
 	return prefix + randomInts.reduce(
-		(str, int) => str + ID_CHARS[Math.trunc(int / 256 * ID_CHARS.length)], ""
-	);
+		(str, int) => str + ID_CHARS[Math.trunc(int / 256 * ID_CHARS.length)], "");
 }
 
 export function normalizeError(error: string | Error | any): string {
@@ -131,7 +151,7 @@ export function readKeysDir(dir: string): KeyMap {
 	const keys: KeyMap = {};
 	fs.readdirSync(path(dir)).forEach(filename => {
 		if (!filename.endsWith(".pem")) {
-			console.info(`readKeysDir: skipping non pem file ${filename}`);
+			console.info(`readKeysDir: skipping non pem file ${ filename }`);
 			return;
 		}
 		// filename format is kin-es256_0.pem or kin-es256_0-priv.pem or es256_0-priv.pem

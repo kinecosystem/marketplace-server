@@ -4,7 +4,7 @@ import { Response } from "supertest";
 import { app } from "../../public/app";
 import * as metrics from "../../metrics";
 import { AuthToken, User } from "../../models/users";
-import { generateId, IdPrefix } from "../../utils/utils";
+import { generateId, generateRandomString, IdPrefix } from "../../utils/utils";
 import { V1WhitelistSignInData } from "../../public/routes/users";
 import { close as closeModels, init as initModels } from "../../models/index";
 import { AuthToken as ApiAuthToken, userExists } from "../../public/services/users";
@@ -95,8 +95,8 @@ describe("api tests for v1 users", async () => {
 		const myApp = await helpers.createApp(generateId(IdPrefix.App));
 		localCache.clear();
 		const user1 = await helpers.createUser({ appId: myApp.id, createWallet: false });
-		const newWalletAddress = "new_address_must_be_56_characters____bla___bla___bla____";
-		const badAddress = "new_address_not_56_chars";
+		const newWalletAddress = generateRandomString({ length: 56 });
+		const badAddress = generateRandomString({  length: 40 });
 		const token = (await AuthToken.findOne({ userId: user1.id }))!;
 		const mockedApp = mock(app);
 

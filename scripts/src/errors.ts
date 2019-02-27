@@ -36,6 +36,7 @@ const CODES = {
 			InvalidToken: 2,
 			InvalidApiKey: 3,
 			TOSMissingOrOldToken: 4,
+			CrossAppWallet: 5,
 		}
 	},
 	NotFound: {
@@ -147,6 +148,10 @@ export function InvalidApiKey(apiKey: string) {
 
 export function TOSMissingOrOldToken() {
 	return UnauthorizedError("TOSMissingOrOldToken", "User did not approve TOS or using a pre activated token");
+}
+
+export function CrossAppWallet() {
+	return UnauthorizedError("CrossAppWallet", "Wallet does not belong to current app");
 }
 
 function NotFoundError(key: keyof typeof CODES.NotFound.types, message: string) {

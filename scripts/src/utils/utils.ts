@@ -72,23 +72,26 @@ const ID_CHARS = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
  * @return     {string}  random string of ID_LENGTH length
  */
 export function generateId(prefix: IdPrefix | string = IdPrefix.None): string {
-	return generateRandomString({ prefix, minLength: ID_LENGTH });
+	return generateRandomString({ prefix, baseLength: ID_LENGTH });
 }
 
 export type GenerateRandomStringOptions = {
 	prefix?: string,
-	length?: number,
-	minLength?: number,
+	minLength?: number,  // Minimum length of the string. Any affix (like prefix) length will be in addition
+	baseLength?: number,  // Like minLength but disables random length
+	length?: number, //  includes the length of any prefix (or other affix) has precedence over baseLength
 };
 
 export function generateRandomString(options: GenerateRandomStringOptions = {}): string {
 	const MAXIMUM_RANDOM_LENGTH = 100;
 	const prefix = options.prefix || "";
-	const length = Math.max(
-		(options.length || Math.floor(Math.random() * MAXIMUM_RANDOM_LENGTH)) - prefix.length,
-		options.minLength || 0
-	);
-	if (length < 0) {
+	let length = options.baseLength || Math.floor(Math.random() * MAXIMUM_RANDOM_LENGTH);
+	if (options.length) {
+		length = options.length - prefix.length;
+	}
+	length = Math.max(length, options.minLength || 0);
+	console.log("length:", length);
+	if (length <= 0) {
 		throw Error("Requested Length can't be equal or less than prefix length or 0");
 	}
 	const buffer = Buffer.alloc(length);

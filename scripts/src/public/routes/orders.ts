@@ -1,3 +1,4 @@
+import * as axios from "axios";
 import { Request, RequestHandler, Response } from "express";
 import { getDefaultLogger as logger } from "../../logging";
 
@@ -14,6 +15,7 @@ import {
 	createMarketplaceOrder as createMarketplaceOrderService,
 } from "../services/orders";
 import { createExternalOrder as v1CreateExternalOrderService } from "../services/orders.v1";
+import { getPaymentServiceUrl } from "../services/payment";
 
 export type CreateMarketplaceOrderRequest = AuthenticatedRequest & {
 	params: {
@@ -97,6 +99,24 @@ export const submitOrder = async function(req: SubmitOrderRequest, res: Response
 		req.context.token.deviceId,
 		req.body.content);
 	res.status(200).send(order);
+} as any as RequestHandler;
+
+type WhitelistTransactionRequest = AuthenticatedRequest & {
+	params: {
+		order_id: string;
+	},
+	body: {
+		tx_envelope: string;
+		network_id: string;
+	}
+};
+export const submitWhitelistOrder = async function(req: WhitelistTransactionRequest, res: Response) {
+	logger().info("submit whitelist order", { userId: req.context.user.id, orderId: req.params.order_id });
+
+	const order = await getOrderService(req.params.order_id, req.context.user);
+
+	await axios.default.post(getPaymentServiceUrl(order.blockchain_data.blockchain_version!), order);
+	res.send();
 } as any as RequestHandler;
 
 /**

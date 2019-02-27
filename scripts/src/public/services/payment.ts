@@ -123,7 +123,7 @@ export async function getBlockchainConfig(blockchainVersion: BlockchainVersion):
 	return res.data;
 }
 
-function getPaymentServiceUrl(blockchainVersion: BlockchainVersion): string {
+export function getPaymentServiceUrl(blockchainVersion: BlockchainVersion): string {
 	if (blockchainVersion === "3") {
 		return config.payment_service_v3;
 	}

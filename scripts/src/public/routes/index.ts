@@ -27,7 +27,8 @@ import {
 	createMarketplaceOrder,
 	getOrder,
 	getOrderHistory,
-	submitOrder
+	submitOrder,
+	submitWhitelistOrder,
 } from "./orders";
 import { authenticateUser } from "../auth";
 
@@ -47,6 +48,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.get(prefix("orders/"), authenticateUser, getOrderHistory);
 	app.get(prefix("orders/:order_id"), authenticateUser, getOrder);
 	app.post(prefix("orders/:order_id"), authenticateUser, submitOrder);
+	app.post(prefix("orders/:order_id/whitelist"), authenticateUser, submitWhitelistOrder);
 	app.delete(prefix("orders/:order_id"), authenticateUser, cancelOrder);
 	app.patch(prefix("orders/:order_id"), authenticateUser, changeOrder);
 

@@ -5,7 +5,7 @@ import { getManager } from "typeorm";
 import * as StellarSdk from "stellar-sdk";
 
 import { Asset, Offer, OfferContent } from "../models/offers";
-import { generateId, readKeysDir, random, IdPrefix } from "../utils/utils";
+import { generateId, readKeysDir, random, IdPrefix, generateRandomString } from "../utils/utils";
 import { User, AuthToken } from "../models/users";
 import { Application, ApplicationConfig, StringMap } from "../models/applications";
 import { LimitConfig } from "../config";
@@ -44,7 +44,7 @@ export async function createUser(options: { appId?: string; deviceId?: string; c
 
 	const user = await (User.new(Object.assign(userData, { isNew: true }))).save();
 	if (options.createWallet === undefined || options.createWallet) {
-		await user.updateWallet(deviceId, `test_wallet_${ uniqueId }`);
+		await user.updateWallet(deviceId, generateRandomString({ prefix: uniqueId, length: 56 }));
 	}
 
 	await (AuthToken.new({

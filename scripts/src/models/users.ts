@@ -230,3 +230,13 @@ export class Wallet extends BaseEntity {
 	@Column({ name: "last_spend_date", nullable: true })
 	public lastSpendDate?: Date;
 }
+
+@Entity({ name: "wallet_application" })
+@Register
+export class WalletApplication extends BaseEntity {
+	@PrimaryColumn({ name: "wallet_address" })
+	public walletAddress!: string;
+
+	@Column({ name: "app_id" })
+	public appId!: string;
+}

@@ -14,6 +14,7 @@ import { create as createUserRegistrationRequested } from "../../analytics/event
 import { create as createUserRegistrationSucceeded } from "../../analytics/events/user_registration_succeeded";
 import { create as createUserLogoutServerRequested } from "../../analytics/events/user_logout_server_requested";
 import { create as createWalletAddressUpdateSucceeded } from "../../analytics/events/wallet_address_update_succeeded";
+import { create as createRestoreRequestFailed } from "../../analytics/events/restore_request_failed";
 
 import * as payment from "./payment";
 import { assertRateLimitRegistration } from "../../utils/rate_limit";
@@ -104,6 +105,7 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 			await newWallet.save();
 		} else {
 			if (appWallet.appId !== appId) {
+				createRestoreRequestFailed(user.id, "blocking cross-app restore request").report();
 				throw CrossAppWallet();
 			}
 		}

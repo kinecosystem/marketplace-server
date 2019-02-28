@@ -17,11 +17,11 @@ export interface RestoreRequestFailed extends EventData {
 	error_reason: string;
 }
 
-export function create(user_id: string, error_reason: string): Event<RestoreRequestFailed> {
+export function create(user_id: string, device_id: string, error_reason: string): Event<RestoreRequestFailed> {
 	return new Event<RestoreRequestFailed>({
 		event_name: "restore_request_failed",
 		event_type: "log",
-		common: createCommon(user_id),
+		common: createCommon(user_id, device_id),
 		error_reason
 	});
 }

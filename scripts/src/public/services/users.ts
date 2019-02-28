@@ -105,7 +105,7 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 			await newWallet.save();
 		} else {
 			if (appWallet.appId !== appId) {
-				createRestoreRequestFailed(user.id, "blocking cross-app restore request").report();
+				createRestoreRequestFailed(user.id, props.deviceId, "blocking cross-app restore request").report();
 				throw CrossAppWallet();
 			}
 		}

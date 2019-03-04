@@ -150,8 +150,8 @@ export function TOSMissingOrOldToken() {
 	return UnauthorizedError("TOSMissingOrOldToken", "User did not approve TOS or using a pre activated token");
 }
 
-export function CrossAppWallet() {
-	return UnauthorizedError("CrossAppWallet", "Wallet does not belong to current app");
+export function CrossAppWallet(wallet: string, app: string) {
+	return UnauthorizedError("CrossAppWallet", `Wallet ${wallet} does not belong to current app ${app}`);
 }
 
 function NotFoundError(key: keyof typeof CODES.NotFound.types, message: string) {

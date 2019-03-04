@@ -313,6 +313,27 @@ describe("api tests for v2 users", async () => {
 		await expect(validateExternalOrderJWT(jwt, user, "device_id")).rejects.toThrow();
 	});
 
+	test("using the wrong issuer in jwt", async () => {
+		const app = await helpers.createApp(generateId(IdPrefix.App));
+		const otherApp = await helpers.createApp(generateId(IdPrefix.App));
+		const user = await helpers.createUser({ appId: app.id });
+
+		const payload = {
+			recipient: {
+				user_id: user.id,
+				device_id: "device_id",
+				title: "third offer",
+				description: "the 3rd test offer",
+			},
+			offer: {
+				"id": "offer1",
+				"amount": 30,
+			}
+		};
+		const jwt = await helpers.signJwt(otherApp.id, "earn", payload);
+		await expect(validateExternalOrderJWT(jwt, user, "device_id")).rejects.toThrow();
+	});
+
 	test("wallet unique count", async () => {
 		const now = new Date();
 		const walletA = Wallet.create({ address: "A", createdDate: now, lastUsedDate: now, deviceId: "123" });

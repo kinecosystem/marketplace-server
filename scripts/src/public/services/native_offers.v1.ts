@@ -1,6 +1,7 @@
 import { JWTClaims, verify as verifyJWT } from "../jwt";
 import { ExternalOrderByDifferentUser, InvalidExternalOrderJwt, MissingFieldJWT } from "../../errors";
 import { getDefaultLogger as log } from "../../logging";
+import { User } from "../../models/users";
 
 export type ExternalOfferPayload = {
 	id: string;
@@ -43,7 +44,7 @@ export function isPayToUser(jwt: ExternalOrderJWT): jwt is ExternalPayToUserOrde
 	return jwt.sub === "pay_to_user";
 }
 
-export async function validateExternalOrderJWT(jwt: string, appUserId: string): Promise<ExternalOrderJWT> {
+export async function validateExternalOrderJWT(jwt: string, user: User): Promise<ExternalOrderJWT> {
 	const decoded = await verifyJWT<Partial<PayToUserPayload>, "spend" | "earn" | "pay_to_user">(jwt);
 
 	if (decoded.payload.sub !== "earn" && decoded.payload.sub !== "spend" && decoded.payload.sub !== "pay_to_user") {
@@ -51,40 +52,55 @@ export async function validateExternalOrderJWT(jwt: string, appUserId: string): 
 	}
 
 	// offer field has to exist in earn/spend/pay_to_user JWTs
-	if (!decoded.payload.offer) { throw MissingFieldJWT("offer"); }
+	if (!decoded.payload.offer) {
+		throw MissingFieldJWT("offer");
+	}
 
 	if (typeof decoded.payload.offer.amount !== "number") {
 		throw InvalidExternalOrderJwt("amount field must be a number");
 	}
 
+	if (decoded.payload.iss !== user.appId) {
+		throw InvalidExternalOrderJwt("issuer must match appId");
+	}
+
 	switch (decoded.payload.sub) {
 		case "spend":
-			if (!decoded.payload.sender) { throw MissingFieldJWT("sender"); }
+			if (!decoded.payload.sender) {
+				throw MissingFieldJWT("sender");
+			}
 			break;
 
 		case "earn":
-			if (!decoded.payload.recipient) { throw MissingFieldJWT("recipient"); }
+			if (!decoded.payload.recipient) {
+				throw MissingFieldJWT("recipient");
+			}
 			break;
 
 		case "pay_to_user":
-			if (!decoded.payload.sender) { throw MissingFieldJWT("sender"); }
-			if (!decoded.payload.recipient) { throw MissingFieldJWT("recipient"); }
+			if (!decoded.payload.sender) {
+				throw MissingFieldJWT("sender");
+			}
+			if (!decoded.payload.recipient) {
+				throw MissingFieldJWT("recipient");
+			}
 			break;
 
-		default: break;
+		default:
+			break;
 	}
 
 	if (
 		(decoded.payload.sub === "spend" || decoded.payload.sub === "pay_to_user")
-		&& !!decoded.payload.sender!.user_id && decoded.payload.sender!.user_id !== appUserId
+		&& !!decoded.payload.sender!.user_id && decoded.payload.sender!.user_id !== user.appUserId
 	) {
 		// if sender.user_id is defined and is different than current user, raise error
-		throw ExternalOrderByDifferentUser(appUserId, decoded.payload.sender!.user_id || "");
+		throw ExternalOrderByDifferentUser(user.appUserId, decoded.payload.sender!.user_id || "");
 	}
 
-	if (decoded.payload.sub === "earn" && decoded.payload.recipient && decoded.payload.recipient.user_id !== appUserId) {
+	if (decoded.payload.sub === "earn" && decoded.payload.recipient && decoded.payload.recipient.user_id !== user.appUserId) {
 		// check that user_id is defined for earn and is the same as current user
-		throw ExternalOrderByDifferentUser(appUserId, decoded.payload.recipient.user_id);
+		throw ExternalOrderByDifferentUser(user.appUserId, decoded.payload.recipient.user_id);
 	}
 
 	return decoded.payload as ExternalOrderJWT;

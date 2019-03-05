@@ -1,5 +1,11 @@
 import { JWTClaims, verify as verifyJWT } from "../jwt";
-import { ExternalOrderByDifferentUser, ExternalOrderByDifferentDevice, InvalidExternalOrderJwt, MissingFieldJWT } from "../../errors";
+import {
+	ExternalOrderByDifferentUser,
+	ExternalOrderByDifferentDevice,
+	InvalidExternalOrderJwt,
+	MissingFieldJWT
+} from "../../errors";
+import { User } from "../../models/users";
 
 export type ExternalOfferPayload = {
 	id: string;
@@ -74,7 +80,7 @@ function validateUserPayload(data: any, key: "sender" | "recipient", shouldHaveD
 	}
 }
 
-export async function validateExternalOrderJWT(jwt: string, appUserId: string, deviceId: string): Promise<ExternalOrderJWT> {
+export async function validateExternalOrderJWT(jwt: string, user: User, deviceId: string): Promise<ExternalOrderJWT> {
 	const decoded = await verifyJWT<ExternalOrderJWT, "spend" | "earn" | "pay_to_user">(jwt);
 
 	const payload = decoded.payload;
@@ -90,6 +96,11 @@ export async function validateExternalOrderJWT(jwt: string, appUserId: string, d
 		console.log("throwing");
 		throw InvalidExternalOrderJwt("amount field must be a number");
 	}
+
+	if (decoded.payload.iss !== user.appId) {
+		throw InvalidExternalOrderJwt("issuer must match appId");
+	}
+
 	switch (payload.sub) {
 		case "spend":
 			validateUserPayload(payload, "sender", true);
@@ -106,16 +117,16 @@ export async function validateExternalOrderJWT(jwt: string, appUserId: string, d
 	}
 
 	if (isExternalSpend(payload) || isPayToUser(payload)) {
-		if (payload.sender.user_id !== appUserId) {
-			throw ExternalOrderByDifferentUser(appUserId, payload.sender.user_id);
+		if (payload.sender.user_id !== user.appUserId) {
+			throw ExternalOrderByDifferentUser(user.appUserId, payload.sender.user_id);
 		}
 
 		if (payload.sender.device_id !== deviceId) {
 			throw ExternalOrderByDifferentDevice(deviceId, payload.sender.device_id);
 		}
 	} else { // payload.sub === "earn"
-		if (payload.recipient.user_id !== appUserId) {
-			throw ExternalOrderByDifferentUser(appUserId, payload.recipient.user_id);
+		if (payload.recipient.user_id !== user.appUserId) {
+			throw ExternalOrderByDifferentUser(user.appUserId, payload.recipient.user_id);
 		}
 
 		if (payload.recipient.device_id !== deviceId) {

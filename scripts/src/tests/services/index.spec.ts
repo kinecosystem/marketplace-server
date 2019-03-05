@@ -33,6 +33,7 @@ describe("general api checks", async () => {
 
 	test("External Order JWT validation throws when amount is not a number", async () => {
 		const app = await helpers.createApp(generateId(IdPrefix.App));
+		const user = await helpers.createUser({ appId: app.id });
 		const jwt = await signJwt(app.id, "pay_to_user", {
 			offer: {
 				offer_id: "offer.id",
@@ -50,6 +51,6 @@ describe("general api checks", async () => {
 				description: "money received from p2p testing"
 			},
 		});
-		await expect(validateExternalOrderJWT(jwt, "some_appUserId", "some_deviceId")).rejects.toThrow(InvalidExternalOrderJwt("amount field must be a number"));
+		await expect(validateExternalOrderJWT(jwt, user, "some_deviceId")).rejects.toThrow(InvalidExternalOrderJwt("amount field must be a number"));
 	});
 });

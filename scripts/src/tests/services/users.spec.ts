@@ -296,20 +296,42 @@ describe("api tests for v2 users", async () => {
 
 		payload = {};
 		jwt = await helpers.signJwt(app.id, "", payload); // InvalidExternalOrderJwt, sub is not in earn/spend/pay_to_user
-		await expect(validateExternalOrderJWT(jwt, "user_id", "device_id")).rejects.toThrow();
 
+		const user = await helpers.createUser({ appId: app.id });
+		await expect(validateExternalOrderJWT(jwt, user, "device_id")).rejects.toThrow();
 		payload = {}; // no offer in earn/spend/pay_to_user JWTs
 		jwt = await helpers.signJwt(app.id, "spend", payload);
-		await expect(validateExternalOrderJWT(jwt, "user_id", "device_id")).rejects.toThrow();
+		await expect(validateExternalOrderJWT(jwt, user, "device_id")).rejects.toThrow();
 		payload = { offer: "offer" }; // no sender
 		jwt = await helpers.signJwt(app.id, "spend", payload);
-		await expect(validateExternalOrderJWT(jwt, "user_id", "device_id")).rejects.toThrow();
+		await expect(validateExternalOrderJWT(jwt, user, "device_id")).rejects.toThrow();
 		payload = { offer: "offer" }; // no recipient
 		jwt = await helpers.signJwt(app.id, "earn", payload);
-		await expect(validateExternalOrderJWT(jwt, "user_id", "device_id")).rejects.toThrow();
+		await expect(validateExternalOrderJWT(jwt, user, "device_id")).rejects.toThrow();
 		payload = { offer: "offer" }; // no sender, recipient
 		jwt = await helpers.signJwt(app.id, "pay_to_user", payload);
-		await expect(validateExternalOrderJWT(jwt, "user_id", "device_id")).rejects.toThrow();
+		await expect(validateExternalOrderJWT(jwt, user, "device_id")).rejects.toThrow();
+	});
+
+	test("using the wrong issuer in jwt", async () => {
+		const app = await helpers.createApp(generateId(IdPrefix.App));
+		const otherApp = await helpers.createApp(generateId(IdPrefix.App));
+		const user = await helpers.createUser({ appId: app.id });
+
+		const payload = {
+			recipient: {
+				user_id: user.id,
+				device_id: "device_id",
+				title: "third offer",
+				description: "the 3rd test offer",
+			},
+			offer: {
+				"id": "offer1",
+				"amount": 30,
+			}
+		};
+		const jwt = await helpers.signJwt(otherApp.id, "earn", payload);
+		await expect(validateExternalOrderJWT(jwt, user, "device_id")).rejects.toThrow();
 	});
 
 	test("wallet unique count", async () => {

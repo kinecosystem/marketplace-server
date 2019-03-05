@@ -80,14 +80,14 @@ const CODES = {
 		}
 	},
 	InternalServerError: {
-		code: HttpCodes.BAD_REQUEST, // 400
+		code: HttpCodes.INTERNAL_SERVER_ERROR, // 500
 		types: {
 			OpenedOrdersOnly: 1,
 			OpenedOrdersUnreturnable: 2,
 		}
 	},
-	TransactionFailed: { // 700 - these errors aren't thrown, they are set to the order.error field
-		code: HttpCodes.BAD_REQUEST, // 400
+	TransactionFailed: { // these errors aren't thrown, they are set to the order.error field
+		code: 700, // 700
 		types: {
 			WrongSender: 1,
 			WrongRecipient: 2,
@@ -150,8 +150,8 @@ export function TOSMissingOrOldToken() {
 	return UnauthorizedError("TOSMissingOrOldToken", "User did not approve TOS or using a pre activated token");
 }
 
-export function CrossAppWallet() {
-	return UnauthorizedError("CrossAppWallet", "Wallet does not belong to current app");
+export function CrossAppWallet(wallet: string, app: string) {
+	return UnauthorizedError("CrossAppWallet", `Wallet ${wallet} does not belong to current app ${app}`);
 }
 
 function NotFoundError(key: keyof typeof CODES.NotFound.types, message: string) {

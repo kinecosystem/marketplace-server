@@ -80,14 +80,14 @@ const CODES = {
 		}
 	},
 	InternalServerError: {
-		code: HttpCodes.BAD_REQUEST, // 400
+		code: HttpCodes.INTERNAL_SERVER_ERROR, // 500
 		types: {
 			OpenedOrdersOnly: 1,
 			OpenedOrdersUnreturnable: 2,
 		}
 	},
-	TransactionFailed: { // 700 - these errors aren't thrown, they are set to the order.error field
-		code: HttpCodes.BAD_REQUEST, // 400
+	TransactionFailed: { // these errors aren't thrown, they are set to the order.error field
+		code: 700, // 700
 		types: {
 			WrongSender: 1,
 			WrongRecipient: 2,

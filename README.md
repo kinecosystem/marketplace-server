@@ -1,8 +1,10 @@
-# Kin ecosystem Marketplace server
+# Kin Ecosystem Marketplace Server
 ![](https://travis-ci.org/kinfoundation/marketplace-server.svg?branch=master)
 
 ## Disclaimer
 Any data that appears in the repo does not reflect real partnerships or product integrations. We use real company names and products for the sole sake of mocking data to populate our SDK client.
+
+<a href="https://partners.kinecosystem.com/docs/server_marketplace.html"><img src="https://partners.kinecosystem.com/img/documentation-button2x.png" width=300 height=84 alt="Documentation"/></a>
 
 ### Install/Run
 Clone this repo, and then in a terminal:

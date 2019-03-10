@@ -21,18 +21,21 @@ export type RedisAsyncClient = RedisClient & {
 };
 
 export function getRedisClient(): RedisAsyncClient {
-	if (getConfig().redis === "mock") {
-		isMocked = true;
-		client = require("redis-mock").createClient();
-	} else {
-		client = require("redis").createClient(getConfig().redis);
+	if (!client) {
+		if (getConfig().redis === "mock") {
+			isMocked = true;
+			client = require("redis-mock").createClient();
+		} else {
+			client = require("redis").createClient(getConfig().redis);
+		}
+
+		client.async = {} as RedisAsyncFunctions;
+
+		["get", "mget", "set", "del", "incrby"].forEach(name => {
+			(client.async as any)[name] =  promisify((client as any)[name]).bind(client);
+		});
 	}
 
-	client.async = {} as RedisAsyncFunctions;
-
-	["get", "mget", "set", "del", "incrby"].forEach(name => {
-		(client.async as any)[name] =  promisify((client as any)[name]).bind(client);
-	});
 	return client;
 }
 

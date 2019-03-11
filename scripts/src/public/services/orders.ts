@@ -334,7 +334,8 @@ export async function submitOrder(
 	orderId: string,
 	user: User,
 	userDeviceId: string,
-	form: string | undefined): Promise<Order> {
+	form: string | undefined,
+	transactionXdr?: string | undefined): Promise<Order> {
 	const order = await db.Order.getOne({ orderId });
 
 	if (!order || order.contextForUser(user.id) === null) {
@@ -362,8 +363,12 @@ export async function submitOrder(
 	logger().info("order changed to pending", { orderId });
 
 	if (order.isEarn()) {
-		await payment.payTo(walletAddress, user.appId, order.amount, order.id);
+		await payment.payTo((order.blockchainData.recipient_address)!, user.appId, order.amount, order.id);
 		createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
+	} else {
+		// do this only for version 3
+		await payment.submitTransaction(order.blockchainData.recipient_address!, order.blockchainData.sender_address!, user.appId, order.amount, order.id, transactionXdr!);
+		// createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 	}
 
 	metrics.submitOrder(order.origin, order.flowType(), user.appId);

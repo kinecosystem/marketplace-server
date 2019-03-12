@@ -128,7 +128,6 @@ export async function setWatcherEndpoint(addresses: string[]): Promise<Watcher> 
 
 export async function addWatcherEndpoint(address: string, paymentId: string, blockchainVersion: BlockchainVersion): Promise<Watcher> {
 	const res = await client.put(`${ config.payment_service }/services/${SERVICE_ID}/watchers/${address}/payments/${paymentId}`);
-	// const res = await client.put(`${getPaymentServiceUrl(blockchainVersion)}/services/${SERVICE_ID}/watchers/${address}/payments/${paymentId}`);
 	return res.data;
 }
 

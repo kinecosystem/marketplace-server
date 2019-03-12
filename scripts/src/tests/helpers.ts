@@ -65,7 +65,6 @@ async function orderFromOffer(offer: Offer, userId: string): Promise<Marketplace
 		amount: offer.amount,
 		status: "pending",
 		blockchainData: {
-			blockchain_version: wallet.blockchainVersion,
 			transaction_id: "A123123123123123",
 			recipient_address: "G123123123123",
 			sender_address: "G123123123123"
@@ -122,7 +121,6 @@ export async function createExternalOrder(userId: string): Promise<Order> {
 		status: "pending",
 		offerId: "external1",
 		blockchainData: {
-			blockchain_version: wallet.blockchainVersion,
 			transaction_id: "A123123123123123",
 			recipient_address: "G123123123123",
 			sender_address: "G123123123123"
@@ -151,7 +149,6 @@ export async function createP2POrder(userId: string): Promise<Order> {
 		status: "pending",
 		offerId: "p2p offer example",
 		blockchainData: {
-			blockchain_version: app.config.blockchain_version,
 			transaction_id: "A123123123123123",
 			recipient_address: "G123123123123",
 			sender_address: "G123123123123"

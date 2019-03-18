@@ -351,7 +351,9 @@ async function orderToHtml(order: Order): Promise<string> {
 }
 
 async function userToHtml(user: User): Promise<string> {
-	const accounts = (await user.getWallets()).all().map(wallet => {
+	const accounts = (await user.getWallets()).all()
+		.sort((w1, w2) => w1.lastUsedDate.valueOf() - w2.lastUsedDate.valueOf())
+		.map(wallet => {
 		return `
 		<a href="${ BLOCKCHAIN.horizon_url}/accounts/${ wallet.address }">${ wallet.address }</a>
 		<a href="/wallets/${ wallet.address }">balance</a>
@@ -661,7 +663,7 @@ export async function changeAppOffer(body: { cap: Cap }, params: { app_id: strin
 	return { appOffer };
 }
 
-type ChangeOfferData = Partial<Offer> & {
+export type ChangeOfferData = Partial<Offer> & {
 	content: string;
 };
 

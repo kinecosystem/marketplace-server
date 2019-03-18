@@ -9,6 +9,7 @@ import { generateId, readKeysDir, random, IdPrefix } from "../utils/utils";
 import { User, AuthToken } from "../models/users";
 import { Application, ApplicationConfig, StringMap } from "../models/applications";
 import { LimitConfig } from "../config";
+import { BlockchainVersion } from "../models/offers";
 import { createEarn, createSpend } from "../create_data/offers";
 import { Poll, PageType } from "../public/services/offer_contents";
 import { CompletedPayment, paymentComplete } from "../internal/services";
@@ -142,7 +143,7 @@ export async function createExternalOrder(userId: string): Promise<Order> {
 
 export async function createP2POrder(userId: string): Promise<Order> {
 	const sender = (await User.findOneById(userId))!;
-	const app = ((await Application.all()).get(sender.appId))!;
+	const app = await Application.get(sender.appId)!;
 	const recipient = await createUser();
 
 	const order = P2POrder.new({
@@ -265,7 +266,7 @@ export async function signJwt(appId: string, subject: string, payload: object) {
 	});
 }
 
-export async function createApp(appId: string, limits?: LimitConfig): Promise<Application> {
+export async function createApp(appId: string, limits?: LimitConfig, blockchain_version: BlockchainVersion = "2"): Promise<Application> {
 	const address = getKeyPair().public;
 	const appConfig: ApplicationConfig = {
 		max_user_wallets: null,
@@ -278,7 +279,7 @@ export async function createApp(appId: string, limits?: LimitConfig): Promise<Ap
 			minute_total_earn: 85000,
 			daily_user_earn: 5000
 		},
-		blockchain_version: "2",
+		blockchain_version,
 	};
 	if (limits) { // for RateLimits tests passed limits has low value
 		appConfig.limits = limits;

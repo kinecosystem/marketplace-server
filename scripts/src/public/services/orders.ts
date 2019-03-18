@@ -157,11 +157,6 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 		meta: orderMeta
 	});
 
-	console.log(order);
-	if (order.isSpend() && recipientAddress) {
-		await addWatcherEndpoint(recipientAddress, order.id, order.blockchainData.blockchain_version!);
-	}
-
 	await order.save();
 
 	metrics.createOrder("marketplace", appOffer.offer.type, appOffer.offer.id, user.appId);
@@ -181,7 +176,6 @@ export async function createMarketplaceOrder(offerId: string, user: User, userDe
 	const appOffer = appOffers.find(app_offer => app_offer.offerId === offerId);
 	if (!appOffer) {
 		throw NoSuchOffer(offerId);
-
 	}
 
 	const order = await lock(getLockResource("get", offerId, user.id), async () =>

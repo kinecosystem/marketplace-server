@@ -15,15 +15,18 @@ const CONFIG = getConfig();
 let JWT_KEYS: KeyMap;
 // one time get config from payment service
 let BLOCKCHAIN: BlockchainConfig;
+let BLOCKCHAIN3: BlockchainConfig;
 
 export async function init() {
 	BLOCKCHAIN = await getBlockchainConfig("2");
+	BLOCKCHAIN3 = await getBlockchainConfig("3");
 	JWT_KEYS = await getJwtKeys();
 }
 
 export type ConfigResponse = {
 	jwt_keys: KeyMap,
 	blockchain: BlockchainConfig;
+	blockchain3: BlockchainConfig;
 	bi_service: string;
 	webview: string;
 	environment_name: string;
@@ -34,6 +37,7 @@ export const getConfigHandler = async function(req: Request, res: Response, next
 	const data: ConfigResponse = {
 		jwt_keys: await getJwtKeys(),
 		blockchain: await getBlockchainConfig("2"),
+		blockchain3: await getBlockchainConfig("3"),
 		bi_service: CONFIG.bi_service,
 		webview: CONFIG.webview,
 		environment_name: CONFIG.environment_name,

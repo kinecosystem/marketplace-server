@@ -198,7 +198,8 @@ export class Wallets {
 	}
 
 	public lastUsed(): Wallet | null {
-		return this.count === 0 ? null : this.items.reduce((lastUsed, current) => lastUsed.lastUsedDate < current.lastUsedDate ? current : lastUsed);
+		return this.count === 0 ? null : this.items.reduce(
+			(lastUsed, current) => lastUsed.lastUsedDate < current.lastUsedDate ? current : lastUsed);
 	}
 }
 

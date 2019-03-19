@@ -28,7 +28,6 @@ import {
 	getOrder,
 	getOrderHistory,
 	submitOrder,
-	submitWhitelistOrder,
 } from "./orders";
 import { authenticateUser } from "../auth";
 

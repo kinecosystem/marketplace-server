@@ -138,9 +138,7 @@ export async function paymentComplete(payment: CompletedPayment) {
 		return;
 	}
 
-	const blockchain_version = order.blockchainData.blockchain_version;
 	order.blockchainData = pick(payment, "transaction_id", "sender_address", "recipient_address");
-	order.blockchainData.blockchain_version = blockchain_version;
 
 	if (order.isMarketplaceOrder()) {
 		if (order.type === "spend") {

@@ -1,9 +1,10 @@
 import * as express from "express";
 import * as httpContext from "express-http-context";
 
+import { Application } from "../models/applications";
 import { Mutable } from "../utils/utils";
 import { AuthToken, User } from "../models/users";
-import { MissingToken, InvalidToken, TOSMissingOrOldToken } from "../errors";
+import { MissingToken, InvalidToken, TOSMissingOrOldToken, NoSuchApp, WrongBlockchainVersion } from "../errors";
 
 export type AuthContext = {
 	readonly user: User;
@@ -69,5 +70,24 @@ export const authenticateUser = async function(req: express.Request, res: expres
 			return httpContext.get("token");
 		}
 	};
+
+	await throwOnMigrationError(req as AuthenticatedRequest);
 	next();
 } as express.RequestHandler;
+
+async function throwOnMigrationError(req: AuthenticatedRequest) {
+	const CLIENT_BLOCKCHAIN_HEADER = "x-kin-blockchain-version";
+	const blockchainVersionHeader = req.header(CLIENT_BLOCKCHAIN_HEADER);
+
+	const app = await Application.get(req.context.user.appId);
+	if (!app) { // cached per instance
+		throw NoSuchApp(req.context.user.appId);
+	}
+
+	const isAppMigrated = app.config.blockchain_version === "3";
+	const isAppVersionEqualsToClient = app.config.blockchain_version === blockchainVersionHeader;
+
+	if (isAppMigrated && !isAppVersionEqualsToClient) {
+		throw WrongBlockchainVersion("simulated deprecation");
+	}
+}

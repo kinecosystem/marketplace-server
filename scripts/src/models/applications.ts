@@ -2,7 +2,7 @@ import { generateId, IdPrefix } from "../utils/utils";
 import { localCache } from "../utils/cache";
 import { BaseEntity, Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
 import { CreationDateModel, initializer as Initializer, register as Register } from "./index";
-import { Cap, Offer, OfferType } from "./offers";
+import { Cap, Offer, OfferType, BlockchainVersion } from "./offers";
 import { Order } from "./orders";
 
 import { LimitConfig } from "../config";
@@ -14,6 +14,7 @@ export type ApplicationConfig = {
 	daily_earn_offers: number;
 	sign_in_types: SignInType[];
 	limits: LimitConfig;
+	blockchain_version: BlockchainVersion;
 };
 
 @Entity({ name: "applications" })
@@ -76,6 +77,7 @@ export class AppOffer extends BaseEntity {
 		if (!appOffers) {
 			appOffers = await AppOffer.createQueryBuilder("app_offer")
 				.leftJoinAndSelect("app_offer.offer", "offer")
+				.leftJoinAndSelect("app_offer.app", "app")
 				.where("app_offer.appId = :appId", { appId })
 				.andWhere("offer.type = :type", { type })
 				.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")

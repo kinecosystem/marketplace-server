@@ -49,7 +49,7 @@ export function init(filePath: string) {
 	(config.db as any).host = process.env.APP_DB_HOST || (config.db as any).host;
 	(config.db as any).database = process.env.APP_DB_DATABASE || (config.db as any).database;
 	config.payment_service = process.env.APP_PAYMENT_SERVICE || config.payment_service;
-	config.payment_service_v3 = process.env.APP_PAYMENT_SERVICE || config.payment_service_v3;
+	config.payment_service_v3 = process.env.APP_PAYMENT_SERVICE_V3 || config.payment_service_v3;
 	config.internal_service = process.env.APP_INTERNAL_SERVICE || config.internal_service;
 	config.bi_service = process.env.APP_BI_SERVICE || config.bi_service;
 	config.app_name = process.env.APP_NAME || config.app_name;

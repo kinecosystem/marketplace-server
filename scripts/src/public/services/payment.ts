@@ -23,6 +23,11 @@ interface PaymentRequest {
 	callback: string;
 }
 
+interface SubmitTransactionRequest extends PaymentRequest {
+	sender_address: string;
+	transaction: string;
+}
+
 export interface Payment {
 	amount: number;
 	app_id: string;
@@ -65,6 +70,22 @@ export async function payTo(walletAddress: string, appId: string, amount: number
 	};
 	const t = performance.now();
 	await client.post(`${config.payment_service}/payments`, payload);
+	logger().info("pay to took " + (performance.now() - t) + "ms");
+}
+
+export async function submitTransaction(recepientAddress: string, senderAddress: string, appId: string, amount: number, orderId: string, transaction: string) {
+	logger().info(`paying ${amount} to ${recepientAddress} with orderId ${orderId}`);
+	const payload: SubmitTransactionRequest = {
+		amount,
+		app_id: appId,
+		recipient_address: recepientAddress,
+		sender_address: senderAddress,
+		id: orderId,
+		callback: webhook,
+		transaction,
+	};
+	const t = performance.now();
+	await client.post(`${getPaymentServiceUrl("3")}/tx/submit`, payload);
 	logger().info("pay to took " + (performance.now() - t) + "ms");
 }
 

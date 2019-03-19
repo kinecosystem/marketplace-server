@@ -27,7 +27,8 @@ import {
 	createMarketplaceOrder,
 	getOrder,
 	getOrderHistory,
-	submitOrder
+	submitOrder,
+	submitWhitelistOrder,
 } from "./orders";
 import { authenticateUser } from "../auth";
 
@@ -60,7 +61,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.post(prefix("users/"), signInUser);
 
 	app.get(prefix("config/"), getConfigHandler);
-	app.get(prefix("blockchain/:app_id"), getAppBlockchainVersion);
+	app.get(prefix("applications/:app_id/blockchain_version"), getAppBlockchainVersion);
 	app.get("/status", statusHandler);
 }
 

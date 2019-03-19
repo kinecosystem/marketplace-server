@@ -221,26 +221,26 @@ describe("api tests for v2 users", async () => {
 		expect(res.payload.test).toEqual(payload.test);
 	});
 
-	test("simulate http deprecation error", async () => {
-		const myApp = await helpers.createApp(generateId(IdPrefix.App));
-		const user = await helpers.createUser({ appId: myApp.id });
-		const token = (await AuthToken.findOne({ userId: user.id }))!;
+	// test("simulate kin3 migration error", async () => {
+	// 	const myApp = await helpers.createApp(generateId(IdPrefix.App));
+	// 	const user = await helpers.createUser({ appId: myApp.id });
+	// 	const token = (await AuthToken.findOne({ userId: user.id }))!;
 
-		let res = await mock(expressApp)
-			.get(`/v2/users/me`)
-			.set("Authorization", `Bearer ${ token.id }`)
-			.set("x-request-id", "123");
-		expect(res.status).toBe(200);
+	// 	let res = await mock(app)
+	// 		.get(`/v2/users/me`)
+	// 		.set("Authorization", `Bearer ${ token.id }`)
+	// 		.set("x-request-id", "123");
+	// 	expect(res.status).toBe(200);
 
-		res = await mock(expressApp)
-			.get(`/v2/users/me`)
-			.set("Authorization", `Bearer ${ token.id }`)
-			.set("x-request-id", "123")
-			.set("x-simulate-deprecation-error", "true");
+	// 	res = await mock(app)
+	// 		.get(`/v2/users/me`)
+	// 		.set("Authorization", `Bearer ${ token.id }`)
+	// 		.set("x-request-id", "123")
+	// 		.set("x-kin-blockchain-version", "2");
 
-		expect(res.status).toBe(410);
-		expect(res.body.code).toBe(4101);
-	});
+	// 	expect(res.status).toBe(410);
+	// 	expect(res.body.code).toBe(4101);
+	// });
 
 	test("testMalformedJWT", async () => {
 		let jwt: string;

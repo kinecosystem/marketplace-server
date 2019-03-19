@@ -3,6 +3,8 @@ import { getDefaultLogger as logger } from "../../logging";
 
 import { AuthenticatedRequest } from "../auth";
 import { OfferTranslation } from "../../models/translations";
+import { Application } from "../../models/applications";
+import { NoSuchApp } from "../../errors";
 import {
 	Order,
 	getOrder as getOrderService,

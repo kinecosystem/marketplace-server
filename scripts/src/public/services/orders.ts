@@ -137,7 +137,6 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 		offerId: appOffer.offer.id,
 		amount: appOffer.offer.amount,
 		blockchainData: {
-			blockchain_version: appOffer.app.config.blockchain_version,
 			sender_address: senderAddress,
 			recipient_address: recipientAddress,
 		}
@@ -207,7 +206,6 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 		status: "opened",
 		nonce: jwt.nonce,
 		blockchainData: {
-			blockchain_version: senderWallet.blockchainVersion,
 			sender_address: senderWallet.address,
 			recipient_address: recipientWallet.address
 		}
@@ -244,7 +242,6 @@ async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId:
 		nonce: jwt.nonce,
 		status: "opened",
 		blockchainData: {
-			blockchain_version: app.config.blockchain_version,
 			sender_address: app.walletAddresses.sender,
 			recipient_address: wallet.address
 		}
@@ -274,7 +271,6 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 		status: "opened",
 		nonce: jwt.nonce,
 		blockchainData: {
-			blockchain_version: app.config.blockchain_version,
 			sender_address: wallet.address,
 			recipient_address: app.walletAddresses.recipient
 		}

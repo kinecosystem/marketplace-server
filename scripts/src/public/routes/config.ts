@@ -57,27 +57,3 @@ export const getAppBlockchainVersion = async function(req: GetAppBlockchainVersi
 	const data = await getAppBlockchainVersionService(app_id);
 	res.status(200).send(data);
 } as any as RequestHandler;
-
-// TODO: will be added soon. CONFIG.killswitch_via_api not added
-// export type SetAppBlockchainVersionRequest = Request & {
-// 	params: {
-// 		app_id: string;
-// 	};
-// 	body: {
-// 		blockchain_version: BlockchainVersion;
-// 	}
-// };
-
-//  export const setAppBlockchainVersion = async function(req: SetAppBlockchainVersionRequest, res: Response) {
-// 	if (CONFIG.killswitch_via_api === "true") {
-// 		if (BlockchainVersionValues.indexOf(req.body.blockchain_version) >= 0) {
-// 			const app_id = req.params.app_id;
-// 			await setAppBlockchainVersionService(app_id, req.body.blockchain_version);
-// 			res.status(200).send();
-// 		} else {
-// 			res.status(401).send();
-// 		}
-// 	} else {
-// 		res.status(403).send();
-// 	}
-// } as any as RequestHandler;

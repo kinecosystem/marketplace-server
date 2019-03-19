@@ -3,7 +3,10 @@ import * as express from "express";
 import { statusHandler } from "../middleware";
 
 import { getOffers } from "./offers";
-import { getConfigHandler } from "./config";
+import {
+	getConfigHandler,
+	getAppBlockchainVersion
+} from "./config";
 import {
 	userInfo,
 	myUserInfo,
@@ -57,6 +60,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.post(prefix("users/"), signInUser);
 
 	app.get(prefix("config/"), getConfigHandler);
+	app.get(prefix("blockchain/:app_id"), getAppBlockchainVersion);
 	app.get("/status", statusHandler);
 }
 

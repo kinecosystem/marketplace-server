@@ -335,7 +335,7 @@ export async function submitOrder(
 	user: User,
 	userDeviceId: string,
 	form: string | undefined,
-	transactionXdr?: string | undefined): Promise<Order> {
+	transaction?: string | undefined): Promise<Order> {
 	const order = await db.Order.getOne({ orderId });
 
 	if (!order || order.contextForUser(user.id) === null) {
@@ -367,7 +367,7 @@ export async function submitOrder(
 		createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 	} else {
 		// do this only for version 3
-		await payment.submitTransaction(order.blockchainData.recipient_address!, order.blockchainData.sender_address!, user.appId, order.amount, order.id, transactionXdr!);
+		await payment.submitTransaction(order.blockchainData.recipient_address!, order.blockchainData.sender_address!, user.appId, order.amount, order.id, transaction!);
 		// createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 	}
 

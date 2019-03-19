@@ -81,7 +81,7 @@ export type SubmitOrderRequest = AuthenticatedRequest & {
 	},
 	body: {
 		content: string;
-		transactionXdr?: string;
+		transaction?: string;
 	}
 };
 /**
@@ -97,7 +97,7 @@ export const submitOrder = async function(req: SubmitOrderRequest, res: Response
 		req.context.user,
 		req.context.token.deviceId,
 		req.body.content,
-		req.body.transactionXdr);
+		req.body.transaction);
 	res.status(200).send(order);
 } as any as RequestHandler;
 

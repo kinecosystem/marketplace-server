@@ -25,7 +25,7 @@ interface PaymentRequest {
 
 interface SubmitTransactionRequest extends PaymentRequest {
 	sender_address: string;
-	xdr: string;
+	transactionXdr: string;
 }
 
 export interface Payment {
@@ -73,7 +73,7 @@ export async function payTo(walletAddress: string, appId: string, amount: number
 	logger().info("pay to took " + (performance.now() - t) + "ms");
 }
 
-export async function submitTransaction(recepientAddress: string, senderAddress: string, appId: string, amount: number, orderId: string, xdr: string) {
+export async function submitTransaction(recepientAddress: string, senderAddress: string, appId: string, amount: number, orderId: string, transactionXdr: string) {
 	logger().info(`paying ${amount} to ${recepientAddress} with orderId ${orderId}`);
 	const payload: SubmitTransactionRequest = {
 		amount,
@@ -82,7 +82,7 @@ export async function submitTransaction(recepientAddress: string, senderAddress:
 		sender_address: senderAddress,
 		id: orderId,
 		callback: webhook,
-		xdr,
+		transactionXdr,
 	};
 	const t = performance.now();
 	await client.post(`${getPaymentServiceUrl("3")}/tx/submit`, payload);
@@ -144,7 +144,7 @@ export async function getBlockchainConfig(blockchainVersion: BlockchainVersion):
 	return res.data;
 }
 
-export function getPaymentServiceUrl(blockchainVersion: BlockchainVersion): string {
+function getPaymentServiceUrl(blockchainVersion: BlockchainVersion): string {
 	if (blockchainVersion === "3") {
 		return config.payment_service_v3;
 	}

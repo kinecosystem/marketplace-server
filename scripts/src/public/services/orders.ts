@@ -363,7 +363,7 @@ export async function submitOrder(
 	logger().info("order changed to pending", { orderId });
 
 	if (order.isEarn()) {
-		await payment.payTo((order.blockchainData.recipient_address)!, user.appId, order.amount, order.id);
+		await payment.payTo(order.blockchainData.recipient_address!, user.appId, order.amount, order.id);
 		createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 	} else {
 		// do this only for version 3

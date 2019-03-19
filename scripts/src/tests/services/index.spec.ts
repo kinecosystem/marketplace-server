@@ -35,13 +35,13 @@ describe("general api checks", async () => {
 	test("app blockchain version should be 2 | 3", async () => {
 		const application = await helpers.createApp(generateId(IdPrefix.App));
 		const blockchainVersion = await getAppBlockchainVersionService(application.id);
-		expect(blockchainVersion === "2" || blockchainVersion === "3");
+		expect(blockchainVersion === application.config.blockchain_version && (blockchainVersion === "2" || blockchainVersion === "3")); // checking blochain version from getAppBlockchainVersionService equals to application.config and remains 2 || 3
 
 		await mock(app)
 			.get(`/v2/applications/${ application.id }/blockchain_version/`)
 			.then(response => {
 				expect(response.status === 200);
-				expect(response.body === "2" || response.body === "3");
+				expect(response.body === application.config.blockchain_version && (response.body === "2" || response.body === "3"));
 			});
 	});
 

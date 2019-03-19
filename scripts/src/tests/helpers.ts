@@ -307,6 +307,7 @@ export function getKeyPair(): { private: string, public: string } {
 
 export function patchDependencies() {
 	(payment.payTo as any) = () => 1; // XXX use a patching library
+	(payment.submitTransaction as any) = () => 1; // XXX use a patching library
 	(payment.getBlockchainConfig as any) = () => 1; // XXX use a patching library
 	(payment.addWatcherEndpoint as any) = () => 1; // XXX use a patching library
 	(payment.setWatcherEndpoint as any) = () => 1; // XXX use a patching library

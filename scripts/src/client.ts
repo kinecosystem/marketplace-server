@@ -320,16 +320,20 @@ export class Client {
 		}
 	}
 
-	public async submitOrder(orderId: string, content?: string): Promise<Order> {
+	public async submitOrder(orderId: string, content?: string, transaction?: string): Promise<Order> {
 		try {
 			const res = await this.requests
-				.request(`/v2/orders/${ orderId }`, { content })
+				.request(`/v2/orders/${ orderId }`, { transaction })
 				.post<Order>();
 			return res.data;
 		} catch (e) {
 			console.log(`error while submitting order ${ orderId } with content: "${ content }"`);
 			throw e;
 		}
+	}
+
+	public getTransactionXdr(recipient: string, amount: number) {
+		return this.wallet.getTransactionXdr(recipient, amount);
 	}
 
 	public async createExternalOrder(jwt: string): Promise<OpenOrder> {

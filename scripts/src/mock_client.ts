@@ -254,7 +254,8 @@ async function spendFlow() {
 	console.log(`got open order`, openOrder);
 
 	// pay for the offer
-	await client.submitOrder(openOrder.id); // XXX allow the flow where this line is missing
+	const transaction = client.getTransactionXdr(openOrder.id, selectedOffer.amount);
+	await client.submitOrder(openOrder.id, undefined, transaction); // XXX allow the flow where this line is missing
 	const res = await client.pay(selectedOffer.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
 
 	console.log("pay result hash: " + res.hash);

@@ -88,6 +88,6 @@ async function throwOnMigrationError(req: AuthenticatedRequest) {
 	const isAppVersionEqualsToClient = app.config.blockchain_version === blockchainVersionHeader;
 
 	if (isAppMigrated && !isAppVersionEqualsToClient) {
-		throw WrongBlockchainVersion("simulated deprecation");
+		throw WrongBlockchainVersion("Blockchain version not supported by SDK");
 	}
 }

@@ -1,6 +1,6 @@
 import * as uuid from "uuid";
 import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse } from "axios";
-import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "@kinecosystem/kin.js";
+import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "@kinecosystem/kin.js"; // TODO Can we use kin.js@1?
 
 import { ApiError } from "./errors";
 import { AuthToken, UserProfile } from "./public/services/users";

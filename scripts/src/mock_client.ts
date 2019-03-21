@@ -254,8 +254,8 @@ async function spendFlow() {
 	console.log(`got open order`, openOrder);
 
 	// pay for the offer
-	const transaction = client.getTransactionXdr(openOrder.id, selectedOffer.amount);
-	await client.submitOrder(openOrder.id, undefined, transaction); // XXX allow the flow where this line is missing
+	const transaction = await client.getTransactionXdr(openOrder.id, selectedOffer.amount);
+	await client.submitOrder(openOrder.id, { transaction }); // XXX allow the flow where this line is missing
 	const res = await client.pay(selectedOffer.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
 
 	console.log("pay result hash: " + res.hash);
@@ -351,7 +351,7 @@ async function earnPollFlow() {
 	const content = JSON.stringify(choosePollAnswers(poll));
 	console.log("answers " + content);
 
-	const submittedOrder = await client.submitOrder(openOrder.id, content);
+	const submittedOrder = await client.submitOrder(openOrder.id, { content });
 	expect(typeof submittedOrder.amount).toBe("number");
 
 	// poll on order payment
@@ -469,7 +469,7 @@ async function earnQuizFlowBackwardSupport() {
 	const content = JSON.stringify(answers);
 	console.log("answers " + content, " expected sum " + expectedSum);
 
-	await client.submitOrder(openOrder.id, content);
+	await client.submitOrder(openOrder.id, { content });
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
@@ -532,7 +532,7 @@ async function earnQuizFlow() {
 	const content = JSON.stringify(answers);
 	console.log("answers " + content, " expected sum " + expectedSum);
 
-	await client.submitOrder(openOrder.id, content);
+	await client.submitOrder(openOrder.id, { content });
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
@@ -633,7 +633,7 @@ async function earnTutorial() {
 
 	const content = JSON.stringify({});
 
-	await client.submitOrder(openOrder.id, content);
+	await client.submitOrder(openOrder.id, { content });
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
 	console.log(`completion date: ${ order.completion_date }`);

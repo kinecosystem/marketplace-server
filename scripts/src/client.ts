@@ -145,7 +145,6 @@ export class Client {
 
 		const network = KinNetwork.from(
 			this.blockchainConfig.network_passphrase,
-			this.blockchainConfig.asset_issuer,
 			this.blockchainConfig.horizon_url);
 
 		const data = Client.normalizeSignInPayload(signInPayload);
@@ -320,14 +319,14 @@ export class Client {
 		}
 	}
 
-	public async submitOrder(orderId: string, content?: string, transaction?: string): Promise<Order> {
+	public async submitOrder(orderId: string, options: {content?: string, transaction?: string} = {}): Promise<Order> {
 		try {
 			const res = await this.requests
-				.request(`/v2/orders/${ orderId }`, { transaction })
+				.request(`/v2/orders/${ orderId }`, { transaction: options.transaction, content: options.content })
 				.post<Order>();
 			return res.data;
 		} catch (e) {
-			console.log(`error while submitting order ${ orderId } with content: "${ content }"`);
+			console.log(`error while submitting order ${ orderId } with options: "${ options }"`);
 			throw e;
 		}
 	}
@@ -375,7 +374,7 @@ export class Client {
 			throw new Error("first set a wallet");
 		}
 
-		await this.wallet.trustKin();
+		// NOP await this.wallet.trustKin();
 	}
 
 	public async logout() {

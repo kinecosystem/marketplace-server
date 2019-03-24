@@ -226,6 +226,8 @@ export class Client {
 		} else {
 			this.wallet = await kinjs2.createWallet(this.network3, keys);
 		}
+
+		console.log("wallet with balance", this.wallet.balance.cached);
 	}
 
 	public async pay(recipient: string, amount: number, orderId: string): Promise<kinjs1.Payment> {

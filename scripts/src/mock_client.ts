@@ -255,11 +255,8 @@ async function spendFlow() {
 
 	// pay for the offer
 	const transaction = await client.getTransactionXdr(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
+	console.log("transaction XDR: " + transaction);
 	await client.submitOrder(openOrder.id, { transaction }); // XXX allow the flow where this line is missing
-
-	const res = await client.pay(selectedOffer.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
-
-	console.log("pay result hash: " + res.hash);
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
@@ -1561,44 +1558,44 @@ async function checkValidTokenAfterLoginRightAfterLogout() {
 }
 
 async function main() {
-	await registerJWT();
-	await v1RegisterJWT();
-	await outdatedJWT();
-	await v1OutdatedJWT();
-	await updateWallet();
-	await v1UpdateWallet();
-	await userProfile();
-	await v1UserProfile();
-	await extraTrustlineIsOK();
-	await v1ExtraTrustlineIsOK();
-	await earnPollFlow();
-	await v1EarnPollFlow();
-	await earnTutorial();
-	await v1EarnTutorial();
+	// await registerJWT();
+	// await v1RegisterJWT();
+	// await outdatedJWT();
+	// await v1OutdatedJWT();
+	// await updateWallet();
+	// await v1UpdateWallet();
+	// await userProfile();
+	// await v1UserProfile();
+	// await extraTrustlineIsOK();
+	// await v1ExtraTrustlineIsOK();
+	// await earnPollFlow();
+	// await v1EarnPollFlow();
+	// await earnTutorial();
+	// await v1EarnTutorial();
 	await spendFlow();
-	await v1SpendFlow();
-	await earnQuizFlow();
-	await v1EarnQuizFlow();
-	await nativeEarnFlow();
-	await v1NativeEarnFlow();
-	await nativeSpendFlow();
-	await v1NativeSpendFlow();
-	await didNotApproveTOS();
-	await v1DidNotApproveTOS();
-	await testRegisterNewUser();
-	await v1TestRegisterNewUser();
-	await tryToNativeSpendTwice();
-	await v1TryToNativeSpendTwice();
-	await tryToNativeSpendTwiceWithNonce();
-	await v1TryToNativeSpendTwiceWithNonce();
-	await p2p();
-	await v1P2p();
-	await getOfferTranslations();
-
-	// multiple users/devices/wallets flows
-	await twoUsersSharingWallet();
-
-	await checkValidTokenAfterLoginRightAfterLogout();
+	// await v1SpendFlow();
+	// await earnQuizFlow();
+	// await v1EarnQuizFlow();
+	// await nativeEarnFlow();
+	// await v1NativeEarnFlow();
+	// await nativeSpendFlow();
+	// await v1NativeSpendFlow();
+	// await didNotApproveTOS();
+	// await v1DidNotApproveTOS();
+	// await testRegisterNewUser();
+	// await v1TestRegisterNewUser();
+	// await tryToNativeSpendTwice();
+	// await v1TryToNativeSpendTwice();
+	// await tryToNativeSpendTwiceWithNonce();
+	// await v1TryToNativeSpendTwiceWithNonce();
+	// await p2p();
+	// await v1P2p();
+	// await getOfferTranslations();
+	//
+	// // multiple users/devices/wallets flows
+	// await twoUsersSharingWallet();
+	//
+	// await checkValidTokenAfterLoginRightAfterLogout();
 }
 
 main()

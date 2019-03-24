@@ -8,7 +8,6 @@
 		"url": "https://github.com/kinfoundation/marketplace-server"
 	},
 	"dependencies": {
-		"@kinecosystem/kin.js": "^2.0.1",
 		"argparse": "^1.0.10",
 		"axios": "^0.18.0",
 		"axios-retry": "^3.1.1",
@@ -39,6 +38,8 @@
 		"winston": "^2.4.0"
 	},
 	"devDependencies": {
+		"@kinecosystem/kin.js": "^2.0.1",
+		"@kinecosystem/kin.js-v1": "^1.0.8",
 		"@types/argparse": "^1.0.35",
 		"@types/body-parser": "^1.16.8",
 		"@types/csv-parse": "^1.1.11",

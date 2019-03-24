@@ -60,10 +60,15 @@ export class ClientError extends Error {
 export class ClientRequests {
 	public static async create(data: SignInPayload, headers?: StringMap) {
 		// get blockchain version for current app
+		const appId = this.extractAppId(data.jwt);
 		const blockchainVersion = (await axios.get<BlockchainVersion>(
-			MARKETPLACE_BASE + `/v2/applications/${ this.extractAppId(data.jwt) }/blockchain_version`)).data;
+			MARKETPLACE_BASE + `/v2/applications/${ appId }/blockchain_version`)).data;
+		console.log(`connected to app ${appId} with version ${blockchainVersion}`);
 
-		const res = await axios.post<{ auth: AuthToken; }>(MARKETPLACE_BASE + "/v2/users", data, { headers });
+		const res = await axios.post<{ auth: AuthToken; }>(MARKETPLACE_BASE + "/v2/users", {
+			sign_in_type: "jwt",
+			jwt: data.jwt
+		}, { headers });
 		return new ClientRequests(res.data.auth, blockchainVersion);
 	}
 
@@ -341,14 +346,14 @@ export class Client {
 		}
 	}
 
-	public async submitOrder(orderId: string, options: {content?: string, transaction?: string} = {}): Promise<Order> {
+	public async submitOrder(orderId: string, options: { content?: string, transaction?: string } = {}): Promise<Order> {
 		try {
 			const res = await this.requests
 				.request(`/v2/orders/${ orderId }`, { transaction: options.transaction, content: options.content })
 				.post<Order>();
 			return res.data;
 		} catch (e) {
-			console.log(`error while submitting order ${ orderId } with options: "${ options }"`);
+			console.log(`error while submitting order ${ orderId } with options:`, options);
 			throw e;
 		}
 	}

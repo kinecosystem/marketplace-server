@@ -1,31 +1,27 @@
 import * as uuid from "uuid";
 import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse } from "axios";
-import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "@kinecosystem/kin.js";
+import * as kinjs2 from "@kinecosystem/kin.js";
+import * as kinjs1 from "@kinecosystem/kin.js-v1";
 
 import { ApiError } from "./errors";
 import { AuthToken, UserProfile } from "./public/services/users";
 import { OfferList } from "./public/services/offers";
 import { CompletedPayment } from "./internal/services";
 import { ConfigResponse } from "./public/routes/config";
-import { BlockchainConfig } from "./public/services/payment";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { StringMap } from "./models/applications";
 import { Mutable } from "./utils/utils";
+import * as jsonwebtoken from "jsonwebtoken";
+import { BlockchainVersion } from "./models/offers";
 
 const MEMO_VERSION = "1";
 const MARKETPLACE_BASE = process.env.MARKETPLACE_BASE;
 
 export type JWTPayload = { jwt: string };
-export type WhitelistSignInPayload = { apiKey: string, userId: string };
-export type SignInPayload = WhitelistSignInPayload | JWTPayload;
-
-function isJWT(obj: any): obj is { jwt: string } {
-	return !!obj.jwt;
-}
+export type SignInPayload = JWTPayload;
 
 type AxiosRequestNoDataMethod<T = any> = ((url: string, config?: AxiosRequestConfig) => AxiosPromise<T>);
 type AxiosRequestDataMethod<T = any> = ((url: string, data?: any, config?: AxiosRequestConfig) => AxiosPromise<T>);
-
 type AxiosRequestMethod<T = any> = AxiosRequestNoDataMethod<T> | AxiosRequestDataMethod<T>;
 
 function createMemo(...items: string[]): string {
@@ -39,7 +35,7 @@ function breakMemo(memo: string): string[] {
 	return items;
 }
 
-function paymentFromTransaction(payment: Payment): CompletedPayment | undefined {
+function paymentFromTransaction(payment: kinjs2.Payment | kinjs1.Payment): CompletedPayment | undefined {
 	try {
 		const [app_id, id] = breakMemo(payment.memo!);
 
@@ -62,27 +58,38 @@ export class ClientError extends Error {
 }
 
 export class ClientRequests {
-	public static async create(data: any, headers?: StringMap) {
+	public static async create(data: SignInPayload, headers?: StringMap) {
+		// get blockchain version for current app
+		const blockchainVersion = (await axios.get<BlockchainVersion>(
+			MARKETPLACE_BASE + `/v2/applications/${ this.extractAppId(data.jwt) }/blockchain_version`)).data;
+
 		const res = await axios.post<{ auth: AuthToken; }>(MARKETPLACE_BASE + "/v2/users", data, { headers });
-		return new ClientRequests(res.data.auth);
+		return new ClientRequests(res.data.auth, blockchainVersion);
 	}
 
-	public static async getConfig(): Promise<ConfigResponse> {
+	public static async getServerConfig(): Promise<ConfigResponse> {
 		const res = await axios.get<ConfigResponse>(MARKETPLACE_BASE + "/v2/config");
 		return res.data;
 	}
 
-	public authToken: AuthToken;
+	private static extractAppId(jwt: string) {
+		return (jsonwebtoken.decode(jwt) as { iss: string }).iss;
 
-	private constructor(authToken: AuthToken) {
+	}
+
+	public authToken: AuthToken;
+	public blockchainVersion: BlockchainVersion;
+
+	private constructor(authToken: AuthToken, blockchainVersion: BlockchainVersion) {
 		this.authToken = authToken;
+		this.blockchainVersion = blockchainVersion;
 	}
 
 	public get auth() {
 		return this.authToken;
 	}
 
-	public async activate() {
+	public async activate() { // TODO Deprecate
 		const res = await this.request("/v2/users/me/activate").post<AuthToken>();
 		this.authToken = res.data;
 	}
@@ -103,7 +110,7 @@ export class ClientRequests {
 					throw e;
 				} else {
 					const apiError: ApiError = e.response!.data;
-					const error = new ClientError(`server error for "${url}" ${e.response!.status}(${apiError.code}): ${apiError.error}, ${apiError.message}`);
+					const error = new ClientError(`server error for "${ url }" ${ e.response!.status }(${ apiError.code }): ${ apiError.error }, ${ apiError.message }`);
 					error.response = e.response;
 
 					throw error;
@@ -130,6 +137,7 @@ export class ClientRequests {
 	private getConfig() {
 		return {
 			headers: {
+				"x-kin-blockchain-version": this.blockchainVersion,
 				"x-request-id": uuid(),
 				"Authorization": this.auth ? `Bearer ${ this.auth.token }` : "",
 			},
@@ -138,53 +146,39 @@ export class ClientRequests {
 }
 
 export class Client {
-	public static async create(signInPayload: SignInPayload, config?: { headers?: StringMap }): Promise<Client> {
-		if (!this.blockchainConfig) {
-			this.blockchainConfig = (await ClientRequests.getConfig()).blockchain;
+	public static async create(signInPayload: SignInPayload, config: { headers?: StringMap } = {}): Promise<Client> {
+		if (!this.serverConfig) {
+			this.serverConfig = await ClientRequests.getServerConfig();
 		}
 
-		const network = KinNetwork.from(
-			this.blockchainConfig.network_passphrase,
-			this.blockchainConfig.horizon_url);
-
-		const data = Client.normalizeSignInPayload(signInPayload);
-
-		const requests = await ClientRequests.create(data, config ? config.headers : {});
-
-		return new Client(network, requests, config);
+		const requests = await ClientRequests.create(signInPayload, config.headers);
+		return new Client(this.serverConfig, requests, config);
 	}
 
-	private static blockchainConfig: BlockchainConfig;
-
-	private static normalizeSignInPayload(signInPayload: SignInPayload): any {
-		if (isJWT(signInPayload)) {
-			return { sign_in_type: "jwt", jwt: signInPayload.jwt };
-		} else {
-			return {
-				sign_in_type: "whitelist",
-				user_id: signInPayload.userId,
-				api_key: signInPayload.apiKey
-			};
-		}
-	}
+	private static serverConfig: ConfigResponse;
 
 	public readonly appId: string;
-	public readonly wallets: KinWallet[];
 	public readonly requests: ClientRequests;
+	public wallet?: kinjs1.KinWallet | kinjs2.KinWallet;
 
-	private readonly network: KinNetwork;
+	private readonly network2: kinjs1.KinNetwork;
+	private readonly network3: kinjs2.KinNetwork;
 	private readonly config: { headers?: StringMap } | undefined;
 
-	private constructor(network: KinNetwork, requests: ClientRequests, config: { headers?: StringMap } | undefined) {
-		this.wallets = [];
+	private constructor(serverConfig: ConfigResponse, requests: ClientRequests, config: { headers?: StringMap } | undefined) {
 		this.config = config;
-		this.network = network;
+
+		this.network2 = kinjs1.KinNetwork.from(
+			serverConfig.blockchain.network_passphrase,
+			serverConfig.blockchain.asset_issuer,
+			serverConfig.blockchain.horizon_url);
+
+		this.network3 = kinjs2.KinNetwork.from(
+			serverConfig.blockchain3.network_passphrase,
+			serverConfig.blockchain3.horizon_url);
+
 		this.requests = requests;
 		this.appId = requests.auth.app_id;
-	}
-
-	public get wallet() {
-		return this.wallets[0];
 	}
 
 	public get active(): boolean {
@@ -195,8 +189,7 @@ export class Client {
 	 * no need to call this unless you call logout first
 	 */
 	public async login(signInPayload: SignInPayload) {
-		const data = Client.normalizeSignInPayload(signInPayload);
-		(this as Mutable<Client>).requests = await ClientRequests.create(data, this.config ? this.config.headers : {});
+		(this as Mutable<Client>).requests = await ClientRequests.create(signInPayload, this.config ? this.config.headers : {});
 	}
 
 	public async activate() {
@@ -210,10 +203,10 @@ export class Client {
 
 	public async updateWallet(walletAddress?: string) {
 		const keys = !walletAddress ?
-			Keypair.random() :
+			kinjs2.Keypair.random() :
 			(walletAddress.startsWith("S") ?
-				Keypair.fromSecret(walletAddress) :
-				Keypair.fromPublicKey(walletAddress));
+				kinjs2.Keypair.fromSecret(walletAddress) :
+				kinjs2.Keypair.fromPublicKey(walletAddress));
 
 		if (keys.canSign()) {
 			console.log("updating wallet with keys: ", { public: keys.publicKey(), private: keys.secret() });
@@ -222,17 +215,46 @@ export class Client {
 		}
 
 		await this.requests.request("/v2/users/me", { wallet_address: keys.publicKey() }).patch();
-		this.wallets.push(await createWallet(this.network, keys));
+
+		if (this.requests.blockchainVersion === "2") {
+			this.wallet = await kinjs1.createWallet(this.network2, keys);
+		} else {
+			this.wallet = await kinjs2.createWallet(this.network3, keys);
+		}
 	}
 
-	public async pay(recipient: string, amount: number, orderId: string) {
+	public async pay(recipient: string, amount: number, orderId: string): Promise<kinjs1.Payment> {
 		if (!this.wallet) {
 			throw new Error("first set a wallet");
 		}
 
+		if (this.requests.blockchainVersion === "3") {
+			throw new Error("on blockchain-v3, payments are sent to server with submitOrder()");
+		}
+
 		try {
+			// should only work on blockchain v2
 			const memo = createMemo(this.appId, orderId);
 			return await this.wallet.pay(recipient, amount, memo);
+		} catch (e) {
+			console.log(`error while paying to ${ recipient }, amount ${ amount } and order ${ orderId }`);
+			throw e;
+		}
+	}
+
+	public async getTransactionXdr(recipient: string, amount: number, orderId: string): Promise<string> {
+		if (!this.wallet) {
+			throw new Error("first set a wallet");
+		}
+
+		if (this.requests.blockchainVersion === "2") {
+			throw new Error("on blockchain-v2, payments are sent to blockchain with pay()");
+		}
+
+		try {
+			// should only work on blockchain v3
+			const memo = createMemo(this.appId, orderId);
+			return await (this.wallet as kinjs2.KinWallet).getTransactionXdr(recipient, amount, memo);
 		} catch (e) {
 			console.log(`error while paying to ${ recipient }, amount ${ amount } and order ${ orderId }`);
 			throw e;
@@ -331,10 +353,6 @@ export class Client {
 		}
 	}
 
-	public getTransactionXdr(recipient: string, amount: number) {
-		return this.wallet.getTransactionXdr(recipient, amount);
-	}
-
 	public async createExternalOrder(jwt: string): Promise<OpenOrder> {
 		try {
 			const res = await this.requests
@@ -363,10 +381,10 @@ export class Client {
 		if (!this.wallet) {
 			throw new Error("first set a wallet");
 		}
-
 		return (await this.wallet.getPayments())
 			.map(paymentFromTransaction)
 			.find(payment => payment !== undefined && payment.id === orderId);
+
 	}
 
 	public async trustKin() {
@@ -374,7 +392,9 @@ export class Client {
 			throw new Error("first set a wallet");
 		}
 
-		// NOP await this.wallet.trustKin();
+		if (this.requests.blockchainVersion === "2") {
+			await (this.wallet as kinjs1.KinWallet).trustKin();
+		}
 	}
 
 	public async logout() {

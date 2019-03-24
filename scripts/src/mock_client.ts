@@ -28,7 +28,7 @@ import {
 	QuizPage,
 } from "./public/services/offer_contents";
 import { AnswersBackwardSupport } from "./public/services/offer_contents";
-import * as StellarSdk from "stellar-sdk";
+import { Keypair } from "@kinecosystem/kin.js";
 
 const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
 
@@ -1453,7 +1453,7 @@ async function twoUsersSharingWallet() {
 	const appClient = new SampleAppClient();
 	const offers = await appClient.getOffers();
 	const earnOffers = offers.filter((item: any) => item.type === "earn");
-	const walletKeys = StellarSdk.Keypair.random();
+	const walletKeys = Keypair.random();
 	console.log(`public key: ${ walletKeys.publicKey() }`);
 	console.log(`private key: ${ walletKeys.secret() }`);
 

@@ -1,24 +1,25 @@
 import * as moment from "moment";
 
 interface CacheValue {
-	lastRefresh: moment.Moment;
+	expiresAt: moment.Moment;
 	data: any;
 }
 
-const cacheTTL = 10; // minutes
+const defaultTTL = moment.duration(10, "minutes");
 const items = new Map<string, CacheValue>();
+
 export const localCache = {
 	get<T>(key: string): T | null {
 		const value = items.get(key);
-		if (value && moment.duration(moment().diff(value.lastRefresh)).asMinutes() <= cacheTTL) {
+		if (value && moment().isBefore(value.expiresAt)) {
 			return value.data;
 		} else {
 			return null;
 		}
 	},
-	set(key: string, data: any) {
+	set(key: string, data: any, expiration: moment.Duration = defaultTTL) {
 		items.set(key, {
-			lastRefresh: moment(),
+			expiresAt: moment().add(expiration),
 			data
 		});
 	},

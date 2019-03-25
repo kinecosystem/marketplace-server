@@ -6,6 +6,7 @@ import { Cap, Offer, OfferType, BlockchainVersion } from "./offers";
 import { Order } from "./orders";
 
 import { LimitConfig } from "../config";
+import moment = require("moment");
 
 export type StringMap = { [key: string]: string; };  // key => value pairs
 export type SignInType = "jwt" | "whitelist";
@@ -26,11 +27,11 @@ export class Application extends CreationDateModel {
 
 	public static async all(): Promise<Map<string, Application>> {
 		const cacheKey = "apps";
-		let apps; // localCache.get<Application[]>(cacheKey);
+		let apps = localCache.get<Application[]>(cacheKey);
 
 		if (!apps) {
 			apps = await Application.find();
-			// localCache.set(cacheKey, apps);
+			localCache.set(cacheKey, apps, moment.duration(10, "second"));
 		}
 
 		return new Map(apps.map(app => [app.id, app]) as Array<[string, Application]>);

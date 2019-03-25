@@ -26,11 +26,11 @@ export class Application extends CreationDateModel {
 
 	public static async all(): Promise<Map<string, Application>> {
 		const cacheKey = "apps";
-		let apps = localCache.get<Application[]>(cacheKey);
+		let apps; // localCache.get<Application[]>(cacheKey);
 
 		if (!apps) {
 			apps = await Application.find();
-			localCache.set(cacheKey, apps);
+			// localCache.set(cacheKey, apps);
 		}
 
 		return new Map(apps.map(app => [app.id, app]) as Array<[string, Application]>);

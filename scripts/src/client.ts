@@ -61,9 +61,10 @@ export class ClientRequests {
 	public static async create(data: SignInPayload, headers?: StringMap) {
 		// get blockchain version for current app
 		const appId = this.extractAppId(data.jwt);
-		const blockchainVersion = (await axios.get<BlockchainVersion>(
-			MARKETPLACE_BASE + `/v2/applications/${ appId }/blockchain_version`)).data;
-		console.log(`connected to app ${appId} with version ${blockchainVersion}`);
+		const blockchainVersion = (await axios.get<number>(
+				MARKETPLACE_BASE + `/v2/applications/${ appId }/blockchain_version`)
+		).data.toString() as BlockchainVersion;
+		console.log(`connected to app ${ appId } with version ${ blockchainVersion }`);
 
 		const res = await axios.post<{ auth: AuthToken; }>(MARKETPLACE_BASE + "/v2/users", {
 			sign_in_type: "jwt",
@@ -207,11 +208,12 @@ export class Client {
 	}
 
 	public async updateWallet(walletAddress?: string) {
+		const kinjs = this.requests.blockchainVersion === "2" ? kinjs1 : kinjs2;
 		const keys = !walletAddress ?
-			kinjs2.Keypair.random() :
+			kinjs.Keypair.random() :
 			(walletAddress.startsWith("S") ?
-				kinjs2.Keypair.fromSecret(walletAddress) :
-				kinjs2.Keypair.fromPublicKey(walletAddress));
+				kinjs.Keypair.fromSecret(walletAddress) :
+				kinjs.Keypair.fromPublicKey(walletAddress));
 
 		if (keys.canSign()) {
 			console.log("updating wallet with keys: ", { public: keys.publicKey(), private: keys.secret() });
@@ -222,9 +224,9 @@ export class Client {
 		await this.requests.request("/v2/users/me", { wallet_address: keys.publicKey() }).patch();
 
 		if (this.requests.blockchainVersion === "2") {
-			this.wallet = await kinjs1.createWallet(this.network2, keys);
+			this.wallet = await kinjs1.createWallet(this.network2, keys as kinjs1.Keypair);
 		} else {
-			this.wallet = await kinjs2.createWallet(this.network3, keys);
+			this.wallet = await kinjs2.createWallet(this.network3, keys as kinjs2.Keypair);
 		}
 
 		console.log("wallet with balance", this.wallet.balance.cached);
@@ -253,7 +255,6 @@ export class Client {
 		if (!this.wallet) {
 			throw new Error("first set a wallet");
 		}
-
 		if (this.requests.blockchainVersion === "2") {
 			throw new Error("on blockchain-v2, payments are sent to blockchain with pay()");
 		}

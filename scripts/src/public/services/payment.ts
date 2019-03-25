@@ -78,6 +78,10 @@ export async function payTo(walletAddress: string, appId: string, amount: number
 }
 
 export async function submitTransaction(recepientAddress: string, senderAddress: string, appId: string, amount: number, orderId: string, transaction: string) {
+	const blockchainVersion = (await Application.get(appId))!.config.blockchain_version;
+	if (blockchainVersion === "2") {
+		return;
+	}
 	logger().info(`submitTransaction of ${ amount } to ${ recepientAddress } from ${ senderAddress } with orderId ${ orderId }`);
 	const payload: SubmitTransactionRequest = {
 		amount,
@@ -90,8 +94,7 @@ export async function submitTransaction(recepientAddress: string, senderAddress:
 	};
 	const t = performance.now();
 
-	const blockchainVersion = (await Application.get(appId))!.config.blockchain_version;
-	await client.post(`${ getPaymentServiceUrl(blockchainVersion) }/tx/submit`, payload);
+	await client.post(`${ getPaymentServiceUrl("3") }/tx/submit`, payload);
 
 	logger().info("pay to took " + (performance.now() - t) + "ms");
 }
@@ -143,10 +146,12 @@ export async function setWatcherEndpoint(addresses: string[]): Promise<Watcher> 
 	return res.data;
 }
 
-export async function addWatcherEndpoint(address: string, paymentId: string, blockchainVersion: BlockchainVersion): Promise<Watcher> {
+export async function addWatcherEndpoint(address: string, paymentId: string, blockchainVersion: BlockchainVersion) {
 	// only in blockchain v2 we have a watcher service
-	const res = await client.put(`${ getPaymentServiceUrl("2") }/services/${ SERVICE_ID }/watchers/${ address }/payments/${ paymentId }`);
-	return res.data;
+	if (blockchainVersion === "3") {
+		return;
+	}
+	await client.put(`${ getPaymentServiceUrl("2") }/services/${ SERVICE_ID }/watchers/${ address }/payments/${ paymentId }`);
 }
 
 export type BlockchainConfig = {
@@ -157,7 +162,7 @@ export type BlockchainConfig = {
 };
 
 export async function getBlockchainConfig(blockchainVersion: BlockchainVersion): Promise<BlockchainConfig> {
-	const res = await client.get(`${getPaymentServiceUrl(blockchainVersion) }/config`);
+	const res = await client.get(`${ getPaymentServiceUrl(blockchainVersion) }/config`);
 	return res.data;
 }
 

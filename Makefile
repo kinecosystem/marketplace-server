@@ -79,7 +79,7 @@ clear-db:
 clear-redis:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm redis-cli del cursor
 
-test-system-docker: clear-db db-docker clear-redis
+test-system-docker:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm test-system
 
 generate-funding-address:

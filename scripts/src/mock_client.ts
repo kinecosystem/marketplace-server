@@ -254,9 +254,45 @@ async function spendFlow() {
 	console.log(`got open order`, openOrder);
 
 	// pay for the offer
+	await client.submitOrder(openOrder.id);
+	const payment = await client.pay(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
+	console.log("payment hash: " + payment.hash);
+
+	// poll on order payment
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	console.log(`completion date: ${ order.completion_date }`);
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+
+	JSON.parse(order.content!);
+
+	console.log("OK.\n");
+}
+
+async function kin3SpendFlow() {
+	console.log("===================================== spendFlow =====================================");
+
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+
+	await client.activate();
+	const selectedOffer = await getOffer(client, "spend");
+	const couponInfo: CouponInfo = JSON.parse(selectedOffer.content);
+
+	expect(couponInfo.amount).toEqual(selectedOffer.amount);
+
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
+	const openOrder = await client.createOrder(selectedOffer.id);
+	console.log(`got open order`, openOrder);
+
+	// pay for the offer
 	const transaction = await client.getTransactionXdr(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
 	console.log("transaction XDR: " + transaction);
-	await client.submitOrder(openOrder.id, { transaction }); // XXX allow the flow where this line is missing
+	await client.submitOrder(openOrder.id, { transaction });
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
@@ -1573,6 +1609,7 @@ async function main() {
 	// await earnTutorial();
 	// await v1EarnTutorial();
 	await spendFlow();
+	await kin3SpendFlow();
 	// await v1SpendFlow();
 	// await earnQuizFlow();
 	// await v1EarnQuizFlow();

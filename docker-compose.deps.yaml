@@ -83,6 +83,17 @@ services:
       APP_NAME: 'smpl'
       APP_MARKETPLACE_SERVICE: 'marketplace-public'
 
+  jwt-service-v3:
+    image: kinecosystem/jwt-service:1eaf6e5
+    ports:
+      - 3000
+    environment:
+      APP_DEBUG: 'False'
+      APP_PORT: 3000
+      APP_HOST: '0.0.0.0'
+      APP_NAME: 'smp3'
+      APP_MARKETPLACE_SERVICE: 'marketplace-public'
+
   bi-service:
     image: mendhak/http-https-echo
     ports:

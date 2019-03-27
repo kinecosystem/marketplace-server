@@ -30,7 +30,6 @@ db:
 	rm -f database.sqlite
 	npm run manage-db-data -- --apps-dir data/apps --offers-dir data/offers --trans-file data/translations/pt-BR.csv --trans-lang pt-BR --app-list ALL --create-db
 
-con:
 console:
 	node --experimental-repl-await ./scripts/bin/node-console.js
 

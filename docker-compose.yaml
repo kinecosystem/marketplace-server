@@ -15,6 +15,9 @@ services:
       - postgres
       - payment-web
       - bi-service
+      - migration-service
+      - payment-web-v3
+      - payment-worker-v3
     environment:
       &app_env_vars
       APP_DEBUG: 'True'
@@ -33,6 +36,7 @@ services:
       APP_DB_HOST: postgres
       APP_DB_DATABASE: ecosystem
       NODEMON_WATCH_DIRS: ${NODEMON_WATCH_DIRS}
+      MIGRATION_SERVICE: http://migration-service:8000
 
   marketplace-admin:
     image: kinecosystem/marketplace-server:latest

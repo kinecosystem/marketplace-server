@@ -30,7 +30,7 @@ import {
 	submitOrder,
 } from "./orders";
 import { authenticateUser } from "../auth";
-import { account_status } from "../services/migration";
+import { accountStatus } from "../services/migration";
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
 	function prefix(path: string): string {
@@ -64,7 +64,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.get(prefix("applications/:app_id/blockchain_version"), getAppBlockchainVersion);
 	app.get("/status", statusHandler);
 
-	app.get(prefix("migration/info/:app_id/:public_address"), account_status);
+	app.get("migration/info/:app_id/:public_address", accountStatus);
 }
 
 export function createV1Routes(app: express.Express, pathPrefix?: string) {

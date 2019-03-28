@@ -64,7 +64,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.get(prefix("applications/:app_id/blockchain_version"), getAppBlockchainVersion);
 	app.get("/status", statusHandler);
 
-	app.get("migration/info/:app_id/:public_address", accountStatus);
+	app.get("/migration/info/:app_id/:public_address", accountStatus);
 }
 
 export function createV1Routes(app: express.Express, pathPrefix?: string) {

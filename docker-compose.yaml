@@ -15,9 +15,6 @@ services:
       - postgres
       - payment-web
       - bi-service
-      - migration-service
-      - payment-web-v3
-      - payment-worker-v3
     environment:
       &app_env_vars
       APP_DEBUG: 'True'

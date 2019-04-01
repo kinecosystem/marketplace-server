@@ -5,7 +5,7 @@ interface CacheValue {
 	data: any;
 }
 
-const defaultTTL = moment.duration(10, "minutes");
+const defaultTTL = moment.duration(30, "seconds");
 const items = new Map<string, CacheValue>();
 
 export const localCache = {

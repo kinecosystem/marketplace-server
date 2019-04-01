@@ -1,9 +1,13 @@
 import * as express from "express";
 import * as httpContext from "express-http-context";
 
-import { Mutable } from "../utils/utils";
+import { dateParser, Mutable } from "../utils/utils";
 import { AuthToken, User } from "../models/users";
 import { MissingToken, InvalidToken, TOSMissingOrOldToken } from "../errors";
+import { getRedisClient } from "../redis";
+
+const tokenCacheTTL = 15 * 60; // 15 minutes
+type CachedTokenValue = { token: AuthToken, user: User };
 
 export type AuthContext = {
 	readonly user: User;
@@ -31,6 +35,13 @@ async function getTokenAndUser(req: express.Request): Promise<[AuthToken, User]>
 		throw MissingToken();
 	}
 
+	const redis = getRedisClient();
+	const value = await redis.async.get(`token:${ req.token }`);
+	if (value) {
+		const cachedToken = JSON.parse(value, dateParser) as CachedTokenValue;
+		return [AuthToken.new(cachedToken.token), User.new(cachedToken.user)];
+	}
+
 	const token = await AuthToken.findOneById(req.token);
 	if (!token || !token.valid || token.isExpired()) {
 		throw InvalidToken(req.token);
@@ -44,6 +55,9 @@ async function getTokenAndUser(req: express.Request): Promise<[AuthToken, User]>
 		// This should never happen as the token.user_id is a foreign key to the users table
 		throw TOSMissingOrOldToken();
 	}
+
+	await redis.async.setex(`token:${ req.token }`, tokenCacheTTL, JSON.stringify({ token, user }));
+
 	return [token, user];
 }
 

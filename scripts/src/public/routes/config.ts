@@ -6,6 +6,7 @@ import {
 	setAppBlockchainVersion as setAppBlockchainVersionService
 } from "../services/applications";
 import { BlockchainConfig, getBlockchainConfig } from "../services/payment";
+import { AuthenticatedRequest } from "../auth";
 import { getDefaultLogger as log } from "../../logging";
 import { getJwtKeys } from "../services/internal_service";
 
@@ -56,4 +57,16 @@ export const getAppBlockchainVersion = async function(req: GetAppBlockchainVersi
 	const app_id = req.params.app_id;
 	const data = await getAppBlockchainVersionService(app_id);
 	res.status(200).send(data);
+} as any as RequestHandler;
+
+type SetAppBlockchainVersionRequest = GetAppBlockchainVersionRequest & {
+	body: {
+		blockchain_version: string;
+	};
+};
+export const setAppBlockchainVersion = async function(req: SetAppBlockchainVersionRequest, res: Response) {
+	const { blockchain_version } = req.body;
+	const app_id = req.params.app_id;
+	await setAppBlockchainVersionService(app_id, blockchain_version);
+	res.sendStatus(204);
 } as any as RequestHandler;

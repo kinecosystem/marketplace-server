@@ -251,7 +251,7 @@ async function getOffersVersionSpecificImages() {
 	// if rules change this test might break even if functionality can pass.
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	const client2 = await MarketplaceClient.create({ jwt },
@@ -1781,6 +1781,41 @@ async function checkValidTokenAfterLoginRightAfterLogout() {
 	console.log("OK.\n");
 }
 
+async function checkClientMigration() {
+	console.log("===================================== checkClientMigration =====================================");
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
+
+	await client.activate();
+
+	const selectedOffer = await getOffer(client, "earn", "tutorial");
+
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content.slice(0, 100) }`);
+	const openOrder = await client.createOrder(selectedOffer.id);
+	console.log(`got order ${ openOrder.id }`);
+
+	await axios.put(`/v2/applications/${client.appId}/blockchain_version`, {
+		blockchain_version: "3"
+	});
+
+	const content = JSON.stringify({});
+
+	await client.submitOrder(openOrder.id, { content });
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
+	console.log(`completion date: ${ order.completion_date }`);
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+
+	// shouldn't have another tutorial
+	await expectToThrow(() => getOffer(client, "earn", "tutorial"), "should only solve 1 tutorial");
+
+}
+
 async function main() {
 	await registerJWT();
 	await v1RegisterJWT();
@@ -1823,6 +1858,7 @@ async function main() {
 	await twoUsersSharingWallet();
 	await checkValidTokenAfterLoginRightAfterLogout();
 	await getOffersVersionSpecificImages();
+	await checkClientMigration();
 }
 
 main()

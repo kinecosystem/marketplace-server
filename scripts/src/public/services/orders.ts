@@ -86,13 +86,6 @@ export async function getOrder(orderId: string, user: User): Promise<Order> {
 		throw UserHasNoWallet(user.id);
 	}
 
-	logger().debug("getOne returning", {
-		orderId,
-		status: order.status,
-		offerId: order.offerId,
-		contexts: order.contexts
-	});
-
 	return await orderDbToApi(order, user.id, wallet.address);
 }
 

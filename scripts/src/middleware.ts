@@ -44,10 +44,8 @@ export const logRequest = function(req: express.Request, res: express.Response, 
 		data.querystring = req.query;
 	}
 
-	logger().info(`worker ${ getWorkerId() }: start handling request: ${ req.method } ${ req.path }`, data);
-
 	res.on("finish", () => {
-		logger().info(`worker ${ getWorkerId() }: finished handling request`, { time: performance.now() - t });
+		logger().debug(`worker ${ getWorkerId() }: finished handling request: ${ req.method } ${ req.path }`, { data, time: performance.now() - t });
 	});
 
 	next();

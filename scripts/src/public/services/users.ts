@@ -2,7 +2,7 @@ import { Brackets } from "typeorm";
 
 import * as metrics from "../../metrics";
 import { Order } from "../../models/orders";
-import { dateParser, normalizeError, readUTCDate } from "../../utils/utils";
+import { dateParser, isNothing, normalizeError, readUTCDate } from "../../utils/utils";
 import { Application } from "../../models/applications";
 import { getDefaultLogger as logger } from "../../logging";
 import { User, AuthToken as DbAuthToken, WalletApplication } from "../../models/users";
@@ -141,6 +141,9 @@ export async function activateUser(authToken: DbAuthToken, user: User): Promise<
 }
 
 export async function userExists(appId: string, appUserId: string): Promise<boolean> {
+	if (isNothing(appUserId) || appUserId === "") {
+		return false; // Some apps are sending empty appUserIds
+	}
 	// get from cache
 	const redis = getRedisClient();
 	const key = `app:${ appId }:user:${ appUserId }:exists`;
@@ -151,7 +154,6 @@ export async function userExists(appId: string, appUserId: string): Promise<bool
 	// get from DB
 
 	const user = await User.findOne({ appId, appUserId });
-	logger().debug(`userExists service appId: ${ appId }, appUserId: ${ appUserId }, user: `, user);
 	// cache
 	if (user !== undefined) {
 		await redis.async.set(key, "true");

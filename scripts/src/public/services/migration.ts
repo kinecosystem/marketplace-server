@@ -5,6 +5,7 @@ import { getConfig } from "../config";
 
 import axios from "axios";
 import { getDefaultLogger as logger } from "../../logging";
+import { isRestoreAllowed } from "./users";
 
 const axiosRetry = require("axios-retry"); // TODO: this fails the tests: import axiosRetry from "axios-retry";
 
@@ -15,20 +16,33 @@ axiosRetry(client, { retries: 6, retryCondition: () => true, shouldResetTimeout:
 
 type AccountMigrationStatus = {
 	should_migrate: boolean;
-	app_blockchain_version: BlockchainVersion
+	app_blockchain_version: BlockchainVersion;
+	restore_allowed: boolean;
 };
 
 export const accountStatus = async function(req: express.Request, res: express.Response) {
-	logger().info(`handling account status request app_id: ${ req.params.app_id } public_address: ${ req.params.public_address }`);
+	const publicAddress = req.params.public_address;
+	const appId = req.params.app_id;
+	logger().info(`handling account status request app_id: ${ appId } public_address: ${ publicAddress }`);
 
-	const app_blockchain_version = await getAppBlockchainVersion(req.params.app_id);
+	const app_blockchain_version = await getAppBlockchainVersion(appId);
 
-	const isBurnedRes = await client.get(`${ getConfig().migration_service }/accounts/${ req.params.public_address }/status`);
-
+	const isBurnedRes = await client.get(`${ getConfig().migration_service }/accounts/${ publicAddress }/status`, {
+		validateStatus: status => {
+			return status < 500; // Reject only if the status code is greater than or equal to 500
+		}
+	});
+	if (isBurnedRes.status === 404) {
+		isBurnedRes.data.is_burned = true; // Wallet doesn't exist
+	} else if (isBurnedRes.status > 400) {
+		logger().info(`Something went wrong, migration service response`, isBurnedRes);
+		throw Error(`Something went wrong, migration service response: ${ JSON.stringify(isBurnedRes.data) }`);
+	}
 	const shouldMigrate = app_blockchain_version === "3" && !(isBurnedRes.data.is_burned);
 
 	res.status(200).send({
 		should_migrate: shouldMigrate,
 		app_blockchain_version,
+		restore_allowed: await isRestoreAllowed(publicAddress, appId, false),
 	} as AccountMigrationStatus);
 } as express.RequestHandler;

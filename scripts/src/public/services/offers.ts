@@ -1,5 +1,5 @@
-import { getDefaultLogger as log } from "../../logging";
 import { Request as ExpressRequest } from "express-serve-static-core";
+import * as httpContext from "express-http-context";
 
 import * as metrics from "../../metrics";
 import * as db from "../../models/offers";
@@ -9,10 +9,12 @@ import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import { Application, AppOffer } from "../../models/applications";
 import { ContentType, OfferContent, OfferType } from "../../models/offers";
-import { getConfig } from "../config";
 import { Order } from "../../models/orders";
 import { OfferTranslation } from "../../models/translations";
 import { NoSuchApp } from "../../errors";
+
+import * as semver from "semver";
+import { CLIENT_SDK_VERSION_HEADER } from "../../middleware";
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -44,12 +46,42 @@ type OfferTranslations = {
 	content: any;
 };
 
+type VersionRule = {
+	comparator: string;
+	data: VersionRuleData;
+};
+
+type VersionRuleData = {
+	[defaultKey: string]: string
+};
+
+const IMAGE_VERSION_RULES: VersionRule[] = [
+	{
+		comparator: ">1.0.0", data: {
+			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png": "https://s3.amazonaws.com/assets.kinecosystemtest.com/images/offer_placeholder.png",
+		}
+	}
+];
+
+function getVersionImageData(version: string): VersionRuleData {
+	const selectedRule = IMAGE_VERSION_RULES.find(rule => semver.satisfies(version, rule.comparator)) || { data: {} };
+	return selectedRule.data;
+}
+
+function getImageDataResolver(version: string) {
+	const versionImageData = getVersionImageData(version);
+	return (key: string, defaultValue: string = key) => {
+		return versionImageData[key] || defaultValue;
+	};
+}
+
 function offerDbToApi(offer: db.Offer, content: db.OfferContent, offerTranslations: OfferTranslations, walletAddress: string) {
+	const imageDataResolver = getImageDataResolver(httpContext.get(CLIENT_SDK_VERSION_HEADER));
 	const offerData = {
 		id: offer.id,
 		title: offerTranslations.title || offer.meta.title,
 		description: offerTranslations.description || offer.meta.description,
-		image: offer.meta.image,
+		image: imageDataResolver(offer.meta.image),
 		amount: offer.amount,
 		blockchain_data: offer.type === "spend" ? { recipient_address: walletAddress } : { sender_address: walletAddress },
 		offer_type: offer.type,
@@ -123,6 +155,7 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 	if (!app) {
 		throw NoSuchApp(appId);
 	}
+
 	async function getEarn() {
 		if (!filters.type || filters.type === "earn") {
 			const offers = await filterOffers(

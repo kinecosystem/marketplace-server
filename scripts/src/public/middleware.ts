@@ -2,7 +2,7 @@ import * as express from "express";
 import * as bearerToken from "express-bearer-token";
 import * as httpContext from "express-http-context";
 
-import { logRequest, reportMetrics, requestLogger } from "../middleware";
+import { logRequest, reportMetrics, requestLogger, setHttpContextFromRequest } from "../middleware";
 import { BlockchainEndpointChanged } from "../errors";
 
 export { notFoundHandler, generalErrorHandler, statusHandler } from "../middleware";
@@ -17,6 +17,7 @@ const deprecationError = function(req: express.Request, res: express.Response, n
 
 export function init(app: express.Express) {
 	app.use(httpContext.middleware as express.RequestHandler);
+	app.use(setHttpContextFromRequest);
 	app.use(bearerToken());
 	app.use(requestLogger);
 	app.use(logRequest);

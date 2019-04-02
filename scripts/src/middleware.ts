@@ -17,6 +17,9 @@ const START_TIME = (new Date()).toISOString();
 
 const RESTART_ERROR_COUNT = 5;  // Amount of errors to occur in time frame to trigger restart
 const RESTART_MAX_TIMEFRAME = 20;  // In seconds
+
+export const CLIENT_SDK_VERSION_HEADER = "x-sdk-version";
+
 let serverErrorTimeStamps: number[] = [];
 
 function getAppIdFromRequest(req: Request): string {
@@ -52,6 +55,10 @@ export const logRequest = function(req: express.Request, res: express.Response, 
 
 	next();
 } as express.RequestHandler;
+
+export const setHttpContextFromRequest = function(req: express.Request, res: express.Response, next: express.NextFunction) {
+	httpContext.set(CLIENT_SDK_VERSION_HEADER, req.header(CLIENT_SDK_VERSION_HEADER));
+};
 
 export const reportMetrics = function(req: express.Request, res: express.Response, next: express.NextFunction) {
 	const t = performance.now();

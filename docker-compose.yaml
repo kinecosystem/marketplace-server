@@ -32,6 +32,7 @@ services:
       APP_DB_HOST: postgres
       APP_DB_DATABASE: ecosystem
       NODEMON_WATCH_DIRS: ${NODEMON_WATCH_DIRS}
+      CACHE_TTL: '{ default: 0 }'
 
   marketplace-admin:
     image: kinecosystem/marketplace-server:latest

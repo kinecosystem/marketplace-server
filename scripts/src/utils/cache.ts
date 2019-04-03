@@ -1,11 +1,15 @@
 import * as moment from "moment";
+import { getConfig } from "../public/config";
+
+const config = getConfig();
 
 interface CacheValue {
 	lastRefresh: moment.Moment;
 	data: any;
 }
 
-const cacheTTL = 10; // minutes
+const cacheTTL = config.cache_ttl.default; // minutes
+
 const items = new Map<string, CacheValue>();
 export const localCache = {
 	get<T>(key: string): T | null {

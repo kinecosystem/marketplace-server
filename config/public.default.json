@@ -28,5 +28,8 @@
 	"webview": "https://s3.amazonaws.com/assets.kinecosystemtest.com/web-offers/cards-based/index.html",
 	"ecosystem_service": "http://localhost:3000",
 	"environment_name": "local",
-	"bi_service": "https://kin-bi.appspot.com/eco_"
+	"bi_service": "https://kin-bi.appspot.com/eco_",
+	"cache_ttl": {
+		"default": 0
+	}
 }

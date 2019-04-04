@@ -3,9 +3,11 @@ import * as moment from "moment";
 import * as expect from "expect";
 import * as jsonwebtoken from "jsonwebtoken";
 
+import * as kinjs1 from "@kinecosystem/kin.js-v1";
+
 // it's important to have this at the start
 import { getConfig } from "./public/config";
-
+import { localCache } from "./utils/cache"
 getConfig();
 
 import { JWTContent } from "./public/jwt";
@@ -29,14 +31,15 @@ import {
 } from "./public/services/offer_contents";
 import { AnswersBackwardSupport } from "./public/services/offer_contents";
 import { Keypair } from "@kinecosystem/kin.js";
+import { BlockchainVersion } from "./models/offers";
 
 const SMPL_APP_CONFIG = {
 	jwtAddress: process.env.JWT_SERVICE_BASE!,
-	keypair: Keypair.fromSecret("SCS2QPEE7TE5OF3UK2LGIRDINZBNGIB35HUL3EOAACMPUQNB3SBYKQQX")
+	keypair: Keypair.fromSecret("SCS2QPEE7TE5OF3UK2LGIRDINZBNGIB35HUL3EOAACMPUQNB3SBYKQQX") // GCRSKU3WTADD4DH3FRHQXIU7T2NO7SFD6DWWPC36BM7GG5TAMLLHZMJY
 };
 const SMP3_APP_CONFIG = {
 	jwtAddress: process.env.JWT_SERVICE_BASE_V3!,
-	keypair: Keypair.fromSecret("SBYRN4DBABHCM3CC7W6TR4K42NMHMEHELQNSIZHXTKEFTEADXBFJF2MS")
+	keypair: Keypair.fromSecret("SBYRN4DBABHCM3CC7W6TR4K42NMHMEHELQNSIZHXTKEFTEADXBFJF2MS") // GDNCL2OGIGSXO5JVXN5D552AVGS3MSG4OOLRS4HEIRXJVDKCQD5N5NLO
 };
 
 // TODO: should this be moved to the client?
@@ -325,7 +328,7 @@ async function kin3SpendFlow() {
 
 	expect(couponInfo.amount).toEqual(selectedOffer.amount);
 
-	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
+	console.log(`requesting order for offer: ${selectedOffer.id}: ${selectedOffer.content}`);
 	const openOrder = await client.createOrder(selectedOffer.id);
 	console.log(`got open order`, openOrder);
 
@@ -1783,37 +1786,89 @@ async function checkValidTokenAfterLoginRightAfterLogout() {
 
 async function checkClientMigration() {
 	console.log("===================================== checkClientMigration =====================================");
+
 	const userId = generateId();
 	const deviceId = generateId();
 	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
 
-	await client.activate();
-
-	const selectedOffer = await getOffer(client, "earn", "tutorial");
-
-	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content.slice(0, 100) }`);
-	const openOrder = await client.createOrder(selectedOffer.id);
-	console.log(`got order ${ openOrder.id }`);
-
-	await axios.put(`/v2/applications/${client.appId}/blockchain_version`, {
-		blockchain_version: "3"
+	await axios.put(`${process.env.MARKETPLACE_BASE}/v2/applications/${client.appId}/blockchain_version`, {
+		blockchain_version: "2"
 	});
+	localCache.clear();
+
+	const keypair = Keypair.random();
+	await client.updateWallet(keypair.secret());
+
+	const selectedOfferV2 = await getOffer(client, "earn", "tutorial");
+
+	console.log(`requesting order for offer: ${ selectedOfferV2.id }: ${ selectedOfferV2.content.slice(0, 100) }`);
+	const openOrderV2 = await client.createOrder(selectedOfferV2.id);
+	console.log(`got order ${ openOrderV2.id }`);
 
 	const content = JSON.stringify({});
 
-	await client.submitOrder(openOrder.id, { content });
-	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	await client.submitOrder(openOrderV2.id, { content });
+	const orderV2 = await retry(() => client.getOrder(openOrderV2.id), order => order.status === "completed", "order did not turn completed");
 
-	console.log(`completion date: ${ order.completion_date }`);
-	console.log(`got order after submit`, order);
+	console.log(`completion date: ${ orderV2.completion_date }`);
+	console.log(`got order after submit`, orderV2);
+
+	// change blockchain version to 3
+	const kin3BlockchainVersion: BlockchainVersion = "3";
+	await axios.put(`${process.env.MARKETPLACE_BASE}/v2/applications/${client.appId}/blockchain_version`, {
+		blockchain_version: kin3BlockchainVersion
+	});
+	client.requests.blockchainVersion = kin3BlockchainVersion;
+	localCache.clear();
+	console.log(`${client.appId}'s' blockchain_version after a change =`, (await axios.get(`${process.env.MARKETPLACE_BASE}/v2/applications/${client.appId}/blockchain_version`)).data);
+
+	// shouldMigrate API
+	type AccountMigrationStatus = {
+		should_migrate: boolean;
+		app_blockchain_version: BlockchainVersion
+	};
+	const shouldMigrate: AccountMigrationStatus = (await axios.get(`${process.env.MARKETPLACE_BASE}/v2/migration/info/${client.appId}/${keypair.publicKey()}`)).data;
+	console.log(shouldMigrate);
+	expect(shouldMigrate.should_migrate).toBe(true);
+
+	// await new Promise((res, rej) => {
+	// 	setTimeout(() => { res(); }, 10000);
+	// });
+	// burning wallet
+	const burnStatus = await (client.wallet! as kinjs1.Wallet).burn();
+	console.log("burnStatus", burnStatus);
+	expect(burnStatus).toBe(true);
+
+	console.log((await axios.get(`${process.env.MARKETPLACE_BASE}/v2/migration/info/${client.appId}/${keypair.publicKey()}`)).data);
+
+	const selectedOfferV3 = await getOffer(client, "spend");
+	const couponInfo: CouponInfo = JSON.parse(selectedOfferV3.content);
+
+	expect(couponInfo.amount).toEqual(selectedOfferV3.amount);
+
+	console.log(`requesting order for offer: ${ selectedOfferV3.id }: ${ selectedOfferV3.content }`);
+	const openOrderV3 = await client.createOrder(selectedOfferV3.id);
+	console.log(`got open order`, openOrderV3);
+
+	// pay for the offer
+	const transaction = await client.getTransactionXdr(openOrderV3.blockchain_data.recipient_address!, selectedOfferV3.amount, openOrderV3.id);
+	console.log("transaction XDR: " + transaction);
+	await client.submitOrder(openOrderV3.id, { transaction });
+
+	// poll on order payment
+	const orderV3 = await retry(() => client.getOrder(openOrderV3.id), order => order.status === "completed", "order did not turn completed");
+	console.log(`completion date: ${orderV3.completion_date}`);
+	console.log(`got order after submit`, orderV3);
 	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
 
-	// shouldn't have another tutorial
-	await expectToThrow(() => getOffer(client, "earn", "tutorial"), "should only solve 1 tutorial");
+	JSON.parse(orderV3.content!);
 
+	// set app_id blockchain_version back to 2
+	await axios.put(`${process.env.MARKETPLACE_BASE}/v2/applications/${client.appId}/blockchain_version`, {
+		blockchain_version: "2"
+	});
 }
 
 async function main() {

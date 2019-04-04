@@ -58,6 +58,7 @@ services:
       MARKETPLACE_BASE: http://marketplace-public:3000
       JWT_SERVICE_BASE: http://jwt-service:3000
       JWT_SERVICE_BASE_V3: http://jwt-service-v3:3000
+      MIGRATION_SERVICE: http://migration-service:8000
     command: npm run test-system
 
   generate-funding-address:

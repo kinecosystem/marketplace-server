@@ -56,6 +56,13 @@ type VersionRuleData = {
 };
 
 const IMAGE_VERSION_RULES: VersionRule[] = [
+	/*
+		These rules are evaluated in order, so order takes precedence. First rule to
+		be satisfied by the client version will apply.
+		Example:
+		Consider this list of comparators [">=1.0.0", "=5.0.0"]
+		given a client version 5.0.0 the ">=1.0.0" rule will apply although "=5.0.0" is more exact.
+	*/
 	{
 		comparator: ">=1.0.0",
 		data: {

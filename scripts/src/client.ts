@@ -11,6 +11,7 @@ import { BlockchainConfig } from "./public/services/payment";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { StringMap } from "./models/applications";
 import { Mutable } from "./utils/utils";
+import { CLIENT_SDK_VERSION_HEADER } from "./middleware";
 
 const MEMO_VERSION = "1";
 const MARKETPLACE_BASE = process.env.MARKETPLACE_BASE;
@@ -64,7 +65,7 @@ export class ClientError extends Error {
 export class ClientRequests {
 	public static async create(data: any, headers?: StringMap) {
 		const res = await axios.post<{ auth: AuthToken; }>(MARKETPLACE_BASE + "/v2/users", data, { headers });
-		return new ClientRequests(res.data.auth);
+		return new ClientRequests(res.data.auth, headers);
 	}
 
 	public static async getConfig(): Promise<ConfigResponse> {
@@ -73,8 +74,10 @@ export class ClientRequests {
 	}
 
 	public authToken: AuthToken;
+	public headers: {};
 
-	private constructor(authToken: AuthToken) {
+	private constructor(authToken: AuthToken, headers = {}) {
+		this.headers = headers;
 		this.authToken = authToken;
 	}
 
@@ -91,7 +94,7 @@ export class ClientRequests {
 		const req = async <T>(fn: AxiosRequestMethod<T>, sendData: boolean) => {
 			const config = this.getConfig();
 			url = MARKETPLACE_BASE + url;
-
+			console.log("config:", config);
 			try {
 				const promise = sendData ?
 					(fn as AxiosRequestDataMethod)(url, data, config) :
@@ -103,7 +106,7 @@ export class ClientRequests {
 					throw e;
 				} else {
 					const apiError: ApiError = e.response!.data;
-					const error = new ClientError(`server error for "${url}" ${e.response!.status}(${apiError.code}): ${apiError.error}, ${apiError.message}`);
+					const error = new ClientError(`server error for "${ url }" ${ e.response!.status }(${ apiError.code }): ${ apiError.error }, ${ apiError.message }`);
 					error.response = e.response;
 
 					throw error;
@@ -129,19 +132,23 @@ export class ClientRequests {
 
 	private getConfig() {
 		return {
-			headers: {
+			headers: Object.assign({
 				"x-request-id": uuid(),
 				"Authorization": this.auth ? `Bearer ${ this.auth.token }` : "",
-			},
+			}, this.headers),
 		};
 	}
 }
 
+type ClientConfig = { headers?: StringMap, sdkVersion?: string };
+
 export class Client {
-	public static async create(signInPayload: SignInPayload, config?: { headers?: StringMap }): Promise<Client> {
+	public static async create(signInPayload: SignInPayload, config: ClientConfig = {}): Promise<Client> {
 		if (!this.blockchainConfig) {
 			this.blockchainConfig = (await ClientRequests.getConfig()).blockchain;
 		}
+		config.headers = config.headers || {};
+		config.headers[CLIENT_SDK_VERSION_HEADER] = config.sdkVersion || "0.9.0";
 
 		const network = KinNetwork.from(
 			this.blockchainConfig.network_passphrase,
@@ -174,9 +181,9 @@ export class Client {
 	public readonly requests: ClientRequests;
 
 	private readonly network: KinNetwork;
-	private readonly config: { headers?: StringMap } | undefined;
+	private readonly config: ClientConfig;
 
-	private constructor(network: KinNetwork, requests: ClientRequests, config: { headers?: StringMap } | undefined) {
+	private constructor(network: KinNetwork, requests: ClientRequests, config: ClientConfig) {
 		this.wallets = [];
 		this.config = config;
 		this.network = network;

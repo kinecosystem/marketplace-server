@@ -57,13 +57,20 @@ type VersionRuleData = {
 
 const IMAGE_VERSION_RULES: VersionRule[] = [
 	{
-		comparator: ">1.0.0", data: {
+		comparator: ">=1.0.0",
+		data: {
 			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png": "https://s3.amazonaws.com/assets.kinecosystemtest.com/images/offer_placeholder.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/earn_offer3.png": "https://s3.amazonaws.com/assets.kinecosystemtest.com/images/offer_placeholder.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/future_poll.png": "https://s3.amazonaws.com/assets.kinecosystemtest.com/images/offer_placeholder.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/marketplace_poll.png": "https://s3.amazonaws.com/assets.kinecosystemtest.com/images/offer_placeholder.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/kik_poll.png": "https://s3.amazonaws.com/assets.kinecosystemtest.com/images/offer_placeholder.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png": "https://s3.amazonaws.com/assets.kinecosystemtest.com/images/offer_placeholder.png",
 		}
 	}
 ];
 
 function getVersionImageData(version: string): VersionRuleData {
+	console.log("version:", version);
 	const selectedRule = IMAGE_VERSION_RULES.find(rule => semver.satisfies(version, rule.comparator)) || { data: {} };
 	return selectedRule.data;
 }

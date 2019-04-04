@@ -58,6 +58,7 @@ export const logRequest = function(req: express.Request, res: express.Response, 
 
 export const setHttpContextFromRequest = function(req: express.Request, res: express.Response, next: express.NextFunction) {
 	httpContext.set(CLIENT_SDK_VERSION_HEADER, req.header(CLIENT_SDK_VERSION_HEADER));
+	next();
 } as express.RequestHandler;
 
 export const reportMetrics = function(req: express.Request, res: express.Response, next: express.NextFunction) {

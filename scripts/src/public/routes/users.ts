@@ -157,8 +157,6 @@ export type UserExistsRequest = AuthenticatedRequest & { query: { user_id: strin
 
 export const userExists = async function(req: UserExistsRequest, res: Response) {
 	const appId = req.context.user.appId;
-	logger().debug(`userExists appId: ${ appId }`);
-
 	const userFound = await userExistsService(appId, req.query.user_id);
 	res.status(200).send(userFound);
 } as any as RequestHandler;

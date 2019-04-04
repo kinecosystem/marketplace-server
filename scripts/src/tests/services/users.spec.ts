@@ -40,6 +40,14 @@ describe("api tests for v2 users", async () => {
 		expect(oneWallet.first!.address).toEqual("OLD_WALLET");
 	});
 
+	test("user exists", async () => {
+		const user = await helpers.createUser();
+		expect(await userExists(user.appId, user.appUserId)).toBeTruthy();
+		expect(await userExists(user.appId, user.appUserId)).toBeTruthy();
+		expect(await userExists(user.appId, "no_user")).toBeFalsy();
+		expect(await userExists(user.appId, "no_user")).toBeFalsy();
+	});
+
 	test("user register whitelist", async () => {
 		const myApp = await helpers.createApp(generateId(IdPrefix.App));
 		const signInData: WhitelistSignInData = {

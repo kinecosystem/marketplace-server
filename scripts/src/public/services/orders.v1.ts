@@ -83,13 +83,6 @@ export async function getOrder(orderId: string, userId: string): Promise<Order> 
 
 	checkIfTimedOut(order); // no need to wait for the promise
 
-	logger().debug("getOne returning", {
-		orderId,
-		status: order.status,
-		offerId: order.offerId,
-		contexts: order.contexts
-	});
-
 	return orderDbToApi(order, userId);
 }
 

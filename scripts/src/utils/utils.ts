@@ -177,3 +177,13 @@ export function readUTCDate(date: string | Date): Date {
 export function capitalizeFirstLetter(str: string) {
 	return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
+const dateFormat = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.\d*))(?:Z|(\+|-)([\d|:]*))?$/;
+
+export function dateParser(key: string, value: string) {
+	if (typeof value === "string" && dateFormat.test(value)) {
+		return new Date(value);
+	}
+
+	return value;
+}

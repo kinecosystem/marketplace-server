@@ -2,7 +2,7 @@ import { Brackets } from "typeorm";
 
 import * as metrics from "../../metrics";
 import { Order } from "../../models/orders";
-import { normalizeError, readUTCDate } from "../../utils/utils";
+import { dateParser, isNothing, normalizeError, readUTCDate } from "../../utils/utils";
 import { Application } from "../../models/applications";
 import { getDefaultLogger as logger } from "../../logging";
 import { User, AuthToken as DbAuthToken, WalletApplication } from "../../models/users";
@@ -19,7 +19,9 @@ import { create as createRestoreRequestFailed } from "../../analytics/events/res
 import * as payment from "./payment";
 import { assertRateLimitRegistration } from "../../utils/rate_limit";
 import { setHttpContext } from "../auth";
+import { getRedisClient } from "../../redis";
 
+const notExistsTTL = 15 * 60; // cache the fact that a user doesn't exist for 15 minutes
 export type V1AuthToken = {
 	token: string;
 	activated: boolean;
@@ -139,8 +141,26 @@ export async function activateUser(authToken: DbAuthToken, user: User): Promise<
 }
 
 export async function userExists(appId: string, appUserId: string): Promise<boolean> {
+	if (isNothing(appUserId) || appUserId === "") {
+		return false; // Some apps are sending empty appUserIds
+	}
+	// get from cache
+	const redis = getRedisClient();
+	const key = `app:${ appId }:user:${ appUserId }:exists`;
+	const value = await redis.async.get(key);
+	if (value) {
+		return JSON.parse(value);
+	}
+	// get from DB
+
 	const user = await User.findOne({ appId, appUserId });
-	logger().debug(`userExists service appId: ${ appId }, appUserId: ${ appUserId }, user: `, user);
+	// cache
+	if (user !== undefined) {
+		await redis.async.set(key, "true");
+	} else {
+		await redis.async.setex(key, notExistsTTL, "false");
+	}
+
 	return user !== undefined;
 }
 

@@ -94,7 +94,6 @@ export class ClientRequests {
 		const req = async <T>(fn: AxiosRequestMethod<T>, sendData: boolean) => {
 			const config = this.getConfig();
 			url = MARKETPLACE_BASE + url;
-			console.log("config:", config);
 			try {
 				const promise = sendData ?
 					(fn as AxiosRequestDataMethod)(url, data, config) :

@@ -7,7 +7,7 @@ import * as kinjs1 from "@kinecosystem/kin.js-v1";
 
 // it's important to have this at the start
 import { getConfig } from "./public/config";
-import { localCache } from "./utils/cache"
+import { localCache } from "./utils/cache";
 getConfig();
 
 import { JWTContent } from "./public/jwt";

@@ -17,6 +17,7 @@ import { ExternalOrder, MarketplaceOrder, Order, P2POrder } from "../models/orde
 import * as payment from "../public/services/payment";
 import { Event } from "../analytics";
 import { getConfig } from "../internal/config";
+import { localCache } from "../utils/cache";
 
 const animalPoll: Poll = {
 	pages: [{
@@ -264,6 +265,7 @@ export async function signJwt(appId: string, subject: string, payload: object) {
 }
 
 export async function createApp(appId: string, limits?: LimitConfig, blockchain_version: BlockchainVersion = "2"): Promise<Application> {
+	localCache.clear(); // so this new app will show up when calling Application.get
 	const address = getKeyPair().public;
 	const appConfig: ApplicationConfig = {
 		max_user_wallets: null,

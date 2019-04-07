@@ -28,9 +28,9 @@ import {
 	getOrder,
 	getOrderHistory,
 	submitOrder,
-	submitWhitelistOrder,
 } from "./orders";
 import { authenticateUser } from "../auth";
+import { accountStatus } from "../services/migration";
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
 	function prefix(path: string): string {
@@ -61,7 +61,10 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.post(prefix("users/"), signInUser);
 
 	app.get(prefix("config/"), getConfigHandler);
+
 	app.get(prefix("applications/:app_id/blockchain_version"), getAppBlockchainVersion);
+	app.get(prefix("migration/info/:app_id/:public_address"), accountStatus);
+
 	app.get("/status", statusHandler);
 }
 

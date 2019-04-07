@@ -5,7 +5,7 @@ import { getConfig } from "./config";
 import { init as initModels } from "../models/index";
 import { init as initRemoteConfig } from "./routes/config";
 import { createRoutes, createV1Routes } from "./routes/index";
-import { generalErrorHandler, init as initCustomMiddleware, notFoundHandler, clientMigrationCheck } from "./middleware";
+import { generalErrorHandler, init as initCustomMiddleware, notFoundHandler } from "./middleware";
 
 const config = getConfig();
 const logger = initLogger(...config.loggers!);
@@ -36,7 +36,6 @@ createV1Routes(app, "/v1");
 app.use(notFoundHandler);
 // catch errors
 app.use(generalErrorHandler);
-app.use(clientMigrationCheck);
 
 export async function init() {
 	// initializing db and models

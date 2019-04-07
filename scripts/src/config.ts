@@ -31,6 +31,8 @@ export interface Config {
 	timestamp?: string;
 	bi_service: string;
 	webview: string;
+
+	migration_service?: string;
 }
 
 let config: Config;
@@ -58,6 +60,8 @@ export function init(filePath: string) {
 	config.redis = process.env.APP_REDIS || config.redis;
 	config.statsd.host = process.env.STATSD_HOST || config.statsd.host;
 	config.statsd.port = Number(process.env.STATSD_PORT) || config.statsd.port;
+
+	config.migration_service = process.env.MIGRATION_SERVICE || config.migration_service;
 }
 
 export function getConfig<T extends Config>(): T {

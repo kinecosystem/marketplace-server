@@ -32,8 +32,8 @@ export function timeRequest(time: number, method: string, path: string, appId: s
 	statsd.timing("request", time, { method, path, app_id: appId });
 }
 
-export function createOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType, offerId: string, appId: string) {
-	statsd.increment("create_order", 1, { order_type: orderOrigin, offer_type: offerType, offer_id: offerId, app_id: appId });
+export function createOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType, appId: string) {
+	statsd.increment("create_order", 1, { order_type: orderOrigin, offer_type: offerType, app_id: appId });
 }
 
 export function submitOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType,  appId: string) {

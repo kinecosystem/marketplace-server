@@ -92,6 +92,21 @@ export type UpdateUserProps = {
 	walletAddress: string;
 };
 
+export async function isRestoreAllowed(walletAddress: string, appId: string, addOnNonExisting: boolean = true): Promise<boolean> {
+	const appWallet = await WalletApplication.findOne({ walletAddress });
+	if (appWallet) {
+		logger().info(`Wallet ${ walletAddress } is associated with app ${ appWallet.appId }, current app is ${ appId }`);
+		if (appWallet.appId !== appId) {
+			return false;
+		}
+	} else if (addOnNonExisting) {
+		logger().info(`Wallet ${ walletAddress } does not exist in wallet_application table, add`);
+		const newWallet = WalletApplication.create({ walletAddress, appId });
+		await newWallet.save();
+	}
+	return true;
+}
+
 export async function updateUser(user: User, props: UpdateUserProps) {
 	if (props.walletAddress) {
 		const wallets = await user.getWallets();
@@ -101,17 +116,9 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 		const walletAddress = props.walletAddress;
 
 		/*  Start of Cross-app restore check (when removing, remove test too) */
-		const appWallet = await WalletApplication.findOne({ walletAddress });
-		if (!appWallet) {
-			logger().info(`Wallet ${ walletAddress } does not exist in wallet_application table, adding`);
-			const newWallet = WalletApplication.create({ walletAddress, appId });
-			await newWallet.save();
-		} else {
-			logger().info(`Wallet ${ walletAddress } is associated with app ${ appWallet.appId }, current app is ${ appId }`);
-			if (appWallet.appId !== appId) {
-				createRestoreRequestFailed(user.id, props.deviceId, "blocking cross-app restore request").report();
-				throw CrossAppWallet(walletAddress, appId);
-			}
+		if (!isRestoreAllowed(walletAddress, appId)) {
+			createRestoreRequestFailed(user.id, props.deviceId, "blocking cross-app restore request").report();
+			throw CrossAppWallet(walletAddress, appId);
 		}
 		/*  End of Cross-app restore check */
 

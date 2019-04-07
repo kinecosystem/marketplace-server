@@ -13,6 +13,9 @@ export type BlockchainData = {
 	recipient_address?: string;
 };
 
+export type BlockchainVersion = "2" | "3";
+export const BlockchainVersionValues = ["2", "3"] as BlockchainVersion[];
+
 export type OfferMeta = {
 	title: string;
 	image: string;

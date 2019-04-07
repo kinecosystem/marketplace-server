@@ -11,6 +11,7 @@ import { AuthToken as ApiAuthToken, userExists } from "../../public/services/use
 
 import * as helpers from "../helpers";
 import { localCache } from "../../utils/cache";
+import { createApp } from "../helpers";
 
 describe("api tests for v1 users", async () => {
 	beforeAll(async done => {
@@ -47,6 +48,7 @@ describe("api tests for v1 users", async () => {
 
 	test("user profile test", async () => {
 		const appId = generateId(IdPrefix.App);
+		await createApp(appId);
 		const user1 = await helpers.createUser({ appId });
 		const user2 = await helpers.createUser({ appId });
 		const token: AuthToken = (await AuthToken.findOne({ userId: user1.id }))!;
@@ -83,7 +85,8 @@ describe("api tests for v1 users", async () => {
 			});
 
 		// different appId
-		const user3 = await helpers.createUser({ appId: generateId(IdPrefix.App) });
+		const app2 = await createApp(generateId(IdPrefix.App));
+		const user3 = await helpers.createUser({ appId: app2.id });
 		await mock(app)
 			.get(`/v1/users/${ user3.appUserId }`)
 			.set("x-request-id", "123")
@@ -96,7 +99,7 @@ describe("api tests for v1 users", async () => {
 		localCache.clear();
 		const user1 = await helpers.createUser({ appId: myApp.id, createWallet: false });
 		const newWalletAddress = generateRandomString({ length: 56 });
-		const badAddress = generateRandomString({  length: 40 });
+		const badAddress = generateRandomString({ length: 40 });
 		const token = (await AuthToken.findOne({ userId: user1.id }))!;
 		const mockedApp = mock(app);
 

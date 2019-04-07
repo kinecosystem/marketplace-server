@@ -201,7 +201,7 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 		meta: pick(jwt.sender, "title", "description")
 	});
 
-	await addWatcherEndpoint(recipientWallet.address, order.id);
+	await addWatcherEndpoint(recipientWallet.address, order.id, senderWallet.blockchainVersion);
 	return order;
 }
 
@@ -262,7 +262,7 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 		meta: pick(jwt.sender, "title", "description")
 	});
 
-	await addWatcherEndpoint(app.walletAddresses.recipient, order.id);
+	await addWatcherEndpoint(app.walletAddresses.recipient, order.id, app.config.blockchain_version);
 
 	return order;
 }

@@ -8,6 +8,7 @@
     "max_user_wallets": null,
     "daily_earn_offers": 10,
     "sign_in_types": ["jwt", "whitelist"],
+    "blockchain_version": "3",
 		"limits": {
 			"hourly_registration": 200000,
 			"minute_registration": 10000,

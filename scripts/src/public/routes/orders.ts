@@ -3,6 +3,8 @@ import { getDefaultLogger as logger } from "../../logging";
 
 import { AuthenticatedRequest } from "../auth";
 import { OfferTranslation } from "../../models/translations";
+import { Application } from "../../models/applications";
+import { NoSuchApp } from "../../errors";
 import {
 	Order,
 	getOrder as getOrderService,
@@ -81,6 +83,7 @@ export type SubmitOrderRequest = AuthenticatedRequest & {
 	},
 	body: {
 		content: string;
+		transaction?: string;
 	}
 };
 /**
@@ -95,7 +98,8 @@ export const submitOrder = async function(req: SubmitOrderRequest, res: Response
 		req.params.order_id,
 		req.context.user,
 		req.context.token.deviceId,
-		req.body.content);
+		req.body.content,
+		req.body.transaction);
 	res.status(200).send(order);
 } as any as RequestHandler;
 

@@ -69,7 +69,7 @@ const CODES = {
 	Gone: {
 		code: HttpCodes.GONE, // 410
 		types: {
-			BlockchainEndpointChanged: 1,
+			WrongBlockchainVersion: 1,
 		}
 	},
 	TooManyRequests: {
@@ -333,6 +333,6 @@ function DeprecationError(key: keyof typeof CODES.Gone.types, message: string): 
 	return new MarketplaceError(CODES.Gone.code, CODES.Gone.types[key], "Request to a deprecated resource", message);
 }
 
-export function BlockchainEndpointChanged(message: string): MarketplaceError {
-	return DeprecationError("BlockchainEndpointChanged", message);
+export function WrongBlockchainVersion(message: string): MarketplaceError {
+	return DeprecationError("WrongBlockchainVersion", message);
 }

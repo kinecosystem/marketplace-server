@@ -1,8 +1,9 @@
 import { getDefaultLogger as logger } from "../../logging";
 
 import { verify as verifyJwt } from "../jwt";
-import { InvalidApiKey, MissingFieldJWT } from "../../errors";
+import { InvalidApiKey, MissingFieldJWT, NoSuchApp } from "../../errors";
 import { Application, AppWhitelists } from "../../models/applications";
+import { BlockchainVersion } from "../../models/offers";
 
 export type RegisterPayload = {
 	user_id: string;
@@ -92,4 +93,26 @@ export async function v1ValidateWhitelist(appUserId: string, apiKey: string): Pr
 	logger().warn(`user ${appUserId} not found in whitelist for app ${ app.id }`);
 
 	return { appUserId, appId: app.id };
+}
+
+export async function getAppBlockchainVersion(app_id: string): Promise<BlockchainVersion> {
+	const app = await Application.findOneById(app_id);
+	if (!app) {
+		throw NoSuchApp(app_id);
+	}
+	return app.config.blockchain_version;
+}
+
+export async function setAppBlockchainVersion(app_id: string, blockchain_version: BlockchainVersion): Promise<void> {
+	const app = await Application.findOneById(app_id);
+	if (!app) {
+		throw NoSuchApp(app_id);
+	}
+
+	app.config.blockchain_version = blockchain_version;
+	await Application.createQueryBuilder()
+		.update("applications")
+		.set({ config : app.config })
+		.where("id = :id", { id : app_id })
+		.execute();
 }

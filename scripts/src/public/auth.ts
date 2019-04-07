@@ -3,18 +3,19 @@ import * as httpContext from "express-http-context";
 
 import { dateParser, Mutable } from "../utils/utils";
 import { AuthToken, User } from "../models/users";
-import { MissingToken, InvalidToken, TOSMissingOrOldToken } from "../errors";
 import { getRedisClient } from "../redis";
+type CachedTokenValue = { token: AuthToken, user: User };
+import { Application } from "../models/applications";
+import { MissingToken, InvalidToken, TOSMissingOrOldToken, NoSuchApp, WrongBlockchainVersion } from "../errors";
 
 const tokenCacheTTL = 15 * 60; // 15 minutes
-type CachedTokenValue = { token: AuthToken, user: User };
 
 export type AuthContext = {
 	readonly user: User;
 	readonly token: AuthToken;
 };
 
-type TokenedRequest = express.Request & {
+export type TokenedRequest = express.Request & {
 	readonly token: string;
 };
 
@@ -83,5 +84,24 @@ export const authenticateUser = async function(req: express.Request, res: expres
 			return httpContext.get("token");
 		}
 	};
+
+	await throwOnMigrationError(req as AuthenticatedRequest);
 	next();
 } as express.RequestHandler;
+
+async function throwOnMigrationError(req: AuthenticatedRequest) {
+	const CLIENT_BLOCKCHAIN_HEADER = "x-kin-blockchain-version";
+	const blockchainVersionHeader = req.header(CLIENT_BLOCKCHAIN_HEADER);
+
+	const app = await Application.get(req.context.user.appId);
+	if (!app) { // cached per instance
+		throw NoSuchApp(req.context.user.appId);
+	}
+
+	const isAppMigrated = app.config.blockchain_version === "3";
+	const isAppVersionEqualsToClient = app.config.blockchain_version === blockchainVersionHeader;
+
+	if (isAppMigrated && !isAppVersionEqualsToClient) {
+		throw WrongBlockchainVersion("Blockchain version not supported by SDK");
+	}
+}

@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-  payment-service:
+  payment-web:
     image: kinecosystem/payment-service:d36a5e4
     ports:
       - 3000
@@ -39,6 +39,50 @@ services:
     environment:
       <<: *payment_env_vars
 
+  payment-web-v3:
+    image: kinecosystem/payment-service-v3:b56f930
+    ports:
+      - 3000
+    links:
+      - redis
+    environment:
+      &payment3_env_vars
+      APP_DEBUG: 'False'
+      APP_PORT: 3000
+      APP_HOST: '0.0.0.0'
+      APP_NAME: 'payment3-service'
+      APP_REDIS: redis://redis:6379/1
+      STELLAR_INITIAL_XLM_AMOUNT: 2
+      STELLAR_BASE_SEED: ${STELLAR_BASE_SEED}
+      STELLAR_HORIZON_URL: 'https://horizon-testnet.kininfrastructure.com'
+      STELLAR_NETWORK: 'Kin Testnet ; December 2018'
+
+  payment-worker-v3:
+    image: kinecosystem/payment-service-v3:b56f930
+    command: pipenv run python worker.py
+    links:
+      - redis
+    environment:
+      <<: *payment3_env_vars
+      CHANNEL_SALT: some_salt
+      MAX_CHANNELS: 1
+
+  migration-service:
+    image: kinecosystem/migration-server:1911c1c
+    restart: on-failure
+    ports:
+      - 8000
+    environment:
+      MAIN_SEED: ${STELLAR_BASE_SEED}
+      PROXY_SALT: 'low_sodium'
+      CHANNEL_COUNT: 5
+      KIN_ISSUER: 'GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7'
+      OLD_HORIZON: 'https://horizon-playground.kininfrastructure.com'
+      NEW_HORIZON: 'https://horizon-testnet.kininfrastructure.com'
+      NEW_PASSPHRASE: 'Kin Testnet ; December 2018'
+      APP_ID: 'mgsv'
+      DEBUG: 'TRUE'
+
   redis:
     image: redis:4.0
     ports:
@@ -53,6 +97,17 @@ services:
       APP_PORT: 3000
       APP_HOST: '0.0.0.0'
       APP_NAME: 'smpl'
+      APP_MARKETPLACE_SERVICE: 'marketplace-public'
+
+  jwt-service-v3:
+    image: kinecosystem/jwt-service:1eaf6e5
+    ports:
+      - 3000
+    environment:
+      APP_DEBUG: 'False'
+      APP_PORT: 3000
+      APP_HOST: '0.0.0.0'
+      APP_NAME: 'smp3'
       APP_MARKETPLACE_SERVICE: 'marketplace-public'
 
   bi-service:

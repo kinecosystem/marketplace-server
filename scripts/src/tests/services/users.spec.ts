@@ -13,6 +13,7 @@ import { AuthToken as ApiAuthToken, userExists, UserProfile } from "../../public
 
 import * as helpers from "../helpers";
 import { localCache } from "../../utils/cache";
+import { createApp } from "../helpers";
 
 describe("api tests for v2 users", async () => {
 	beforeEach(async done => {
@@ -70,6 +71,7 @@ describe("api tests for v2 users", async () => {
 
 	test("user profile test", async () => {
 		const appId = generateId(IdPrefix.App);
+		await createApp(appId);
 		const user1 = await helpers.createUser({ appId, deviceId: "test_device_id1" });
 		const user2 = await helpers.createUser({ appId, deviceId: "test_device_id2" });
 		const token = (await AuthToken.findOne({ userId: user1.id }))!;
@@ -119,7 +121,8 @@ describe("api tests for v2 users", async () => {
 			});
 
 		// different appId
-		const user3 = await helpers.createUser({ appId: generateId(IdPrefix.App) });
+		const app2 = await createApp(generateId(IdPrefix.App));
+		const user3 = await helpers.createUser({ appId: app2.id });
 		await mock(expressApp)
 			.get(`/v2/users/${ user3.appUserId }`)
 			.set("x-request-id", "123")

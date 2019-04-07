@@ -355,7 +355,6 @@ export async function submitOrder(
 		await payment.payTo(order.blockchainData.recipient_address!, user.appId, order.amount, order.id);
 		createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 	} else {
-		// do this only for version 3
 		await payment.submitTransaction(order.blockchainData.recipient_address!, order.blockchainData.sender_address!, user.appId, order.amount, order.id, transaction!);
 		// createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 	}

@@ -2,7 +2,6 @@ import * as path from "path";
 import * as moment from "moment";
 
 import * as utils from "../utils/utils";
-import { Application } from "../models/applications";
 
 import { path as _path } from "../utils/path";
 import * as metrics from "../metrics";
@@ -12,6 +11,8 @@ import { initLogger } from "../logging";
 import { MarketplaceError } from "../errors";
 import { close as closeModels, init as initModels } from "../models/index";
 import { assertRateLimitEarn, RateLimit } from "../utils/rate_limit";
+import { localCache } from "../utils/cache";
+import { delay } from "../utils/utils";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {
@@ -131,6 +132,17 @@ describe("util functions", () => {
 	test("remove duplicates", () => {
 		expect(utils.removeDuplicates(["1", "2", "3", "3"]).sort()).toEqual(["1", "2", "3"].sort());
 		expect(utils.removeDuplicates(["1000", "1", "1000", "1"]).sort()).toEqual(["1000", "1"].sort());
+	});
+
+	test("localCache expiration", async () => {
+		localCache.clear();
+		expect(localCache.get("blah")).toBeNull();
+		localCache.set("blah", 1);
+		expect(localCache.get("blah")).toEqual(1);
+		localCache.set("blah", 2, moment.duration(1, "second"));
+		expect(localCache.get("blah")).toEqual(2);
+		await delay(1200);
+		expect(localCache.get("blah")).toBeNull();
 	});
 
 	test("rate limit buckets day", () => {

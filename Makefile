@@ -30,7 +30,6 @@ db:
 	rm -f database.sqlite
 	npm run manage-db-data -- --apps-dir data/apps --offers-dir data/offers --trans-file data/translations/pt-BR.csv --trans-lang pt-BR --app-list ALL --create-db
 
-con:
 console:
 	node --experimental-repl-await ./scripts/bin/node-console.js
 
@@ -79,7 +78,7 @@ clear-db:
 clear-redis:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm redis-cli del cursor
 
-test-system-docker: clear-db db-docker clear-redis
+test-system-docker:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm test-system
 
 generate-funding-address:

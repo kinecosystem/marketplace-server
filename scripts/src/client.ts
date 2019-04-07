@@ -25,6 +25,11 @@ type AxiosRequestNoDataMethod<T = any> = ((url: string, config?: AxiosRequestCon
 type AxiosRequestDataMethod<T = any> = ((url: string, data?: any, config?: AxiosRequestConfig) => AxiosPromise<T>);
 type AxiosRequestMethod<T = any> = AxiosRequestNoDataMethod<T> | AxiosRequestDataMethod<T>;
 
+export interface AccountMigrationStatus {
+	should_migrate: boolean;
+	app_blockchain_version: BlockchainVersion;
+}
+
 function createMemo(...items: string[]): string {
 	items.unshift(MEMO_VERSION);
 	return items.join("-");
@@ -143,6 +148,9 @@ export class ClientRequests {
 			},
 			post<T = any>() {
 				return req<T>(axios.post, true);
+			},
+			put<T = any>() {
+				return req<T>(axios.put, true);
 			},
 			patch<T = any>() {
 				return req<T>(axios.patch, true);
@@ -424,5 +432,22 @@ export class Client {
 
 	public async logout() {
 		await this.requests.request("/v2/users/me/session").delete();
+	}
+
+	public async shouldMigrate(publicKey: string): Promise<AccountMigrationStatus> {
+		const shouldMigrateUrl = `${process.env.MARKETPLACE_BASE}/v2/migration/info/${this.appId}/${publicKey}`;
+		return (await this.requests.request(shouldMigrateUrl).get()).data;
+	}
+
+	public async changeAppBlockchainVersion(blockchainVersion: BlockchainVersion) {
+		const changeBlockchainVersionUrl = `${process.env.MARKETPLACE_BASE}/v2/applications/${this.appId}/blockchain_version`;
+		await this.requests.request(changeBlockchainVersionUrl, {
+			blockchain_version: blockchainVersion
+		}).put();
+		this.requests.blockchainVersion = blockchainVersion;
+	}
+
+	public async burnWallet(): Promise<boolean> {
+		return await (this.wallet! as kinjs1.Wallet).burn();
 	}
 }

@@ -3,8 +3,6 @@ import * as moment from "moment";
 import * as expect from "expect";
 import * as jsonwebtoken from "jsonwebtoken";
 
-import * as kinjs1 from "@kinecosystem/kin.js-v1";
-
 // it's important to have this at the start
 import { getConfig } from "./public/config";
 import { localCache } from "./utils/cache";
@@ -15,7 +13,7 @@ import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
 import { Order as DbOrder } from "./models/orders";
 import { Client as V1MarketplaceClient } from "./client.v1";
-import { generateId, randomInteger, retry } from "./utils/utils";
+import { generateId, randomInteger, retry, delay } from "./utils/utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { Client as MarketplaceClient, ClientError, JWTPayload } from "./client";
@@ -1817,37 +1815,20 @@ async function checkClientMigration() {
 
 	// change blockchain version to 3
 	const kin3BlockchainVersion: BlockchainVersion = "3";
-	await axios.put(`${process.env.MARKETPLACE_BASE}/v2/applications/${client.appId}/blockchain_version`, {
-		blockchain_version: kin3BlockchainVersion
-	});
-	client.requests.blockchainVersion = kin3BlockchainVersion;
-	localCache.clear();
-	console.log(`${client.appId}'s' blockchain_version after a change =`, (await axios.get(`${process.env.MARKETPLACE_BASE}/v2/applications/${client.appId}/blockchain_version`)).data);
+	await client.changeAppBlockchainVersion(kin3BlockchainVersion);
+	await delay(10000);
 
 	// shouldMigrate API
-	type AccountMigrationStatus = {
-		should_migrate: boolean;
-		app_blockchain_version: BlockchainVersion
-	};
-	const shouldMigrate: AccountMigrationStatus = (await axios.get(`${process.env.MARKETPLACE_BASE}/v2/migration/info/${client.appId}/${keypair.publicKey()}`)).data;
-	console.log(shouldMigrate);
+	const shouldMigrate = await client.shouldMigrate(keypair.publicKey());
+	console.log("shouldMigrate", shouldMigrate);
 	expect(shouldMigrate.should_migrate).toBe(true);
 
-	// await new Promise((res, rej) => {
-	// 	setTimeout(() => { res(); }, 10000);
-	// });
 	// burning wallet
-	const burnStatus = await (client.wallet! as kinjs1.Wallet).burn();
+	const burnStatus = await client.burnWallet();
 	console.log("burnStatus", burnStatus);
 	expect(burnStatus).toBe(true);
 
-	console.log((await axios.get(`${process.env.MARKETPLACE_BASE}/v2/migration/info/${client.appId}/${keypair.publicKey()}`)).data);
-
 	const selectedOfferV3 = await getOffer(client, "spend");
-	const couponInfo: CouponInfo = JSON.parse(selectedOfferV3.content);
-
-	expect(couponInfo.amount).toEqual(selectedOfferV3.amount);
-
 	console.log(`requesting order for offer: ${ selectedOfferV3.id }: ${ selectedOfferV3.content }`);
 	const openOrderV3 = await client.createOrder(selectedOfferV3.id);
 	console.log(`got open order`, openOrderV3);
@@ -1866,9 +1847,7 @@ async function checkClientMigration() {
 	JSON.parse(orderV3.content!);
 
 	// set app_id blockchain_version back to 2
-	await axios.put(`${process.env.MARKETPLACE_BASE}/v2/applications/${client.appId}/blockchain_version`, {
-		blockchain_version: "2"
-	});
+	await client.changeAppBlockchainVersion("2");
 }
 
 async function main() {

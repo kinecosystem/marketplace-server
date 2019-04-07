@@ -144,7 +144,7 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 	});
 	await order.save();
 
-	metrics.createOrder("marketplace", appOffer.offer.type, appOffer.offer.id, user.appId);
+	metrics.createOrder("marketplace", appOffer.offer.type, user.appId);
 
 	return order;
 }
@@ -292,7 +292,7 @@ export async function createExternalOrder(jwt: string, user: User, userDeviceId:
 
 		await order.save();
 
-		metrics.createOrder("external", order.flowType(), "native", user.appId);
+		metrics.createOrder("external", order.flowType(),  user.appId);
 
 		logger().info("created new open external order", {
 			offerId: payload.offer.id,

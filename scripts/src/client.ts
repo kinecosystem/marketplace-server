@@ -61,21 +61,32 @@ export class ClientRequests {
 	public static async create(data: SignInPayload, headers?: StringMap) {
 		// get blockchain version for current app
 		const appId = this.extractAppId(data.jwt);
-		const blockchainVersion = (await axios.get<number>(
-				MARKETPLACE_BASE + `/v2/applications/${ appId }/blockchain_version`)
-		).data.toString() as BlockchainVersion;
-		console.log(`connected to app ${ appId } with version ${ blockchainVersion }`);
+		const blockchainVersion = await this.getBlockchainVersion(appId);
+		const token = await this.getToken(data.jwt, headers);
 
-		const res = await axios.post<{ auth: AuthToken; }>(MARKETPLACE_BASE + "/v2/users", {
-			sign_in_type: "jwt",
-			jwt: data.jwt
-		}, { headers });
-		return new ClientRequests(res.data.auth, blockchainVersion);
+		console.log(`connected to app ${ appId } with version ${ blockchainVersion } as user ${ token.ecosystem_user_id }`);
+
+		return new ClientRequests(token, blockchainVersion);
 	}
 
 	public static async getServerConfig(): Promise<ConfigResponse> {
 		const res = await axios.get<ConfigResponse>(MARKETPLACE_BASE + "/v2/config");
 		return res.data;
+	}
+
+	private static async getToken(jwt: string, headers?: StringMap): Promise<AuthToken> {
+		const res = await axios.post<{ auth: AuthToken; }>(MARKETPLACE_BASE + "/v2/users", {
+			sign_in_type: "jwt",
+			jwt
+		}, { headers });
+		return res.data.auth;
+	}
+
+	private static async getBlockchainVersion(appId: string): Promise<BlockchainVersion> {
+		const res = await axios.get<number>(
+			MARKETPLACE_BASE + `/v2/applications/${ appId }/blockchain_version`);
+
+		return res.data.toString() as BlockchainVersion;
 	}
 
 	private static extractAppId(jwt: string) {
@@ -352,7 +363,7 @@ export class Client {
 	public async submitOrder(orderId: string, options: { content?: string, transaction?: string } = {}): Promise<Order> {
 		try {
 			const res = await this.requests
-				.request(`/v2/orders/${ orderId }`, { transaction: options.transaction, content: options.content })
+				.request(`/v2/orders/${ orderId }`, options)
 				.post<Order>();
 			return res.data;
 		} catch (e) {

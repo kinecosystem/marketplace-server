@@ -448,6 +448,6 @@ export class Client {
 	}
 
 	public async burnWallet(): Promise<boolean> {
-		return await (this.wallet! as kinjs1.Wallet).burn();
+		return await this.wallet!.burn();
 	}
 }

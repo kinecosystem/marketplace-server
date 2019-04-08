@@ -31,6 +31,9 @@ export interface Config {
 	timestamp?: string;
 	bi_service: string;
 	webview: string;
+	cache_ttl: {
+		default: number;
+	};
 
 	migration_service?: string;
 }
@@ -60,6 +63,7 @@ export function init(filePath: string) {
 	config.redis = process.env.APP_REDIS || config.redis;
 	config.statsd.host = process.env.STATSD_HOST || config.statsd.host;
 	config.statsd.port = Number(process.env.STATSD_PORT) || config.statsd.port;
+	config.cache_ttl = JSON.parse(process.env.CACH_TTL || "null") || config.cache_ttl || { "default": 30 };  // In seconds
 
 	config.migration_service = process.env.MIGRATION_SERVICE || config.migration_service;
 }

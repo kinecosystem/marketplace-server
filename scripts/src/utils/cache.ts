@@ -1,11 +1,16 @@
 import * as moment from "moment";
+import { getConfig } from "../public/config";
+
+const config = getConfig();
 
 interface CacheValue {
 	expiresAt: moment.Moment;
 	data: any;
 }
 
-const defaultTTL = moment.duration(30, "seconds");
+const cacheTTL = config.cache_ttl.default; // minutes
+
+const defaultTTL = moment.duration(cacheTTL, "seconds");
 const items = new Map<string, CacheValue>();
 
 export const localCache = {

@@ -244,6 +244,33 @@ async function getOfferTranslations() {
 	console.log("OK.\n");
 }
 
+async function getOffersVersionSpecificImages() {
+	console.log("=====================================getOffersVersionSpecificImages=====================================");
+	// As of now, we rely on hardcoded production rules
+	// so we can only test diff and not exact values. This means
+	// if rules change this test might break even if functionality can pass.
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient();
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+	const client2 = await MarketplaceClient.create({ jwt },
+		{ sdkVersion: "1.0.5" });
+
+	const offers1 = await client.getOffers();
+	const offers2 = await client2.getOffers();
+	const diff: string[][] = [];
+	offers1.offers.forEach((offer, index) => {
+		if (offer.id === offers2.offers[index].id && offer.image !== offers2.offers[index].image) {
+			diff.push([offer.image, offers2.offers[index].image]);
+		}
+	});
+	console.log("diff:", diff);
+	expect(diff.length).toBeGreaterThan(0);
+	console.log("OK.\n");
+
+}
+
 async function spendFlow() {
 	console.log("===================================== spendFlow =====================================");
 
@@ -1795,6 +1822,7 @@ async function main() {
 	// multiple users/devices/wallets flows
 	await twoUsersSharingWallet();
 	await checkValidTokenAfterLoginRightAfterLogout();
+	await getOffersVersionSpecificImages();
 }
 
 main()

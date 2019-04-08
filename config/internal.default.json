@@ -25,5 +25,8 @@
 	"statsd": {
 		"host": "localhost",
 		"port": 8125
+	},
+	"cache_ttl": {
+		"default": 0
 	}
 }

@@ -11,6 +11,7 @@ import { ConfigResponse } from "./public/routes/config";
 import { OpenOrder, Order, OrderList } from "./public/services/orders";
 import { StringMap } from "./models/applications";
 import { Mutable } from "./utils/utils";
+import { CLIENT_SDK_VERSION_HEADER } from "./middleware";
 import * as jsonwebtoken from "jsonwebtoken";
 import { BlockchainVersion } from "./models/offers";
 
@@ -66,7 +67,7 @@ export class ClientRequests {
 
 		console.log(`connected to app ${ appId } with version ${ blockchainVersion } as user ${ token.ecosystem_user_id }`);
 
-		return new ClientRequests(token, blockchainVersion);
+		return new ClientRequests(token, blockchainVersion, headers);
 	}
 
 	public static async getServerConfig(): Promise<ConfigResponse> {
@@ -95,11 +96,13 @@ export class ClientRequests {
 	}
 
 	public authToken: AuthToken;
+	public headers: {};
 	public blockchainVersion: BlockchainVersion;
 
-	private constructor(authToken: AuthToken, blockchainVersion: BlockchainVersion) {
+	private constructor(authToken: AuthToken, blockchainVersion: BlockchainVersion, headers = {}) {
 		this.authToken = authToken;
 		this.blockchainVersion = blockchainVersion;
+		this.headers = headers;
 	}
 
 	public get auth() {
@@ -115,7 +118,6 @@ export class ClientRequests {
 		const req = async <T>(fn: AxiosRequestMethod<T>, sendData: boolean) => {
 			const config = this.getConfig();
 			url = MARKETPLACE_BASE + url;
-
 			try {
 				const promise = sendData ?
 					(fn as AxiosRequestDataMethod)(url, data, config) :
@@ -153,20 +155,24 @@ export class ClientRequests {
 
 	private getConfig() {
 		return {
-			headers: {
+			headers: Object.assign({
 				"x-kin-blockchain-version": this.blockchainVersion,
 				"x-request-id": uuid(),
 				"Authorization": this.auth ? `Bearer ${ this.auth.token }` : "",
-			},
+			}, this.headers),
 		};
 	}
 }
+
+type ClientConfig = { headers?: StringMap, sdkVersion?: string };
 
 export class Client {
 	public static async create(signInPayload: SignInPayload, config: { headers?: StringMap } = {}): Promise<Client> {
 		if (!this.serverConfig) {
 			this.serverConfig = await ClientRequests.getServerConfig();
 		}
+		config.headers = config.headers || {};
+		config.headers[CLIENT_SDK_VERSION_HEADER] = config.sdkVersion || "0.9.0";
 
 		const requests = await ClientRequests.create(signInPayload, config.headers);
 		return new Client(this.serverConfig, requests, config);

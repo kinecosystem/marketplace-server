@@ -29,6 +29,9 @@
 	"ecosystem_service": "http://localhost:3000",
 	"environment_name": "local",
 	"bi_service": "https://kin-bi.appspot.com/eco_",
+	"cache_ttl": {
+		"default": 0
+	},
 
 	"migration_service": "https://migration-service.kinecosystemtest.com"
 }

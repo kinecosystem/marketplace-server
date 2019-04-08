@@ -40,7 +40,7 @@
 	},
 	"devDependencies": {
 		"@kinecosystem/kin.js": "^2.0.1",
-		"@kinecosystem/kin.js-v1": "^1.0.8",
+		"@kinecosystem/kin.js-v1": "^1.1.1",
 		"@types/argparse": "^1.0.35",
 		"@types/body-parser": "^1.16.8",
 		"@types/csv-parse": "^1.1.11",

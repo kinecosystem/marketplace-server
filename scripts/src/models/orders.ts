@@ -248,8 +248,10 @@ export const Order = {
 			return []; // empty array causes sql syntax error
 		}
 
+		// remove all context related fields to get the second context
 		delete filters.userId;
-		const userOrdersQuery = this.genericGet(filters) // this query looks for every orders returned by previous query without userId
+		delete filters.walletAddress;
+		const userOrdersQuery = this.genericGet(filters)
 			.andWhere(`ordr.id IN (:ids)`, { ids });
 
 		if (limit) {

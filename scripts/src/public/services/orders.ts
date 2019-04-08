@@ -13,7 +13,8 @@ import {
 	ExternalEarnOrderJWT,
 	ExternalSpendOrderJWT,
 	validateExternalOrderJWT,
-	ExternalPayToUserOrderJWT } from "./native_offers";
+	ExternalPayToUserOrderJWT
+} from "./native_offers";
 import {
 	ApiError,
 	NoSuchApp,
@@ -39,9 +40,6 @@ import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
-
-import { getAppBlockchainVersion } from "./applications";
-
 import { assertRateLimitEarn } from "../../utils/rate_limit";
 import { submitFormAndMutateMarketplaceOrder } from "./offer_contents";
 
@@ -305,7 +303,7 @@ export async function createExternalOrder(jwt: string, user: User, userDeviceId:
 
 		await order.save();
 
-		metrics.createOrder("external", order.flowType(),  user.appId);
+		metrics.createOrder("external", order.flowType(), user.appId);
 
 		logger().info("created new open external order", {
 			offerId: payload.offer.id,
@@ -469,14 +467,18 @@ async function orderDbToApi(order: db.Order, userId: string, wallet: string): Pr
 	return Object.assign({}, apiOrder, data);
 }
 
-export async function setFailedOrder(order: db.Order, error: MarketplaceError, failureDate?: Date): Promise<db.Order> {
-	order.setStatus("failed");
-	order.currentStatusDate = failureDate || order.currentStatusDate;
-	order.error = error.toJson();
+export async function setFailedOrder(order: db.Order, error: MarketplaceError, failureDate?: Date): Promise<void> {
+	try {
+		order.setStatus("failed");
+		order.currentStatusDate = failureDate || order.currentStatusDate;
+		order.error = error.toJson();
 
-	metrics.orderFailed(order);
-
-	return await order.save();
+		metrics.orderFailed(order);
+		await order.save();
+	} catch (e) {
+		// this function isn't awaited - so catch all here to not create promise rejection
+		logger().error("setFailedOrder caught error", { e, orderId: order.id });
+	}
 }
 
 function checkIfTimedOut(order: db.Order): Promise<void> {

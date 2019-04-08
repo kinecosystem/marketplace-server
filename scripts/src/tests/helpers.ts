@@ -122,8 +122,8 @@ export async function createExternalOrder(userId: string): Promise<Order> {
 		status: "pending",
 		offerId: "external1",
 		blockchainData: {
-			transaction_id: "A123123123123123",
-			recipient_address: "G123123123123",
+			transaction_id: generateId(),
+			recipient_address: wallet.address,
 			sender_address: "G123123123123"
 		}
 	}, {
@@ -145,31 +145,34 @@ export async function createP2POrder(userId: string): Promise<Order> {
 	const app = await Application.get(sender.appId)!;
 	const recipient = await createUser();
 
+	const senderWallet = (await sender.getWallets()).all()[0];
+	const recipientWallet = (await recipient.getWallets()).all()[0];
+
 	const order = P2POrder.new({
 		amount: 65,
 		status: "pending",
 		offerId: "p2p offer example",
 		blockchainData: {
-			transaction_id: "A123123123123123",
-			recipient_address: "G123123123123",
-			sender_address: "G123123123123"
+			transaction_id: generateId(),
+			recipient_address: recipientWallet.address,
+			sender_address: senderWallet.address
 		}
 	}, {
-		user: sender,
+		user: recipient,
 		type: "earn",
 		meta: {
 			title: "p2p order #1",
-			description: "first p2p order"
+			description: `got tip from ${sender.id}`
 		},
-		wallet: "G123123123123"
+		wallet: recipientWallet.address
 	}, {
-		user: recipient,
+		user: sender,
 		type: "spend",
 		meta: {
 			title: "p2p order #2",
-			description: "first p2p order"
+			description: `sent tip to ${recipient.id}`
 		},
-		wallet: "G123123123123"
+		wallet: senderWallet.address
 	});
 	await order.save();
 

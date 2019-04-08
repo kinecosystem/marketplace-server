@@ -217,6 +217,23 @@ describe("test v2 orders", async () => {
 		expect(orders[0].contexts.length).toEqual(2);
 	});
 
+	test("setFailedOrder marks p2p order as expired", async () => {
+		const user = await helpers.createUser();
+		const walletAddress = (await user.getWallets()).lastUsed()!.address;
+		const order = await helpers.createP2POrder(user.id);
+		order.expirationDate = moment().add(-10, "minutes").toDate();
+		order.status = "pending";
+		await order.save();
+
+		const orders = await Order.getAll({ origin: "external", userId: user.id, status: "!opened", walletAddress });
+
+		await setFailedOrder(orders[0], TransactionTimeout(), moment().toDate());
+		// shouldn't throw
+
+		const found = (await Order.getOne({ orderId: order.id }))!;
+		expect(found.status).toEqual("failed");
+	});
+
 	test("getOrder returns only my orders", async () => {
 		const user1 = await helpers.createUser();
 		const user2 = await helpers.createUser();

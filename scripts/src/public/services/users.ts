@@ -116,7 +116,7 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 		const walletAddress = props.walletAddress;
 
 		/*  Start of Cross-app restore check (when removing, remove test too) */
-		if (!isRestoreAllowed(walletAddress, appId)) {
+		if (!await isRestoreAllowed(walletAddress, appId)) {
 			createRestoreRequestFailed(user.id, props.deviceId, "blocking cross-app restore request").report();
 			throw CrossAppWallet(walletAddress, appId);
 		}

@@ -136,7 +136,7 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 	});
 	await order.save();
 
-	metrics.createOrder("marketplace", appOffer.offer.type, appOffer.offer.id, user.appId);
+	metrics.createOrder("marketplace", appOffer.offer.type, user.appId);
 
 	return order;
 }
@@ -201,7 +201,7 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 		meta: pick(jwt.sender, "title", "description")
 	});
 
-	await addWatcherEndpoint(recipientWallet.address, order.id);
+	await addWatcherEndpoint(recipientWallet.address, order.id, senderWallet.blockchainVersion);
 	return order;
 }
 
@@ -262,7 +262,7 @@ async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOr
 		meta: pick(jwt.sender, "title", "description")
 	});
 
-	await addWatcherEndpoint(app.walletAddresses.recipient, order.id);
+	await addWatcherEndpoint(app.walletAddresses.recipient, order.id, app.config.blockchain_version);
 
 	return order;
 }
@@ -286,7 +286,7 @@ export async function createExternalOrder(jwt: string, user: User): Promise<Open
 
 		await order.save();
 
-		metrics.createOrder("external", order.flowType(), "native", user.appId);
+		metrics.createOrder("external", order.flowType(), user.appId);
 
 		logger().info("created new open external order", {
 			offerId: payload.offer.id,

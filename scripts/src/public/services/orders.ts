@@ -17,6 +17,7 @@ import {
 import {
 	ApiError,
 	NoSuchApp,
+
 	NoSuchUser,
 	CompletedOrderCantTransitionToFailed,
 	ExternalOrderAlreadyCompleted,
@@ -38,6 +39,8 @@ import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
+
+import { getAppBlockchainVersion } from "./applications";
 
 import { assertRateLimitEarn } from "../../utils/rate_limit";
 import { submitFormAndMutateMarketplaceOrder } from "./offer_contents";
@@ -126,13 +129,16 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 	orderMeta.title = orderTranslations.orderTitle || orderMeta.title;
 	orderMeta.description = orderTranslations.orderDescription || orderMeta.description;
 
+	const recipientAddress = appOffer.offer.type === "spend" ? appOffer.walletAddress : wallet.address;
+	const senderAddress = appOffer.offer.type === "spend" ? wallet.address : appOffer.walletAddress;
+
 	const order = db.MarketplaceOrder.new({
 		status: "opened",
 		offerId: appOffer.offer.id,
 		amount: appOffer.offer.amount,
 		blockchainData: {
-			sender_address: appOffer.offer.type === "spend" ? wallet.address : appOffer.walletAddress,
-			recipient_address: appOffer.offer.type === "spend" ? appOffer.walletAddress : wallet.address
+			sender_address: senderAddress,
+			recipient_address: recipientAddress,
 		}
 	}, {
 		user,
@@ -142,9 +148,10 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 		// replaceTemplateVars(offer, offer.meta.order_meta.content!)
 		meta: orderMeta
 	});
+
 	await order.save();
 
-	metrics.createOrder("marketplace", appOffer.offer.type, appOffer.offer.id, user.appId);
+	metrics.createOrder("marketplace", appOffer.offer.type, user.appId);
 
 	return order;
 }
@@ -152,7 +159,13 @@ async function createOrder(appOffer: AppOffer, user: User, userDeviceId: string,
 export async function createMarketplaceOrder(offerId: string, user: User, userDeviceId: string, orderTranslations?: OrderTranslations): Promise<OpenOrder> {
 	logger().info("creating marketplace order for", { offerId, userId: user.id });
 
-	const appOffer = await AppOffer.findOne({ offerId, appId: user.appId });
+	const offer = await offerDb.Offer.get(offerId); // cached
+	if (!offer) {
+		throw NoSuchOffer(offerId);
+	}
+
+	const appOffers = await AppOffer.getAppOffers(user.appId, offer.type); // cached
+	const appOffer = appOffers.find(app_offer => app_offer.offerId === offerId);
 	if (!appOffer) {
 		throw NoSuchOffer(offerId);
 	}
@@ -208,7 +221,7 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 		meta: pick(jwt.sender, "title", "description")
 	});
 
-	await addWatcherEndpoint(recipientWallet.address, order.id);
+	await addWatcherEndpoint(recipientWallet.address, order.id, senderWallet.blockchainVersion);
 	return order;
 }
 
@@ -268,7 +281,7 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 		meta: pick(jwt.sender, "title", "description")
 	});
 
-	await addWatcherEndpoint(app.walletAddresses.recipient, order.id);
+	await addWatcherEndpoint(app.walletAddresses.recipient, order.id, app.config.blockchain_version);
 
 	return order;
 }
@@ -292,7 +305,7 @@ export async function createExternalOrder(jwt: string, user: User, userDeviceId:
 
 		await order.save();
 
-		metrics.createOrder("external", order.flowType(), "native", user.appId);
+		metrics.createOrder("external", order.flowType(),  user.appId);
 
 		logger().info("created new open external order", {
 			offerId: payload.offer.id,
@@ -310,7 +323,8 @@ export async function submitOrder(
 	orderId: string,
 	user: User,
 	userDeviceId: string,
-	form: string | undefined): Promise<Order> {
+	form: string | undefined,
+	transaction?: string | undefined): Promise<Order> {
 	const order = await db.Order.getOne({ orderId });
 
 	if (!order || order.contextForUser(user.id) === null) {
@@ -338,8 +352,11 @@ export async function submitOrder(
 	logger().info("order changed to pending", { orderId });
 
 	if (order.isEarn()) {
-		await payment.payTo(walletAddress, user.appId, order.amount, order.id);
+		await payment.payTo(order.blockchainData.recipient_address!, user.appId, order.amount, order.id);
 		createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
+	} else {
+		await payment.submitTransaction(order.blockchainData.recipient_address!, order.blockchainData.sender_address!, user.appId, order.amount, order.id, transaction!);
+		// createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 	}
 
 	metrics.submitOrder(order.origin, order.flowType(), user.appId);

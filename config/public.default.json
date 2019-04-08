@@ -31,5 +31,7 @@
 	"bi_service": "https://kin-bi.appspot.com/eco_",
 	"cache_ttl": {
 		"default": 0
-	}
+	},
+
+	"migration_service": "https://migration-service.kinecosystemtest.com"
 }

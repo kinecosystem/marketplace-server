@@ -12,8 +12,8 @@ services:
       - 3000:3000
     links:
       - redis
-      - payment-service
       - postgres
+      - payment-web
       - bi-service
     environment:
       &app_env_vars
@@ -22,7 +22,8 @@ services:
       APP_HOST: '0.0.0.0'
       APP_NAME: 'marketplace-public'
       APP_REDIS: redis://redis:6379/0
-      APP_PAYMENT_SERVICE: http://payment-service:3000
+      APP_PAYMENT_SERVICE: http://payment-web:3000
+      APP_PAYMENT_SERVICE_V3: http://payment-web-v3:3000
       APP_INTERNAL_SERVICE: http://marketplace-internal:3000
       APP_BI_SERVICE: http://bi-service
       APP_DB_TYPE: postgres
@@ -33,6 +34,7 @@ services:
       APP_DB_DATABASE: ecosystem
       NODEMON_WATCH_DIRS: ${NODEMON_WATCH_DIRS}
       CACHE_TTL: '{ "default": 0 }'
+      MIGRATION_SERVICE: http://migration-service:8000
 
   marketplace-admin:
     image: kinecosystem/marketplace-server:latest
@@ -44,7 +46,7 @@ services:
       - 3002:3000
     links:
       - redis
-      - payment-service
+      - payment-web
       - postgres
       - marketplace-public # so I can wait for it
     environment:
@@ -61,7 +63,7 @@ services:
       - 3001:3000
     links:
       - redis
-      - payment-service
+      - payment-web
       - postgres
       - marketplace-public # so I can wait for it
     environment:

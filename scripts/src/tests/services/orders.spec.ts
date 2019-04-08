@@ -27,6 +27,7 @@ import {
 
 import * as helpers from "../helpers";
 import mock = require("supertest");
+import { createApp } from "../helpers";
 
 async function completeOrder(user: User, deviceId: string) {
 	const offers = await getOffers(user.id, user.appId, {});
@@ -335,6 +336,7 @@ describe("test v2 orders", async () => {
 
 	test("payment confirmation jwt for non test apps is es256", async () => {
 		async function getPaymentConfirmationJWTFor(appId: string) {
+			await createApp(appId);
 			const user = await helpers.createUser({ appId });
 			const wallet = (await user.getWallets()).first!;
 			const order = ExternalOrder.new({

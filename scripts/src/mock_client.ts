@@ -28,12 +28,23 @@ import {
 	QuizPage,
 } from "./public/services/offer_contents";
 import { AnswersBackwardSupport } from "./public/services/offer_contents";
-import * as StellarSdk from "stellar-sdk";
+import { Keypair } from "@kinecosystem/kin.js";
 
-const JWT_SERVICE_BASE = process.env.JWT_SERVICE_BASE;
+const SMPL_APP_CONFIG = {
+	jwtAddress: process.env.JWT_SERVICE_BASE!,
+	keypair: Keypair.fromSecret("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR")
+};
+const SMP3_APP_CONFIG = {
+	jwtAddress: process.env.JWT_SERVICE_BASE_V3!,
+	keypair: Keypair.fromSecret("SBYRN4DBABHCM3CC7W6TR4K42NMHMEHELQNSIZHXTKEFTEADXBFJF2MS")
+};
 
 // TODO: should this be moved to the client?
 class SampleAppClient {
+	private readonly base: string;
+	constructor(base: string) {
+		this.base = base;
+	}
 	public async getV1RegisterJWT(userId: string, iat?: number, exp?: number): Promise<string> {
 		const params: any = { user_id: userId };
 		if (iat) {
@@ -43,7 +54,7 @@ class SampleAppClient {
 			params.exp = exp;
 		}
 
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/register/token", { params });
+		const res = await axios.get<JWTPayload>(this.base + "/register/token", { params });
 		return res.data.jwt;
 	}
 
@@ -56,19 +67,19 @@ class SampleAppClient {
 			params.exp = exp;
 		}
 
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/register/token", { params });
+		const res = await axios.get<JWTPayload>(this.base + "/register/token", { params });
 		return res.data.jwt;
 	}
 
 	public async getV1SpendJWT(offerId: string, nonce?: string): Promise<string> {
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/spend/token", {
+		const res = await axios.get<JWTPayload>(this.base + "/spend/token", {
 			params: { offer_id: offerId, nonce }
 		});
 		return res.data.jwt;
 	}
 
 	public async getSpendJWT(userId: string, deviceId: string, offerId: string, nonce?: string): Promise<string> {
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/spend/token", {
+		const res = await axios.get<JWTPayload>(this.base + "/spend/token", {
 			params: {
 				nonce,
 				user_id: userId,
@@ -80,14 +91,14 @@ class SampleAppClient {
 	}
 
 	public async getV1EarnJWT(userId: string, offerId: string, nonce?: string): Promise<string> {
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/earn/token", {
+		const res = await axios.get<JWTPayload>(this.base + "/earn/token", {
 			params: { user_id: userId, offer_id: offerId, nonce }
 		});
 		return res.data.jwt;
 	}
 
 	public async getEarnJWT(userId: string, deviceId: string, offerId: string, nonce?: string): Promise<string> {
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/earn/token", {
+		const res = await axios.get<JWTPayload>(this.base + "/earn/token", {
 			params: {
 				nonce,
 				user_id: userId,
@@ -108,7 +119,7 @@ class SampleAppClient {
 		recipient_description: string;
 		nonce?: string;
 	}) {
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/p2p/token", {
+		const res = await axios.get<JWTPayload>(this.base + "/p2p/token", {
 			params: data
 		});
 		return res.data.jwt;
@@ -126,26 +137,26 @@ class SampleAppClient {
 		recipient_description: string;
 		nonce?: string;
 	}) {
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/p2p/token", {
+		const res = await axios.get<JWTPayload>(this.base + "/p2p/token", {
 			params: data
 		});
 		return res.data.jwt;
 	}
 
 	public async getArbitraryJWT(subject: string, payload: { [key: string]: any }): Promise<string> {
-		const res = await axios.get<JWTPayload>(JWT_SERVICE_BASE + "/sign", {
+		const res = await axios.get<JWTPayload>(this.base + "/sign", {
 			params: { subject, payload }
 		});
 		return res.data.jwt;
 	}
 
 	public async getOffers(): Promise<ExternalOfferPayload[]> {
-		const res = await axios.get<{ offers: ExternalOfferPayload[] }>(JWT_SERVICE_BASE + "/offers");
+		const res = await axios.get<{ offers: ExternalOfferPayload[] }>(this.base + "/offers");
 		return res.data.offers;
 	}
 
 	public async isValidSignature(jwt: string): Promise<boolean> {
-		const res = await axios.get<{ is_valid: boolean }>(JWT_SERVICE_BASE + `/validate?jwt=${ jwt }`);
+		const res = await axios.get<{ is_valid: boolean }>(this.base + `/validate?jwt=${ jwt }`);
 		return res.data.is_valid;
 	}
 }
@@ -188,10 +199,10 @@ async function didNotApproveTOS() {
 
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
 
 	const offers = await client.getOffers();
 	await client.createOrder(offers.offers[0].id); // should not throw - we removed need of activate
@@ -202,9 +213,9 @@ async function v1DidNotApproveTOS() {
 	console.log("===================================== didNotApproveTOS V1 =====================================");
 
 	const userId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getV1RegisterJWT(userId);
-	const client = await V1MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const client = await V1MarketplaceClient.create({ jwt }, SMPL_APP_CONFIG.keypair.publicKey());
 
 	const offers = await client.getOffers();
 	await client.createOrder(offers.offers[0].id); // should not throw - we removed need of activate
@@ -214,11 +225,11 @@ async function v1DidNotApproveTOS() {
 async function getOfferTranslations() {
 	console.log("=====================================getOfferTranslations=====================================");
 	const userId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getV1RegisterJWT(userId);
 
 	const client = await V1MarketplaceClient.create({ jwt },
-		"GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ",
+		SMPL_APP_CONFIG.keypair.publicKey(),
 		{ headers: { "accept-language": "pt-BR" } });
 
 	const offers = await client.getOffers();
@@ -265,10 +276,10 @@ async function spendFlow() {
 
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.secret());
 
 	await client.activate();
 	const selectedOffer = await getOffer(client, "spend");
@@ -281,10 +292,47 @@ async function spendFlow() {
 	console.log(`got open order`, openOrder);
 
 	// pay for the offer
-	await client.submitOrder(openOrder.id); // XXX allow the flow where this line is missing
+	await client.submitOrder(openOrder.id);
+
 	const res = await client.pay(selectedOffer.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
 
 	console.log("pay result hash: " + res.hash);
+
+	// poll on order payment
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	console.log(`completion date: ${ order.completion_date }`);
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+
+	JSON.parse(order.content!);
+
+	console.log("OK.\n");
+}
+
+async function kin3SpendFlow() {
+	console.log("===================================== kin3SpendFlow =====================================");
+
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient(SMP3_APP_CONFIG.jwtAddress);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet(SMP3_APP_CONFIG.keypair.secret());
+
+	await client.activate();
+	const selectedOffer = await getOffer(client, "spend");
+	const couponInfo: CouponInfo = JSON.parse(selectedOffer.content);
+
+	expect(couponInfo.amount).toEqual(selectedOffer.amount);
+
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
+	const openOrder = await client.createOrder(selectedOffer.id);
+	console.log(`got open order`, openOrder);
+
+	// pay for the offer
+	const transaction = await client.getTransactionXdr(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
+	console.log("transaction XDR: " + transaction);
+	await client.submitOrder(openOrder.id, { transaction });
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
@@ -301,9 +349,9 @@ async function v1SpendFlow() {
 	console.log("===================================== spendFlow V1 =====================================");
 
 	const userId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getV1RegisterJWT(userId);
-	const client = await V1MarketplaceClient.create({ jwt }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	const client = await V1MarketplaceClient.create({ jwt }, SMPL_APP_CONFIG.keypair.secret());
 
 	await client.activate();
 	const selectedOffer = await getOffer(client, "spend");
@@ -357,10 +405,10 @@ async function earnPollFlow() {
 
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
 
 	await client.activate();
 
@@ -377,7 +425,63 @@ async function earnPollFlow() {
 	const content = JSON.stringify(choosePollAnswers(poll));
 	console.log("answers " + content);
 
-	const submittedOrder = await client.submitOrder(openOrder.id, content);
+	const submittedOrder = await client.submitOrder(openOrder.id, { content });
+	expect(typeof submittedOrder.amount).toBe("number");
+
+	// poll on order payment
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
+	console.log(`completion date: ${ order.completion_date }`);
+
+	// check order on blockchain
+	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+	console.log(`payment on blockchain:`, payment);
+
+	if (!isValidPayment(order, client.appId, payment)) {
+		throw new Error("payment is not valid - different than order");
+	}
+
+	console.log("OK.\n");
+}
+async function kin3EarnPollFlow() {
+	function choosePollAnswers(poll: Poll): Answers {
+		const answers: Answers = {};
+		for (const page of poll.pages.slice(0, poll.pages.length - 1)) {
+			const p = (page as PollPage);
+			const choice = randomInteger(0, p.question.answers.length);
+			answers[p.question.id] = choice;
+		}
+		return answers;
+	}
+
+	console.log("===================================== kin3EarnPollFlow =====================================");
+
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient(SMP3_APP_CONFIG.jwtAddress);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet(SMP3_APP_CONFIG.keypair.publicKey());
+
+	await client.activate();
+
+	const selectedOffer = await getOffer(client, "earn", "poll");
+
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
+	const openOrder = await client.createOrder(selectedOffer.id);
+	console.log(`got open order`, openOrder);
+
+	// fill in the poll
+	console.log("poll " + selectedOffer.content);
+	const poll: Poll = JSON.parse(selectedOffer.content);
+
+	const content = JSON.stringify(choosePollAnswers(poll));
+	console.log("answers " + content);
+
+	const submittedOrder = await client.submitOrder(openOrder.id, { content });
 	expect(typeof submittedOrder.amount).toBe("number");
 
 	// poll on order payment
@@ -413,9 +517,9 @@ async function v1EarnPollFlow() {
 	}
 
 	const userId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getV1RegisterJWT(userId);
-	const client = await V1MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const client = await V1MarketplaceClient.create({ jwt }, SMPL_APP_CONFIG.keypair.publicKey());
 
 	await client.activate();
 
@@ -473,10 +577,10 @@ async function earnQuizFlowBackwardSupport() {
 
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
 
 	await client.activate();
 
@@ -495,7 +599,7 @@ async function earnQuizFlowBackwardSupport() {
 	const content = JSON.stringify(answers);
 	console.log("answers " + content, " expected sum " + expectedSum);
 
-	await client.submitOrder(openOrder.id, content);
+	await client.submitOrder(openOrder.id, { content });
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
@@ -536,10 +640,10 @@ async function earnQuizFlow() {
 
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
 
 	await client.activate();
 
@@ -558,7 +662,69 @@ async function earnQuizFlow() {
 	const content = JSON.stringify(answers);
 	console.log("answers " + content, " expected sum " + expectedSum);
 
-	await client.submitOrder(openOrder.id, content);
+	await client.submitOrder(openOrder.id, { content });
+
+	// poll on order payment
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+	console.log(`completion date: ${ order.completion_date }`);
+	expect(order.amount).toEqual(expectedSum);
+
+	// check order on blockchain
+	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+	console.log(`payment on blockchain:`, payment);
+
+	if (!isValidPayment(order, client.appId, payment)) {
+		throw new Error("payment is not valid - different than order");
+	}
+
+	console.log("OK.\n");
+}
+async function kin3EarnQuizFlow() {
+	// return answers and expected amount
+	function chooseAnswers(quiz: Quiz): [Answers, number] {
+		const answers: Answers = {};
+		let sum = 0;
+		for (const page of quiz.pages.slice(0, quiz.pages.length - 1)) {
+			const p = (page as QuizPage);
+			const choice = randomInteger(0, p.question.answers.length + 1);  // 0 marks unanswered
+			if (choice === p.rightAnswer) {
+				sum += p.amount;
+			}
+			answers[p.question.id] = choice;
+		}
+		return [answers, sum || 1]; // server will give 1 kin for failed quizes
+	}
+
+	console.log("===================================== kin3EarnQuizFlow =====================================");
+
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient(SMP3_APP_CONFIG.jwtAddress);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet(SMP3_APP_CONFIG.keypair.publicKey());
+
+	await client.activate();
+
+	const selectedOffer = await getOffer(client, "earn", "quiz");
+
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
+	const openOrder = await client.createOrder(selectedOffer.id);
+	console.log(`got open order`, openOrder);
+
+	// answer the quiz
+	console.log("quiz " + selectedOffer.content);
+	const quiz: Quiz = JSON.parse(selectedOffer.content);
+
+	// TODO write a function to choose the right/ wrong answers
+	const [answers, expectedSum] = chooseAnswers(quiz);
+	const content = JSON.stringify(answers);
+	console.log("answers " + content, " expected sum " + expectedSum);
+
+	await client.submitOrder(openOrder.id, { content });
 
 	// poll on order payment
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
@@ -598,9 +764,9 @@ async function v1EarnQuizFlow() {
 	console.log("===================================== earnQuizFlow V1 =====================================");
 
 	const userId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getV1RegisterJWT(userId);
-	const client = await V1MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const client = await V1MarketplaceClient.create({ jwt }, SMPL_APP_CONFIG.keypair.publicKey());
 
 	await client.activate();
 
@@ -644,10 +810,10 @@ async function earnTutorial() {
 	console.log("===================================== earnTutorial =====================================");
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
 
 	await client.activate();
 
@@ -659,7 +825,37 @@ async function earnTutorial() {
 
 	const content = JSON.stringify({});
 
-	await client.submitOrder(openOrder.id, content);
+	await client.submitOrder(openOrder.id, { content });
+	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
+	console.log(`completion date: ${ order.completion_date }`);
+	console.log(`got order after submit`, order);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+
+	// shouldn't have another tutorial
+	await expectToThrow(() => getOffer(client, "earn", "tutorial"), "should only solve 1 tutorial");
+	console.log("OK.\n");
+}
+async function kin3EarnTutorial() {
+	console.log("===================================== kin3EarnTutorial =====================================");
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient(SMP3_APP_CONFIG.jwtAddress);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet(SMP3_APP_CONFIG.keypair.publicKey());
+
+	await client.activate();
+
+	const selectedOffer = await getOffer(client, "earn", "tutorial");
+
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content.slice(0, 100) }`);
+	const openOrder = await client.createOrder(selectedOffer.id);
+	console.log(`got order ${ openOrder.id }`);
+
+	const content = JSON.stringify({});
+
+	await client.submitOrder(openOrder.id, { content });
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
 	console.log(`completion date: ${ order.completion_date }`);
@@ -674,9 +870,9 @@ async function earnTutorial() {
 async function v1EarnTutorial() {
 	console.log("===================================== earnTutorial V1 =====================================");
 	const userId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getV1RegisterJWT(userId);
-	const client = await V1MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const client = await V1MarketplaceClient.create({ jwt }, SMPL_APP_CONFIG.keypair.publicKey());
 
 	await client.activate();
 
@@ -702,10 +898,10 @@ async function testRegisterNewUser() {
 	console.log("===================================== testRegisterNewUser =====================================");
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.secret());
 
 	console.log("OK.\n");
 }
@@ -713,7 +909,7 @@ async function testRegisterNewUser() {
 async function v1TestRegisterNewUser() {
 	console.log("===================================== testRegisterNewUser V1 =====================================");
 	const userId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getV1RegisterJWT(userId);
 	await V1MarketplaceClient.create({ jwt });
 
@@ -725,11 +921,11 @@ async function registerJWT() {
 
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.secret());
 
 	console.log("OK.\n");
 }
@@ -738,7 +934,7 @@ async function v1RegisterJWT() {
 	console.log("===================================== registerJWT V1 =====================================");
 
 	const userId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 
 	const jwt = await appClient.getV1RegisterJWT(userId);
 	await V1MarketplaceClient.create({ jwt });
@@ -750,11 +946,11 @@ async function extraTrustlineIsOK() {
 	console.log("===================================== extraTrustlineIsOK =====================================");
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.secret());
 
 	await client.trustKin(); // should not throw
 	console.log("OK.\n");
@@ -763,7 +959,7 @@ async function extraTrustlineIsOK() {
 async function v1ExtraTrustlineIsOK() {
 	console.log("===================================== extraTrustlineIsOK V1 =====================================");
 	const userId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 
 	const jwt = await appClient.getV1RegisterJWT(userId);
 	const client = await V1MarketplaceClient.create({ jwt });
@@ -777,7 +973,7 @@ async function outdatedJWT() {
 
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 
 	let jwt = await appClient.getRegisterJWT(userId, deviceId, moment().add(1, "days").unix());
 	await expectToThrow(() => MarketplaceClient.create({ jwt }),
@@ -795,7 +991,7 @@ async function v1OutdatedJWT() {
 	console.log("===================================== outdatedJWT V1 =====================================");
 
 	const userId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 
 	let jwt = await appClient.getV1RegisterJWT(userId, moment().add(1, "days").unix());
 	try {
@@ -818,12 +1014,12 @@ async function updateWallet() {
 	console.log("===================================== updateWallet =====================================");
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	console.log("one");
-	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.secret());
 	console.log("two");
 	await client.updateWallet();
 	console.log("OK.\n");
@@ -832,7 +1028,7 @@ async function updateWallet() {
 async function v1UpdateWallet() {
 	console.log("===================================== updateWallet V1 =====================================");
 	const userId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 
 	const jwt = await appClient.getV1RegisterJWT(userId);
 	const client = await V1MarketplaceClient.create({ jwt });
@@ -849,11 +1045,11 @@ async function nativeSpendFlow() {
 	// this address is prefunded with test kin
 	const userId = "test:rich_user:" + generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.secret());
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
@@ -905,10 +1101,10 @@ async function v1NativeSpendFlow() {
 
 	// this address is prefunded with test kin
 	const userId = "test:rich_user:" + generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getV1RegisterJWT(userId);
 
-	const client = await V1MarketplaceClient.create({ jwt }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	const client = await V1MarketplaceClient.create({ jwt }, SMPL_APP_CONFIG.keypair.secret());
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
@@ -960,11 +1156,11 @@ async function tryToNativeSpendTwice() {
 
 	const userId = "rich_user:" + generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.secret());
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
@@ -996,10 +1192,10 @@ async function v1TryToNativeSpendTwice() {
 	console.log("===================================== tryToNativeSpendTwice V1 =====================================");
 
 	const userId = "rich_user:" + generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getV1RegisterJWT(userId);
 
-	const client = await V1MarketplaceClient.create({ jwt }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	const client = await V1MarketplaceClient.create({ jwt }, SMPL_APP_CONFIG.keypair.secret());
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
@@ -1042,11 +1238,11 @@ async function tryToNativeSpendTwiceWithNonce() {
 
 	const userId = "rich_user:" + generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.secret());
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
@@ -1094,10 +1290,10 @@ async function v1TryToNativeSpendTwiceWithNonce() {
 	console.log("===================================== tryToNativeSpendTwiceWithNonce V1 =====================================");
 
 	const userId = "rich_user:" + generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getV1RegisterJWT(userId);
 
-	const client = await V1MarketplaceClient.create({ jwt }, "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	const client = await V1MarketplaceClient.create({ jwt }, SMPL_APP_CONFIG.keypair.secret());
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
@@ -1147,11 +1343,11 @@ async function nativeEarnFlow() {
 	// this address is prefunded with test kin
 	const userId = "test:" + generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers()).filter((item: any) => item.type === "earn")[0] as ExternalOfferPayload;
@@ -1197,10 +1393,10 @@ async function v1NativeEarnFlow() {
 
 	// this address is prefunded with test kin
 	const userId = "test:" + generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getV1RegisterJWT(userId);
 
-	const client = await V1MarketplaceClient.create({ jwt }, "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	const client = await V1MarketplaceClient.create({ jwt }, SMPL_APP_CONFIG.keypair.publicKey());
 	await client.activate();
 
 	const selectedOffer = (await appClient.getOffers()).filter((item: any) => item.type === "earn")[0] as ExternalOfferPayload;
@@ -1248,13 +1444,13 @@ async function p2p() {
 		id: "offer-id",
 		amount: 2,
 	};
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const senderId = "test:rich_user:" + generateId();
 	const senderDeviceId = generateId();
 	let jwt = await appClient.getRegisterJWT(senderId, senderDeviceId);
 
-	const senderPrivateKey = "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR";
-	const senderWalletAddress = "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ";
+	const senderPrivateKey = SMPL_APP_CONFIG.keypair.secret();
+	const senderWalletAddress = SMPL_APP_CONFIG.keypair.publicKey();
 	const senderClient = await MarketplaceClient.create({ jwt });
 	await senderClient.updateWallet(senderPrivateKey);
 	await senderClient.activate();
@@ -1348,12 +1544,12 @@ async function v1P2p() {
 		id: "offer-id",
 		amount: 2,
 	};
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const senderId = "test:rich_user:" + generateId();
 	let jwt = await appClient.getV1RegisterJWT(senderId);
 
-	const senderPrivateKey = "SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR";
-	const senderWalletAddress = "GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ";
+	const senderPrivateKey = SMPL_APP_CONFIG.keypair.secret();
+	const senderWalletAddress = SMPL_APP_CONFIG.keypair.publicKey();
 	const senderClient = await V1MarketplaceClient.create({ jwt }, senderPrivateKey);
 	await senderClient.activate();
 
@@ -1415,11 +1611,11 @@ async function userProfile() {
 
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.secret());
 
 	let profile = await client.getUserProfile();
 
@@ -1446,7 +1642,7 @@ async function v1UserProfile() {
 	console.log("===================================== userProfile V1 =====================================");
 
 	const userId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 
 	const jwt = await appClient.getV1RegisterJWT(userId);
 	const client = await V1MarketplaceClient.create({ jwt });
@@ -1476,10 +1672,10 @@ async function twoUsersSharingWallet() {
 	console.log("===================================== twoUsersSharingWallet =====================================");
 
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const offers = await appClient.getOffers();
 	const earnOffers = offers.filter((item: any) => item.type === "earn");
-	const walletKeys = StellarSdk.Keypair.random();
+	const walletKeys = Keypair.random();
 	console.log(`public key: ${ walletKeys.publicKey() }`);
 	console.log(`private key: ${ walletKeys.secret() }`);
 
@@ -1550,7 +1746,7 @@ async function walletSharedAcrossApps() {
 	// app 1
 	{
 		const deviceId = generateId();
-		const appClient = new SampleAppClient();
+		const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	}
 
 	// app 2
@@ -1566,10 +1762,10 @@ async function checkValidTokenAfterLoginRightAfterLogout() {
 
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	let jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet("GDZTQSCJQJS4TOWDKMCU5FCDINL2AUIQAKNNLW2H2OCHTC4W2F4YKVLZ");
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
 	await client.activate();
 
 	await client.getOffers();
@@ -1597,10 +1793,13 @@ async function main() {
 	await extraTrustlineIsOK();
 	await v1ExtraTrustlineIsOK();
 	await earnPollFlow();
+	await kin3EarnPollFlow();
 	await v1EarnPollFlow();
 	await earnTutorial();
+	await kin3EarnTutorial();
 	await v1EarnTutorial();
 	await spendFlow();
+	await kin3SpendFlow();
 	await v1SpendFlow();
 	await earnQuizFlow();
 	await v1EarnQuizFlow();
@@ -1622,7 +1821,6 @@ async function main() {
 
 	// multiple users/devices/wallets flows
 	await twoUsersSharingWallet();
-
 	await checkValidTokenAfterLoginRightAfterLogout();
 	await getOffersVersionSpecificImages();
 }

@@ -146,8 +146,10 @@ export async function setWatcherEndpoint(addresses: string[]): Promise<Watcher> 
 	return res.data;
 }
 
-export async function addWatcherEndpoint(address: string, paymentId: string, blockchainVersion: BlockchainVersion) {
+export async function addWatcherEndpoint(address: string, paymentId: string, appId: string) {
 	// only in blockchain v2 we have a watcher service
+	const blockchainVersion = (await Application.get(appId))!.config.blockchain_version;
+
 	if (blockchainVersion === "3") {
 		return;
 	}

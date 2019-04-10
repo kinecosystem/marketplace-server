@@ -219,7 +219,7 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 		meta: pick(jwt.sender, "title", "description")
 	});
 
-	await addWatcherEndpoint(recipientWallet.address, order.id, senderWallet.blockchainVersion);
+	await addWatcherEndpoint(recipientWallet.address, order.id, sender.appId);
 	return order;
 }
 

@@ -32,7 +32,7 @@ import { Keypair } from "@kinecosystem/kin.js";
 
 const SMPL_APP_CONFIG = {
 	jwtAddress: process.env.JWT_SERVICE_BASE!,
-	keypair: Keypair.fromSecret("SAM7Z6F3SHWWGXDIK77GIXZXPNBI2ABWX5MUITYHAQTOEG64AUSXD6SR")
+	keypair: Keypair.fromSecret("SCS2QPEE7TE5OF3UK2LGIRDINZBNGIB35HUL3EOAACMPUQNB3SBYKQQX")
 };
 const SMP3_APP_CONFIG = {
 	jwtAddress: process.env.JWT_SERVICE_BASE_V3!,

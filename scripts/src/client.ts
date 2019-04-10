@@ -435,13 +435,11 @@ export class Client {
 	}
 
 	public async shouldMigrate(publicKey: string): Promise<AccountMigrationStatus> {
-		const shouldMigrateUrl = `${ process.env.MARKETPLACE_BASE }/v2/migration/info/${ this.appId }/${ publicKey }`;
-		return (await this.requests.request(shouldMigrateUrl).get()).data;
+		return (await this.requests.request(`/v2/migration/info/${ this.appId }/${ publicKey }`).get()).data;
 	}
 
 	public async changeAppBlockchainVersion(blockchainVersion: BlockchainVersion) {
-		const changeBlockchainVersionUrl = `${ process.env.MARKETPLACE_BASE }/v2/applications/${ this.appId }/blockchain_version`;
-		await this.requests.request(changeBlockchainVersionUrl, {
+		await this.requests.request(`/v2/applications/${ this.appId }/blockchain_version`, {
 			blockchain_version: blockchainVersion
 		}).put();
 		this.requests.blockchainVersion = blockchainVersion;

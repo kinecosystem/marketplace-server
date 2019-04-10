@@ -5,7 +5,6 @@ import * as jsonwebtoken from "jsonwebtoken";
 
 // it's important to have this at the start
 import { getConfig } from "./public/config";
-import { localCache } from "./utils/cache";
 
 getConfig();
 
@@ -547,69 +546,6 @@ async function v1EarnPollFlow() {
 	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
 	console.log(`completion date: ${ order.completion_date }`);
-
-	// check order on blockchain
-	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
-
-	console.log(`got order after submit`, order);
-	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
-	console.log(`payment on blockchain:`, payment);
-
-	if (!isValidPayment(order, client.appId, payment)) {
-		throw new Error("payment is not valid - different than order");
-	}
-
-	console.log("OK.\n");
-}
-
-async function earnQuizFlowBackwardSupport() {
-	// return answers and expected amount
-	function chooseAnswers(quiz: Quiz): [AnswersBackwardSupport, number] {
-		const answers: AnswersBackwardSupport = {};
-		let sum = 0;
-		for (const page of quiz.pages.slice(0, quiz.pages.length - 1)) {
-			const p = (page as QuizPage);
-			const choice = randomInteger(0, p.question.answers.length + 1);  // 0 marks unanswered
-			if (choice === p.rightAnswer) {
-				sum += p.amount;
-			}
-			answers[p.question.id] = choice > 0 ? p.question.answers[choice - 1] : "";
-		}
-		return [answers, sum || 1]; // server will give 1 kin for failed quizes
-	}
-
-	console.log("===================================== earn quiz =====================================");
-
-	const userId = generateId();
-	const deviceId = generateId();
-	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
-	const jwt = await appClient.getRegisterJWT(userId, deviceId);
-	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
-
-	await client.activate();
-
-	const selectedOffer = await getOffer(client, "earn", "quiz");
-
-	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
-	const openOrder = await client.createOrder(selectedOffer.id);
-	console.log(`got open order`, openOrder);
-
-	// answer the quiz
-	console.log("quiz " + selectedOffer.content);
-	const quiz: Quiz = JSON.parse(selectedOffer.content);
-
-	// TODO write a function to choose the right/ wrong answers
-	const [answers, expectedSum] = chooseAnswers(quiz);
-	const content = JSON.stringify(answers);
-	console.log("answers " + content, " expected sum " + expectedSum);
-
-	await client.submitOrder(openOrder.id, { content });
-
-	// poll on order payment
-	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
-	console.log(`completion date: ${ order.completion_date }`);
-	expect(order.amount).toEqual(expectedSum);
 
 	// check order on blockchain
 	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
@@ -1800,7 +1736,6 @@ async function checkClientMigration() {
 	await axios.put(`${ process.env.MARKETPLACE_BASE }/v2/applications/${ client.appId }/blockchain_version`, {
 		blockchain_version: "2"
 	});
-	localCache.clear();
 
 	const keypair = Keypair.random();
 	await client.updateWallet(keypair.secret());
@@ -1819,9 +1754,7 @@ async function checkClientMigration() {
 	console.log(`completion date: ${ orderV2.completion_date }`);
 	console.log(`got order after submit`, orderV2);
 
-	// change blockchain version to 3
-	const kin3BlockchainVersion: BlockchainVersion = "3";
-	await client.changeAppBlockchainVersion(kin3BlockchainVersion);
+	await client.changeAppBlockchainVersion("3");
 	await delay(10000);
 
 	// shouldMigrate API
@@ -1834,6 +1767,9 @@ async function checkClientMigration() {
 	console.log("burnStatus", burnStatus);
 	expect(burnStatus).toBe(true);
 
+	// TODO call migration-service/migrate
+
+	await client.updateWallet(keypair.secret()); // needed to reset kinjs version
 	const selectedOfferV3 = await getOffer(client, "spend");
 	console.log(`requesting order for offer: ${ selectedOfferV3.id }: ${ selectedOfferV3.content }`);
 	const openOrderV3 = await client.createOrder(selectedOfferV3.id);

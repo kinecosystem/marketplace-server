@@ -167,7 +167,7 @@ export class ClientRequests {
 type ClientConfig = { headers?: StringMap, sdkVersion?: string };
 
 export class Client {
-	public static async create(signInPayload: SignInPayload, config: { headers?: StringMap } = {}): Promise<Client> {
+	public static async create(signInPayload: SignInPayload, config: ClientConfig = {}): Promise<Client> {
 		if (!this.serverConfig) {
 			this.serverConfig = await ClientRequests.getServerConfig();
 		}

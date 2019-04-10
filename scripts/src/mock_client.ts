@@ -251,7 +251,7 @@ async function getOffersVersionSpecificImages() {
 	// if rules change this test might break even if functionality can pass.
 	const userId = generateId();
 	const deviceId = generateId();
-	const appClient = new SampleAppClient();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	const client2 = await MarketplaceClient.create({ jwt },

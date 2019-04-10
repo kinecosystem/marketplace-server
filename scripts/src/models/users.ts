@@ -13,8 +13,6 @@ import { getDefaultLogger as logger } from "../logging";
 import { generateId, IdPrefix, Mutable } from "../utils/utils";
 
 import { OrderContext } from "./orders";
-import { BlockchainVersion } from "./offers";
-import { Application } from "./applications";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
 
 @Entity({ name: "users" })
@@ -68,8 +66,6 @@ export class User extends CreationDateModel {
 			isNewWallet = false;
 			wallet.lastUsedDate = now;
 		} else {
-			const app = await Application.get(this.appId);
-			const blockchainVersion: BlockchainVersion = app!.config.blockchain_version;
 			isNewWallet = true;
 			wallet = Wallet.create({
 				deviceId,
@@ -77,7 +73,6 @@ export class User extends CreationDateModel {
 				createdDate: now,
 				lastUsedDate: now,
 				address: walletAddress,
-				blockchainVersion,
 			});
 		}
 
@@ -229,9 +224,6 @@ export class Wallet extends BaseEntity {
 
 	@Column({ name: "last_used_date" })
 	public lastUsedDate!: Date;
-
-	@Column({ name: "blockchain_version" })
-	public blockchainVersion!: BlockchainVersion;
 
 	@Column({ name: "last_earn_date", nullable: true })
 	public lastEarnDate?: Date;

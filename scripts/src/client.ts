@@ -175,7 +175,7 @@ export class ClientRequests {
 type ClientConfig = { headers?: StringMap, sdkVersion?: string };
 
 export class Client {
-	public static async create(signInPayload: SignInPayload, config: { headers?: StringMap } = {}): Promise<Client> {
+	public static async create(signInPayload: SignInPayload, config: ClientConfig = {}): Promise<Client> {
 		if (!this.serverConfig) {
 			this.serverConfig = await ClientRequests.getServerConfig();
 		}
@@ -435,12 +435,12 @@ export class Client {
 	}
 
 	public async shouldMigrate(publicKey: string): Promise<AccountMigrationStatus> {
-		const shouldMigrateUrl = `${process.env.MARKETPLACE_BASE}/v2/migration/info/${this.appId}/${publicKey}`;
+		const shouldMigrateUrl = `${ process.env.MARKETPLACE_BASE }/v2/migration/info/${ this.appId }/${ publicKey }`;
 		return (await this.requests.request(shouldMigrateUrl).get()).data;
 	}
 
 	public async changeAppBlockchainVersion(blockchainVersion: BlockchainVersion) {
-		const changeBlockchainVersionUrl = `${process.env.MARKETPLACE_BASE}/v2/applications/${this.appId}/blockchain_version`;
+		const changeBlockchainVersionUrl = `${ process.env.MARKETPLACE_BASE }/v2/applications/${ this.appId }/blockchain_version`;
 		await this.requests.request(changeBlockchainVersionUrl, {
 			blockchain_version: blockchainVersion
 		}).put();

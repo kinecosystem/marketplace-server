@@ -3,8 +3,6 @@ import * as bearerToken from "express-bearer-token";
 import * as httpContext from "express-http-context";
 
 import { logRequest, reportMetrics, requestLogger, setHttpContextFromRequest } from "../middleware";
-import { BlockchainEndpointChanged } from "../errors";
-
 
 export { notFoundHandler, generalErrorHandler, statusHandler } from "../middleware";
 

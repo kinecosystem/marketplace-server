@@ -438,6 +438,11 @@ export class Client {
 		return (await this.requests.request(`/v2/migration/info/${ this.appId }/${ publicKey }`).get()).data;
 	}
 
+	public async migrate(): Promise<boolean> {
+		const migrationResponse = await axios.post(`${process.env.MIGRATION_SERVICE}/migrate?address=${ this.wallet!.address }`);
+		return migrationResponse.data.message === "OK";
+	}
+
 	public async changeAppBlockchainVersion(blockchainVersion: BlockchainVersion) {
 		await this.requests.request(`/v2/applications/${ this.appId }/blockchain_version`, {
 			blockchain_version: blockchainVersion

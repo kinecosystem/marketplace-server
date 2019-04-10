@@ -1755,7 +1755,7 @@ async function checkClientMigration() {
 	console.log(`got order after submit`, orderV2);
 
 	await client.changeAppBlockchainVersion("3");
-	await delay(10000);
+	await delay(100);
 
 	// shouldMigrate API
 	const shouldMigrate = await client.shouldMigrate(keypair.publicKey());
@@ -1767,7 +1767,10 @@ async function checkClientMigration() {
 	console.log("burnStatus", burnStatus);
 	expect(burnStatus).toBe(true);
 
-	// TODO call migration-service/migrate
+	// migrating a wallet
+	const migrationResponse = await client.migrate();
+	console.log("migrationResponse", migrationResponse);
+	expect(migrationResponse).toBe(true);
 
 	await client.updateWallet(keypair.secret()); // needed to reset kinjs version
 	const selectedOfferV3 = await getOffer(client, "spend");
@@ -1829,7 +1832,6 @@ async function main() {
 	await tryToNativeSpendTwiceWithNonce();
 	await p2p();
 	await getOfferTranslations();
-	await earnQuizFlowBackwardSupport();
 	await twoUsersSharingWallet();
 	await checkValidTokenAfterLoginRightAfterLogout();
 	await getOffersVersionSpecificImages();

@@ -371,7 +371,7 @@ export async function initDb(scriptConfig: ScriptConfig, closeConnectionWhenDone
 if (require.main === module) {
 	scriptConfig = initArgsParser();
 	initModels(scriptConfig.create_db).then(async () => {
-		initDb(scriptConfig);
+		await initDb(scriptConfig);
 	}).catch(async (error: Error) => {
 		console.log("error: " + error.message + "\n" + error.stack);
 		try {

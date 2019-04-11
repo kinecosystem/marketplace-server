@@ -61,7 +61,7 @@ const EXCLUDED = [
 ];
 
 function constructRow(contentType: ContentType, key: string, str: string) {
-	const path = `${contentType}:${key.replace(KEY_TO_PATH_REGEX, "$1")}`;
+	const path = `${ contentType }:${ key.replace(KEY_TO_PATH_REGEX, "$1") }`;
 	if (EXCLUDED.includes(path) || EXCLUDED.includes(contentType)) {
 		return;
 	}
@@ -92,12 +92,12 @@ function handleIterableItem(key: string, item: any, rowConstructor: RowConstruct
 
 function constructRowsFromArray(keyBase: string, arr: any[], rowConstructor: RowConstructor) {
 	if (!arr) {
-		console.warn(`Empty content for KeyBase ${keyBase}`);
+		console.warn(`Empty content for KeyBase ${ keyBase }`);
 		return [];
 	}
 	let result: CsvRow[] = [];
 	arr.forEach((item: any, index: number) => {
-		const key = `${keyBase}[${index}]`;
+		const key = `${ keyBase }[${ index }]`;
 		result = result.concat(handleIterableItem(key, item, rowConstructor));
 	});
 	return result;
@@ -105,13 +105,13 @@ function constructRowsFromArray(keyBase: string, arr: any[], rowConstructor: Row
 
 function constructRowsFromObj(keyBase: string, obj: { [key: string]: any }, rowConstructor: RowConstructor) {
 	if (!obj) {
-		console.warn(`Empty content for KeyBase ${keyBase}`);
+		console.warn(`Empty content for KeyBase ${ keyBase }`);
 		return [];
 	}
 	let result: CsvRow[] = [];
 	Object.keys(obj).forEach((itemKey: any) => {
 		const item = obj[itemKey];
-		const key = `${keyBase}.${itemKey}`;
+		const key = `${ keyBase }.${ itemKey }`;
 		result = result.concat(handleIterableItem(key, item, rowConstructor));
 	});
 	return result;
@@ -127,20 +127,20 @@ async function getCsvRowData() {
 		// quote unquoted template values
 		const offerContentContent = parseContent(offerContent.content);
 		const boundConstructRow = constructRow.bind({}, offerContent.contentType);
-		let keyBase = `offer:${offerId}`;
+		let keyBase = `offer:${ offerId }`;
 		rows = rows.concat([
-			boundConstructRow(`${keyBase}:title`, offer.meta.title),
-			boundConstructRow(`${keyBase}:description`, offer.meta.description),
-			boundConstructRow(`${keyBase}:orderTitle`, offer.meta.order_meta.title),
-			boundConstructRow(`${keyBase}:orderDescription`, offer.meta.order_meta.description),
+			boundConstructRow(`${ keyBase }:title`, offer.meta.title),
+			boundConstructRow(`${ keyBase }:description`, offer.meta.description),
+			boundConstructRow(`${ keyBase }:orderTitle`, offer.meta.order_meta.title),
+			boundConstructRow(`${ keyBase }:orderDescription`, offer.meta.order_meta.description),
 		]);
-		keyBase = `offer_contents:${offerId}`;
+		keyBase = `offer_contents:${ offerId }`;
 		if (offerContentContent.pages) {
-			rows = rows.concat(constructRowsFromArray(`${keyBase}:content:pages`, offerContentContent.pages, boundConstructRow));
+			rows = rows.concat(constructRowsFromArray(`${ keyBase }:content:pages`, offerContentContent.pages, boundConstructRow));
 		} else if (offerContentContent.confirmation) {
-			rows = rows.concat(constructRowsFromObj(`${keyBase}:content:confirmation`, offerContentContent.confirmation, boundConstructRow));
+			rows = rows.concat(constructRowsFromObj(`${ keyBase }:content:confirmation`, offerContentContent.confirmation, boundConstructRow));
 		} else {
-			console.warn(`Couldn't construct row for keyBase ${keyBase}`);
+			console.warn(`Couldn't construct row for keyBase ${ keyBase }`);
 		}
 	});
 	return rows.filter(x => x);  // remove empty items
@@ -264,7 +264,10 @@ async function insertIntoDb(data: OffersTranslation, language: string) {
 			}
 		});
 	});
-	OfferTranslation.createQueryBuilder().insert().values(dbReadyData).execute();
+	console.info(`inserting ${ dbReadyData.length } translations`);
+	await OfferTranslation.createQueryBuilder().insert().values(dbReadyData)
+		.onConflict(`("offer_id", "context", "path", "language") DO NOTHING`)
+		.execute();
 }
 
 //  TODO: add validation
@@ -285,7 +288,7 @@ async function processTranslationData(csvDataRows: TranslationData) {
 		if (table === "offer") {
 			offerTranslations[column] = translation;
 		} else {
-			const evalString = `offerTranslations.content.${jsonPath}=translation`;
+			const evalString = `offerTranslations.content.${ jsonPath }=translation`;
 			try {
 				/* tslint:disable-next-line:no-eval */
 				eval(evalString);
@@ -299,21 +302,16 @@ async function processTranslationData(csvDataRows: TranslationData) {
 }
 
 //  rowOffset is a 0 base index of the row to start with
-export async function processFile(filename: string, languageCode: string, rowOffset = 1) {
-	return new Promise(async (resolve, reject) => {
-		if (!filename || !languageCode) {
-			console.error("Both filename and language code are required");
-			reject("Both filename and language code are required");
-			return;
-		}
-		const csv = readFileSync(path(filename));
-		const parsedCsv = (csvParse as CsvParse)(csv);
-		parsedCsv.splice(0, rowOffset);
-		try {
-			const data = await processTranslationData(parsedCsv);
-			insertIntoDb(data, languageCode);
-		} catch (e) {
-			reject(e);
-		}
-	});
+export async function processFile(filename: string, languageCode: string, rowOffset = 1): Promise<void> {
+	if (!filename || !languageCode) {
+		console.error("Both filename and language code are required");
+		throw new Error("Both filename and language code are required");
+	}
+	const csv = readFileSync(path(filename));
+	const parsedCsv = (csvParse as CsvParse)(csv);
+	parsedCsv.splice(0, rowOffset);
+	const data = await processTranslationData(parsedCsv);
+	console.info("inserting to DB");
+	await insertIntoDb(data, languageCode);
+	console.info("done inserting to DB");
 }

@@ -13,7 +13,7 @@ import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
 import { Order as DbOrder } from "./models/orders";
 import { Client as V1MarketplaceClient } from "./client.v1";
-import { generateId, randomInteger, retry } from "./utils/utils";
+import { generateId, randomInteger, retry, delay } from "./utils/utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { Client as MarketplaceClient, ClientError, JWTPayload } from "./client";
@@ -29,22 +29,25 @@ import {
 } from "./public/services/offer_contents";
 import { AnswersBackwardSupport } from "./public/services/offer_contents";
 import { Keypair } from "@kinecosystem/kin.js";
+import { BlockchainVersion } from "./models/offers";
 
 const SMPL_APP_CONFIG = {
 	jwtAddress: process.env.JWT_SERVICE_BASE!,
-	keypair: Keypair.fromSecret("SCS2QPEE7TE5OF3UK2LGIRDINZBNGIB35HUL3EOAACMPUQNB3SBYKQQX")
+	keypair: Keypair.fromSecret("SCS2QPEE7TE5OF3UK2LGIRDINZBNGIB35HUL3EOAACMPUQNB3SBYKQQX") // GCRSKU3WTADD4DH3FRHQXIU7T2NO7SFD6DWWPC36BM7GG5TAMLLHZMJY
 };
 const SMP3_APP_CONFIG = {
 	jwtAddress: process.env.JWT_SERVICE_BASE_V3!,
-	keypair: Keypair.fromSecret("SBYRN4DBABHCM3CC7W6TR4K42NMHMEHELQNSIZHXTKEFTEADXBFJF2MS")
+	keypair: Keypair.fromSecret("SBYRN4DBABHCM3CC7W6TR4K42NMHMEHELQNSIZHXTKEFTEADXBFJF2MS") // GDNCL2OGIGSXO5JVXN5D552AVGS3MSG4OOLRS4HEIRXJVDKCQD5N5NLO
 };
 
 // TODO: should this be moved to the client?
 class SampleAppClient {
 	private readonly base: string;
+
 	constructor(base: string) {
 		this.base = base;
 	}
+
 	public async getV1RegisterJWT(userId: string, iat?: number, exp?: number): Promise<string> {
 		const params: any = { user_id: userId };
 		if (iat) {
@@ -446,6 +449,7 @@ async function earnPollFlow() {
 
 	console.log("OK.\n");
 }
+
 async function kin3EarnPollFlow() {
 	function choosePollAnswers(poll: Poll): Answers {
 		const answers: Answers = {};
@@ -557,69 +561,6 @@ async function v1EarnPollFlow() {
 	console.log("OK.\n");
 }
 
-async function earnQuizFlowBackwardSupport() {
-	// return answers and expected amount
-	function chooseAnswers(quiz: Quiz): [AnswersBackwardSupport, number] {
-		const answers: AnswersBackwardSupport = {};
-		let sum = 0;
-		for (const page of quiz.pages.slice(0, quiz.pages.length - 1)) {
-			const p = (page as QuizPage);
-			const choice = randomInteger(0, p.question.answers.length + 1);  // 0 marks unanswered
-			if (choice === p.rightAnswer) {
-				sum += p.amount;
-			}
-			answers[p.question.id] = choice > 0 ? p.question.answers[choice - 1] : "";
-		}
-		return [answers, sum || 1]; // server will give 1 kin for failed quizes
-	}
-
-	console.log("===================================== earn quiz =====================================");
-
-	const userId = generateId();
-	const deviceId = generateId();
-	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
-	const jwt = await appClient.getRegisterJWT(userId, deviceId);
-	const client = await MarketplaceClient.create({ jwt });
-	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
-
-	await client.activate();
-
-	const selectedOffer = await getOffer(client, "earn", "quiz");
-
-	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
-	const openOrder = await client.createOrder(selectedOffer.id);
-	console.log(`got open order`, openOrder);
-
-	// answer the quiz
-	console.log("quiz " + selectedOffer.content);
-	const quiz: Quiz = JSON.parse(selectedOffer.content);
-
-	// TODO write a function to choose the right/ wrong answers
-	const [answers, expectedSum] = chooseAnswers(quiz);
-	const content = JSON.stringify(answers);
-	console.log("answers " + content, " expected sum " + expectedSum);
-
-	await client.submitOrder(openOrder.id, { content });
-
-	// poll on order payment
-	const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
-	console.log(`completion date: ${ order.completion_date }`);
-	expect(order.amount).toEqual(expectedSum);
-
-	// check order on blockchain
-	const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
-
-	console.log(`got order after submit`, order);
-	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
-	console.log(`payment on blockchain:`, payment);
-
-	if (!isValidPayment(order, client.appId, payment)) {
-		throw new Error("payment is not valid - different than order");
-	}
-
-	console.log("OK.\n");
-}
-
 async function earnQuizFlow() {
 	// return answers and expected amount
 	function chooseAnswers(quiz: Quiz): [Answers, number] {
@@ -682,6 +623,7 @@ async function earnQuizFlow() {
 
 	console.log("OK.\n");
 }
+
 async function kin3EarnQuizFlow() {
 	// return answers and expected amount
 	function chooseAnswers(quiz: Quiz): [Answers, number] {
@@ -836,6 +778,7 @@ async function earnTutorial() {
 	await expectToThrow(() => getOffer(client, "earn", "tutorial"), "should only solve 1 tutorial");
 	console.log("OK.\n");
 }
+
 async function kin3EarnTutorial() {
 	console.log("===================================== kin3EarnTutorial =====================================");
 	const userId = generateId();
@@ -1781,48 +1724,125 @@ async function checkValidTokenAfterLoginRightAfterLogout() {
 	console.log("OK.\n");
 }
 
-async function main() {
-	await registerJWT();
-	await v1RegisterJWT();
-	await outdatedJWT();
-	await v1OutdatedJWT();
-	await updateWallet();
-	await v1UpdateWallet();
-	await userProfile();
-	await v1UserProfile();
-	await extraTrustlineIsOK();
-	await v1ExtraTrustlineIsOK();
-	await earnPollFlow();
-	await kin3EarnPollFlow();
-	await v1EarnPollFlow();
-	await earnTutorial();
-	await kin3EarnTutorial();
-	await v1EarnTutorial();
-	await spendFlow();
-	await kin3SpendFlow();
-	await v1SpendFlow();
-	await earnQuizFlow();
-	await v1EarnQuizFlow();
-	await nativeEarnFlow();
-	await v1NativeEarnFlow();
-	await nativeSpendFlow();
-	await v1NativeSpendFlow();
-	await didNotApproveTOS();
-	await v1DidNotApproveTOS();
-	await testRegisterNewUser();
-	await v1TestRegisterNewUser();
-	await tryToNativeSpendTwice();
-	await v1TryToNativeSpendTwice();
-	await tryToNativeSpendTwiceWithNonce();
-	await v1TryToNativeSpendTwiceWithNonce();
-	await p2p();
-	await v1P2p();
-	await getOfferTranslations();
+async function checkClientMigration() {
+	console.log("===================================== checkClientMigration =====================================");
 
-	// multiple users/devices/wallets flows
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+
+	await axios.put(`${ process.env.MARKETPLACE_BASE }/v2/applications/${ client.appId }/blockchain_version`, {
+		blockchain_version: "2"
+	});
+
+	const keypair = Keypair.random();
+	await client.updateWallet(keypair.secret());
+
+	const selectedOfferV2 = await getOffer(client, "earn", "tutorial");
+
+	console.log(`requesting order for offer: ${ selectedOfferV2.id }: ${ selectedOfferV2.content.slice(0, 100) }`);
+	const openOrderV2 = await client.createOrder(selectedOfferV2.id);
+	console.log(`got order ${ openOrderV2.id }`);
+
+	const content = JSON.stringify({});
+
+	await client.submitOrder(openOrderV2.id, { content });
+	const orderV2 = await retry(() => client.getOrder(openOrderV2.id), order => order.status === "completed", "order did not turn completed");
+
+	console.log(`completion date: ${ orderV2.completion_date }`);
+	console.log(`got order after submit`, orderV2);
+
+	await client.changeAppBlockchainVersion("3");
+	await delay(100);
+
+	// shouldMigrate API
+	const shouldMigrate = await client.shouldMigrate(keypair.publicKey());
+	console.log("shouldMigrate", shouldMigrate);
+	expect(shouldMigrate.should_migrate).toBe(true);
+
+	// burning wallet
+	const burnStatus = await client.burnWallet();
+	console.log("burnStatus", burnStatus);
+	expect(burnStatus).toBe(true);
+
+	// migrating a wallet
+	const migrationResponse = await client.migrate();
+	console.log("migrationResponse", migrationResponse);
+	expect(migrationResponse).toBe(true);
+
+	await client.updateWallet(keypair.secret()); // needed to reset kinjs version
+	const selectedOfferV3 = await getOffer(client, "spend");
+	console.log(`requesting order for offer: ${ selectedOfferV3.id }: ${ selectedOfferV3.content }`);
+	const openOrderV3 = await client.createOrder(selectedOfferV3.id);
+	console.log(`got open order`, openOrderV3);
+
+	// pay for the offer
+	const transaction = await client.getTransactionXdr(openOrderV3.blockchain_data.recipient_address!, selectedOfferV3.amount, openOrderV3.id);
+	console.log("transaction XDR: " + transaction);
+	await client.submitOrder(openOrderV3.id, { transaction });
+
+	// poll on order payment
+	const orderV3 = await retry(() => client.getOrder(openOrderV3.id), order => order.status === "completed", "order did not turn completed");
+	console.log(`completion date: ${ orderV3.completion_date }`);
+	console.log(`got order after submit`, orderV3);
+	console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+
+	JSON.parse(orderV3.content!);
+
+	// set app_id blockchain_version back to 2
+	await client.changeAppBlockchainVersion("2");
+}
+
+async function main() {
+	// v1
+	await v1RegisterJWT();
+	await v1OutdatedJWT();
+	await v1UpdateWallet();
+	await v1UserProfile();
+	await v1ExtraTrustlineIsOK();
+	await v1EarnPollFlow();
+	await v1EarnTutorial();
+	await v1SpendFlow();
+	await v1EarnQuizFlow();
+	await v1NativeEarnFlow();
+	await v1NativeSpendFlow();
+	await v1DidNotApproveTOS();
+	await v1TestRegisterNewUser();
+	await v1TryToNativeSpendTwice();
+	await v1TryToNativeSpendTwiceWithNonce();
+	await v1P2p();
+
+	// v2
+	await registerJWT();
+	await outdatedJWT();
+	await updateWallet();
+	await userProfile();
+	await extraTrustlineIsOK();
+	await earnPollFlow();
+	await earnTutorial();
+	await spendFlow();
+	await earnQuizFlow();
+	await nativeEarnFlow();
+	await nativeSpendFlow();
+	await didNotApproveTOS();
+	await testRegisterNewUser();
+	await tryToNativeSpendTwice();
+	await tryToNativeSpendTwiceWithNonce();
+	await p2p();
+	await getOfferTranslations();
 	await twoUsersSharingWallet();
 	await checkValidTokenAfterLoginRightAfterLogout();
 	await getOffersVersionSpecificImages();
+
+	// kin3 migration
+	await kin3EarnPollFlow();
+	await kin3EarnTutorial();
+	await kin3SpendFlow();
+	await kin3EarnQuizFlow();
+	await checkClientMigration();
+	await walletSharedAcrossApps();
 }
 
 main()

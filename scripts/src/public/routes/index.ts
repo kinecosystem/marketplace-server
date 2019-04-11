@@ -5,7 +5,8 @@ import { statusHandler } from "../middleware";
 import { getOffers } from "./offers";
 import {
 	getConfigHandler,
-	getAppBlockchainVersion
+	getAppBlockchainVersion,
+	setAppBlockchainVersion,
 } from "./config";
 import {
 	userInfo,
@@ -63,6 +64,9 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.get(prefix("config/"), getConfigHandler);
 
 	app.get(prefix("applications/:app_id/blockchain_version"), getAppBlockchainVersion);
+	if (process.env.environment_name !== "production") {
+		app.put(prefix("applications/:app_id/blockchain_version"), setAppBlockchainVersion);
+	}
 	app.get(prefix("migration/info/:app_id/:public_address"), accountStatus);
 
 	app.get("/status", statusHandler);

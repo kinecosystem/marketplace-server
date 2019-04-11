@@ -279,7 +279,7 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 		meta: pick(jwt.sender, "title", "description")
 	});
 
-	await addWatcherEndpoint(app.walletAddresses.recipient, order.id, app.config.blockchain_version);
+	await addWatcherEndpoint(app.walletAddresses.recipient, order.id, app.id);
 
 	return order;
 }

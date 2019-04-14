@@ -2,7 +2,7 @@ import { Brackets } from "typeorm";
 
 import * as metrics from "../../metrics";
 import { Order } from "../../models/orders";
-import { dateParser, isNothing, normalizeError, readUTCDate } from "../../utils/utils";
+import { isNothing, normalizeError, readUTCDate } from "../../utils/utils";
 import { Application } from "../../models/applications";
 import { getDefaultLogger as logger } from "../../logging";
 import { User, AuthToken as DbAuthToken, WalletApplication } from "../../models/users";

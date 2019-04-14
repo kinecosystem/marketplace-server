@@ -3,7 +3,7 @@ import * as metrics from "../metrics";
 import * as db from "../models/orders";
 import { User, Wallet } from "../models/users";
 import { pick, removeDuplicates } from "../utils/utils";
-import { Asset, Offer, OrderValue } from "../models/offers";
+import { Asset, OrderValue } from "../models/offers";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
 import { create as createSpendOrderPaymentConfirmed } from "../analytics/events/spend_order_payment_confirmed";
 import { create as createStellarAccountCreationFailed } from "../analytics/events/stellar_account_creation_failed";
@@ -18,7 +18,8 @@ import { Application, AppOffer } from "../models/applications";
 
 const BLOCKCHAIN = "kin-prod";
 const RS512_APPS = ["test", "smpl"];
-const ACCOUNT_EXISTS_REASON = "account exists";
+// the reason given when payment-service tries to create an already existing account
+const ACCOUNT_EXISTS_BLOCKCHAIN_ERROR = "account exists";
 
 export type WalletCreationSuccessData = {
 	id: string; // user id
@@ -39,7 +40,7 @@ export type WalletCreationFailureData = {
 
 export async function walletCreationFailure(data: WalletCreationFailureData) {
 	createStellarAccountCreationFailed(data.id, data.reason).report();
-	if (data.reason === ACCOUNT_EXISTS_REASON) {
+	if (data.reason === ACCOUNT_EXISTS_BLOCKCHAIN_ERROR) {
 		logger().warn("wallet already created", data);
 		await Wallet.setAccountCreated(data.wallet_address);
 	} else {

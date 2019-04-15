@@ -83,7 +83,6 @@ const IMAGE_VERSION_RULES: VersionRule[] = [
 ];
 
 function getVersionImageData(version: string): VersionRuleData {
-	console.log("version:", version);
 	const selectedRule = IMAGE_VERSION_RULES.find(rule => semver.satisfies(version, rule.comparator)) || { data: {} };
 	return selectedRule.data;
 }

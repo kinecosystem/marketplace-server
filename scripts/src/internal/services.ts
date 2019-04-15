@@ -1,9 +1,9 @@
 import { getDefaultLogger as logger } from "../logging";
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
-import { User } from "../models/users";
+import { User, Wallet } from "../models/users";
 import { pick, removeDuplicates } from "../utils/utils";
-import { Asset, Offer, OrderValue } from "../models/offers";
+import { Asset, OrderValue } from "../models/offers";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
 import { create as createSpendOrderPaymentConfirmed } from "../analytics/events/spend_order_payment_confirmed";
 import { create as createStellarAccountCreationFailed } from "../analytics/events/stellar_account_creation_failed";
@@ -18,24 +18,34 @@ import { Application, AppOffer } from "../models/applications";
 
 const BLOCKCHAIN = "kin-prod";
 const RS512_APPS = ["test", "smpl"];
+// the reason given when payment-service tries to create an already existing account
+const ACCOUNT_EXISTS_BLOCKCHAIN_ERROR = "account exists";
 
 export type WalletCreationSuccessData = {
 	id: string; // user id
+	wallet_address: string;
 };
 
 export async function walletCreationSuccess(data: WalletCreationSuccessData) {
 	createStellarAccountCreationSucceeded(data.id).report();
-	logger().info("wallet created", { userId: data.id });
+	logger().info("wallet created", data);
+	await Wallet.setAccountCreated(data.wallet_address);
 }
 
 export type WalletCreationFailureData = {
 	id: string; // user id
 	reason: string;
+	wallet_address: string;
 };
 
 export async function walletCreationFailure(data: WalletCreationFailureData) {
 	createStellarAccountCreationFailed(data.id, data.reason).report();
-	logger().warn("wallet failed to create", { userId: data.id, reason: data.reason });
+	if (data.reason === ACCOUNT_EXISTS_BLOCKCHAIN_ERROR) {
+		logger().warn("wallet already created", data);
+		await Wallet.setAccountCreated(data.wallet_address);
+	} else {
+		logger().error("wallet failed to create", data);
+	}
 }
 
 export interface CompletedPayment {

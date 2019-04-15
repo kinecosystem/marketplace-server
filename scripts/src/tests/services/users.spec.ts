@@ -14,6 +14,7 @@ import { AuthToken as ApiAuthToken, userExists, UserProfile } from "../../public
 import * as helpers from "../helpers";
 import { localCache } from "../../utils/cache";
 import { createApp } from "../helpers";
+import { walletCreationFailure, walletCreationSuccess } from "../../internal/services";
 
 describe("api tests for v2 users", async () => {
 	beforeEach(async done => {
@@ -47,6 +48,36 @@ describe("api tests for v2 users", async () => {
 		expect(await userExists(user.appId, user.appUserId)).toBeTruthy();
 		expect(await userExists(user.appId, "no_user")).toBeFalsy();
 		expect(await userExists(user.appId, "no_user")).toBeFalsy();
+	});
+
+	test("accountCreatedDate is set after walletCreationSuccess", async () => {
+		const user = await helpers.createUser();
+		let wallets = await user.getWallets();
+		expect(wallets.first!.accountCreatedDate).toBeNull();
+
+		await walletCreationSuccess({ id: user.id, wallet_address: wallets.first!.address });
+		wallets = await user.getWallets();
+		expect(wallets.first!.accountCreatedDate).not.toBeNull();
+	});
+
+	test("accountCreatedDate is set after walletCreationFailure - walletExists", async () => {
+		const user = await helpers.createUser();
+		let wallets = await user.getWallets();
+		expect(wallets.first!.accountCreatedDate).toBeNull();
+
+		await walletCreationFailure({ id: user.id, wallet_address: wallets.first!.address, reason: "account exists" });
+		wallets = await user.getWallets();
+		expect(wallets.first!.accountCreatedDate).not.toBeNull();
+	});
+
+	test("accountCreatedDate is NOT set after walletCreationFailure", async () => {
+		const user = await helpers.createUser();
+		let wallets = await user.getWallets();
+		expect(wallets.first!.accountCreatedDate).toBeNull();
+
+		await walletCreationFailure({ id: user.id, wallet_address: wallets.first!.address, reason: "some other error"  });
+		wallets = await user.getWallets();
+		expect(wallets.first!.accountCreatedDate).toBeNull();
 	});
 
 	test("user register whitelist", async () => {

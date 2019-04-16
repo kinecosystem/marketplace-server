@@ -208,11 +208,10 @@ export class Wallets {
 export class Wallet extends BaseEntity {
 	public static async setAccountCreated(walletAddress: string) {
 		await Wallet.update({
-			where: {
+				accountCreatedDate: null,
 				address: walletAddress,
-				accountCreatedDate: null
-			}
-		}, { accountCreatedDate: new Date() });
+			} as any, // typescript doesn't like the first argument when there are 2 fields to search on
+			{ accountCreatedDate: new Date() });
 	}
 
 	@ManyToOne(type => User)

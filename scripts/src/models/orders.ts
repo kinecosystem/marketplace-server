@@ -255,7 +255,7 @@ export const Order = {
 			.andWhere(`ordr.id IN (:ids)`, { ids });
 
 		if (limit) {
-			userOrdersQuery.limit(limit);
+			userOrdersQuery.take(limit);
 		}
 
 		return userOrdersQuery.getMany() as any;

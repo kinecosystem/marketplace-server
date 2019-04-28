@@ -101,8 +101,15 @@ export async function isRestoreAllowed(walletAddress: string, appId: string, add
 		}
 	} else if (addOnNonExisting) {
 		logger().info(`Wallet ${ walletAddress } does not exist in wallet_application table, add`);
-		const newWallet = WalletApplication.create({ walletAddress, appId });
-		await newWallet.save();
+		try {
+			const newWallet = WalletApplication.create({ walletAddress, appId });
+			await newWallet.save();
+		} catch (e) {
+			// maybe caught a "violates unique constraint" error, check by finding the wallet again
+			if (!await WalletApplication.findOne({ walletAddress, appId })) {
+				throw e;
+			}
+		}
 	}
 	return true;
 }
@@ -133,7 +140,7 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 
 		const createdOnBlockchain = wallets.has(walletAddress) && wallets.get(walletAddress)!.accountCreatedDate !== null;
 		const isNewWallet = await user.updateWallet(props.deviceId, walletAddress);
-		if (isNewWallet || !createdOnBlockchain ) {
+		if (isNewWallet || !createdOnBlockchain) {
 			logger().info(`creating stellar wallet for user ${ appId }: ${ props.walletAddress }`);
 			await payment.createWallet(walletAddress, appId, user.id);
 		}

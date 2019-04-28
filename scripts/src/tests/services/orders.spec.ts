@@ -115,7 +115,8 @@ describe("test v2 orders", async () => {
 
 		const count = await helpers.createOrders(user.id);
 
-		let orders = await Order.getAll({ userId: user.id, status: "!opened" }, 25);
+		let orders = await Order.getAll({ userId: user.id }, 25);
+
 		expect(orders.length).toBe(count);
 		expect(orders.length).toBe(orders.filter(o => o.status !== "opened").length);
 

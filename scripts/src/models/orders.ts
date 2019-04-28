@@ -226,8 +226,8 @@ export const Order = {
 		updateQueryWithFilter(query, "nonce", filters.nonce, "ordr");
 		updateQueryWithFilter(query, "origin", filters.origin, "ordr");
 		updateQueryWithFilter(query, "offerId", filters.offerId, "ordr");
-		updateQueryWithFilter(query, "userId", filters.userId, "context");
-		updateQueryWithFilter(query, "wallet", filters.walletAddress, "context");
+		// updateQueryWithFilter(query, "userId", filters.userId, "context");
+		// updateQueryWithFilter(query, "wallet", filters.walletAddress, "context");
 
 		return query;
 	},
@@ -240,24 +240,22 @@ export const Order = {
 	 * @param      {number}  limit
 	 * @return     {Promise<T[]>}  filtered orders including p2p
 	 */
-	async getAll<T extends Order>(filters: GetOrderFilters & { userId?: string }, limit?: number): Promise<T[]> {
-		const allOrders = await this.genericGet(filters).getMany(); // can be replaced by cache
-
-		const ids: string[] = allOrders.map(order => order.id);
+	async getAll<T extends Order>(filters: GetOrderFilters & ({ userId: string } | { walletAddress: string }), limit?: number): Promise<T[]> {
+		const contexts = await OrderContext.find(filters.userId ? { userId: filters.userId } : { wallet: filters.walletAddress }); // can be replaced by cache
+		const ids = contexts.map(c => c.orderId);
 		if (!ids.length) {
 			return []; // empty array causes sql syntax error
 		}
-
 		// remove all context related fields to get the second context
 		delete filters.userId;
 		delete filters.walletAddress;
+
 		const userOrdersQuery = this.genericGet(filters)
 			.andWhere(`ordr.id IN (:ids)`, { ids });
 
 		if (limit) {
 			userOrdersQuery.take(limit);
 		}
-
 		return userOrdersQuery.getMany() as any;
 	},
 

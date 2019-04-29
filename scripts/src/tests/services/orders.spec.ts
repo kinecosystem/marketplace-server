@@ -28,7 +28,6 @@ import {
 import * as helpers from "../helpers";
 import mock = require("supertest");
 import { createApp } from "../helpers";
-import { getManager } from "typeorm";
 
 async function completeOrder(user: User, deviceId: string) {
 	const offers = await getOffers(user.id, user.appId, {});

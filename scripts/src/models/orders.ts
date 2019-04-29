@@ -226,8 +226,8 @@ export const Order = {
 		updateQueryWithFilter(query, "nonce", filters.nonce, "ordr");
 		updateQueryWithFilter(query, "origin", filters.origin, "ordr");
 		updateQueryWithFilter(query, "offerId", filters.offerId, "ordr");
-		// updateQueryWithFilter(query, "userId", filters.userId, "context");
-		// updateQueryWithFilter(query, "wallet", filters.walletAddress, "context");
+		updateQueryWithFilter(query, "userId", filters.userId, "context");
+		updateQueryWithFilter(query, "wallet", filters.walletAddress, "context");
 
 		return query;
 	},

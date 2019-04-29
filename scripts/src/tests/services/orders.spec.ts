@@ -28,6 +28,7 @@ import {
 import * as helpers from "../helpers";
 import mock = require("supertest");
 import { createApp } from "../helpers";
+import { getManager } from "typeorm";
 
 async function completeOrder(user: User, deviceId: string) {
 	const offers = await getOffers(user.id, user.appId, {});
@@ -112,13 +113,12 @@ describe("test v2 orders", async () => {
 
 	test("getAll and filters", async () => {
 		const user = await helpers.createUser({ deviceId: "test_device_id" });
-
 		const count = await helpers.createOrders(user.id);
 
-		let orders = await Order.getAll({ userId: user.id }, 25);
-
+		let orders = await Order.getAll({ userId: user.id, status: "!opened" }, 25);
 		expect(orders.length).toBe(count);
 		expect(orders.length).toBe(orders.filter(o => o.status !== "opened").length);
+		expect(orders[0].contextForUser(user.id)!.orderId).toBe(orders[0].id);
 
 		const offers = new Map<string, number>();
 		(await Order.getAll({ userId: user.id })).forEach(order => {

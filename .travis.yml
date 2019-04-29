@@ -17,6 +17,7 @@ before_script:
 script:
   - make test
   - ./node_modules/codecov/bin/codecov
+  - make clear-db db
   - make test-system-docker
 
 after_failure:

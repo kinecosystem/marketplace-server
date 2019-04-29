@@ -105,7 +105,7 @@ export async function isRestoreAllowed(walletAddress: string, appId: string, add
 			const newWallet = WalletApplication.create({ walletAddress, appId });
 			await newWallet.save();
 		} catch (e) {
-			// maybe caught a "violates unique constraint" error, check by finding the wallet again
+			// might catch a "violates unique constraint" error, check by finding the wallet again
 			if (!await WalletApplication.findOne({ walletAddress, appId })) {
 				throw e;
 			}
@@ -228,7 +228,7 @@ async function register(
 			metrics.userRegister(true, appId);
 			createUserRegistrationSucceeded(user.id, deviceId).report();
 		} catch (e) {
-			// maybe caught a "violates unique constraint" error, check by finding the user again
+			// might catch a "violates unique constraint" error, check by finding the user again
 			user = await User.findOne({ appId, appUserId });
 			if (user) {
 				logger().warn("solved user registration race condition");

@@ -155,7 +155,7 @@ export const Order = {
 		const results: Array<{ offerId: string, cnt: number }> = await query.getRawMany();
 		const map = new Map<string, number>();
 		for (const res of results) {
-			map.set(res.offerId, res.cnt);
+			map.set(res.offerId, Number(res.cnt));
 		}
 
 		return map;

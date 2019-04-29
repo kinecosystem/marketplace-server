@@ -6,13 +6,12 @@ node_js:
   - "10"
 
 before_script:
-  - make build db # db - for make test
     #  - make generate-funding-address # won't work for KIN3 as it's missing whitelisting step
   - mkdir -p ./secrets/ &&
     echo export STELLAR_BASE_SEED=${STELLAR_BASE_SEED} STELLAR_ADDRESS=${STELLAR_ADDRESS} > ./secrets/.secrets
   - make create-jwt-keys
   - make build-image
-  - make db-docker
+  - make build db
   - NODEMON_WATCH_DIRS="-w /no_such_dir" make up
 
 script:

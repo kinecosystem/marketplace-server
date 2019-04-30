@@ -80,7 +80,7 @@ export class User extends CreationDateModel {
 			await wallet.save();
 			return isNewWallet;
 		} catch (e) {
-			// maybe caught a "violates unique constraint" error, check by finding the wallet again
+			// might catch a "violates unique constraint" error, check by finding the wallet again
 			wallet = await Wallet.findOne({
 				deviceId,
 				userId: this.id,

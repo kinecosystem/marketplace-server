@@ -9,12 +9,12 @@
 	],
 	"assets_base": "https://s3.amazonaws.com/kinmarketplace-assets/version1/",
 	"db": {
-		"type": "sqlite",
+		"type": "postgres",
 		"host": "localhost",
-		"port": 3306,
-		"username": "username",
-		"password": "password",
-		"database": "database.sqlite",
+		"port": 25432,
+		"username": "user",
+		"password": "pass",
+		"database": "ecosystem",
 		"synchronize": true,
 		"logging": false
 	},

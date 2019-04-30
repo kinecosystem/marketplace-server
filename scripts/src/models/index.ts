@@ -85,9 +85,6 @@ export function init(createDb?: boolean): Promise<string> {
 	}
 
 	dbConfig = Object.assign({}, getConfig().db, { synchronize: !!createDb });
-	if (dbConfig.type === "sqlite" && !/^[./]/.test(dbConfig.database)) {
-		(dbConfig as any).database = path(dbConfig.database);
-	}
 	(dbConfig as any).entities = entities;
 
 	initPromise = createConnection(dbConfig)

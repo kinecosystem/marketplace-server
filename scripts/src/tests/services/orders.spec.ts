@@ -112,12 +112,12 @@ describe("test v2 orders", async () => {
 
 	test("getAll and filters", async () => {
 		const user = await helpers.createUser({ deviceId: "test_device_id" });
-
 		const count = await helpers.createOrders(user.id);
 
 		let orders = await Order.getAll({ userId: user.id, status: "!opened" }, 25);
 		expect(orders.length).toBe(count);
 		expect(orders.length).toBe(orders.filter(o => o.status !== "opened").length);
+		expect(orders[0].contextForUser(user.id)!.orderId).toBe(orders[0].id);
 
 		const offers = new Map<string, number>();
 		(await Order.getAll({ userId: user.id })).forEach(order => {
@@ -209,12 +209,19 @@ describe("test v2 orders", async () => {
 
 	test("create and find p2p order", async () => {
 		const user = await helpers.createUser();
-
-		await helpers.createP2POrder(user.id);
+		const token = (await AuthToken.findOne({ userId: user.id }))!;
+		const order = await helpers.createP2POrder(user.id);
 		const orders = await Order.getAll({ origin: "external", userId: user.id, status: "!opened" });
 
 		expect(orders.length).toEqual(1);
 		expect(orders[0].contexts.length).toEqual(2);
+
+		const res = await mock(app)
+			.get(`/v2/orders?offer_id=${ order.offerId }&limit=1`)
+			.set("x-request-id", "123")
+			.set("Authorization", `Bearer ${ token.id }`)
+			.expect(200);
+		console.log(res.body);
 	});
 
 	test("setFailedOrder marks p2p order as expired", async () => {

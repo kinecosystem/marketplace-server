@@ -138,7 +138,7 @@ export type GetOrderHistoryRequest = AuthenticatedRequest & {
 export const getOrderHistory = async function(req: GetOrderHistoryRequest, res: Response) {
 	const filters = {
 		origin: req.query.origin,
-		offerId: req.query.offer_id
+		offerId: req.query.offer_id || req.query.offerId // old clients send offerId instead of offer_id
 	};
 	const orderList = await getOrderHistoryService(req.context.user, req.context.token.deviceId, filters, req.query.limit);
 	res.status(200).send(orderList);

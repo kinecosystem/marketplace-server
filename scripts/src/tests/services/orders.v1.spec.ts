@@ -106,12 +106,22 @@ describe("test v1 orders", async () => {
 
 		// test with the API
 		const token: AuthToken = (await AuthToken.findOne({ userId: user.id }))!;
-		const res = await mock(app)
+		let res = await mock(app)
 			.get(`/v1/orders?offer_id=${ offerId }`)
 			.set("x-request-id", "123")
 			.set("Authorization", `Bearer ${ token.id }`);
 
-		const orderHistory: OrderList = res.body;
+		let orderHistory: OrderList = res.body;
+		expect(orderHistory.orders.length).toEqual(1);
+		expect(orderHistory.orders[0].offer_id).toEqual(offerId);
+
+		// test with the offerId (instead of offer_id)
+		res = await mock(app)
+			.get(`/v1/orders?offerId=${ offerId }`)
+			.set("x-request-id", "123")
+			.set("Authorization", `Bearer ${ token.id }`);
+
+		orderHistory = res.body;
 		expect(orderHistory.orders.length).toEqual(1);
 		expect(orderHistory.orders[0].offer_id).toEqual(offerId);
 	});

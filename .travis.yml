@@ -3,7 +3,7 @@ sudo: required
 services: docker
 
 node_js:
-  - "10"
+  - "11"
 
 before_script:
     #  - make generate-funding-address # won't work for KIN3 as it's missing whitelisting step

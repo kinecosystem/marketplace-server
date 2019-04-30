@@ -26,10 +26,6 @@ test:
 test-system:
 	npm run test-system
 
-db:
-	rm -f database.sqlite
-	npm run manage-db-data -- --apps-dir data/apps --offers-dir data/offers --trans-file data/translations/pt-BR.csv --trans-lang pt-BR --app-list ALL --create-db
-
 console:
 	node --experimental-repl-await ./scripts/bin/node-console.js
 
@@ -69,6 +65,7 @@ psql:
 redis-cli:
 	docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm redis-cli
 
+db: db-docker
 db-docker:
 	. ./secrets/.secrets && docker-compose -f docker-compose.yaml -f docker-compose.deps.yaml -f docker-compose.tests.yaml run --rm create-db
 

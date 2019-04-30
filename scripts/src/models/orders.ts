@@ -155,7 +155,7 @@ export const Order = {
 		const results: Array<{ offerId: string, cnt: number }> = await query.getRawMany();
 		const map = new Map<string, number>();
 		for (const res of results) {
-			map.set(res.offerId, res.cnt);
+			map.set(res.offerId, Number(res.cnt));
 		}
 
 		return map;
@@ -240,24 +240,22 @@ export const Order = {
 	 * @param      {number}  limit
 	 * @return     {Promise<T[]>}  filtered orders including p2p
 	 */
-	async getAll<T extends Order>(filters: GetOrderFilters & { userId?: string }, limit?: number): Promise<T[]> {
-		const allOrders = await this.genericGet(filters).getMany(); // can be replaced by cache
-
-		const ids: string[] = allOrders.map(order => order.id);
+	async getAll<T extends Order>(filters: GetOrderFilters & ({ userId: string } | { walletAddress: string }), limit?: number): Promise<T[]> {
+		const contexts = await OrderContext.find(filters.userId ? { userId: filters.userId } : { wallet: filters.walletAddress }); // can be replaced by cache
+		const ids = contexts.map(c => c.orderId);
 		if (!ids.length) {
 			return []; // empty array causes sql syntax error
 		}
-
 		// remove all context related fields to get the second context
 		delete filters.userId;
 		delete filters.walletAddress;
+
 		const userOrdersQuery = this.genericGet(filters)
 			.andWhere(`ordr.id IN (:ids)`, { ids });
 
 		if (limit) {
-			userOrdersQuery.limit(limit);
+			userOrdersQuery.take(limit);
 		}
-
 		return userOrdersQuery.getMany() as any;
 	},
 

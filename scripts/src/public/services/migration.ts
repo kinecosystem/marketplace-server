@@ -12,7 +12,7 @@ const axiosRetry = require("axios-retry"); // TODO: this fails the tests: import
 const DEFAULT_TIMEOUT = 300;
 
 const client = axios.create({ timeout: DEFAULT_TIMEOUT });
-axiosRetry(client, { retries: 6, shouldResetTimeout: true });
+axiosRetry(client, { retries: 6, retryCondition: () => true, shouldResetTimeout: true });
 
 type AccountMigrationStatus = {
 	should_migrate: boolean;

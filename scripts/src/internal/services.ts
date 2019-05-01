@@ -29,7 +29,6 @@ export type WalletCreationSuccessData = {
 export async function walletCreationSuccess(data: WalletCreationSuccessData) {
 	createStellarAccountCreationSucceeded(data.id).report();
 	logger().info("wallet created", data);
-	await Wallet.setAccountCreated(data.wallet_address);
 }
 
 export type WalletCreationFailureData = {
@@ -42,7 +41,6 @@ export async function walletCreationFailure(data: WalletCreationFailureData) {
 	createStellarAccountCreationFailed(data.id, data.reason).report();
 	if (data.reason === ACCOUNT_EXISTS_BLOCKCHAIN_ERROR) {
 		logger().warn("wallet already created", data);
-		await Wallet.setAccountCreated(data.wallet_address);
 	} else {
 		logger().error("wallet failed to create", data);
 	}

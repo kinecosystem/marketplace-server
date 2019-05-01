@@ -50,36 +50,6 @@ describe("api tests for v2 users", async () => {
 		expect(await userExists(user.appId, "no_user")).toBeFalsy();
 	});
 
-	test("accountCreatedDate is set after walletCreationSuccess", async () => {
-		const user = await helpers.createUser();
-		let wallets = await user.getWallets();
-		expect(wallets.first!.accountCreatedDate).toBeNull();
-
-		await walletCreationSuccess({ id: user.id, wallet_address: wallets.first!.address });
-		wallets = await user.getWallets();
-		expect(wallets.first!.accountCreatedDate).not.toBeNull();
-	});
-
-	test("accountCreatedDate is set after walletCreationFailure - walletExists", async () => {
-		const user = await helpers.createUser();
-		let wallets = await user.getWallets();
-		expect(wallets.first!.accountCreatedDate).toBeNull();
-
-		await walletCreationFailure({ id: user.id, wallet_address: wallets.first!.address, reason: "account exists" });
-		wallets = await user.getWallets();
-		expect(wallets.first!.accountCreatedDate).not.toBeNull();
-	});
-
-	test("accountCreatedDate is NOT set after walletCreationFailure", async () => {
-		const user = await helpers.createUser();
-		let wallets = await user.getWallets();
-		expect(wallets.first!.accountCreatedDate).toBeNull();
-
-		await walletCreationFailure({ id: user.id, wallet_address: wallets.first!.address, reason: "some other error"  });
-		wallets = await user.getWallets();
-		expect(wallets.first!.accountCreatedDate).toBeNull();
-	});
-
 	test("user register whitelist", async () => {
 		const myApp = await helpers.createApp(generateId(IdPrefix.App));
 		const signInData: WhitelistSignInData = {

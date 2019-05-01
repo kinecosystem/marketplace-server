@@ -206,14 +206,6 @@ export class Wallets {
 @Entity({ name: "user_wallets" })
 @Register
 export class Wallet extends BaseEntity {
-	public static async setAccountCreated(walletAddress: string) {
-		await Wallet.update({
-				accountCreatedDate: null,
-				address: walletAddress,
-			} as any, // typescript doesn't like the first argument when there are 2 fields to search on
-			{ accountCreatedDate: new Date() });
-	}
-
 	@ManyToOne(type => User)
 	@JoinColumn({ name: "user_id" })
 	public readonly user!: User;
@@ -229,9 +221,6 @@ export class Wallet extends BaseEntity {
 
 	@Column({ name: "created_date" })
 	public createdDate!: Date;
-
-	@Column({ name: "account_created_date", nullable: true })
-	public accountCreatedDate!: Date;
 
 	@Column({ name: "last_used_date" })
 	public lastUsedDate!: Date;

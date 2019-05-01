@@ -138,9 +138,8 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 			throw MaxWalletsExceeded();
 		}
 
-		const createdOnBlockchain = wallets.has(walletAddress) && wallets.get(walletAddress)!.accountCreatedDate !== null;
 		const isNewWallet = await user.updateWallet(props.deviceId, walletAddress);
-		if (isNewWallet || !createdOnBlockchain) {
+		if (isNewWallet) {
 			logger().info(`creating stellar wallet for user ${ appId }: ${ props.walletAddress }`);
 			await payment.createWallet(walletAddress, appId, user.id);
 		}

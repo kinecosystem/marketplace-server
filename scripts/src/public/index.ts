@@ -13,9 +13,11 @@ import { onError, onListening } from "../server";
 
 if (cluster.isMaster) {
 	// Count the machine's CPUs
-	const cpuCount = os.cpus().length;
+	const processNum = config.num_processes || os.cpus().length;
 	// Create a worker for each CPU
-	os.cpus().forEach(() => cluster.fork());
+	for (let i = 0; i < processNum; i++) {
+		cluster.fork();
+	}
 	// Listen for dying workers
 	cluster.on("exit", worker => {
 		// Replace the dead worker, we're not sentimental

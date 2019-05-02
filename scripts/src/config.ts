@@ -36,6 +36,7 @@ export interface Config {
 	};
 
 	migration_service?: string;
+	num_processes?: number;
 }
 
 let config: Config;
@@ -64,8 +65,9 @@ export function init(filePath: string) {
 	config.statsd.host = process.env.STATSD_HOST || config.statsd.host;
 	config.statsd.port = Number(process.env.STATSD_PORT) || config.statsd.port;
 	config.cache_ttl = JSON.parse(process.env.CACH_TTL || "null") || config.cache_ttl || { "default": 30 };  // In seconds
-
 	config.migration_service = process.env.MIGRATION_SERVICE || config.migration_service;
+	config.num_processes = Number(process.env.NUM_PROCESSES) || config.num_processes;
+
 }
 
 export function getConfig<T extends Config>(): T {

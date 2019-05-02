@@ -4,12 +4,12 @@ services:
 
   marketplace-public:
     image: kinecosystem/marketplace-server:latest
-    command: ./tests/wait-for -t 60 marketplace-internal:3000 -- npm run start
+    command: ./tests/wait-for -t 60 marketplace-internal:80 -- npm run start
     restart: "no"
     volumes:
       - .:/opt/app
     ports:
-      - 3000:3000
+      - 3000:80
     links:
       - redis
       - postgres
@@ -18,13 +18,13 @@ services:
     environment:
       &app_env_vars
       APP_DEBUG: 'True'
-      APP_PORT: 3000
+      APP_PORT: 80
       APP_HOST: '0.0.0.0'
       APP_NAME: 'marketplace-public'
       APP_REDIS: redis://redis:6379/0
-      APP_PAYMENT_SERVICE: http://payment-web:3000
-      APP_PAYMENT_SERVICE_V3: http://payment-web-v3:3000
-      APP_INTERNAL_SERVICE: http://marketplace-internal:3000
+      APP_PAYMENT_SERVICE: http://payment-web
+      APP_PAYMENT_SERVICE_V3: http://payment-web-v3
+      APP_INTERNAL_SERVICE: http://marketplace-internal
       APP_BI_SERVICE: http://bi-service
       APP_DB_TYPE: postgres
       APP_DB_USERNAME: user
@@ -35,15 +35,16 @@ services:
       NODEMON_WATCH_DIRS: ${NODEMON_WATCH_DIRS}
       CACHE_TTL: '{ "default": 0 }'
       MIGRATION_SERVICE: http://migration-service:8000
+      NUM_PROCESSES: 1
 
   marketplace-admin:
     image: kinecosystem/marketplace-server:latest
     restart: "no"
-    command: ./tests/wait-for -t 60 marketplace-public:3000 -- npm run start-admin
+    command: ./tests/wait-for -t 60 marketplace-public:80 -- npm run start-admin
     volumes:
       - .:/opt/app
     ports:
-      - 3002:3000
+      - 3002:80
     links:
       - redis
       - payment-web
@@ -60,7 +61,7 @@ services:
     volumes:
       - .:/opt/app
     ports:
-      - 3001:3000
+      - 3001:80
     links:
       - redis
       - payment-web

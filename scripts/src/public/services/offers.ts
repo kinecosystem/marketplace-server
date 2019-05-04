@@ -8,7 +8,7 @@ import * as dbOrders from "../../models/orders";
 import { Paging } from "./index";
 import * as offerContents from "./offer_contents";
 import { Application, AppOffer } from "../../models/applications";
-import { ContentType, OfferContent, OfferType } from "../../models/offers";
+import { ContentType, OfferContent, OfferType, SdkVersionRule } from "../../models/offers";
 import { Order } from "../../models/orders";
 import { OfferTranslation } from "../../models/translations";
 import { NoSuchApp } from "../../errors";
@@ -55,52 +55,23 @@ type VersionRuleData = {
 	[defaultKey: string]: string
 };
 
-const IMAGE_VERSION_RULES: VersionRule[] = [
-	/*
-		These rules are evaluated in order, so order takes precedence. First rule to
-		be satisfied by the client version will apply.
-		Example:
-		Consider this list of comparators [">=1.0.0", "=5.0.0"]
-		given a client version 5.0.0 the ">=1.0.0" rule will apply although "=5.0.0" is more exact.
-	*/
-	{
-		comparator: ">=1.0.0",
-		data: {
-			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/tell_us_more.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/1_poll.png",
-			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/favorites.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/2_poll.png",
-			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/take_a_survaey.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/3_poll.png",
-			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/do_you_like.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/4_poll.png",
-			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/sport.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/4_poll.png",
-			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/movies.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/5_poll.png",
-			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/6_poll.png",
-			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/1_quiz.png",
-			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/2_quiz.png",
-			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/3_quiz.png",
-			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/4_quiz.png",
-			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/5_quiz.png",
-		}
-	}
-];
-
-function getVersionImageData(version: string): VersionRuleData {
-	const selectedRule = IMAGE_VERSION_RULES.find(rule => semver.satisfies(version, rule.comparator)) || { data: {} };
-	return selectedRule.data;
+async function getVersionImageData(version: string): Promise<VersionRuleData> {
+	const imageVersionRules = await SdkVersionRule.find({ assetType: "image" });
+	const selectedRule = imageVersionRules.find(rule => semver.satisfies(version, rule.comparator)) || { data: {} };
+	return selectedRule.data as VersionRuleData; // todo: should be cached
 }
 
-function getImageDataResolver(version: string) {
-	const versionImageData = getVersionImageData(version);
-	return (key: string, defaultValue: string = key) => {
-		return versionImageData[key] || defaultValue;
-	};
+async function getImageDataResolver(version: string, key: string, defaultValue: string = key) {
+	const versionImageData = await getVersionImageData(version);
+	return versionImageData[key] || defaultValue;
 }
 
-function offerDbToApi(offer: db.Offer, content: db.OfferContent, offerTranslations: OfferTranslations, walletAddress: string) {
-	const imageDataResolver = getImageDataResolver(httpContext.get(CLIENT_SDK_VERSION_HEADER));
+async function offerDbToApi(offer: db.Offer, content: db.OfferContent, offerTranslations: OfferTranslations, walletAddress: string) {
 	const offerData = {
 		id: offer.id,
 		title: offerTranslations.title || offer.meta.title,
 		description: offerTranslations.description || offer.meta.description,
-		image: imageDataResolver(offer.meta.image),
+		image: await getImageDataResolver(httpContext.get(CLIENT_SDK_VERSION_HEADER), offer.meta.image),
 		amount: offer.amount,
 		blockchain_data: offer.type === "spend" ? { recipient_address: walletAddress } : { sender_address: walletAddress },
 		offer_type: offer.type,
@@ -160,7 +131,7 @@ async function filterOffers(userId: string, appId: string, appOffers: AppOffer[]
 				if (!content) {
 					return null;
 				}
-				return offerDbToApi(
+				return await offerDbToApi(
 					offer,
 					content,
 					getOfferTranslations(language, offer.id, availableTranslations),

@@ -36,7 +36,7 @@ export class User extends CreationDateModel {
 	@Column({ name: "wallet_address", nullable: true })
 	public walletAddress!: string;
 
-	public async getWallets(deviceId?: string): Promise<Wallets> {
+	public async  getWallets(deviceId?: string): Promise<Wallets> {
 		const conditions: Partial<Mutable<Wallet>> = {
 			userId: this.id
 		};

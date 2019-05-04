@@ -14,7 +14,7 @@ GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Favourites Poll #1,
 ,,,,,,,,,,,4,FullPageMultiChoice,How would you describe yourself?,Complete the poll to earn ${amount} Kin,A city person,A country person,A little of both,A pirate
 ,,,,,,,,,,,5,FullPageMultiChoice,Favorite way to spend a Saturday,Complete the poll to earn ${amount} Kin,Netflix and chill,Spending time with friends,Going out,Instagram and Facebook
 ,,,,,,,,,,,,EarnThankYou,,${amount},,,,
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Future Poll#1,30,Answer a poll,What's your take?,https://cdn.kinecosystem.com/thumbnails/offers/future_poll.png,Poll,Completed,1000,1,1,FullPageMultiChoice,What are your career aspirations?,Complete the poll to earn ${amount} Kin,Find a great company to work for,Have my own startup,Work freelance,Retire ASAP
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Future Poll#1,30,Answer a poll,What's your take?,https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png,Poll,Completed,1000,1,1,FullPageMultiChoice,What are your career aspirations?,Complete the poll to earn ${amount} Kin,Find a great company to work for,Have my own startup,Work freelance,Retire ASAP
 ,,,,,,,,,,,2,FullPageMultiChoice,As President I would fight for,Complete the poll to earn ${amount} Kin,Education,Health care,Data privacy laws,The right to party!
 ,,,,,,,,,,,3,FullPageMultiChoice,What would you do with an extra year?,Complete the poll to earn ${amount} Kin,"Sleep, a lot",Volunteer,Study something new,Travel 
 ,,,,,,,,,,,4,FullPageMultiChoice,Which of these will happpen first?,Complete the poll to earn ${amount} Kin,Flying cars,Space tourism,Underwater cities,Human like robots

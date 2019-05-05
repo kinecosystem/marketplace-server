@@ -15,6 +15,8 @@ import { NoSuchApp } from "../../errors";
 
 import * as semver from "semver";
 import { CLIENT_SDK_VERSION_HEADER } from "../../middleware";
+import { localCache } from "../../utils/cache";
+import moment = require("moment");
 
 export interface PollAnswer {
 	content_type: "PollAnswer";
@@ -55,11 +57,14 @@ type VersionRuleData = {
 	[defaultKey: string]: string
 };
 
-let imageVersionRules: SdkVersionRule[] | null = null;
-
 async function getVersionImageData(version: string): Promise<VersionRuleData> {
+	const cacheKey = `SdkVersionRule:${ image }`;
+	let imageVersionRules = localCache.get<SdkVersionRule[]>(cacheKey);
 	if (!imageVersionRules) {
 		imageVersionRules = await SdkVersionRule.find({ assetType: "image" });
+		if (imageVersionRules) {
+			localCache.set(cacheKey, imageVersionRules, moment.duration(5, "minutes"));
+		}
 	}
 	const selectedRule = imageVersionRules.find(rule => semver.satisfies(version, rule.comparator)) || { data: {} };
 	return selectedRule.data as VersionRuleData;

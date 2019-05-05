@@ -249,9 +249,6 @@ async function getOfferTranslations() {
 
 async function getOffersVersionSpecificImages() {
 	console.log("=====================================getOffersVersionSpecificImages=====================================");
-	// As of now, we rely on hardcoded production rules
-	// so we can only test diff and not exact values. This means
-	// if rules change this test might break even if functionality can pass.
 	const userId = generateId();
 	const deviceId = generateId();
 	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
@@ -264,15 +261,11 @@ async function getOffersVersionSpecificImages() {
 	const offers2 = await client2.getOffers();
 	const diff: string[][] = [];
 	const pollDescription = "What's your take?";
-	console.log("offers1: ", offers1);
 	const offer1 = offers1.offers.find((o: Offer) => o.description === pollDescription)!;
 	const offer2 = offers2.offers.find((o: Offer) => o.description === pollDescription)!;
-	console.log("offer1: ", offer1);
 	expect(offer1.image).toBe("https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png");
-	expect(offer2.image).toBe("https://cdn.kinecosystem.com/thumbnails/offers/222x222/6_poll.png");
+	expect(offer2.image).toBe("https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_7.png");
 
-	// console.log("diff:", diff);
-	// expect(diff.length).toBeGreaterThan(0);
 	console.log("OK.\n");
 
 }
@@ -1800,52 +1793,52 @@ async function checkClientMigration() {
 
 async function main() {
 	// v1
-	// await v1RegisterJWT();
-	// await v1OutdatedJWT();
-	// await v1UpdateWallet();
-	// await v1UserProfile();
-	// await v1ExtraTrustlineIsOK();
-	// await v1EarnPollFlow();
-	// await v1EarnTutorial();
-	// await v1SpendFlow();
-	// await v1EarnQuizFlow();
-	// await v1NativeEarnFlow();
-	// await v1NativeSpendFlow();
-	// await v1DidNotApproveTOS();
-	// await v1TestRegisterNewUser();
-	// await v1TryToNativeSpendTwice();
-	// await v1TryToNativeSpendTwiceWithNonce();
-	// await v1P2p();
-	//
-	// // v2
-	// await registerJWT();
-	// await outdatedJWT();
-	// await updateWallet();
-	// await userProfile();
-	// await extraTrustlineIsOK();
-	// await earnPollFlow();
-	// await earnTutorial();
-	// await spendFlow();
-	// await earnQuizFlow();
-	// await nativeEarnFlow();
-	// await nativeSpendFlow();
-	// await didNotApproveTOS();
-	// await testRegisterNewUser();
-	// await tryToNativeSpendTwice();
-	// await tryToNativeSpendTwiceWithNonce();
-	// await p2p();
-	// await getOfferTranslations();
-	// await twoUsersSharingWallet();
-	// await checkValidTokenAfterLoginRightAfterLogout();
+	await v1RegisterJWT();
+	await v1OutdatedJWT();
+	await v1UpdateWallet();
+	await v1UserProfile();
+	await v1ExtraTrustlineIsOK();
+	await v1EarnPollFlow();
+	await v1EarnTutorial();
+	await v1SpendFlow();
+	await v1EarnQuizFlow();
+	await v1NativeEarnFlow();
+	await v1NativeSpendFlow();
+	await v1DidNotApproveTOS();
+	await v1TestRegisterNewUser();
+	await v1TryToNativeSpendTwice();
+	await v1TryToNativeSpendTwiceWithNonce();
+	await v1P2p();
+
+	// v2
+	await registerJWT();
+	await outdatedJWT();
+	await updateWallet();
+	await userProfile();
+	await extraTrustlineIsOK();
+	await earnPollFlow();
+	await earnTutorial();
+	await spendFlow();
+	await earnQuizFlow();
+	await nativeEarnFlow();
+	await nativeSpendFlow();
+	await didNotApproveTOS();
+	await testRegisterNewUser();
+	await tryToNativeSpendTwice();
+	await tryToNativeSpendTwiceWithNonce();
+	await p2p();
+	await getOfferTranslations();
+	await twoUsersSharingWallet();
+	await checkValidTokenAfterLoginRightAfterLogout();
 	await getOffersVersionSpecificImages();
 
-	// // kin3 migration
-	// await kin3EarnPollFlow();
-	// await kin3EarnTutorial();
-	// await kin3SpendFlow();
-	// await kin3EarnQuizFlow();
-	// await checkClientMigration();
-	// await walletSharedAcrossApps();
+	// kin3 migration
+	await kin3EarnPollFlow();
+	await kin3EarnTutorial();
+	await kin3SpendFlow();
+	await kin3EarnQuizFlow();
+	await checkClientMigration();
+	await walletSharedAcrossApps();
 }
 
 main()

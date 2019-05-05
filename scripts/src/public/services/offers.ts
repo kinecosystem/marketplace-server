@@ -55,10 +55,14 @@ type VersionRuleData = {
 	[defaultKey: string]: string
 };
 
+let imageVersionRules: SdkVersionRule[] | null = null;
+
 async function getVersionImageData(version: string): Promise<VersionRuleData> {
-	const imageVersionRules = await SdkVersionRule.find({ assetType: "image" });
+	if (!imageVersionRules) {
+		imageVersionRules = await SdkVersionRule.find({ assetType: "image" });
+	}
 	const selectedRule = imageVersionRules.find(rule => semver.satisfies(version, rule.comparator)) || { data: {} };
-	return selectedRule.data as VersionRuleData; // todo: should be cached
+	return selectedRule.data as VersionRuleData;
 }
 
 async function getImageDataResolver(version: string, key: string, defaultValue: string = key) {

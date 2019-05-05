@@ -264,8 +264,10 @@ async function getOffersVersionSpecificImages() {
 	const offers2 = await client2.getOffers();
 	const diff: string[][] = [];
 	const pollDescription = "What's your take?";
+	console.log("offers1: ", offers1);
 	const offer1 = offers1.offers.find((o: Offer) => o.description === pollDescription)!;
 	const offer2 = offers2.offers.find((o: Offer) => o.description === pollDescription)!;
+	console.log("offer1: ", offer1);
 	expect(offer1.image).toBe("https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png");
 	expect(offer2.image).toBe("https://cdn.kinecosystem.com/thumbnails/offers/222x222/6_poll.png");
 

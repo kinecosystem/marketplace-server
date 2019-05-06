@@ -13,15 +13,7 @@ export function getConfig(): Config {
 }
 
 function init(): void {
-	let path = "config/public.";
-	/*if (process.argv.length === 3) {
-		path += process.argv[2];
-	} else {
-		path += "default";
-	}*/
-	path += "default";
-
-	baseInit(`${ path }.json`);
+	baseInit("config/public.default.json");
 }
 
 init();

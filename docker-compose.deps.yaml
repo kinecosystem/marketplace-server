@@ -4,13 +4,13 @@ services:
   payment-web:
     image: kinecosystem/payment-service:d36a5e4
     ports:
-      - 3000
+      - 80
     links:
       - redis
     environment:
       &payment_env_vars
       APP_DEBUG: 'False'
-      APP_PORT: 3000
+      APP_PORT: 80
       APP_HOST: '0.0.0.0'
       APP_NAME: 'payment-service'
       APP_REDIS: redis://redis:6379/0
@@ -42,13 +42,13 @@ services:
   payment-web-v3:
     image: kinecosystem/payment-service-v3:b56f930
     ports:
-      - 3000
+      - 80
     links:
       - redis
     environment:
       &payment3_env_vars
       APP_DEBUG: 'False'
-      APP_PORT: 3000
+      APP_PORT: 80
       APP_HOST: '0.0.0.0'
       APP_NAME: 'payment3-service'
       APP_REDIS: redis://redis:6379/1
@@ -91,10 +91,10 @@ services:
   jwt-service:
     image: kinecosystem/jwt-service:1eaf6e5
     ports:
-      - 3000
+      - 80
     environment:
       APP_DEBUG: 'False'
-      APP_PORT: 3000
+      APP_PORT: 80
       APP_HOST: '0.0.0.0'
       APP_NAME: 'smpl'
       APP_MARKETPLACE_SERVICE: 'marketplace-public'
@@ -102,10 +102,10 @@ services:
   jwt-service-v3:
     image: kinecosystem/jwt-service:1eaf6e5
     ports:
-      - 3000
+      - 80
     environment:
       APP_DEBUG: 'False'
-      APP_PORT: 3000
+      APP_PORT: 80
       APP_HOST: '0.0.0.0'
       APP_NAME: 'smp3'
       APP_MARKETPLACE_SERVICE: 'marketplace-public'

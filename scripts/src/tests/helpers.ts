@@ -2,9 +2,9 @@ import * as path from "path";
 import * as jsonwebtoken from "jsonwebtoken";
 import * as moment from "moment";
 import { getManager } from "typeorm";
-import * as StellarSdk from "stellar-sdk";
+import { Keypair } from "@kinecosystem/kin.js";
 
-import { Asset, Offer, OfferContent } from "../models/offers";
+import { Asset, Offer } from "../models/offers";
 import { generateId, readKeysDir, random, IdPrefix, generateRandomString } from "../utils/utils";
 import { User, AuthToken } from "../models/users";
 import { Application, ApplicationConfig, StringMap } from "../models/applications";
@@ -162,7 +162,7 @@ export async function createP2POrder(userId: string): Promise<Order> {
 		type: "earn",
 		meta: {
 			title: "p2p order #1",
-			description: `got tip from ${sender.id}`
+			description: `got tip from ${ sender.id }`
 		},
 		wallet: recipientWallet.address
 	}, {
@@ -170,7 +170,7 @@ export async function createP2POrder(userId: string): Promise<Order> {
 		type: "spend",
 		meta: {
 			title: "p2p order #2",
-			description: `sent tip to ${recipient.id}`
+			description: `sent tip to ${ recipient.id }`
 		},
 		wallet: senderWallet.address
 	});
@@ -303,7 +303,7 @@ export async function createApp(appId: string, limits?: LimitConfig, blockchain_
 }
 
 export function getKeyPair(): { private: string, public: string } {
-	const keypair = StellarSdk.Keypair.random();
+	const keypair = Keypair.random();
 	return { public: keypair.publicKey(), private: keypair.secret() };
 }
 

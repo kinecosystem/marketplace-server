@@ -53,7 +53,6 @@
 		"@types/redlock": "^3.0.1",
 		"@types/semver": "^5.5.0",
 		"@types/sequelize": "^4.27.4",
-		"@types/stellar-sdk": "^0.10.4",
 		"@types/supertest": "^2.0.4",
 		"@types/uuid": "^3.4.4",
 		"codecov": "^3.1.0",

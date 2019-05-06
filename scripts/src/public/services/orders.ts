@@ -311,7 +311,9 @@ export async function createExternalOrder(jwt: string, user: User, userDeviceId:
 			orderId: order.id
 		});
 	} else if (order.status === "pending" || order.status === "completed") {
-		throw ExternalOrderAlreadyCompleted(order.id);
+		logger().info(`order cant be created. existing order ${ order.id } for offer ${ order.offerId } is ${ order.status }`,
+			{ order });
+		throw ExternalOrderAlreadyCompleted(order.id, order.status);
 	}
 
 	return openOrderDbToApi(order, user.id);

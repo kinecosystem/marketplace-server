@@ -190,8 +190,8 @@ function ConflictError(key: keyof typeof CODES.Conflict.types, message: string) 
 	return new MarketplaceError(CODES.Conflict.code, CODES.Conflict.types[key], "Conflict", message);
 }
 
-export function ExternalOrderAlreadyCompleted(orderId: string) {
-	const error = ConflictError("ExternalOrderAlreadyCompleted", "User already completed offer, or has a pending order");
+export function ExternalOrderAlreadyCompleted(orderId: string, status: string) {
+	const error = ConflictError("ExternalOrderAlreadyCompleted", `Can't create order for offer. Another order is ${status}`);
 	error.setHeader("Location", `/v1/orders/${ orderId }`);
 	return error;
 }

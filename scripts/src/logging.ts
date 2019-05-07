@@ -1,6 +1,7 @@
 import * as winston from "winston";
 import { FileTransportOptions, GenericTextTransportOptions, GenericTransportOptions } from "winston";
 import * as httpContext from "express-http-context";
+import { CLIENT_SDK_VERSION_HEADER } from "./middleware";
 
 export interface LogTarget {
 	name: string;
@@ -76,7 +77,8 @@ function getLogContext() {
 	const userId = httpContext.get("userId");
 	const deviceId = httpContext.get("deviceId");
 	const appId = httpContext.get("appId");
-	return { req_id: reqId, user_id: userId, device_id: deviceId, app_id: appId };
+	const clientSdkVersion = httpContext.get(CLIENT_SDK_VERSION_HEADER);
+	return { req_id: reqId, user_id: userId, device_id: deviceId, app_id: appId, client_sdk_version: clientSdkVersion };
 }
 
 export interface BasicLogger {

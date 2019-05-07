@@ -259,7 +259,6 @@ async function getOffersVersionSpecificImages() {
 
 	const offers1 = await client.getOffers();
 	const offers2 = await client2.getOffers();
-	const diff: string[][] = [];
 	const pollDescription = "What's your take?";
 	const offer1 = offers1.offers.find((o: Offer) => o.description === pollDescription)!;
 	const offer2 = offers2.offers.find((o: Offer) => o.description === pollDescription)!;

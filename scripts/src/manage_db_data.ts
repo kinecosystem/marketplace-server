@@ -10,7 +10,7 @@ import { Keypair } from "@kinecosystem/kin.js";
 import { close as closeDbConnection, init as initModels } from "./models";
 import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
 import { createEarn, createSpend, EarnOptions } from "./create_data/offers";
-import { ContentType, Offer } from "./models/offers";
+import { ContentType, Offer, SdkVersionRule } from "./models/offers";
 import { Application, ApplicationConfig, StringMap } from "./models/applications";
 import { path } from "./utils/path";
 
@@ -33,6 +33,7 @@ type ScriptConfig = {
 	create_db: boolean;
 	trans_file: string | null;
 	trans_lang: string | null;
+	rules_dir: string | null;
 };
 let scriptConfig: ScriptConfig;
 
@@ -56,7 +57,7 @@ async function createApp(appId: string, name: string, jwtPublicKeys: StringMap, 
 		app.apiKey = apiKey;  // when apiKey given, run-over generated value
 	}
 	console.log("creating app: %s (id: %s)", name, appId, dryRun ? "(dry run)" : "");
-	await !dryRun && app.save();
+	!dryRun && await app.save();
 	return app;
 }
 
@@ -239,7 +240,7 @@ function initArgsParser(): ScriptConfig {
 		action: "storeTrue"
 	});
 	parser.addArgument(["--update-earn-thumbnails"], {
-		help: "Update only earn offers thumbnail images (that is offer.meta.image)",
+		help: "Update only earn offers thumbnail image (that is offer.meta.image)",
 		action: "storeTrue"
 	});
 	parser.addArgument(["-d", "--dry-run"], {
@@ -255,6 +256,10 @@ function initArgsParser(): ScriptConfig {
 	});
 	parser.addArgument(["--trans-lang"], {
 		help: "case-SENSITIVE Translations language (e.g, pt-BR)"
+	});
+
+	parser.addArgument(["--rules-dir"], {
+		help: "Directory containing JSON file with version rules to load"
 	});
 
 	/*
@@ -283,18 +288,31 @@ function confirmPrompt(message: string) {
 }
 */
 
+async function processJsonDir(dir: string, callback: (data: any, filename: string) => void) {
+	for (const filename of fs.readdirSync(path(dir))) {
+		if (!filename.endsWith(".json")) {
+			console.info(`skipping non json file ${ filename }`);
+			continue;
+		}
+		const data = JSON.parse(fs.readFileSync(path(join(dir, filename))).toString());
+		await callback(data, filename);
+	}
+}
+
 export async function initDb(scriptConfig: ScriptConfig, closeConnectionWhenDone: boolean = true) {
 	const appsDir = scriptConfig.apps_dir;
 	if (appsDir) {
-		for (const filename of fs.readdirSync(path(appsDir))) {
-			if (!filename.endsWith(".json")) {
-				console.info(`skipping non json file ${ filename }`);
-				continue;
-			}
-			const data: AppDef = JSON.parse(fs.readFileSync(path(join(appsDir, filename))).toString());
-			await createApp(data.app_id, data.name, data.jwt_public_keys, data.api_key, data.config, scriptConfig.dry_run!);
-		}
+		processJsonDir(appsDir, data => {
+			return createApp(
+				data.app_id,
+				data.name,
+				data.jwt_public_keys,
+				data.api_key,
+				data.config,
+				scriptConfig.dry_run!);
+		});
 	}
+
 	const offersDir = scriptConfig.offers_dir;
 	if (offersDir) {
 		const appList = scriptConfig.app_list;
@@ -350,11 +368,27 @@ export async function initDb(scriptConfig: ScriptConfig, closeConnectionWhenDone
 		await translations.writeCsvTemplateToFile(generatedStringsFileName);
 		console.log("adapting test translations file");
 		await adaptTranslations.processFile(translationsFile, generatedStringsFileName, translationsFilename);
-		console.log("processing translations and inserting into db");
-		await translations.processFile(translationsFilename, translationsLanguage);
+		if (!scriptConfig.dry_run) {
+			console.log("processing translations and inserting into db");
+			await translations.processFile(translationsFilename, translationsLanguage);
+		}
 		console.log("Done. Translations Ready.");
 	} else if (translationsFile || translationsLanguage) {
 		throw Error("Both a translations file and a translations language need to be specified.");
+	}
+
+	const rulesDir = scriptConfig.rules_dir;
+	if (rulesDir) {
+		await processJsonDir(rulesDir, async (rules: any[], filename) => {
+			await Promise.all(rules.map(async data => {
+				const assetType = filename.split(".")[0] as "image";
+				const rule = SdkVersionRule.new({ comparator: data.comparator, assetType, data: data.data });
+				console.log(`adding rule ${ rule.comparator } for asset ${ rule.assetType }`);
+				!scriptConfig.dry_run && await rule.save() && console.log(`Rule ${rule.comparator} saved`);
+				await rule.save();
+				await SdkVersionRule.find();
+			}));
+		});
 	}
 
 	if (closeConnectionWhenDone) {

@@ -7,7 +7,7 @@
   },
   "config": {
     "max_user_wallets": 5,
-    "daily_earn_offers": 20,
+    "daily_earn_offers": 100,
     "sign_in_types": ["jwt", "whitelist"],
     "blockchain_version": "2",
 		"limits": {

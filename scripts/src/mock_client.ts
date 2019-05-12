@@ -249,9 +249,6 @@ async function getOfferTranslations() {
 
 async function getOffersVersionSpecificImages() {
 	console.log("=====================================getOffersVersionSpecificImages=====================================");
-	// As of now, we rely on hardcoded production rules
-	// so we can only test diff and not exact values. This means
-	// if rules change this test might break even if functionality can pass.
 	const userId = generateId();
 	const deviceId = generateId();
 	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
@@ -262,14 +259,12 @@ async function getOffersVersionSpecificImages() {
 
 	const offers1 = await client.getOffers();
 	const offers2 = await client2.getOffers();
-	const diff: string[][] = [];
-	offers1.offers.forEach((offer, index) => {
-		if (offer.id === offers2.offers[index].id && offer.image !== offers2.offers[index].image) {
-			diff.push([offer.image, offers2.offers[index].image]);
-		}
-	});
-	console.log("diff:", diff);
-	expect(diff.length).toBeGreaterThan(0);
+	const pollDescription = "What's your take?";
+	const offer1 = offers1.offers.find((o: Offer) => o.description === pollDescription)!;
+	const offer2 = offers2.offers.find((o: Offer) => o.description === pollDescription)!;
+	expect(offer1.image).toBe("https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png");
+	expect(offer2.image).toBe("https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_7.png");
+
 	console.log("OK.\n");
 
 }

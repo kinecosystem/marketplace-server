@@ -35,6 +35,7 @@ describe("translations tests", async () => {
 			create_db: true,
 			trans_file: null,
 			trans_lang: null,
+			rules_dir: null
 		};
 		await initDb(scriptConfig, false);
 		helpers.patchDependencies();

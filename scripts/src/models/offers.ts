@@ -154,3 +154,17 @@ export class PollAnswer extends CreationDateModel {
 	@Column()
 	public content!: string;
 }
+
+@Entity({ name: "sdk_version_rules" })
+@Register
+export class SdkVersionRule extends Model {
+
+	@PrimaryColumn({ name: "comparator" })
+	public comparator!: string;
+
+	@PrimaryColumn({ name: "asset_type" })
+	public assetType!: string;
+
+	@Column({ name: "data", type: "json" })
+	public data!: string;
+}

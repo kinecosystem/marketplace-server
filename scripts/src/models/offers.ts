@@ -157,7 +157,7 @@ export class PollAnswer extends CreationDateModel {
 
 @Entity({ name: "sdk_version_rules" })
 @Register
-export class SdkVersionRule extends Model {
+export class SdkVersionRule extends CreationDateModel {
 
 	@PrimaryColumn({ name: "comparator" })
 	public comparator!: string;

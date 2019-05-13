@@ -2,20 +2,20 @@
 	{
 		"comparator": ">=1.0.0",
 		"data": {
-"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/tell_us_more.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_1.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/favorites.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_2.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/take_a_survaey.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_3.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/do_you_like.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_4.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/sport.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_5.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/movies.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_6.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_7.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_8.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_9.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_9.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_10.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_10.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/kin_tutorial.png": "https://cdn.kinecosystem.com//thumbnails/offers/222x222/kin_logo.png",
-"https://cdn.kinecosystem.com/thumbnails/offers/earn_offer3.png": "https://cdn.kinecosystem.com//thumbnails/offers/222x222/kin_logo.png"
+			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/tell_us_more.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_1.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/favorites.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_2.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/take_a_survaey.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_3.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/do_you_like.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_4.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/sport.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_5.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/movies.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_6.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_7.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_8.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_9.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_9.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_10.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/Generic_10.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/kin_tutorial.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/kin_logo.png",
+			"https://cdn.kinecosystem.com/thumbnails/offers/earn_offer3.png": "https://cdn.kinecosystem.com/thumbnails/offers/222x222/kin_logo.png"
 		}
 	}
 ]

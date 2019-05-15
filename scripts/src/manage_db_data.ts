@@ -191,6 +191,15 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 				description: v.get("PollDescription")!
 			});
 		} else if (v.get("PollPageType")! === "ImageAndText") {
+			console.log({
+				type: PageType.ImageAndText,
+				image: v.get("PollImage")!,
+				title: v.get("PollTitle")!,
+				bodyHtml: v.get("PollBodyHtml")!,
+				rewardText: v.get("PollRewardText")!,
+				rewardValue: v.get("PollRewardValue")!,
+				buttonText: v.get("PollButtonText")!
+			});
 			(poll as Tutorial).pages.push({
 				type: PageType.ImageAndText,
 				image: v.get("PollImage")!,
@@ -207,6 +216,7 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 	if (offer) {
 		results.push(await createEarnInner(offer, poll));
 	}
+	console.log(results.filter(v => !!v));
 	return results.filter(v => !!v);
 }
 
@@ -352,12 +362,10 @@ export async function initDb(scriptConfig: ScriptConfig, closeConnectionWhenDone
 			const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
 			let results = [];
 			if (title === "Spend") {
-				results = await
-					parseSpend(parsed, appList);
+				results = await parseSpend(parsed, appList);
 				createOfferOptions.verbose && console.log(`created spend:${ contentType } offers`);
 			} else if (title === "Earn") {
-				results = await
-					parseEarn(parsed, contentType, appList, createOfferOptions);
+				results = await parseEarn(parsed, contentType, appList, createOfferOptions);
 				createOfferOptions.verbose && console.log(`created earn:${ contentType } offers`);
 			} else {
 				throw new Error("Failed to parse " + parsed[0][0]);

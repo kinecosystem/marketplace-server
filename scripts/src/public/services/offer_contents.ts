@@ -22,12 +22,16 @@ export interface PollPage {
 	type: PageType;
 	title: string;
 	description: string;
+	rewardText: string;
+	rewardValue: string;
 	question: Question;
 }
 
 export interface QuizPage {
 	type: PageType;
 	description: string;
+	rewardText: string;
+	rewardValue: string;
 	amount: number;
 	rightAnswer: number; // XXX change answers to have an id
 	question: Question;
@@ -56,7 +60,8 @@ export type TutorialPage = {
 	title: string,
 	image: string,
 	bodyHtml: string,
-	footerHtml: string,
+	rewardText: string,
+	rewardValue: string,
 	buttonText: string
 };
 

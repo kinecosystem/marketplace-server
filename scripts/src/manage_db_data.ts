@@ -149,7 +149,9 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 			(poll as Poll).pages.push({
 				type: PageType.FullPageMultiChoice,
 				title: v.get("PollTitle")!,
-				description: v.get("PollDescription")!,
+				description: "",
+				rewardText: v.get("PollRewardText")!,
+				rewardValue: v.get("PollRewardValue")!,
 				question: {
 					id: v.get("PollQuestionId")!,
 					answers: [
@@ -164,6 +166,8 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 			(poll as Quiz).pages.push({
 				type: PageType.TimedFullPageMultiChoice,
 				description: v.get("PollDescription")!,
+				rewardText: v.get("PollRewardText")!,
+				rewardValue: v.get("PollRewardValue")!,
 				question: {
 					id: v.get("PollQuestionId")!,
 					answers: [
@@ -192,7 +196,8 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 				image: v.get("PollImage")!,
 				title: v.get("PollTitle")!,
 				bodyHtml: v.get("PollBodyHtml")!,
-				footerHtml: v.get("PollFooterHtml")!,
+				rewardText: v.get("PollRewardText")!,
+				rewardValue: v.get("PollRewardValue")!,
 				buttonText: v.get("PollButtonText")!
 			});
 		} else {

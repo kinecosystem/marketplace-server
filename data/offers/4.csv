@@ -1,79 +1,79 @@
-Earn Quiz,,,,,,,,,,,,Spend (offer info)Amazon GiftCard,,,,,,,
-WalletAddress,Brand,OfferName = internal identifier for noa,Amount,Title = MarketPlace title 14 characters,Description = MarketPlace subtitle 18 characters,Image,OrderTitle = (transactions page),OrderDescription = (transactions page),CapTotal = Offer cap total ,CapPerUser = Offer cap per user,PollQuestionId,PollPageType (82 charachters),PollDescription,PollAnswer1 = #1 : 22 each answer. ,PollAnswer2 =  #2 : 22 each answer. ,PollAnswer3 =  #3 : 22 each answer. ,PollAnswer4 =  #4:  22 each answer. ,rightAnswer = index of right answer,amount = kin amount for this question
+Earn Quiz,,,,,,,,,,,,Spend (offer info)Amazon GiftCard,,,,,,,,,
+WalletAddress,Brand,OfferName = internal identifier for noa,Amount,Title = MarketPlace title 14 characters,Description = MarketPlace subtitle 18 characters,Image,OrderTitle = (transactions page),OrderDescription = (transactions page),CapTotal = Offer cap total,CapPerUser = Offer cap per user,PollQuestionId,PollPageType (82 charachters),PollDescription,PollRewardText,PollRewardValue,PollAnswer1 = #1 : 22 each answer.,PollAnswer2 =  #2 : 22 each answer.,PollAnswer3 =  #3 : 22 each answer.,PollAnswer4 =  #4:  22 each answer.,rightAnswer = index of right answer,amount = kin amount for this question
 GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #1,30,Take a quiz,Kik,https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,"
-When was Kik founded?",2006,2009,2008,2002,2,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,What was Kik's first product?,Chat,Music Sharing,Recipe Book,Guide To Waterloo,2,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,What's Ted Livingston's favorite T-shirt color?,Yellow,Black,Purple,Red,3,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #2,30,Take a quiz,Nobel Prize,https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,The first winner of the Nobel Prize from Asia was...?,C. V. Raman,Rajiv Gandhi,Rabindranath Tagore,Mother Teresa,3,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,The Nobel Prize was first awarded in...?,1976,1958,1901,1972,3,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,The Nobel Peace Prize is awarded in...?,Oslo,Stockholm,Brussels,Geneva,1,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #3,30,Take a quiz,Tech,https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,"The computer abbreviation ""OS"" stands for?",Order of Significance,Operating System,Open Software,Optical Sensor,2,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,Who developed Yahoo?,Ritchie &Thompson,Filo & Yang,Cerf & Kahn,Case & Bezos,2,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,"The computer abbreviation ""DB"" usually stands for?",Database,Double Byte,Data Block,Driver Boot,1,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #4,30,Take a quiz,Bitcoin,https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,"In 2010, Laszlo Hanyecz bought two pizzas with Bitcoin. How much did he spend?","1,000,000 BTC","100,000 BTC","10,000 BTC",100 BTC,3,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,"At the time of the pizza purchase, how much were the bitcoins worth?",$103.00 US,$41.00 US,$43.00 US,$22.00 US,2,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,Small fractions of Bitcoin are called...,Saromashi,Sashimi,Sauromani,Satoshi,4,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #5,30,Take a quiz,Canada,https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,Canada population is...,"34,287,919","36,937,913","42,367,998","29,876,453",2,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,The Toronto Maple Leafs last won the Stanley Cup in...,1977,1990,1982,1967,4,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,Canada's top export is...,Maple Syrop,Dairy Products,Lumber,Oil,4,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #6,30,Take a quiz,Tech,https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,The first website came online in...,1991,1989,1993,1995,1,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,Apple launched the first iPhone in...,1999,2003,2007,2001,3,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,Blackberry (formerly RIM) launched it's first device in...,1996,1997,2001,1999,4,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #7,30,Take a quiz,Cryptocurrency,https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,When was the first decentralized cryptocurrency created?,2009,2005,2011,2001,1,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,How many cryptocurrencies are there?,500,50000,more than 1500,about 10000,3,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,Who invented the first coin?,The Greeks,The ancient Egyptians,The Romans,The Lydians,4,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #8,30,Take a quiz,Mountains,https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,What is the highest mountain peak in the world?,Mount Everest,Annapurna,Cho Oyu,K2,1,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,Who was the first to summit it?,Yasuko Namba,Edmund Hillary,Sungdare Sherpa,Melissa Arnot,2,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,In what year did it occur?,"October 10, 1979","May 16, 1975","May 29, 1953","October 15, 1954",3,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #9,30,Take a quiz,Science,https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,How many bones we have in our skull?,2,29,14,22,4,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,Whose heart beats the fastest?,Man,Woman,Infant,Dog,3,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,Which body part cannot heal itself?,Teeth,Liver,Kidney,Heart,1,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #10,30,Take a quiz,Music,https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,When was the first music instrument created?,"43,400 years ago","67,000 years ago","165,000 years ago","30,000 years ago",1,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,What is the oldest musical tool ever found?,Elephant Skin Drum,Mammoth Ivory Flute,Bone Flute,Percussion instruments,2,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,When was the first violin created?,"10,000 years ago",1772,1556,1819,3,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #11,30,Take a quiz,Geography,https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,What are the official languages of Canada?,English,"English, Spanish","English, French","English, Spanish, French",3,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,What's the biggest country in the world?,Canada,USA,Russia,China,3,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,What is the most populated country in the world?,Canada,USA,Russia,China,4,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #12,30,Take a quiz,Travel,https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,What is the busiest airport in the world as of today?,Hartsfield-Jackson ATL,Beijing Capital ,Dubai Internal Airport,Tokyo Haneda ,3,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,How many passengers travel in the most busiest airport annually?,"85,408,975","88,242,099","95,786,442","103,902,992",4,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,What is considered the best airport in the world?,Taiwan Taoyuan,Amsterdam Schiphol,Cantral Japan,Singapore Changi ,3,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #13,30,Take a quiz,Games,https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,How many little blocks make up the Rubik's Cube?,27,25,26,30,2,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,"What is the nationality of Ernő Rubik, the inventor of the Rubik's Cube?",Indian,Romanian,Hungarian,Polish,3,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,When was the Rubik's Cube invented?,1949,1974,1848,1985,2,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #14,30,Take a quiz,General,https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,What car brand was most searched for in the US for 2017?,Ford,Lexus,Kia,Toyota,1,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,What was the most searched term in the US for 2017?,Super Bowl,Hurricane Irma,Matt Lauer,Tom Petty,2,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,"What was the most searched ""how to"" question in the US for 2017?",solar eclipse glasses,watch solar eclipse,buy Bitcoin,make slime,4,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #15,30,Take a quiz,TV&Movies,https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,In which season of the award winning comedy 30 Rock did Tracy Jordan get the EGOT?,Season 3,Season 4,Season 5,Season 6,3,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,Which Pixar movie was the most profitable?,Finding Nemo,Toy Story 3,Finding Dory,Toy Story 2,1,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,How many Indiana Jones movies have been released?,3,4,5,2,3,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #16,30,Take a quiz,Fun,https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,Which video has the most views on YouTube?,Gangnam Style,See You Again ,Shape of You ,Despacito ,4,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,Who has the most Twitter followers?,Katy Perry,Barack Obama,Lady Gaga,Ellen DeGeneres,1,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,Which Kardashian is the oldest?,Rob Kardashian,Kim Kardashian-West,Khloé Kardashian,Kourtney Kardashian,4,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #17,30,Take a quiz,General,https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,The first video game was created in...,1972,1975,1979,1958,4,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,The 1st video game easter egg was in...,Atari Breakout,Atari Adventure,Atari Pong,Atari Tempest,2,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,The first programmer was...,Blaise Pascal,Steve Jobs,Bill Gates,Ada Lovelace,4,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #18,30,Take a quiz,Tech,https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,Intel's first CPU was released in...,1972,1975,1971,1958,3,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,The C programming language was created in...,1972,1975,1971,1958,1,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,Who conceptualized the first blockchain?,Steve Jobs,Bill Gates,Elon Musk,Satoshi Nakamoto,4,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
-GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #19,30,Take a quiz,Science,https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,The Great Victoria Desert is located in...,Canada,West Africa,Australia,North America,3,10
-,,,,,,,,,,,2,TimedFullPageMultiChoice,The light of distant stars is affected by...,The Earth’s atmosphere,Interstellar dust,Both (a) and (b),None of the above,2,10
-,,,,,,,,,,,3,TimedFullPageMultiChoice,The humidity of the air depends on...,Temperature,Location,Weather,All of the above,4,10
-,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,10
+When was Kik founded?",Finish the quiz to earn,${amount},2006,2009,2008,2002,2,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,What was Kik's first product?,Finish the quiz to earn,${amount},Chat,Music Sharing,Recipe Book,Guide To Waterloo,2,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,What's Ted Livingston's favorite T-shirt color?,Finish the quiz to earn,${amount},Yellow,Black,Purple,Red,3,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #2,30,Take a quiz,Nobel Prize,https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,The first winner of the Nobel Prize from Asia was...?,Finish the quiz to earn,${amount},C. V. Raman,Rajiv Gandhi,Rabindranath Tagore,Mother Teresa,3,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,The Nobel Prize was first awarded in...?,Finish the quiz to earn,${amount},1976,1958,1901,1972,3,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,The Nobel Peace Prize is awarded in...?,Finish the quiz to earn,${amount},Oslo,Stockholm,Brussels,Geneva,1,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #3,30,Take a quiz,Tech,https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,"The computer abbreviation ""OS"" stands for?",Finish the quiz to earn,${amount},Order of Significance,Operating System,Open Software,Optical Sensor,2,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,Who developed Yahoo?,Finish the quiz to earn,${amount},Ritchie &Thompson,Filo & Yang,Cerf & Kahn,Case & Bezos,2,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,"The computer abbreviation ""DB"" usually stands for?",Finish the quiz to earn,${amount},Database,Double Byte,Data Block,Driver Boot,1,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #4,30,Take a quiz,Bitcoin,https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,"In 2010, Laszlo Hanyecz bought two pizzas with Bitcoin. How much did he spend?",Finish the quiz to earn,${amount},"1,000,000 BTC","100,000 BTC","10,000 BTC",100 BTC,3,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,"At the time of the pizza purchase, how much were the bitcoins worth?",Finish the quiz to earn,${amount},$103.00 US,$41.00 US,$43.00 US,$22.00 US,2,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,Small fractions of Bitcoin are called...,Finish the quiz to earn,${amount},Saromashi,Sashimi,Sauromani,Satoshi,4,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #5,30,Take a quiz,Canada,https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,Canada population is...,Finish the quiz to earn,${amount},"34,287,919","36,937,913","42,367,998","29,876,453",2,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,The Toronto Maple Leafs last won the Stanley Cup in...,Finish the quiz to earn,${amount},1977,1990,1982,1967,4,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,Canada's top export is...,Finish the quiz to earn,${amount},Maple Syrop,Dairy Products,Lumber,Oil,4,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #6,30,Take a quiz,Tech,https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png,Quiz,Completed,1000,1,1,TimedFullPageMultiChoice,The first website came online in...,Finish the quiz to earn,${amount},1991,1989,1993,1995,1,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,Apple launched the first iPhone in...,Finish the quiz to earn,${amount},1999,2003,2007,2001,3,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,Blackberry (formerly RIM) launched it's first device in...,Finish the quiz to earn,${amount},1996,1997,2001,1999,4,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #7,30,Take a quiz,Cryptocurrency,https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,When was the first decentralized cryptocurrency created?,Finish the quiz to earn,${amount},2009,2005,2011,2001,1,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,How many cryptocurrencies are there?,Finish the quiz to earn,${amount},500,50000,more than 1500,about 10000,3,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,Who invented the first coin?,Finish the quiz to earn,${amount},The Greeks,The ancient Egyptians,The Romans,The Lydians,4,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #8,30,Take a quiz,Mountains,https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,What is the highest mountain peak in the world?,Finish the quiz to earn,${amount},Mount Everest,Annapurna,Cho Oyu,K2,1,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,Who was the first to summit it?,Finish the quiz to earn,${amount},Yasuko Namba,Edmund Hillary,Sungdare Sherpa,Melissa Arnot,2,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,In what year did it occur?,Finish the quiz to earn,${amount},"October 10, 1979","May 16, 1975","May 29, 1953","October 15, 1954",3,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #9,30,Take a quiz,Science,https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,How many bones we have in our skull?,Finish the quiz to earn,${amount},2,29,14,22,4,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,Whose heart beats the fastest?,Finish the quiz to earn,${amount},Man,Woman,Infant,Dog,3,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,Which body part cannot heal itself?,Finish the quiz to earn,${amount},Teeth,Liver,Kidney,Heart,1,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #10,30,Take a quiz,Music,https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,When was the first music instrument created?,Finish the quiz to earn,${amount},"43,400 years ago","67,000 years ago","165,000 years ago","30,000 years ago",1,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,What is the oldest musical tool ever found?,Finish the quiz to earn,${amount},Elephant Skin Drum,Mammoth Ivory Flute,Bone Flute,Percussion instruments,2,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,When was the first violin created?,Finish the quiz to earn,${amount},"10,000 years ago",1772,1556,1819,3,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #11,30,Take a quiz,Geography,https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,What are the official languages of Canada?,Finish the quiz to earn,${amount},English,"English, Spanish","English, French","English, Spanish, French",3,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,What's the biggest country in the world?,Finish the quiz to earn,${amount},Canada,USA,Russia,China,3,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,What is the most populated country in the world?,Finish the quiz to earn,${amount},Canada,USA,Russia,China,4,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #12,30,Take a quiz,Travel,https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,What is the busiest airport in the world as of today?,Finish the quiz to earn,${amount},Hartsfield-Jackson ATL,Beijing Capital,Dubai Internal Airport,Tokyo Haneda,3,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,How many passengers travel in the most busiest airport annually?,Finish the quiz to earn,${amount},"85,408,975","88,242,099","95,786,442","103,902,992",4,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,What is considered the best airport in the world?,Finish the quiz to earn,${amount},Taiwan Taoyuan,Amsterdam Schiphol,Cantral Japan,Singapore Changi,3,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #13,30,Take a quiz,Games,https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,How many little blocks make up the Rubik's Cube?,Finish the quiz to earn,${amount},27,25,26,30,2,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,"What is the nationality of Ernő Rubik, the inventor of the Rubik's Cube?",Finish the quiz to earn,${amount},Indian,Romanian,Hungarian,Polish,3,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,When was the Rubik's Cube invented?,Finish the quiz to earn,${amount},1949,1974,1848,1985,2,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #14,30,Take a quiz,General,https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,What car brand was most searched for in the US for 2017?,Finish the quiz to earn,${amount},Ford,Lexus,Kia,Toyota,1,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,What was the most searched term in the US for 2017?,Finish the quiz to earn,${amount},Super Bowl,Hurricane Irma,Matt Lauer,Tom Petty,2,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,"What was the most searched ""how to"" question in the US for 2017?",Finish the quiz to earn,${amount},solar eclipse glasses,watch solar eclipse,buy Bitcoin,make slime,4,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #15,30,Take a quiz,TV&Movies,https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,In which season of the award winning comedy 30 Rock did Tracy Jordan get the EGOT?,Finish the quiz to earn,${amount},Season 3,Season 4,Season 5,Season 6,3,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,Which Pixar movie was the most profitable?,Finish the quiz to earn,${amount},Finding Nemo,Toy Story 3,Finding Dory,Toy Story 2,1,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,How many Indiana Jones movies have been released?,Finish the quiz to earn,${amount},3,4,5,2,3,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #16,30,Take a quiz,Fun,https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,Which video has the most views on YouTube?,Finish the quiz to earn,${amount},Gangnam Style,See You Again,Shape of You,Despacito,4,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,Who has the most Twitter followers?,Finish the quiz to earn,${amount},Katy Perry,Barack Obama,Lady Gaga,Ellen DeGeneres,1,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,Which Kardashian is the oldest?,Finish the quiz to earn,${amount},Rob Kardashian,Kim Kardashian-West,Khloé Kardashian,Kourtney Kardashian,4,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #17,30,Take a quiz,General,https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,The first video game was created in...,Finish the quiz to earn,${amount},1972,1975,1979,1958,4,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,The 1st video game easter egg was in...,Finish the quiz to earn,${amount},Atari Breakout,Atari Adventure,Atari Pong,Atari Tempest,2,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,The first programmer was...,Finish the quiz to earn,${amount},Blaise Pascal,Steve Jobs,Bill Gates,Ada Lovelace,4,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #18,30,Take a quiz,Tech,https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,Intel's first CPU was released in...,Finish the quiz to earn,${amount},1972,1975,1971,1958,3,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,The C programming language was created in...,Finish the quiz to earn,${amount},1972,1975,1971,1958,1,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,Who conceptualized the first blockchain?,Finish the quiz to earn,${amount},Steve Jobs,Bill Gates,Elon Musk,Satoshi Nakamoto,4,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10
+GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E,Kin,Online Quiz #19,30,Take a quiz,Science,https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png,Quiz,Completed,5000,1,1,TimedFullPageMultiChoice,The Great Victoria Desert is located in...,Finish the quiz to earn,${amount},Canada,West Africa,Australia,North America,3,10
+,,,,,,,,,,,2,TimedFullPageMultiChoice,The light of distant stars is affected by...,Finish the quiz to earn,${amount},The Earth’s atmosphere,Interstellar dust,Both (a) and (b),None of the above,2,10
+,,,,,,,,,,,3,TimedFullPageMultiChoice,The humidity of the air depends on...,Finish the quiz to earn,${amount},Temperature,Location,Weather,All of the above,4,10
+,,,,,,,,,,,,SuccessBasedThankYou,,,,,,,,,10

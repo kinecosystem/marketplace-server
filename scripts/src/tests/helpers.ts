@@ -24,6 +24,8 @@ const animalPoll: Poll = {
 		type: PageType.FullPageMultiChoice,
 		title: "Whats your favourite animal?",
 		description: "Who doesn't love animals!?",
+		rewardText: "Finish the poll to earn",
+		rewardValue: "6000",
 		question: {
 			id: "favourite_animal",
 			answers: ["dog", "cat", "monkey", "mouse"],

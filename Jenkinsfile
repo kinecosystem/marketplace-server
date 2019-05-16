@@ -22,10 +22,10 @@ pipeline {
                 sh 'make create-jwt-keys'
             }
         }
-        stage('Test') {
+        stage('Unit Test') {
             steps {
                 echo 'Unit testing'
-                //sh 'mvn test'
+                //todo: place holder for unit tests
             }
         }
         stage ('Code Quality'){
@@ -34,15 +34,13 @@ pipeline {
                 echo 'Todo: Quality and security plugins (FindBugs, CheckMarx, etc.)'
             }
         }
-        stage('Release') {
+        stage('Create Docker Image') {
             steps {
-                echo 'Releasing'
-                sh ' mvn -B release:clean release:prepare release:perform -DdryRun=true'
-                //running un dryrun since their are ni credentials set on the jenkins machine, so this will fail
-                //sh 'mvn -B release:clean release:prepare release:perform'
+                echo 'Creating docker image'
+                sh 'make build-image'
             }
         }
-        stage('DeplCreate testing env') {
+        stage('Create testing env') {
             steps {
                 echo 'Todo: Creating env'
             }

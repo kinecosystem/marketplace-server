@@ -370,7 +370,11 @@ export async function cancelOrder(orderId: string, userId: string): Promise<void
 		throw NoSuchOrder(orderId);
 	}
 
-	await order.remove();
+	try {
+		await order.remove();
+	} catch (e) {
+		// don't care about failures
+	}
 }
 
 export async function getOrderHistory(

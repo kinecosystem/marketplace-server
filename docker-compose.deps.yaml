@@ -80,6 +80,7 @@ services:
       OLD_HORIZON: 'https://horizon-playground.kininfrastructure.com'
       NEW_HORIZON: 'https://horizon-testnet.kininfrastructure.com'
       NEW_PASSPHRASE: 'Kin Testnet ; December 2018'
+      APP_INTERNAL_SERVICE: 'http://marketplace-internal'
       APP_ID: 'mgsv'
       DEBUG: 'TRUE'
 

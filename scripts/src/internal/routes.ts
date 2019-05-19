@@ -8,6 +8,7 @@ import {
 	walletCreationSuccess as walletCreationSuccessService,
 	WalletCreationSuccessData,
 	WalletCreationFailureData, FailedPayment,
+	burnWallet as burnWalletService,
 } from "./services";
 import { getDefaultLogger as logger } from "../logging";
 
@@ -83,11 +84,21 @@ export const getJwtKeys = async function(req: WebHookRequest, res: Response) {
 	res.status(200).send(PUBLIC_KEYS);
 } as any as RequestHandler;
 
+type BurnWalletRequest = Request & {
+	params: { wallet_address: string }
+};
+export const burnWallet = async function(req: BurnWalletRequest, res: Response) {
+	const walletAddress = req.params.wallet_address;
+	await burnWalletService(walletAddress);
+	res.sendStatus(204);
+} as any as RequestHandler;
+
 export function createRoutes(app: Express, pathPrefix?: string) {
 	const router = Router();
 	router
 		.post("/webhook", webhookHandler)
-		.get("/jwt-keys", getJwtKeys);
+		.get("/jwt-keys", getJwtKeys)
+		.put("/wallets/:wallet_address/burn", burnWalletService);
 
 	app.use("/v1/internal/", router);
 	app.get("/status", statusHandler);

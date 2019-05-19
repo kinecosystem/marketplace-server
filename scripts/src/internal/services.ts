@@ -4,6 +4,7 @@ import * as db from "../models/orders";
 import { User, Wallet } from "../models/users";
 import { pick, removeDuplicates } from "../utils/utils";
 import { Asset, OrderValue } from "../models/offers";
+import { WalletApplication } from "../models/users";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
 import { create as createSpendOrderPaymentConfirmed } from "../analytics/events/spend_order_payment_confirmed";
 import { create as createStellarAccountCreationFailed } from "../analytics/events/stellar_account_creation_failed";
@@ -12,7 +13,7 @@ import { create as createEarnTransactionBroadcastToBlockchainFailed } from "../a
 import { create as createEarnTransactionBroadcastToBlockchainSucceeded } from "../analytics/events/earn_transaction_broadcast_to_blockchain_succeeded";
 
 import { sign as signJWT } from "./jwt";
-import { AssetUnavailable, BlockchainError, WrongAmount, WrongRecipient, WrongSender } from "../errors";
+import { AssetUnavailable, BlockchainError, WrongAmount, WrongRecipient, WrongSender, NoSuchWallet } from "../errors";
 import { setFailedOrder } from "../public/services/orders";
 import { Application, AppOffer } from "../models/applications";
 
@@ -29,6 +30,7 @@ export type WalletCreationSuccessData = {
 export async function walletCreationSuccess(data: WalletCreationSuccessData) {
 	createStellarAccountCreationSucceeded(data.id).report();
 	logger().info("wallet created", data);
+	await updateWalletCreationDate(data.wallet_address, "createdDateKin2");
 }
 
 export type WalletCreationFailureData = {
@@ -222,4 +224,18 @@ export async function initPaymentCallbacks(): Promise<Watcher> {
 
 	logger().info("setting payment watching addresses", { addresses });
 	return await setWatcherEndpoint(addresses);
+}
+
+export async function burnWallet(walletAddress: string) {
+	await updateWalletCreationDate(walletAddress, "createdDateKin3");
+}
+
+async function updateWalletCreationDate(walletAddress: string, createdDateField: "createdDateKin2" | "createdDateKin3") {
+	const wallet = await WalletApplication.findOne({ walletAddress });
+	if (!wallet) {
+		throw NoSuchWallet(walletAddress);
+	}
+
+	wallet[createdDateField] = new Date();
+	await wallet.save();
 }

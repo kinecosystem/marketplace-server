@@ -102,7 +102,8 @@ export type EarnOptions = {
 
 export async function createEarn(
 	offerName: string, walletAddress: string,
-	brand: string, title: string, description: string, image: string, amount: number,
+	brand: string, title: string, description: string, rewardText: string, rewardValue: string,
+	image: string, amount: number,
 	capTotal: number, capPerUser: number,
 	orderTitle: string, orderDescription: string, contentType: ContentType,
 	poll: Quiz | Poll | Tutorial,
@@ -145,6 +146,8 @@ export async function createEarn(
 			title,
 			image,
 			description,
+			rewardText,
+			rewardValue,
 			order_meta: {
 				title: orderTitle,
 				description: orderDescription,

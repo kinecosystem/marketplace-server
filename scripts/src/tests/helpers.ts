@@ -189,7 +189,7 @@ export async function createOffers(appId?: string) {
 		await createEarn(
 			`${ uniqueId }_earn${ i }`,
 			"GBOQY4LENMPZGBROR7PE5U3UXMK22OTUBCUISVEQ6XOQ2UDPLELIEC4J",
-			`earn${ i }`, `earn${ i }`, `earn${ i }`, `earn${ i }`,
+			`earn${ i }`, `earn${ i }`, `description{ i }`, `rewardText${ i }`, "${amount}", `earn${ i }`,
 			100, 30, 1, `earn${ i }`, `earn${ i }`,
 			"poll", animalPoll, appIds
 		);

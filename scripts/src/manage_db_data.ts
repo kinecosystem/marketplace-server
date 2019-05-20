@@ -127,6 +127,8 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 			STELLAR_ADDRESS || v.get("WalletAddress")!,
 			v.get("Brand")!, v.get("Title")!,
 			v.get("Description")!,
+			v.get("PollRewardText")!,
+			v.get("PollRewardValue")!,
 			v.get("Image")!,
 			parseInt(v.get("Amount")!, 10),
 			parseInt(v.get("CapTotal")!, 10),
@@ -191,15 +193,6 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 				description: v.get("PollDescription")!
 			});
 		} else if (v.get("PollPageType")! === "ImageAndText") {
-			console.log({
-				type: PageType.ImageAndText,
-				image: v.get("PollImage")!,
-				title: v.get("PollTitle")!,
-				bodyHtml: v.get("PollBodyHtml")!,
-				rewardText: v.get("PollRewardText")!,
-				rewardValue: v.get("PollRewardValue")!,
-				buttonText: v.get("PollButtonText")!
-			});
 			(poll as Tutorial).pages.push({
 				type: PageType.ImageAndText,
 				image: v.get("PollImage")!,

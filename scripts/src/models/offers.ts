@@ -20,6 +20,8 @@ export type OfferMeta = {
 	title: string;
 	image: string;
 	description: string;
+	rewardText: string;
+	rewardValue: string;
 	order_meta: OrderMeta;
 };
 

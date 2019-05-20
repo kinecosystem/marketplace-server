@@ -13,7 +13,6 @@ import { getDefaultLogger as logger } from "../logging";
 import { generateId, IdPrefix, Mutable } from "../utils/utils";
 
 import { OrderContext } from "./orders";
-import { BlockchainVersion } from "./offers";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
 
 @Entity({ name: "users" })

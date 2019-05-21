@@ -61,7 +61,9 @@ async function getVersionImageData(version: string): Promise<VersionRuleData> {
 	const cacheKey = `SdkVersionRule:image`;
 	let imageVersionRules = localCache.get<SdkVersionRule[]>(cacheKey);
 	if (!imageVersionRules) {
-		imageVersionRules = await SdkVersionRule.find({ assetType: "image" });
+		imageVersionRules = await SdkVersionRule.find({
+			where: { assetType: "image" }, order: { createdDate: "DESC" }
+		});
 		if (imageVersionRules) {
 			localCache.set(cacheKey, imageVersionRules, moment.duration(5, "minutes"));
 		}

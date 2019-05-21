@@ -168,6 +168,7 @@ async function parseEarn(data: string[][], contentType: ContentType, appList: st
 			(poll as Quiz).pages.push({
 				type: PageType.TimedFullPageMultiChoice,
 				title: v.get("PollDescription")!,
+				description: "",
 				rewardText: v.get("PollRewardText")!,
 				rewardValue: v.get("PollRewardValue")!,
 				question: {

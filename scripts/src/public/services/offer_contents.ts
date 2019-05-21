@@ -30,6 +30,7 @@ export interface PollPage {
 export interface QuizPage {
 	type: PageType;
 	title: string;
+	description: string;
 	rewardText: string;
 	rewardValue: string;
 	amount: number;

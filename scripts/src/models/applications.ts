@@ -31,7 +31,7 @@ export class Application extends CreationDateModel {
 
 		if (!apps) {
 			apps = await Application.find();
-			localCache.set(cacheKey, apps, moment.duration(10, "second"));
+			localCache.set(cacheKey, apps, moment.duration(10, "minute"));
 		}
 
 		return new Map(apps.map(app => [app.id, app]) as Array<[string, Application]>);

@@ -71,7 +71,7 @@ export function init(filePath: string) {
 	const getHandler = {
 		get: (obj: Config["cache_ttl"], prop: keyof Config["cache_ttl"]) => {
 			const currentValue = obj[prop];
-			return obj[prop] && typeof currentValue === "number" ? currentValue : "default";
+			return obj[prop] && typeof currentValue === "number" ? currentValue : cacheConfig.default;
 		}
 	};
 	config.cache_ttl = new Proxy(cacheConfig, getHandler);  // This way if a cache config is accessed but not explicitly defined it will be default

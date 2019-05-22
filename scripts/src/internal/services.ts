@@ -226,7 +226,7 @@ export async function initPaymentCallbacks(): Promise<Watcher> {
 	return await setWatcherEndpoint(addresses);
 }
 
-export async function burnWallet(walletAddress: string) {
+export async function markWalletBurnt(walletAddress: string) {
 	await updateWalletCreationDate(walletAddress, "createdDateKin3");
 }
 

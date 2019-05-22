@@ -5,16 +5,8 @@ import { WalletApplication } from "../../models/users";
 import { getConfig } from "../config";
 import { NoSuchWallet } from "../../errors";
 
-import axios from "axios";
 import { getDefaultLogger as logger } from "../../logging";
 import { isRestoreAllowed } from "./users";
-
-const axiosRetry = require("axios-retry"); // TODO: this fails the tests: import axiosRetry from "axios-retry";
-
-const DEFAULT_TIMEOUT = 300;
-
-const client = axios.create({ timeout: DEFAULT_TIMEOUT });
-axiosRetry(client, { retries: 6, retryCondition: () => true, shouldResetTimeout: true });
 
 type AccountMigrationStatus = {
 	should_migrate: boolean;

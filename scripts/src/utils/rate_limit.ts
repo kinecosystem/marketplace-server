@@ -88,7 +88,7 @@ async function checkRateLimitWalletEarn(wallet: string, limit: number, duration:
 }
 
 export async function assertRateLimitEarn(user: User, walletAddress: string, amount: number) {
-	const app = (await Application.findOneById(user.appId))!;
+	const app = (await Application.get(user.appId))!;
 	const limiters = [
 		await checkRateLimitAppEarn(app.id, app.config.limits.minute_total_earn, moment.duration({ minutes: 1 }), amount),
 		await checkRateLimitAppEarn(app.id, app.config.limits.hourly_total_earn, moment.duration({ hours: 1 }), amount),

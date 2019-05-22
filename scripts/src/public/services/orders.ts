@@ -224,7 +224,7 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 }
 
 async function createNormalEarnExternalOrder(recipient: User, recipientDeviceId: string, jwt: ExternalEarnOrderJWT) {
-	const app = (await Application.findOneById(recipient.appId))!;
+	const app = (await Application.get(recipient.appId))!;
 	if (!app) {
 		throw NoSuchApp(recipient.appId);
 	}

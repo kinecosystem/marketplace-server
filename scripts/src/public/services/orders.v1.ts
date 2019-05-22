@@ -207,7 +207,7 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 }
 
 async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnOrderJWT) {
-	const app = (await Application.findOneById(recipient.appId))!;
+	const app = (await Application.get(recipient.appId))!;
 
 	const wallet = (await recipient.getWallets()).lastUsed();
 	if (!wallet) {
@@ -236,7 +236,7 @@ async function createNormalEarnExternalOrder(recipient: User, jwt: ExternalEarnO
 }
 
 async function createNormalSpendExternalOrder(sender: User, jwt: ExternalSpendOrderJWT) {
-	const app = await Application.findOneById(sender.appId);
+	const app = await Application.get(sender.appId);
 
 	if (!app) {
 		throw NoSuchApp(sender.appId);

@@ -96,7 +96,7 @@ export async function v1ValidateWhitelist(appUserId: string, apiKey: string): Pr
 }
 
 export async function getAppBlockchainVersion(app_id: string): Promise<BlockchainVersion> {
-	const app = await Application.findOneById(app_id);
+	const app = await Application.get(app_id);
 	if (!app) {
 		throw NoSuchApp(app_id);
 	}
@@ -104,7 +104,7 @@ export async function getAppBlockchainVersion(app_id: string): Promise<Blockchai
 }
 
 export async function setAppBlockchainVersion(app_id: string, blockchain_version: BlockchainVersion): Promise<void> {
-	const app = await Application.findOneById(app_id);
+	const app = await Application.get(app_id);
 	if (!app) {
 		throw NoSuchApp(app_id);
 	}

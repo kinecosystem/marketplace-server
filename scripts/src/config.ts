@@ -33,6 +33,7 @@ export interface Config {
 	webview: string;
 	cache_ttl: {
 		default: number;
+		application?: number;
 	};
 
 	migration_service?: string;
@@ -64,9 +65,18 @@ export function init(filePath: string) {
 	config.redis = process.env.APP_REDIS || config.redis;
 	config.statsd.host = process.env.STATSD_HOST || config.statsd.host;
 	config.statsd.port = Number(process.env.STATSD_PORT) || config.statsd.port;
-	config.cache_ttl = JSON.parse(process.env.CACH_TTL || "null") || config.cache_ttl || { "default": 30 };  // In seconds
-	config.migration_service = process.env.MIGRATION_SERVICE || config.migration_service;
 	config.num_processes = Number(process.env.NUM_PROCESSES) || config.num_processes;
+
+	const cacheConfig = JSON.parse(process.env.CACH_TTL || "null") || config.cache_ttl || { "default": 30 };  // In seconds
+	const getHandler = {
+		get: (obj: Config["cache_ttl"], prop: keyof Config["cache_ttl"]) => {
+			const currentValue = obj[prop];
+			return obj[prop] && typeof currentValue === "number" ? currentValue : cacheConfig.default;
+		}
+	};
+	config.cache_ttl = new Proxy(cacheConfig, getHandler);  // This way if a cache config is accessed but not explicitly defined it will be default
+
+	config.migration_service = process.env.MIGRATION_SERVICE || config.migration_service;
 
 }
 

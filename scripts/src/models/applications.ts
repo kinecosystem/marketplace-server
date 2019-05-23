@@ -7,6 +7,9 @@ import { Order } from "./orders";
 
 import { LimitConfig } from "../config";
 import moment = require("moment");
+import { getConfig } from "../public/config";
+
+const config = getConfig();
 
 export type StringMap = { [key: string]: string; };  // key => value pairs
 export type SignInType = "jwt" | "whitelist";
@@ -31,7 +34,7 @@ export class Application extends CreationDateModel {
 
 		if (!apps) {
 			apps = await Application.find();
-			localCache.set(cacheKey, apps, moment.duration(10, "minute"));
+			localCache.set(cacheKey, apps, moment.duration(config.cache_ttl.application, "seconds"));
 		}
 
 		return new Map(apps.map(app => [app.id, app]) as Array<[string, Application]>);

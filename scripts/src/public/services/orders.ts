@@ -1,4 +1,4 @@
-import { lock } from "../../redis";
+import { getRedisClient, lock } from "../../redis";
 import * as metrics from "../../metrics";
 import { User } from "../../models/users";
 import * as db from "../../models/orders";
@@ -282,6 +282,35 @@ async function createNormalSpendExternalOrder(sender: User, senderDeviceId: stri
 	await addWatcherEndpoint(app.walletAddresses.recipient, order.id, app.id);
 
 	return order;
+}
+
+export type CompletedOffer = {
+	offer_id: string;
+	nonce: string;
+};
+
+export async function getCompletedOffers(user: User): Promise<CompletedOffer[]> {
+	const redis = getRedisClient();
+	const members = await redis.async.smembers(`user:${ user.id }:completed_offers`);
+
+	return members.map(m => {
+		const loc = m.search(":");
+		return {
+			offer_id: m.slice(0, loc),
+			nonce: m.slice(loc + 1)
+		};
+	});
+}
+
+export async function addCompletedOffer(user: User, offer: CompletedOffer) {
+	const redis = getRedisClient();
+	await redis.async.sadd(`user:${ user.id }:completed_offers`, `${offer.offer_id}:${offer.nonce}`);
+}
+
+export async function addAllCompletedOffers(user: User, orders: db.Order[]) {
+	const redis = getRedisClient();
+	const members = orders.map(order => `${order.offerId}:${order.nonce}`);
+	await redis.async.sadd(`user:${ user.id }:completed_offers`, members);
 }
 
 export async function createExternalOrder(jwt: string, user: User, userDeviceId: string): Promise<OpenOrder> {

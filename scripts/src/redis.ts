@@ -15,6 +15,9 @@ export type RedisAsyncFunctions = {
 	setex(key: string, seconds: number, value: string): Promise<"OK">;
 	del(key: string): Promise<number>;
 	incrby(key: string, incValue: number): Promise<number>;
+	sismember(key: string, member: string): Promise<number>;
+	smembers(key: string): Promise<string[]>;
+	sadd(key: string, member: string | string[]): Promise<"OK">;
 };
 
 export type RedisAsyncClient = RedisClient & {
@@ -30,7 +33,7 @@ export function getRedisClient(): RedisAsyncClient {
 			client = require("redis").createClient(getConfig().redis);
 		}
 		client.async = {} as RedisAsyncFunctions;
-		["get", "mget", "set", "setex", "del", "incrby"].forEach(name => {
+		["get", "mget", "set", "setex", "del", "incrby", "sismember", "smembers"].forEach(name => {
 			(client.async as any)[name] =  promisify((client as any)[name]).bind(client);
 		});
 	}

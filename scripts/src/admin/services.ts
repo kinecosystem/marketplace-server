@@ -512,7 +512,6 @@ export async function getOrders(params: any, query: Paging & { status?: OpenOrde
 			orderIds = ["no_orders"];
 		}
 		q.where(`ordr.id IN (:ids)`, { ids: orderIds });
-
 	}
 
 	const orders = await q.skip(skip(query)).take(take(query)).getMany();

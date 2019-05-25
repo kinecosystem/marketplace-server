@@ -241,6 +241,18 @@ describe("test v2 orders", async () => {
 		expect(found.status).toEqual("failed");
 	});
 
+	test("getOne by offerId", async () => {
+		const user = await helpers.createUser();
+		const order = await helpers.createP2POrder(user.id);
+
+		const found = (await Order.getOne({ userId: user.id, offerId: order.offerId, nonce: order.nonce }))!;
+		expect(found.id).toEqual(order.id);
+
+		const notFound = (await Order.getOne({ userId: "other user", offerId: order.offerId, nonce: order.nonce }))!;
+		expect(notFound).toBeUndefined();
+
+	});
+
 	test("getOrder returns only my orders", async () => {
 		const user1 = await helpers.createUser();
 		const user2 = await helpers.createUser();

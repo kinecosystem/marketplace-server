@@ -289,8 +289,7 @@ export async function createExternalOrder(jwt: string, user: User, userDeviceId:
 	const payload = await validateExternalOrderJWT(jwt, user, userDeviceId);
 	const nonce = payload.nonce || db.Order.DEFAULT_NONCE;
 
-	const orders = await db.Order.getAll({ offerId: payload.offer.id, userId: user.id, nonce });
-	let order = orders.length > 0 ? orders[0] : undefined;
+	let order = await db.Order.getOne({ offerId: payload.offer.id, userId: user.id, nonce });
 
 	if (!order || order.status === "failed") {
 		if (isPayToUser(payload)) {

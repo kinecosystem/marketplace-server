@@ -208,10 +208,9 @@ export const Order = {
 	 * get open order with id "id1": getOne("id1", "opened")
 	 * get NOT open order: getOne("id1", "!opened")
 	 */
-	getOne<T extends Order>(filters: GetOrderFilters & { orderId: string }): Promise<T | undefined> {
+	getOne<T extends Order>(filters: GetOrderFilters & ({ orderId: string } | { offerId: string, nonce: string, userId: string })): Promise<T | undefined> {
 		const query = this.genericGet(filters);
 		return query.getOne() as Promise<T | undefined>;
-
 	},
 
 	genericGet<T extends Order>(filters: GetOrderFilters): SelectQueryBuilder<OrderImpl> {
@@ -240,9 +239,12 @@ export const Order = {
 	 * @param      {number}  limit
 	 * @return     {Promise<T[]>}  filtered orders including p2p
 	 */
-	async getAll<T extends Order>(filters: GetOrderFilters & ({ userId: string } | { walletAddress: string }), limit?: number): Promise<T[]> {
-		const contexts = await OrderContext.find(filters.userId ? { userId: filters.userId } : { wallet: filters.walletAddress }); // can be replaced by cache
-		const ids = contexts.map(c => c.orderId);
+	async getAll<T extends Order>(filters: GetOrderFilters & ({ userId: string } | { walletAddress: string }), limit: number = 25): Promise<T[]> {
+		const orderIdQuery = await (this.genericGet(filters)
+			.limit(limit + 1)
+			.getMany()); // +1 to account for p2p
+		console.log("GOT", orderIdQuery);
+		const ids = orderIdQuery.map(res => res.id);
 		if (!ids.length) {
 			return []; // empty array causes sql syntax error
 		}

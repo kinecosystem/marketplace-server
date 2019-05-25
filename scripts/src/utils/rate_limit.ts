@@ -1,7 +1,7 @@
 import * as moment from "moment";
 
 import { getRedisClient, RedisAsyncClient } from "../redis";
-import { MarketplaceError, TooManyRegistrations, TooMuchEarnOrdered } from "../errors";
+import { MarketplaceError, TooManyRegistrations, TooManyUserRequests, TooMuchEarnOrdered } from "../errors";
 import { User } from "../models/users";
 import { Application } from "../models/applications";
 
@@ -20,12 +20,12 @@ export class RateLimit {
 	 * this.windowSize = windowSizeMomentObject in seconds
 	 * this.bucketSize = size of one bucket in seconds (at least 1 seconds)
 	 */
-	constructor(bucketPrefix: string, windowSizeMomentObject: moment.Duration, now: number) {
+	constructor(bucketPrefix: string, windowSizeMomentObject: moment.Duration, now: number, numBuckets: number = 60) {
 		this.redis = getRedisClient();
 		this.bucketPrefix = `rate_limit:${ bucketPrefix }:`;
 
 		this.windowSize = windowSizeMomentObject.asSeconds();
-		this.bucketSize = Math.max(this.windowSize / 60, 1); // resolution
+		this.bucketSize = Math.max(this.windowSize / numBuckets, 1); // resolution
 
 		this.ttl = this.windowSize * 2;  // twice the size of the window
 		this.currentTimestampSeconds = Math.trunc(now / 1000 / this.bucketSize) * this.bucketSize;
@@ -65,8 +65,8 @@ export class RateLimit {
 }
 
 // throw error when action should be limited
-async function checkRateLimit(type: string, duration: moment.Duration, limit: number, error: (msg: string) => MarketplaceError, step: number = 1): Promise<RateLimit> {
-	const limiter = new RateLimit(type, duration, Date.now());
+async function checkRateLimit(type: string, duration: moment.Duration, limit: number, error: (msg: string) => MarketplaceError, step: number = 1, numBuckets: number = 60): Promise<RateLimit> {
+	const limiter = new RateLimit(type, duration, Date.now(), numBuckets);
 	const rateCount = await limiter.count();
 	// first check if adding the step is over the limit. If so action should be limited
 	if (rateCount + step > limit) {
@@ -106,6 +106,21 @@ export async function assertRateLimitRegistration(app: Application) {
 	const limiters = [
 		await checkRateLimitRegistration(app.id, app.config.limits.hourly_registration, moment.duration({ hours: 1 })),
 		await checkRateLimitRegistration(app.id, app.config.limits.minute_registration, moment.duration({ minutes: 1 }))
+	];
+	await Promise.all(limiters.map(limiter => limiter.inc(1)));
+}
+
+async function checkRateLimitUserRequests(userId: string, limit: number, duration: moment.Duration) {
+	return await checkRateLimit(`user_reqs:${ userId }:${ duration.asSeconds() }`, duration, limit, TooManyUserRequests,
+		1, 2); // use lower number of buckets to reduce stress on redis as this is called on each user request
+}
+
+export async function assertRateLimitUserRequests(user: User) {
+	const app = (await Application.get(user.appId))!;
+
+	const limiters = [
+		await checkRateLimitUserRequests(app.id, app.config.limits.hourly_user_requests || 150, moment.duration({ hours: 1 })),
+		await checkRateLimitUserRequests(app.id, app.config.limits.minute_user_requests || 20, moment.duration({ minutes: 1 }))
 	];
 	await Promise.all(limiters.map(limiter => limiter.inc(1)));
 }

@@ -48,6 +48,8 @@ describe("util functions", () => {
 
 		test("throwOnAppEarnLimit should fail on 4th request if limit is set to 3 queries", async () => {
 			const limits: LimitConfig = {
+				hourly_user_requests: 150,
+				minute_user_requests: 20,
 				hourly_registration: 20000,
 				minute_registration: 1000,
 				hourly_total_earn: 500000,

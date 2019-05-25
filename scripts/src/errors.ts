@@ -76,7 +76,8 @@ const CODES = {
 		code: HttpCodes.TOO_MANY_REQUESTS, // 429
 		types: {
 			Registrations: 1,
-			Amounts: 2
+			Amounts: 2,
+			UserRequests: 3,
 		}
 	},
 	InternalServerError: {
@@ -327,6 +328,10 @@ export function TooManyRegistrations(message: string): MarketplaceError {
 
 export function TooMuchEarnOrdered(message: string): MarketplaceError {
 	return TooManyRequests("Amounts", message);
+}
+
+export function TooManyUserRequests(message: string): MarketplaceError {
+	return TooManyRequests("UserRequests", message);
 }
 
 function DeprecationError(key: keyof typeof CODES.Gone.types, message: string): MarketplaceError {

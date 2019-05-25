@@ -7,6 +7,7 @@ import { getRedisClient } from "../redis";
 type CachedTokenValue = { token: AuthToken, user: User };
 import { Application } from "../models/applications";
 import { MissingToken, InvalidToken, TOSMissingOrOldToken, NoSuchApp, WrongBlockchainVersion } from "../errors";
+import { assertRateLimitUserRequests } from "../utils/rate_limit";
 
 const tokenCacheTTL = 15 * 60; // 15 minutes
 
@@ -84,7 +85,7 @@ export const authenticateUser = async function(req: express.Request, res: expres
 			return httpContext.get("token");
 		}
 	};
-
+	await assertRateLimitUserRequests(user);
 	await throwOnMigrationError(req as AuthenticatedRequest);
 	next();
 } as express.RequestHandler;

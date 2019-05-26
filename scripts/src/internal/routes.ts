@@ -88,8 +88,9 @@ type MarkWalletBurntRequest = Request & {
 	params: { wallet_address: string }
 };
 
-export const burnWallet = async function(req: MarkWalletBurntRequest, res: Response) {
+const burnWallet = async function(req: MarkWalletBurntRequest, res: Response) {
 	const walletAddress = req.params.wallet_address;
+	logger().info("wallet address for burning " + walletAddress);
 	await markWalletBurntService(walletAddress);
 	res.sendStatus(204);
 } as any as RequestHandler;
@@ -99,7 +100,7 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 	router
 		.post("/webhook", webhookHandler)
 		.get("/jwt-keys", getJwtKeys)
-		.put("/wallets/:wallet_address/burnt", markWalletBurntService);
+		.put("/wallets/:wallet_address/burnt", burnWallet);
 
 	app.use("/v1/internal/", router);
 	app.get("/status", statusHandler);

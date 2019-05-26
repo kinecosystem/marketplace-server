@@ -224,6 +224,17 @@ describe("test v2 orders", async () => {
 		console.log(res.body);
 	});
 
+	test("create and find multiple p2p orders", async () => {
+		const user = await helpers.createUser();
+		const token = (await AuthToken.findOne({ userId: user.id }))!;
+		const limit = 5;
+		for (let i = 0; i < limit; i++) {
+			await helpers.createP2POrder(user.id);
+		}
+		const orders = await Order.getAll({ userId: user.id }, limit);
+		expect(orders.length).toEqual(limit);
+	});
+
 	test("setFailedOrder marks p2p order as expired", async () => {
 		const user = await helpers.createUser();
 		const walletAddress = (await user.getWallets()).lastUsed()!.address;

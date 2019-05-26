@@ -241,9 +241,8 @@ export const Order = {
 	 */
 	async getAll<T extends Order>(filters: GetOrderFilters & ({ userId: string } | { walletAddress: string }), limit: number = 25): Promise<T[]> {
 		const orderIdQuery = await (this.genericGet(filters)
-			.limit(limit + 1)
-			.getMany()); // +1 to account for p2p
-		console.log("GOT", orderIdQuery);
+			.limit(limit)
+			.getMany());
 		const ids = orderIdQuery.map(res => res.id);
 		if (!ids.length) {
 			return []; // empty array causes sql syntax error

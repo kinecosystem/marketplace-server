@@ -48,7 +48,7 @@ export const logRequest = function(req: express.Request, res: express.Response, 
 	}
 
 	res.on("finish", () => {
-		logger().debug(`worker ${ getWorkerId() }: finished handling request: ${ req.method } ${ req.path }`, { data, time: performance.now() - t });
+		logger().debug(`worker ${ getWorkerId() }: finished handling request: ${ req.method } ${ req.path }`, { status: res.statusCode, data, time: performance.now() - t });
 	});
 
 	next();

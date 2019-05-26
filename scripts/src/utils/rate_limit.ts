@@ -8,18 +8,13 @@ import { Application } from "../models/applications";
 export class RateLimit {
 	public readonly bucketPrefix: string;
 	public readonly redis: RedisAsyncClient;
+	// window size in seconds
 	public readonly windowSize: number = 0;
+	// size of one bucket in seconds (at least 1 seconds)
 	public readonly bucketSize: number = 0;
 	public readonly currentTimestampSeconds: number = 0;
 	public readonly ttl: number;
 
-	/**
-	 * @param      {string}  bucketPrefix
-	 * @param      {moment.Duration}  windowSizeMomentObject
-	 *
-	 * this.windowSize = windowSizeMomentObject in seconds
-	 * this.bucketSize = size of one bucket in seconds (at least 1 seconds)
-	 */
 	constructor(bucketPrefix: string, windowSizeMomentObject: moment.Duration, now: number, numBuckets: number = 60) {
 		this.redis = getRedisClient();
 		this.bucketPrefix = `rate_limit:${ bucketPrefix }:`;
@@ -28,6 +23,7 @@ export class RateLimit {
 		this.bucketSize = Math.max(this.windowSize / numBuckets, 1); // resolution
 
 		this.ttl = this.windowSize * 2;  // twice the size of the window
+		// truncate the timestamp to the closest bucket
 		this.currentTimestampSeconds = Math.trunc(now / 1000 / this.bucketSize) * this.bucketSize;
 	}
 
@@ -49,9 +45,6 @@ export class RateLimit {
 	 * calculates possible Redis keys for this.windowSize every step (in seconds)
 	 * Redis mget returns values for all these keys
 	 * filter it and sum
-	 *
-	 * @param      {number}  step    step in seconds
-	 * @return     {number}  sum
 	 */
 	public async count() {
 		const bucketValues = await this.redis.async.mget(...this.getWindowKeys());
@@ -119,8 +112,8 @@ export async function assertRateLimitUserRequests(user: User) {
 	const app = (await Application.get(user.appId))!;
 
 	const limiters = [
-		await checkRateLimitUserRequests(app.id, app.config.limits.hourly_user_requests || 150, moment.duration({ hours: 1 })),
-		await checkRateLimitUserRequests(app.id, app.config.limits.minute_user_requests || 20, moment.duration({ minutes: 1 }))
+		await checkRateLimitUserRequests(user.id, app.config.limits.hourly_user_requests || 150, moment.duration({ hours: 1 })),
+		await checkRateLimitUserRequests(user.id, app.config.limits.minute_user_requests || 20, moment.duration({ minutes: 1 }))
 	];
 	await Promise.all(limiters.map(limiter => limiter.inc(1)));
 }

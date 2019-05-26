@@ -224,6 +224,17 @@ describe("test v2 orders", async () => {
 		console.log(res.body);
 	});
 
+	test("create and find multiple p2p orders", async () => {
+		const user = await helpers.createUser();
+		const token = (await AuthToken.findOne({ userId: user.id }))!;
+		const limit = 5;
+		for (let i = 0; i < limit; i++) {
+			await helpers.createP2POrder(user.id);
+		}
+		const orders = await Order.getAll({ userId: user.id }, limit);
+		expect(orders.length).toEqual(limit);
+	});
+
 	test("setFailedOrder marks p2p order as expired", async () => {
 		const user = await helpers.createUser();
 		const walletAddress = (await user.getWallets()).lastUsed()!.address;
@@ -239,6 +250,18 @@ describe("test v2 orders", async () => {
 
 		const found = (await Order.getOne({ orderId: order.id }))!;
 		expect(found.status).toEqual("failed");
+	});
+
+	test("getOne by offerId", async () => {
+		const user = await helpers.createUser();
+		const order = await helpers.createP2POrder(user.id);
+
+		const found = (await Order.getOne({ userId: user.id, offerId: order.offerId, nonce: order.nonce }))!;
+		expect(found.id).toEqual(order.id);
+
+		const notFound = (await Order.getOne({ userId: "other user", offerId: order.offerId, nonce: order.nonce }))!;
+		expect(notFound).toBeUndefined();
+
 	});
 
 	test("getOrder returns only my orders", async () => {

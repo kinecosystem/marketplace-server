@@ -47,7 +47,8 @@ const CODES = {
 			Order: 3,
 			PublicKey: 4,
 			OfferCapReached: 5,
-			User: 6
+			User: 6,
+			Wallet: 7,
 		}
 	},
 	RequestTimeout: {
@@ -173,6 +174,10 @@ export function NoSuchOffer(id: string) {
 
 export function NoSuchOrder(id: string) {
 	return NotFoundError("Order", `No such order: ${ id }`);
+}
+
+export function NoSuchWallet(walletAddress: string) {
+	return NotFoundError("Wallet", `No such wallet: ${ walletAddress }`);
 }
 
 export function NoSuchPublicKey(appId: string, keyid: string) {

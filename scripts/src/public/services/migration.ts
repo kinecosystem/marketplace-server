@@ -2,11 +2,7 @@ import * as express from "express";
 import { BlockchainVersion } from "../../models/offers";
 import { getAppBlockchainVersion } from "./applications";
 import { WalletApplication } from "../../models/users";
-import { getConfig } from "../config";
-import { NoSuchWallet } from "../../errors";
-
 import { getDefaultLogger as logger } from "../../logging";
-import { isRestoreAllowed } from "./users";
 
 type AccountMigrationStatus = {
 	should_migrate: boolean;
@@ -22,15 +18,14 @@ export const accountStatus = async function(req: express.Request, res: express.R
 	const app_blockchain_version = await getAppBlockchainVersion(appId);
 
 	const wallet = await WalletApplication.findOne({ walletAddress: publicAddress });
-	if (!wallet) {
-		throw NoSuchWallet(publicAddress);
-	}
-
-	const shouldMigrate = app_blockchain_version === "3" && !wallet.createdDateKin3; // no date for kin3 says it is kin2 and should migrate
+	// if app is on kin3, and the wallet was created on kin2 but not on kin3, it should migrate
+	const shouldMigrate = app_blockchain_version === "3" && wallet && !wallet.createdDateKin3;
+	// XXX zero balance accounts don't need to migrate. We should check the balance of this account on kin2 prior to deciding
 
 	res.status(200).send({
 		should_migrate: shouldMigrate,
 		app_blockchain_version,
-		restore_allowed: await isRestoreAllowed(publicAddress, appId, false),
+		// restore allowed when no wallet was found or the appId is equal
+		restore_allowed: !wallet || wallet.appId === appId,
 	} as AccountMigrationStatus);
 } as express.RequestHandler;

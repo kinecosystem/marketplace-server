@@ -4,9 +4,7 @@ pipeline {
         //tr command is used with a pipe to remove double quote at the first and last character of the output
         //trailing slash is used to skip single quote in tr command
 
-        STELLAR_BASE_SEED = '$(/var/lib/jenkins/.local/bin/aws ssm get-parameters --region eu-west-1 --names STELLAR_BASE_SEED --with-decryption  --query Parameters[0].Value | tr -d \'"\')'
-        STELLAR_ADDRESS = '$(/var/lib/jenkins/.local/bin/aws ssm get-parameters --region eu-west-1 --names STELLAR_ADDRESS --query Parameters[0].Value | tr -d \'"\')'
-        CODECOV_TOKEN = '$(/var/lib/jenkins/.local/bin/aws ssm get-parameters --region eu-west-1 --names CODECOV_TOKEN --with-decryption  --query Parameters[0].Value | tr -d \'"\')'
+        STELLAR_ADDRESS=`aws --region=eu-west-1  ssm get-parameters --names /CI/Jenkins/STELLAR_ADDRESS --query Parameters[0].Value | tr -d \"\'`
   }
     stages {
         stage('Checkout') {

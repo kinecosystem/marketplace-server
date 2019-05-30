@@ -1,11 +1,6 @@
 pipeline {
     agent any
-      environment {
-        //tr command is used with a pipe to remove double quote at the first and last character of the output
-        //trailing slash is used to skip single quote in tr command
 
-        STELLAR_ADDRESS=`aws --region=eu-west-1  ssm get-parameters --names /CI/Jenkins/STELLAR_ADDRESS --query Parameters[0].Value | tr -d \"\'`
-  }
     stages {
         stage('Checkout') {
             steps {
@@ -17,6 +12,7 @@ pipeline {
         }
         stage('Create secrets for tests') {
             steps {
+                sh 'STELLAR_ADDRESS=`aws --region=eu-west-1  ssm get-parameters --names /CI/Jenkins/STELLAR_ADDRESS --query Parameters[0].Value | tr -d \"\'`'
                 echo 'Creating secrets for tests'
                 echo "${STELLAR_ADDRESS}"
                 sh 'mkdir -p ./secrets/ && echo export STELLAR_BASE_SEED=${STELLAR_BASE_SEED} STELLAR_ADDRESS=${STELLAR_ADDRESS} > ./secrets/.secrets'

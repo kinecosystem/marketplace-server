@@ -4,7 +4,7 @@ pipeline {
         //tr command is used with a pipe to remove double quote at the first and last character of the output
         //trailing slash is used to skip single quote in tr command
 
-        STELLAR_ADDRESS=`aws --region=eu-west-1  ssm get-parameters --names /CI/Jenkins/STELLAR_ADDRESS --query Parameters[0].Value | tr -d \"`
+        STELLAR_ADDRESS='$(aws --region=eu-west-1  ssm get-parameters --names /CI/Jenkins/STELLAR_ADDRESS --query Parameters[0].Value | tr -d \"'
   }
     stages {
         stage('Checkout') {

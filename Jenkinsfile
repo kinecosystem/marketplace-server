@@ -1,6 +1,13 @@
 pipeline {
     agent any
+      environment {
+        //tr command is used with a pipe to remove double quote at the first and last character of the output
+        //trailing slash is used to skip single quote in tr command
 
+        STELLAR_BASE_SEED = '$(/var/lib/jenkins/.local/bin/aws ssm get-parameters --region eu-west-1 --names STELLAR_BASE_SEED --with-decryption  --query Parameters[0].Value | tr -d \'"\')'
+        STELLAR_ADDRESS = '$(/var/lib/jenkins/.local/bin/aws ssm get-parameters --region eu-west-1 --names STELLAR_ADDRESS --query Parameters[0].Value | tr -d \'"\')'
+        CODECOV_TOKEN = '$(/var/lib/jenkins/.local/bin/aws ssm get-parameters --region eu-west-1 --names CODECOV_TOKEN --with-decryption  --query Parameters[0].Value | tr -d \'"\')'
+  }
     stages {
         stage('Checkout') {
             steps {
@@ -10,19 +17,11 @@ pipeline {
                    )
             }
         }
-        stage('Set environment for tests') {
-            steps {
-                echo 'Getting environment variables'
-                withAWSParameterStore(credentialsId: '', naming: 'basename', path: '/CI/Jenkins/', recursive: true, regionName: 'eu-west-1') {
-                    echo "STELLAR_ADDRESS=${STELLAR_ADDRESS}"
-                    sh 'mkdir -p ./secrets/ && echo export STELLAR_BASE_SEED=${STELLAR_BASE_SEED} STELLAR_ADDRESS=${STELLAR_ADDRESS} > ./secrets/.secrets'
-
-                }
-            }
-        }
         stage('Create secrets for tests') {
             steps {
-                echo 'Creating secrets'
+                echo 'Creating secrets for tests'
+                echo ${STELLAR_ADDRESS}
+                sh 'mkdir -p ./secrets/ && echo export STELLAR_BASE_SEED=${STELLAR_BASE_SEED} STELLAR_ADDRESS=${STELLAR_ADDRESS} > ./secrets/.secrets'
             }
         }
         stage('Create-jwt-keys') {

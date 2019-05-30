@@ -4,6 +4,7 @@ import * as httpContext from "express-http-context";
 import { dateParser, Mutable } from "../utils/utils";
 import { AuthToken, User } from "../models/users";
 import { getRedisClient } from "../redis";
+
 type CachedTokenValue = { token: AuthToken, user: User };
 import { Application } from "../models/applications";
 import { MissingToken, InvalidToken, TOSMissingOrOldToken, NoSuchApp, WrongBlockchainVersion } from "../errors";
@@ -86,7 +87,10 @@ export const authenticateUser = async function(req: express.Request, res: expres
 		}
 	};
 	await assertRateLimitUserRequests(user);
-	await throwOnMigrationError(req as AuthenticatedRequest);
+
+	if (!req.url.startsWith("/v2/users/me")) {
+		await throwOnMigrationError(req as AuthenticatedRequest);
+	}
 	next();
 } as express.RequestHandler;
 

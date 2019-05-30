@@ -14,8 +14,6 @@ import { generateId, IdPrefix, Mutable } from "../utils/utils";
 
 import { OrderContext } from "./orders";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
-import { NoSuchWallet } from "../errors";
-import { Application } from "./applications";
 
 @Entity({ name: "users" })
 @Register
@@ -238,11 +236,7 @@ export class Wallet extends BaseEntity {
 @Register
 export class WalletApplication extends BaseEntity {
 	public static async updateCreatedDate(walletAddress: string, createdDateField: "createdDateKin2" | "createdDateKin3") {
-		await WalletApplication.createQueryBuilder()
-			.update("wallet_application")
-			.set({ [createdDateField]: new Date() })
-			.where("walletAddress = :walletAddress", { walletAddress })
-			.execute();
+		await WalletApplication.update({ walletAddress }, { [createdDateField]: new Date() });
 	}
 
 	@PrimaryColumn({ name: "wallet_address" })

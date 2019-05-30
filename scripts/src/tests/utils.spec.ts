@@ -2,6 +2,7 @@ import * as path from "path";
 import * as moment from "moment";
 
 import * as utils from "../utils/utils";
+import { delay } from "../utils/utils";
 import { app as webApp } from "../public/app";
 
 import { path as _path } from "../utils/path";
@@ -13,10 +14,8 @@ import { MarketplaceError } from "../errors";
 import { close as closeModels, init as initModels } from "../models/index";
 import { assertRateLimitEarn, RateLimit } from "../utils/rate_limit";
 import { localCache } from "../utils/cache";
-import { delay } from "../utils/utils";
-import mock = require("supertest");
-import { Order as OrderData } from "../public/services/orders";
 import { AuthToken } from "../models/users";
+import mock = require("supertest");
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {

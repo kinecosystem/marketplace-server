@@ -20,7 +20,7 @@ pipeline {
         stage('Create secrets for tests') {
             steps {
                 echo 'Creating secrets for tests'
-                echo ${STELLAR_ADDRESS}
+                echo "${STELLAR_ADDRESS}"
                 sh 'mkdir -p ./secrets/ && echo export STELLAR_BASE_SEED=${STELLAR_BASE_SEED} STELLAR_ADDRESS=${STELLAR_ADDRESS} > ./secrets/.secrets'
             }
         }

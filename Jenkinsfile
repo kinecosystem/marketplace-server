@@ -10,10 +10,19 @@ pipeline {
                    )
             }
         }
+        stage('Set environment for tests') {
+            steps {
+                echo 'Getting environment variables'
+                withAWSParameterStore(credentialsId: '', naming: 'basename', path: '/CI/Jenkins/', recursive: true, regionName: 'eu-west-1') {
+                    echo "STELLAR_ADDRESS=${STELLAR_ADDRESS}"
+                    sh 'mkdir -p ./secrets/ && echo export STELLAR_BASE_SEED=${STELLAR_BASE_SEED} STELLAR_ADDRESS=${STELLAR_ADDRESS} > ./secrets/.secrets'
+
+                }
+            }
+        }
         stage('Create secrets for tests') {
             steps {
-                echo 'Compiling'
-                sh 'mkdir -p ./secrets/ && echo export STELLAR_BASE_SEED=${STELLAR_BASE_SEED} STELLAR_ADDRESS=${STELLAR_ADDRESS} > ./secrets/.secrets'
+                echo 'Creating secrets'
             }
         }
         stage('Create-jwt-keys') {
@@ -25,12 +34,12 @@ pipeline {
         stage('Unit Test') {
             steps {
                 echo 'Unit testing'
-                //todo: place holder for unit tests
+                echo 'Todo: place holder for unit tests'
             }
         }
         stage ('Code Quality'){
             steps {
-                echo 'Todo: sonarcube'
+                echo 'Todo: placeholder for codecov/sonarcube'
                 echo 'Todo: Quality and security plugins (FindBugs, CheckMarx, etc.)'
             }
         }
@@ -42,7 +51,8 @@ pipeline {
         }
         stage('Create testing env') {
             steps {
-                echo 'Todo: Creating env'
+                echo 'Creating env'
+
             }
         }
         stage('Deploy') {

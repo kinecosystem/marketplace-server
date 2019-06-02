@@ -114,6 +114,23 @@ export async function isRestoreAllowed(walletAddress: string, appId: string, add
 	return true;
 }
 
+async function createWallet(walletAddress: string, user: User) {
+	const blockchainVersion = (await Application.get(user.appId))!.config.blockchain_version;
+	logger().info(`creating stellar wallet for user ${ user.appId }: ${ walletAddress } on KIN${ blockchainVersion }`);
+
+	if (blockchainVersion === "2") {
+		await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin2");
+		await Promise.all([
+			payment.createWallet(walletAddress, user.appId, user.id, "2"),
+			// optimization: create wallets on kin3 to reduce time when migrating
+			payment.createWallet(walletAddress, user.appId, user.id, "3"),
+		]);
+	} else {
+		await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin3");
+		await payment.createWallet(walletAddress, user.appId, user.id, "3");
+	}
+}
+
 export async function updateUser(user: User, props: UpdateUserProps) {
 	if (props.walletAddress) {
 		const wallets = await user.getWallets();
@@ -140,8 +157,7 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 
 		const isNewWallet = await user.updateWallet(props.deviceId, walletAddress);
 		if (isNewWallet) {
-			logger().info(`creating stellar wallet for user ${ appId }: ${ props.walletAddress }`);
-			await payment.createWallet(walletAddress, appId, user.id);
+			await createWallet(walletAddress, user);
 		}
 		metrics.walletAddressUpdate(appId, isNewWallet);
 

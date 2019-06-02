@@ -235,6 +235,10 @@ export class Wallet extends BaseEntity {
 @Entity({ name: "wallet_application" })
 @Register
 export class WalletApplication extends BaseEntity {
+	public static async updateCreatedDate(walletAddress: string, createdDateField: "createdDateKin2" | "createdDateKin3") {
+		await WalletApplication.update({ walletAddress }, { [createdDateField]: new Date() });
+	}
+
 	@PrimaryColumn({ name: "wallet_address" })
 	public walletAddress!: string;
 

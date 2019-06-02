@@ -1,12 +1,9 @@
-import axios from "axios";
-const axiosRetry = require("axios-retry");
-
 import { getConfig } from "../config";
 import { normalizeError } from "../utils/utils";
 import { getDefaultLogger as logger } from "../logging";
+import { getAxiosClient } from "../utils/axios_client";
 
-const client = axios.create( { timeout: 500 });
-axiosRetry(client, { retries: 2, retryCondition: () => true, shouldResetTimeout: true });
+const httpClient = getAxiosClient({ retries: 2, timeout: 500 });
 
 export interface EventData {
 }
@@ -20,7 +17,7 @@ export class Event<T extends EventData = EventData> {
 
 	public report(): Promise<void> {
 		try {
-			return client.post(getConfig().bi_service, this.data)
+			return httpClient.post(getConfig().bi_service, this.data)
 				.catch(e => logger().warn(`failed to report to bi ${ normalizeError(e) }`)) as any;
 		} catch (e) {
 			// nothing to do

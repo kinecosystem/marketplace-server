@@ -1,15 +1,14 @@
 import * as express from "express";
 import * as httpContext from "express-http-context";
-
 import { dateParser, Mutable } from "../utils/utils";
 import { AuthToken, User } from "../models/users";
 import { getRedisClient } from "../redis";
-type CachedTokenValue = { token: AuthToken, user: User };
 import { Application } from "../models/applications";
 import { MissingToken, InvalidToken, TOSMissingOrOldToken, NoSuchApp, WrongBlockchainVersion } from "../errors";
 import { assertRateLimitUserRequests } from "../utils/rate_limit";
 
 const tokenCacheTTL = 15 * 60; // 15 minutes
+type CachedTokenValue = { token: AuthToken, user: User };
 
 export type AuthContext = {
 	readonly user: User;
@@ -86,7 +85,13 @@ export const authenticateUser = async function(req: express.Request, res: expres
 		}
 	};
 	await assertRateLimitUserRequests(user);
-	await throwOnMigrationError(req as AuthenticatedRequest);
+
+	// allow PATCH /v2/users/me without migration check
+	// this allows a user on kin2 to complete the KIN.login method on the client
+	// and only after that start migration (throwing this error during login kills the client)
+	if (!req.url.startsWith("/v2/users/me")) {
+		await throwOnMigrationError(req as AuthenticatedRequest);
+	}
 	next();
 } as express.RequestHandler;
 

@@ -30,7 +30,6 @@ export type WalletCreationSuccessData = {
 export async function walletCreationSuccess(data: WalletCreationSuccessData) {
 	createStellarAccountCreationSucceeded(data.id).report();
 	logger().info("wallet created", data);
-	await updateWalletCreationDate(data.wallet_address, "createdDateKin2");
 }
 
 export type WalletCreationFailureData = {
@@ -227,15 +226,5 @@ export async function initPaymentCallbacks(): Promise<Watcher> {
 }
 
 export async function markWalletBurnt(walletAddress: string) {
-	await updateWalletCreationDate(walletAddress, "createdDateKin3");
-}
-
-async function updateWalletCreationDate(walletAddress: string, createdDateField: "createdDateKin2" | "createdDateKin3") {
-	const wallet = await WalletApplication.findOne({ walletAddress });
-	if (!wallet) {
-		throw NoSuchWallet(walletAddress);
-	}
-
-	wallet[createdDateField] = new Date();
-	await wallet.save();
+	await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin3");
 }

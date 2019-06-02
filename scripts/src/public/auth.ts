@@ -88,6 +88,9 @@ export const authenticateUser = async function(req: express.Request, res: expres
 	};
 	await assertRateLimitUserRequests(user);
 
+	// allow PATCH /v2/users/me without migration check
+	// this allows a user on kin2 to complete the KIN.login method on the client
+	// and only after that start migration (throwing this error during login kills the client)
 	if (!req.url.startsWith("/v2/users/me")) {
 		await throwOnMigrationError(req as AuthenticatedRequest);
 	}

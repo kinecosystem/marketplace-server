@@ -120,12 +120,14 @@ async function createWallet(walletAddress: string, user: User) {
 
 	if (blockchainVersion === "2") {
 		await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin2");
-		await payment.createWallet(walletAddress, user.id, user.appId, "2");
-		// optimization: create wallets on kin3 to reduce time when migrating
-		await payment.createWallet(walletAddress, user.id, user.appId, "3");
+		await Promise.all([
+			payment.createWallet(walletAddress, user.appId, user.id, "2"),
+			// optimization: create wallets on kin3 to reduce time when migrating
+			payment.createWallet(walletAddress, user.appId, user.id, "3"),
+		]);
 	} else {
 		await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin3");
-		await payment.createWallet(walletAddress, user.id, user.appId, "3");
+		await payment.createWallet(walletAddress, user.appId, user.id, "3");
 	}
 }
 

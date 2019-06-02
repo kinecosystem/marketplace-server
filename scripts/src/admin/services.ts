@@ -554,7 +554,7 @@ export async function retryUserWallet(params: { user_id: string; wallet: string;
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
-	await payment.createWallet(params.wallet, user.id, user.appId, "2");
+	await payment.createWallet(params.wallet, user.appId, user.id,"2");
 	return `<h3>Retrying...</h3>
 <div><a href="/users/${ user.id }">Go Back</a>
 <script>

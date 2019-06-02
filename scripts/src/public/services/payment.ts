@@ -99,7 +99,7 @@ export async function submitTransaction(recepientAddress: string, senderAddress:
 	logger().info("pay to took " + (performance.now() - t) + "ms");
 }
 
-export async function createWallet(walletAddress: string, userId: string, appId: string, blockchainVersion: BlockchainVersion) {
+export async function createWallet(walletAddress: string, appId: string, userId: string, blockchainVersion: BlockchainVersion) {
 	const payload: WalletRequest = {
 		id: userId,
 		wallet_address: walletAddress,

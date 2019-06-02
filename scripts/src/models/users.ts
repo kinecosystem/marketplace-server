@@ -250,5 +250,4 @@ export class WalletApplication extends BaseEntity {
 
 	@Column({ name: "created_date_kin3", nullable: true })
 	public createdDateKin3?: Date;
-
 }

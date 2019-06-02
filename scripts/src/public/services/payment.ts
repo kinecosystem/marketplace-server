@@ -1,20 +1,16 @@
 // wrapper for the payment service
 // TODO: this is used by both public and internal so should move to shared dir
-import axios from "axios";
 import { performance } from "perf_hooks";
 import { getDefaultLogger as logger } from "../../logging";
-
 import { getConfig } from "../config";
 import { BlockchainVersion } from "../../models/offers";
 import { Application } from "../../models/applications";
-
-const axiosRetry = require("axios-retry"); // TODO: nitzan this fails the tests: import axiosRetry from "axios-retry";
+import { getAxiosClient } from "../../utils/axios_client";
 
 const config = getConfig();
 const webhook = `${ config.internal_service }/v1/internal/webhook`;
-const DEFAULT_TIMEOUT = 300;
-const client = axios.create({ timeout: DEFAULT_TIMEOUT });
-axiosRetry(client, { retries: 6, retryCondition: () => true, shouldResetTimeout: true });
+
+const httpClient = getAxiosClient();
 
 interface PaymentRequest {
 	amount: number;
@@ -72,7 +68,7 @@ export async function payTo(walletAddress: string, appId: string, amount: number
 	const t = performance.now();
 
 	const blockchainVersion = (await Application.get(appId))!.config.blockchain_version;
-	await client.post(`${ getPaymentServiceUrl(blockchainVersion) }/payments`, payload);
+	await httpClient.post(`${ getPaymentServiceUrl(blockchainVersion) }/payments`, payload);
 
 	logger().info("pay to took " + (performance.now() - t) + "ms");
 }
@@ -94,7 +90,7 @@ export async function submitTransaction(recepientAddress: string, senderAddress:
 	};
 	const t = performance.now();
 
-	await client.post(`${ getPaymentServiceUrl("3") }/tx/submit`, payload);
+	await httpClient.post(`${ getPaymentServiceUrl("3") }/tx/submit`, payload);
 
 	logger().info("pay to took " + (performance.now() - t) + "ms");
 }
@@ -108,7 +104,7 @@ export async function createWallet(walletAddress: string, appId: string, userId:
 	};
 	const t = performance.now();
 
-	await client.post(`${ getPaymentServiceUrl(blockchainVersion) }/wallets`, payload);
+	await httpClient.post(`${ getPaymentServiceUrl(blockchainVersion) }/wallets`, payload);
 
 	logger().info("wallet creation took " + (performance.now() - t) + "ms");
 }
@@ -117,7 +113,7 @@ export async function getWalletData(walletAddress: string, options?: { timeout?:
 	options = options || {};
 	options.blockchainVersion = options.blockchainVersion || "2";
 
-	const res = await client.get(`${ getPaymentServiceUrl(options.blockchainVersion) }/wallets/${ walletAddress }`, { timeout: options.timeout || DEFAULT_TIMEOUT });
+	const res = await httpClient.get(`${ getPaymentServiceUrl(options.blockchainVersion) }/wallets/${ walletAddress }`, { timeout: options.timeout });
 	return res.data;
 }
 
@@ -125,7 +121,7 @@ export async function getPayments(walletAddress: string, options?: { timeout?: n
 	options = options || {};
 	options.blockchainVersion = options.blockchainVersion || "2";
 
-	const res = await client.get(`${ getPaymentServiceUrl(options.blockchainVersion) }/wallets/${ walletAddress }/payments`, { timeout: options.timeout || DEFAULT_TIMEOUT });
+	const res = await httpClient.get(`${ getPaymentServiceUrl(options.blockchainVersion) }/wallets/${ walletAddress }/payments`, { timeout: options.timeout });
 	return res.data;
 }
 
@@ -133,7 +129,7 @@ export async function getPayment(orderId: string, options?: { timeout?: number, 
 	options = options || {};
 	options.blockchainVersion = options.blockchainVersion || "2";
 
-	const res = await client.get(`${ getPaymentServiceUrl(options.blockchainVersion) }/payments/${ orderId }`, { timeout: options.timeout || DEFAULT_TIMEOUT });
+	const res = await httpClient.get(`${ getPaymentServiceUrl(options.blockchainVersion) }/payments/${ orderId }`, { timeout: options.timeout });
 	return res.data;
 }
 
@@ -141,7 +137,7 @@ export async function setWatcherEndpoint(addresses: string[]): Promise<Watcher> 
 	// should be called from the internal server api upon creation
 	const payload: Watcher = { wallet_addresses: addresses, callback: webhook };
 	// only in blockchain v2 we have a watcher service
-	const res = await client.put(`${ getPaymentServiceUrl("2") }/services/${ SERVICE_ID }`, payload);
+	const res = await httpClient.put(`${ getPaymentServiceUrl("2") }/services/${ SERVICE_ID }`, payload);
 	return res.data;
 }
 
@@ -152,7 +148,7 @@ export async function addWatcherEndpoint(address: string, paymentId: string, app
 	if (blockchainVersion === "3") {
 		return;
 	}
-	await client.put(`${ getPaymentServiceUrl("2") }/services/${ SERVICE_ID }/watchers/${ address }/payments/${ paymentId }`);
+	await httpClient.put(`${ getPaymentServiceUrl("2") }/services/${ SERVICE_ID }/watchers/${ address }/payments/${ paymentId }`);
 }
 
 export type BlockchainConfig = {
@@ -163,7 +159,7 @@ export type BlockchainConfig = {
 };
 
 export async function getBlockchainConfig(blockchainVersion: BlockchainVersion): Promise<BlockchainConfig> {
-	const res = await client.get(`${ getPaymentServiceUrl(blockchainVersion) }/config`);
+	const res = await httpClient.get(`${ getPaymentServiceUrl(blockchainVersion) }/config`);
 	return res.data;
 }
 

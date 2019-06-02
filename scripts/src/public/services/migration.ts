@@ -4,21 +4,14 @@ import { getAppBlockchainVersion } from "./applications";
 import { WalletApplication } from "../../models/users";
 import { getDefaultLogger as logger } from "../../logging";
 import { BlockchainConfig, getBlockchainConfig } from "./payment";
-
-import axios from "axios";
 import { getConfig } from "../config";
-const axiosRetry = require("axios-retry");
 
-const DEFAULT_TIMEOUT = 300;
-const client = axios.create({ timeout: DEFAULT_TIMEOUT });
-axiosRetry(client, { retries: 6, retryCondition: () => true, shouldResetTimeout: true });
+import { getAxiosClient } from "../../utils/axios_client";
+
+const httpClient = getAxiosClient();
 let BLOCKCHAIN: BlockchainConfig;
 let BLOCKCHAIN3: BlockchainConfig;
-
-export async function init() {
-	BLOCKCHAIN = await getBlockchainConfig("2");
-	BLOCKCHAIN3 = await getBlockchainConfig("3");
-}
+const ALREADY_MIGRATED_ERROR = 4002;
 
 type WalletResponse = {
 	balances: Array<{
@@ -29,12 +22,23 @@ type WalletResponse = {
 	}>
 };
 
-async function getBalance(walletAddress: string) {
-	try {
-		const res = await client.get<WalletResponse>(`${ BLOCKCHAIN.horizon_url }/accounts/${ walletAddress }`);
-		for (const balance of res.data.balances) {
-			if (balance.asset_issuer === BLOCKCHAIN.asset_issuer && balance.asset_code === BLOCKCHAIN.asset_code) {
+type AccountMigrationStatus = {
+	should_migrate: boolean;
+	app_blockchain_version: BlockchainVersion;
+	restore_allowed: boolean;
+};
 
+export async function init() {
+	BLOCKCHAIN = await getBlockchainConfig("2");
+	BLOCKCHAIN3 = await getBlockchainConfig("3");
+}
+
+async function getKin2Balance(walletAddress: string) {
+	try {
+		const res = await httpClient.get<WalletResponse>(`${ BLOCKCHAIN.horizon_url }/accounts/${ walletAddress }`);
+		for (const balance of res.data.balances) {
+			if (balance.asset_issuer === BLOCKCHAIN.asset_issuer &&
+				balance.asset_code === BLOCKCHAIN.asset_code) {
 				return parseFloat(balance.balance);
 			}
 		}
@@ -47,32 +51,27 @@ async function getBalance(walletAddress: string) {
 
 async function hasKin3Account(walletAddress: string) {
 	try {
-		await client.get<WalletResponse>(`${ BLOCKCHAIN3.horizon_url }/accounts/${ walletAddress }`);
+		await httpClient.get<WalletResponse>(`${ BLOCKCHAIN3.horizon_url }/accounts/${ walletAddress }`);
 		return true;
 	} catch (e) {
 		return false;
 	}
 }
 
-// return true if migration call succeeded
+// returns true if migration call succeeded
 async function migrateZeroBalance(walletAddress: string) {
 	try {
-		const res = await client.post(`${ getConfig().migration_service }/migrate?address=${ walletAddress }`,
+		const res = await httpClient.post(`${ getConfig().migration_service }/migrate?address=${ walletAddress }`,
 			null,
-			{ validateStatus: status => status < 500 });
-		if (res.status < 300 || res.status === 400 && res.data.code === 4002) {
+			{ validateStatus: status => status < 500 }); // allow 4xx errors
+		if (res.status < 300 ||
+			res.status === 400 && res.data.code === ALREADY_MIGRATED_ERROR) {
 			return true;
 		}
 	} catch (e) {
 	}
 	return false;
 }
-
-type AccountMigrationStatus = {
-	should_migrate: boolean;
-	app_blockchain_version: BlockchainVersion;
-	restore_allowed: boolean;
-};
 
 export const accountStatus = async function(req: express.Request, res: express.Response) {
 	const publicAddress = req.params.public_address;
@@ -89,7 +88,7 @@ export const accountStatus = async function(req: express.Request, res: express.R
 		&& wallet
 		// zero balance accounts don't need to migrate.
 		// We check the balance of this account on kin2 prior to deciding
-		&& await getBalance(wallet.walletAddress) === 0
+		&& await getKin2Balance(wallet.walletAddress) === 0
 		// account must be created on kin3, otherwise the migrate call will block for a few seconds,
 		// which we prefer the client will do
 		&& await hasKin3Account(wallet.walletAddress)) {

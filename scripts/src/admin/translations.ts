@@ -164,7 +164,7 @@ export async function getCsvTemplateData() {
 
 export async function writeCsvTemplateToFile(fileName: string = "translation_template.csv") {
 	return new Promise(async (resolve, reject) => {
-		writeFile(fileName, await getCsvTemplateData(), (err: NodeJS.ErrnoException) => {
+		writeFile(fileName, await getCsvTemplateData(), (err: NodeJS.ErrnoException | null) => {
 			if (err) {
 				console.error("Error:", err);
 				reject(err);

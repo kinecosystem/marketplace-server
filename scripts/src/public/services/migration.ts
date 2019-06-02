@@ -33,19 +33,20 @@ export async function init() {
 	BLOCKCHAIN3 = await getBlockchainConfig("3");
 }
 
-async function getKin2Balance(walletAddress: string) {
+// return True if wallet has zero balance on kin2
+async function hasKin2ZeroBalance(walletAddress: string): Promise<boolean> {
 	try {
 		const res = await httpClient.get<WalletResponse>(`${ BLOCKCHAIN.horizon_url }/accounts/${ walletAddress }`);
 		for (const balance of res.data.balances) {
 			if (balance.asset_issuer === BLOCKCHAIN.asset_issuer &&
 				balance.asset_code === BLOCKCHAIN.asset_code) {
-				return parseFloat(balance.balance);
+				return parseFloat(balance.balance) === 0;
 			}
 		}
-		return 0;
+		return true; // no balance is zero balance
 	} catch (e) {
 		logger().warn("couldn't reach horizon to check user balance - assuming non-zero");
-		return 1; // assume user has balance if can't reach horizon
+		return false; // assume user has non zero balance if can't reach horizon
 	}
 }
 
@@ -58,19 +59,20 @@ async function hasKin3Account(walletAddress: string) {
 	}
 }
 
+class MigrationError extends Error {
+}
+
 // returns true if migration call succeeded
-async function migrateZeroBalance(walletAddress: string) {
-	try {
-		const res = await httpClient.post(`${ getConfig().migration_service }/migrate?address=${ walletAddress }`,
-			null,
-			{ validateStatus: status => status < 500 }); // allow 4xx errors
-		if (res.status < 300 ||
-			res.status === 400 && res.data.code === ALREADY_MIGRATED_ERROR) {
-			return true;
-		}
-	} catch (e) {
+async function migrateZeroBalance(walletAddress: string): Promise<void> {
+	const res = await httpClient.post(`${ getConfig().migration_service }/migrate?address=${ walletAddress }`,
+		null,
+		{ validateStatus: status => status < 500 }); // allow 4xx errors
+	if (res.status < 300 ||
+		res.status === 400 && res.data.code === ALREADY_MIGRATED_ERROR) {
+		return;
 	}
-	return false;
+
+	throw new MigrationError(`migration failed with status: ${ res.status }`);
 }
 
 export const accountStatus = async function(req: express.Request, res: express.Response) {
@@ -88,7 +90,7 @@ export const accountStatus = async function(req: express.Request, res: express.R
 		&& wallet
 		// zero balance accounts don't need to migrate.
 		// We check the balance of this account on kin2 prior to deciding
-		&& await getKin2Balance(wallet.walletAddress) === 0
+		&& await hasKin2ZeroBalance(wallet.walletAddress)
 		// account must be created on kin3, otherwise the migrate call will block for a few seconds,
 		// which we prefer the client will do
 		&& await hasKin3Account(wallet.walletAddress)) {
@@ -96,6 +98,7 @@ export const accountStatus = async function(req: express.Request, res: express.R
 			await migrateZeroBalance(wallet.walletAddress);
 			shouldMigrate = false;
 		} catch (e) {
+			logger().warn("migration on behalf of user failed ", { reason: (e as Error).message });
 			// fail to call migrate - let user call it instead
 			shouldMigrate = true;
 		}

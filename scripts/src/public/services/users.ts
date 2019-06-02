@@ -115,8 +115,8 @@ export async function isRestoreAllowed(walletAddress: string, appId: string, add
 }
 
 async function createWallet(walletAddress: string, user: User) {
-	logger().info(`creating stellar wallet for user ${ user.appId }: ${ walletAddress }`);
 	const blockchainVersion = (await Application.get(user.appId))!.config.blockchain_version;
+	logger().info(`creating stellar wallet for user ${ user.appId }: ${ walletAddress } on KIN${ blockchainVersion }`);
 
 	if (blockchainVersion === "2") {
 		await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin2");

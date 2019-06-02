@@ -5,7 +5,6 @@ import { getConfig } from "./config";
 import { init as initModels } from "../models/index";
 import { init as initRemoteConfig } from "./routes/config";
 import { init as initMigration } from "./services/migration";
-
 import { createRoutes, createV1Routes } from "./routes/index";
 import { generalErrorHandler, init as initCustomMiddleware, notFoundHandler } from "./middleware";
 

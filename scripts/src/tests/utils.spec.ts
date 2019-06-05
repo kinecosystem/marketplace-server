@@ -2,6 +2,8 @@ import * as path from "path";
 import * as moment from "moment";
 
 import * as utils from "../utils/utils";
+import { delay } from "../utils/utils";
+import { app as webApp } from "../public/app";
 
 import { path as _path } from "../utils/path";
 import * as metrics from "../metrics";
@@ -12,7 +14,8 @@ import { MarketplaceError } from "../errors";
 import { close as closeModels, init as initModels } from "../models/index";
 import { assertRateLimitEarn, RateLimit } from "../utils/rate_limit";
 import { localCache } from "../utils/cache";
-import { delay } from "../utils/utils";
+import { AuthToken } from "../models/users";
+import mock = require("supertest");
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {
@@ -48,6 +51,8 @@ describe("util functions", () => {
 
 		test("throwOnAppEarnLimit should fail on 4th request if limit is set to 3 queries", async () => {
 			const limits: LimitConfig = {
+				hourly_user_requests: 150,
+				minute_user_requests: 20,
 				hourly_registration: 20000,
 				minute_registration: 1000,
 				hourly_total_earn: 500000,
@@ -164,5 +169,44 @@ describe("util functions", () => {
 
 		expect(r1.getWindowKeys()).toEqual(r2.getWindowKeys());
 		expect(r1.getWindowKeys().slice(0, 59)).toEqual(r3.getWindowKeys().slice(1));
+	});
+
+	test("rate limit user requests", async () => {
+		const limits: LimitConfig = {
+			hourly_user_requests: 10,
+			minute_user_requests: 2, // allow 2 requests
+			hourly_registration: 20000,
+			minute_registration: 1000,
+			hourly_total_earn: 500000,
+			minute_total_earn: 300,
+			daily_user_earn: 500
+		};
+		const app = await helpers.createApp(utils.generateId(), limits);
+		const user = await helpers.createUser({ appId: app.id });
+		const token = (await AuthToken.findOne({ userId: user.id }))!;
+
+		for (let i = 0; i < 2; i++) {
+			// user can make 2 requests without limit
+			await mock(webApp)
+				.get("/v2/orders")
+				.set("x-request-id", "123")
+				.set("Authorization", `Bearer ${ token.id }`)
+				.expect(res => res.status < 300);
+		}
+		// 3rd requests has limit
+		await mock(webApp)
+			.get("/v2/orders")
+			.set("x-request-id", "123")
+			.set("Authorization", `Bearer ${ token.id }`)
+			.expect(res => res.status >= 400);
+
+		const user2 = await helpers.createUser({ appId: app.id });
+		const token2 = (await AuthToken.findOne({ userId: user2.id }))!;
+		// another user from the same app isn't blocked
+		await mock(webApp)
+			.get("/v2/orders")
+			.set("x-request-id", "123")
+			.set("Authorization", `Bearer ${ token2.id }`)
+			.expect(res => res.status < 300);
 	});
 });

@@ -8,6 +8,8 @@ import { LogTarget } from "./logging";
 export interface LimitConfig {
 	hourly_registration: number;
 	minute_registration: number;
+	hourly_user_requests: number;
+	minute_user_requests: number;
 	hourly_total_earn: number;
 	minute_total_earn: number;
 	daily_user_earn: number;

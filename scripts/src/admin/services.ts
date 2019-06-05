@@ -354,12 +354,12 @@ async function userToHtml(user: User): Promise<string> {
 	const accounts = (await user.getWallets()).all()
 		.sort((w1, w2) => w1.lastUsedDate.valueOf() - w2.lastUsedDate.valueOf())
 		.map(wallet => {
-		return `
-		<a href="${ BLOCKCHAIN.horizon_url}/accounts/${ wallet.address }">${ wallet.address }</a>
+			return `
+		<a href="${ BLOCKCHAIN.horizon_url }/accounts/${ wallet.address }">${ wallet.address }</a>
 		<a href="/wallets/${ wallet.address }">balance</a>
 		<a href="/wallets/${ wallet.address }/payments">kin transactions</a>
 		`;
-	}).join("<br/>");
+		}).join("<br/>");
 
 	return `
 <ul>
@@ -554,7 +554,7 @@ export async function retryUserWallet(params: { user_id: string; wallet: string;
 	if (!user) {
 		throw new Error("user not found: " + params.user_id);
 	}
-	await payment.createWallet(params.wallet, user.appId, user.id);
+	await payment.createWallet(params.wallet, user.appId, user.id, "2");
 	return `<h3>Retrying...</h3>
 <div><a href="/users/${ user.id }">Go Back</a>
 <script>

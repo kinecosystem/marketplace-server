@@ -162,7 +162,7 @@ export async function createP2POrder(userId: string): Promise<Order> {
 		type: "earn",
 		meta: {
 			title: "p2p order #1",
-			description: `got tip from ${sender.id}`
+			description: `got tip from ${ sender.id }`
 		},
 		wallet: recipientWallet.address
 	}, {
@@ -170,7 +170,7 @@ export async function createP2POrder(userId: string): Promise<Order> {
 		type: "spend",
 		meta: {
 			title: "p2p order #2",
-			description: `sent tip to ${recipient.id}`
+			description: `sent tip to ${ recipient.id }`
 		},
 		wallet: senderWallet.address
 	});
@@ -275,6 +275,8 @@ export async function createApp(appId: string, limits?: LimitConfig, blockchain_
 		sign_in_types: ["jwt", "whitelist"],
 		daily_earn_offers: 4,
 		limits: {
+			hourly_user_requests: 150,
+			minute_user_requests: 20,
 			hourly_registration: 200000,
 			minute_registration: 10000,
 			hourly_total_earn: 5000000,

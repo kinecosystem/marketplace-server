@@ -47,7 +47,8 @@ const CODES = {
 			Order: 3,
 			PublicKey: 4,
 			OfferCapReached: 5,
-			User: 6
+			User: 6,
+			Wallet: 7,
 		}
 	},
 	RequestTimeout: {
@@ -76,7 +77,8 @@ const CODES = {
 		code: HttpCodes.TOO_MANY_REQUESTS, // 429
 		types: {
 			Registrations: 1,
-			Amounts: 2
+			Amounts: 2,
+			UserRequests: 3,
 		}
 	},
 	InternalServerError: {
@@ -172,6 +174,10 @@ export function NoSuchOffer(id: string) {
 
 export function NoSuchOrder(id: string) {
 	return NotFoundError("Order", `No such order: ${ id }`);
+}
+
+export function NoSuchWallet(walletAddress: string) {
+	return NotFoundError("Wallet", `No such wallet: ${ walletAddress }`);
 }
 
 export function NoSuchPublicKey(appId: string, keyid: string) {
@@ -327,6 +333,10 @@ export function TooManyRegistrations(message: string): MarketplaceError {
 
 export function TooMuchEarnOrdered(message: string): MarketplaceError {
 	return TooManyRequests("Amounts", message);
+}
+
+export function TooManyUserRequests(message: string): MarketplaceError {
+	return TooManyRequests("UserRequests", message);
 }
 
 function DeprecationError(key: keyof typeof CODES.Gone.types, message: string): MarketplaceError {

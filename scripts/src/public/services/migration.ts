@@ -1,12 +1,12 @@
 import * as express from "express";
 import { BlockchainVersion } from "../../models/offers";
 import { getAppBlockchainVersion } from "./applications";
-import { GradualMigrationUser, WalletApplication } from "../../models/users";
+import { GradualMigrationUser, Wallet, WalletApplication } from "../../models/users";
 import { getDefaultLogger as logger } from "../../logging";
 import {
 	hasKin2ZeroBalance,
 	hasKin3Account,
-	migrateZeroBalance,
+	migrateZeroBalance, rateLimitMigration,
 	validateMigrationListJWT
 } from "../../utils/migration";
 
@@ -23,34 +23,68 @@ type AccountMigrationStatus = {
 	restore_allowed: boolean;
 };
 
+// checks if should migrate flag can be set to false in case of zero wallet
+async function shouldMigrateWallet(walletAddress: string): Promise<boolean> {
+	if (
+		// zero balance accounts don't need to migrate.
+	// We check the balance of this account on kin2 prior to deciding
+		await hasKin2ZeroBalance(walletAddress)
+		// account must be created on kin3, otherwise the migrate call will block for a few seconds,
+		// which we prefer the client will do
+		&& await hasKin3Account(walletAddress)) {
+		try {
+			await migrateZeroBalance(walletAddress);
+			await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin3")
+			return false;
+		} catch (e) {
+			logger().warn("migration on behalf of user failed ", { reason: (e as Error).message });
+			// fail to call migrate - let user call it instead
+		}
+	}
+	return true;
+}
+
+// return blockchainVersion for a wallet
+async function getBlockchainVersionForWallet(wallet: WalletApplication, appId: string): Promise<{ blockchainVersion: BlockchainVersion, shouldMigrate: boolean }> {
+
+	if (wallet.createdDateKin3) {
+		return { blockchainVersion: "3", shouldMigrate: false };
+	}
+
+	const blockchainVersion = await getAppBlockchainVersion(appId);
+	if (blockchainVersion === "3") {
+		return { blockchainVersion: "3", shouldMigrate: await shouldMigrateWallet(wallet.walletAddress) };
+	}
+
+	const wallets = await Wallet.find({ select: ["userId"], where: { address: wallet.walletAddress } });
+	const userIds = wallets.map(w => w.userId);
+	const whitelisted = await GradualMigrationUser.findByIds(userIds);
+	if (whitelisted.length > 0 && (whitelisted.some(w => !!w.migrationDate) || rateLimitMigration(appId))) {
+		await GradualMigrationUser
+			.createQueryBuilder("mig")
+			.update()
+			.whereInIds(userIds)
+			.set({ migratedDate: new Date() })
+			.execute(); // TODO move into GradualMigrationUser class
+		return { blockchainVersion: "3", shouldMigrate: await shouldMigrateWallet(wallet.walletAddress) };
+	}
+	return { blockchainVersion: "3", shouldMigrate: false };
+}
+
 export const accountStatus = async function(req: AccountStatusRequest, res: express.Response) {
 	const publicAddress = req.params.public_address;
 	const appId = req.params.app_id;
 
 	logger().info(`handling account status request app_id: ${ appId } public_address: ${ publicAddress }`);
-
-	const blockchainVersion = await getAppBlockchainVersion(appId);
-
 	const wallet = await WalletApplication.findOne({ walletAddress: publicAddress });
-	// if app is on kin3, and the wallet was created on kin2 but not on kin3, it should migrate
-	let shouldMigrate = blockchainVersion === "3" && !!wallet && !wallet.createdDateKin3;
 
-	if (shouldMigrate
-		&& wallet
-		// zero balance accounts don't need to migrate.
-		// We check the balance of this account on kin2 prior to deciding
-		&& await hasKin2ZeroBalance(wallet.walletAddress)
-		// account must be created on kin3, otherwise the migrate call will block for a few seconds,
-		// which we prefer the client will do
-		&& await hasKin3Account(wallet.walletAddress)) {
-		try {
-			await migrateZeroBalance(wallet.walletAddress);
-			shouldMigrate = false;
-		} catch (e) {
-			logger().warn("migration on behalf of user failed ", { reason: (e as Error).message });
-			// fail to call migrate - let user call it instead
-			shouldMigrate = true;
-		}
+	let blockchainVersion: BlockchainVersion;
+	let shouldMigrate: boolean;
+	if (!wallet) {
+		blockchainVersion = await getAppBlockchainVersion(appId);
+		shouldMigrate = false; // TODO shouldMigrate on kin3?
+	} else {
+		({ blockchainVersion, shouldMigrate } = await getBlockchainVersionForWallet(publicAddress, appId));
 	}
 
 	res.status(200).send({

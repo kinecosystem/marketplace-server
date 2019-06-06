@@ -47,7 +47,7 @@ export class User extends CreationDateModel {
 
 		const wallets = await Wallet.find(conditions);
 		if (wallets.length === 0 && this.walletAddress) {
-			await this.lazyMigrateWallet(deviceId);
+			await this.lazyMigrateWallet(deviceId); // TODO can we get rid of this?
 		}
 
 		return new Wallets(await Wallet.find(conditions));
@@ -258,25 +258,25 @@ export class GradualMigrationUser extends CreationDateModel {
 	public static async addList(appId: string, appUserIds: string[]) {
 		const BATCH_SIZE = 500;
 		for (let i = 0; i < appUserIds.length; i += BATCH_SIZE) {
-			const batch = appUserIds
-				.slice(i, i + BATCH_SIZE)
-				.map(appUserId => ({
-					appId, appUserId
-				}));
+			// translate apUserId to userId and insert to table
+			const users = await User
+				.createQueryBuilder("user")
+				.select("id")
+				.where("user.appUserId IN (:appUserIds)", { appUserIds })
+				.getRawMany();
+			const userIds = users.map(u => u.id);
+
 			await GradualMigrationUser
 				.createQueryBuilder()
 				.insert()
-				.values(batch)
-				.onConflict(`("app_id", "app_user_id") DO NOTHING`)
+				.values(userIds)
+				.onConflict(`("user_id") DO NOTHING`)
 				.execute();
 		}
 	}
 
-	@PrimaryColumn({ name: "app_id" })
-	public appId!: string;
-
-	@PrimaryColumn({ name: "app_user_id", nullable: true })
-	public appUserId!: string;
+	@PrimaryColumn({ name: "user_id", nullable: true })
+	public userId!: string;
 
 	@Column({ name: "migration_date", nullable: true, default: null })
 	public migrationDate?: Date; // flag that marks this user has been requested to migrate

@@ -117,3 +117,18 @@ export async function assertRateLimitUserRequests(user: User) {
 	];
 	await Promise.all(limiters.map(limiter => limiter.inc(1)));
 }
+
+async function checkRateLimitMigration(appId: string, limit: number, duration: moment.Duration) {
+	return await checkRateLimit(`migration:${ appId }:${ duration.asSeconds() }`, duration, limit, TooManyUserRequests,
+		1, 2); // use lower number of buckets to reduce stress on redis as this is called on each user request
+}
+
+export async function assertRateLimitMigration(appId: string) {
+	const app = (await Application.get(appId))!;
+
+	const limiters = [
+		await checkRateLimitMigration(app.id, app.config.limits.hourly_migration || 1000, moment.duration({ hours: 1 })),
+		await checkRateLimitMigration(app.id, app.config.limits.minute_migration || 150, moment.duration({ minutes: 1 })),
+	];
+	await Promise.all(limiters.map(limiter => limiter.inc(1)));
+}

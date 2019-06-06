@@ -6,6 +6,8 @@ import { path } from "./utils/path";
 import { LogTarget } from "./logging";
 
 export interface LimitConfig {
+	hourly_migration: number;
+	minute_migration: number;
 	hourly_registration: number;
 	minute_registration: number;
 	hourly_user_requests: number;

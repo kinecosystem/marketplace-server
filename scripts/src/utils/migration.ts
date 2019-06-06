@@ -4,6 +4,7 @@ import { getDefaultLogger as logger } from "../logging";
 import { getConfig } from "../public/config";
 import { verify as verifyJwt } from "../public/jwt";
 import { InvalidExternalOrderJwt, MissingFieldJWT } from "../errors";
+import { assertRateLimitMigration } from "./rate_limit";
 
 const httpClient = getAxiosClient();
 let BLOCKCHAIN: BlockchainConfig;
@@ -87,4 +88,13 @@ export async function validateMigrationListJWT(jwt: string, appId: string): Prom
 	}
 
 	return decoded.payload.user_ids;
+}
+
+export async function rateLimitMigration(appId: string) {
+	try {
+		await assertRateLimitMigration(appId);
+		return true;
+	} catch (e) {
+		return false;
+	}
 }

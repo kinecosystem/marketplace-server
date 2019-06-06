@@ -251,3 +251,13 @@ export class WalletApplication extends BaseEntity {
 	@Column({ name: "created_date_kin3", nullable: true })
 	public createdDateKin3?: Date;
 }
+
+@Entity({ name: "gradual_migration_users" })
+@Register
+export class GradualMigrationUser extends CreationDateModel {
+	@Column({ name: "app_id" })
+	public appId!: string;
+
+	@Column({ name: "user_id", nullable: true })
+	public userId!: string;
+}

@@ -33,6 +33,12 @@ node_js:
 #  on:
 #    branch: master
 
+# whitelist
+branches:
+  only:
+    - master
+    - dev
+    - travis-stages
 
 jobs:
   include:

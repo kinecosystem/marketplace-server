@@ -5,30 +5,46 @@ services: docker
 node_js:
   - "11"
 
-before_script:
-    #  - make generate-funding-address # won't work for KIN3 as it's missing whitelisting step
-  - mkdir -p ./secrets/ &&
-    echo export STELLAR_BASE_SEED=${STELLAR_BASE_SEED} STELLAR_ADDRESS=${STELLAR_ADDRESS} > ./secrets/.secrets
-  - make create-jwt-keys
-  - make build-image
-  - make build db
-  - NODEMON_WATCH_DIRS="-w /no_such_dir" make up
+#before_script:
+#    #  - make generate-funding-address # won't work for KIN3 as it's missing whitelisting step
+#  - mkdir -p ./secrets/ &&
+#    echo export STELLAR_BASE_SEED=${STELLAR_BASE_SEED} STELLAR_ADDRESS=${STELLAR_ADDRESS} > ./secrets/.secrets
+#  - make create-jwt-keys
+#  - make build-image
+#  - make build db
+#  - NODEMON_WATCH_DIRS="-w /no_such_dir" make up
+#
+#script:
+#  - make test
+#  - ./node_modules/codecov/bin/codecov
+#  - make clear-db db
+#  - make test-system-docker
+#
+#after_failure:
+#  - make logs
+#
+#branches:
+#  only:
+#    - master
+#
+#deploy:
+#  provider: script
+#  script: echo "pushing docker image" # && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && make push-image
+#  on:
+#    branch: master
 
-script:
-  - make test
-  - ./node_modules/codecov/bin/codecov
-  - make clear-db db
-  - make test-system-docker
 
-after_failure:
-  - make logs
-
-branches:
-  only:
-    - master
-
-deploy:
-  provider: script
-  script: echo "pushing docker image" # && docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD" && make push-image
-  on:
-    branch: master
+jobs:
+  include:
+    - stage: setup
+      name: setup
+      script:
+        - mkdir -p ./secrets/ &&
+          echo export STELLAR_BASE_SEED=${STELLAR_BASE_SEED} STELLAR_ADDRESS=${STELLAR_ADDRESS} > ./secrets/.secrets
+        - make create-jwt-keys
+        - make build-image
+        - make build db
+        - NODEMON_WATCH_DIRS="-w /no_such_dir" make up
+    - stage: unit-test
+      name: unit-test
+      script: - make test

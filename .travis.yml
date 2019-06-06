@@ -26,7 +26,6 @@ after_failure:
 branches:
   only:
     - master
-    - travis-stages
 
 deploy:
   provider: script

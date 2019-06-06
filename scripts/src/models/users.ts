@@ -255,9 +255,29 @@ export class WalletApplication extends BaseEntity {
 @Entity({ name: "gradual_migration_users" })
 @Register
 export class GradualMigrationUser extends CreationDateModel {
-	@Column({ name: "app_id" })
+	public static async addList(appId: string, appUserIds: string[]) {
+		const BATCH_SIZE = 500;
+		for (let i = 0; i < appUserIds.length; i += BATCH_SIZE) {
+			const batch = appUserIds
+				.slice(i, i + BATCH_SIZE)
+				.map(appUserId => ({
+					appId, appUserId
+				}));
+			await GradualMigrationUser
+				.createQueryBuilder()
+				.insert()
+				.values(batch)
+				.onConflict(`("app_id", "app_user_id") DO NOTHING`)
+				.execute();
+		}
+	}
+
+	@PrimaryColumn({ name: "app_id" })
 	public appId!: string;
 
-	@Column({ name: "user_id", nullable: true })
-	public userId!: string;
+	@PrimaryColumn({ name: "app_user_id", nullable: true })
+	public appUserId!: string;
+
+	@Column({ name: "migration_date", nullable: true, default: null })
+	public migrationDate?: Date; // flag that marks this user has been requested to migrate
 }

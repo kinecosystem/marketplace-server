@@ -274,6 +274,14 @@ export class GradualMigrationUser extends CreationDateModel {
 				.execute();
 		}
 	}
+	public static async setAsMigrated(userIds: string[]) {
+		await GradualMigrationUser
+			.createQueryBuilder("mig")
+			.update()
+			.whereInIds(userIds)
+			.set({ migratedDate: new Date() })
+			.execute();
+	}
 
 	@PrimaryColumn({ name: "user_id", nullable: true })
 	public userId!: string;

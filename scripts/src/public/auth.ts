@@ -6,7 +6,7 @@ import { getRedisClient } from "../redis";
 import { Application } from "../models/applications";
 import { MissingToken, InvalidToken, TOSMissingOrOldToken, NoSuchApp, WrongBlockchainVersion } from "../errors";
 import { assertRateLimitUserRequests } from "../utils/rate_limit";
-import { rateLimitMigration } from "../utils/migration";
+import { withinMigrationRateLimit } from "../utils/migration";
 
 const tokenCacheTTL = 15 * 60; // 15 minutes
 type CachedTokenValue = { token: AuthToken, user: User };
@@ -101,33 +101,32 @@ export const authenticateUser = async function(req: express.Request, res: expres
 async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean> {
 	const CLIENT_BLOCKCHAIN_HEADER = "x-kin-blockchain-version";
 	const blockchainVersionHeader = req.header(CLIENT_BLOCKCHAIN_HEADER);
+	const user = req.context.user;
+	const deviceId = req.context.token.deviceId;
 
 	if (blockchainVersionHeader === "3") {
-		return false; // TODO should we make assertions here that the current wallet is on kin3?
+		return false; // TODO should we make assertions that the current wallet is on kin3?
 	}
-	const app = await Application.get(req.context.user.appId);
+	const app = await Application.get(user.appId);
 	if (!app) { // cached per instance
-		throw NoSuchApp(req.context.user.appId);
+		throw NoSuchApp(user.appId);
 	}
-
 	if (app.config.blockchain_version === "3") {
 		return true;
 	}
-	const wallet = (await req.context.user.getWallets(req.context.token.deviceId)).lastUsed() ||
-		(await req.context.user.getWallets()).lastUsed();
+	const wallet = (await user.getWallets(deviceId)).lastUsed() ||
+		(await user.getWallets()).lastUsed();
 	if (!wallet) {
-		// :(
+		// :( TODO shouldn't happen - log this
 		return false;
 	}
 	const walletApplication = await WalletApplication.findOne({ walletAddress: wallet.address });
 	if (walletApplication && walletApplication.createdDateKin3) {
 		return true;
 	}
-	const whitelist = await GradualMigrationUser.findOneById(req.context.user.id);
-	if (whitelist && (whitelist.migrationDate || rateLimitMigration(app.id))) {
-		whitelist.migrationDate = new Date();
-		await whitelist.save();
-		// call shouldMigrate TODO ) // will mark current wallet as migrated if 0 balance
+	const whitelist = await GradualMigrationUser.findOneById(user.id);
+	if (whitelist && (whitelist.migrationDate || withinMigrationRateLimit(app.id))) {
+		await GradualMigrationUser.setAsMigrated([user.id]);
 		return true;
 	}
 	return false;

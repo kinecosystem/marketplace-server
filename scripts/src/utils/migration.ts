@@ -90,7 +90,8 @@ export async function validateMigrationListJWT(jwt: string, appId: string): Prom
 	return decoded.payload.user_ids;
 }
 
-export async function rateLimitMigration(appId: string) {
+// return true if a user migration is within rate limits
+export async function withinMigrationRateLimit(appId: string) {
 	try {
 		await assertRateLimitMigration(appId);
 		return true;

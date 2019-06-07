@@ -20,6 +20,7 @@ export type ApplicationConfig = {
 	limits: LimitConfig;
 	blockchain_version: BlockchainVersion;
 	bulk_user_creation_allowed?: number;
+	gradual_migration: boolean;
 };
 
 @Entity({ name: "applications" })

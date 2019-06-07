@@ -114,20 +114,23 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 	if (app.config.blockchain_version === "3") {
 		return true;
 	}
-	const wallet = (await user.getWallets(deviceId)).lastUsed() ||
-		(await user.getWallets()).lastUsed();
-	if (!wallet) {
-		// :( TODO shouldn't happen - log this
-		return false;
+	if (app.config.gradual_migration) {
+		const wallet = (await user.getWallets(deviceId)).lastUsed() ||
+			(await user.getWallets()).lastUsed();
+		if (!wallet) {
+			// :( TODO shouldn't happen - log this
+			return false;
+		}
+		const walletApplication = await WalletApplication.findOne({ walletAddress: wallet.address });
+		if (walletApplication && walletApplication.createdDateKin3) {
+			return true;
+		}
+		const whitelist = await GradualMigrationUser.findOneById(user.id);
+		if (whitelist && (whitelist.migrationDate || withinMigrationRateLimit(app.id))) {
+			await GradualMigrationUser.setAsMigrated([user.id]);
+			return true;
+		}
 	}
-	const walletApplication = await WalletApplication.findOne({ walletAddress: wallet.address });
-	if (walletApplication && walletApplication.createdDateKin3) {
-		return true;
-	}
-	const whitelist = await GradualMigrationUser.findOneById(user.id);
-	if (whitelist && (whitelist.migrationDate || withinMigrationRateLimit(app.id))) {
-		await GradualMigrationUser.setAsMigrated([user.id]);
-		return true;
-	}
+
 	return false;
 }

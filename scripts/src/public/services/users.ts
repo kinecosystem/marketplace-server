@@ -114,20 +114,28 @@ export async function isRestoreAllowed(walletAddress: string, appId: string, add
 	return true;
 }
 
-async function createWallet(walletAddress: string, user: User) {
-	const blockchainVersion = (await Application.get(user.appId))!.config.blockchain_version;
-	logger().info(`creating stellar wallet for user ${ user.appId }: ${ walletAddress } on KIN${ blockchainVersion }`);
+async function createWallet(walletAddress: string, user: User, app: Application) {
+	logger().info(`creating wallet for user ${ user.appId }: ${ walletAddress } on KIN${ blockchainVersion }`);
 
-	if (blockchainVersion === "2") {
+	if (app.config.blockchain_version === "3") {
+		await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin3");
+		await payment.createWallet(walletAddress, user.appId, user.id, "3");
+	} else if (app.config.gradual_migration) {
+		// TODO if gradual migration is on, do I need to create a KIN2 account?
+		// TODO should I return version 3 to non existing wallets in migration info when asking on a gradually migrating app?
+		await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin3"); // next auth request/ migration info will trigger user to move to kin3
+		await Promise.all([
+			payment.createWallet(walletAddress, user.appId, user.id, "2"),
+			// optimization: create wallets on kin3 to reduce time when migrating
+			payment.createWallet(walletAddress, user.appId, user.id, "3"),
+		]);
+	} else { // kin2
 		await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin2");
 		await Promise.all([
 			payment.createWallet(walletAddress, user.appId, user.id, "2"),
 			// optimization: create wallets on kin3 to reduce time when migrating
 			payment.createWallet(walletAddress, user.appId, user.id, "3"),
 		]);
-	} else {
-		await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin3");
-		await payment.createWallet(walletAddress, user.appId, user.id, "3");
 	}
 }
 
@@ -157,7 +165,7 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 
 		const isNewWallet = await user.updateWallet(props.deviceId, walletAddress);
 		if (isNewWallet) {
-			await createWallet(walletAddress, user);
+			await createWallet(walletAddress, user, app);
 		}
 		metrics.walletAddressUpdate(appId, isNewWallet);
 

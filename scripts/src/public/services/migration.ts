@@ -9,6 +9,8 @@ import {
 	migrateZeroBalance,
 	validateMigrationListJWT, withinMigrationRateLimit
 } from "../../utils/migration";
+import { Application } from "../../models/applications";
+import { NoSuchApp } from "../../errors";
 
 type AccountStatusRequest = express.Request & {
 	params: {
@@ -45,39 +47,44 @@ async function canSkipMigration(walletAddress: string): Promise<boolean> {
 }
 
 // return blockchainVersion for a wallet
-async function getBlockchainVersionForWallet(wallet: WalletApplication, appId: string): Promise<{ blockchainVersion: BlockchainVersion, shouldMigrate: boolean }> {
+async function getBlockchainVersionForWallet(wallet: WalletApplication, app: Application): Promise<{ blockchainVersion: BlockchainVersion, shouldMigrate: boolean }> {
 
 	if (wallet.createdDateKin3) {
 		return { blockchainVersion: "3", shouldMigrate: false };
 	}
 
-	const blockchainVersion = await getAppBlockchainVersion(appId);
-	if (blockchainVersion === "3") {
+	if (app.config.blockchain_version === "3") {
 		return { blockchainVersion: "3", shouldMigrate: true };
 	}
 
-	const wallets = await Wallet.find({ select: ["userId"], where: { address: wallet.walletAddress } });
-	const userIds = wallets.map(w => w.userId);
-	const whitelisted = await GradualMigrationUser.findByIds(userIds);
-	if (whitelisted.length > 0 && (whitelisted.some(w => !!w.migrationDate) || withinMigrationRateLimit(appId))) {
-		await GradualMigrationUser.setAsMigrated(userIds);
-		return { blockchainVersion: "3", shouldMigrate: true };
+	if (app.config.gradual_migration) {
+		const wallets = await Wallet.find({ select: ["userId"], where: { address: wallet.walletAddress } });
+		const userIds = wallets.map(w => w.userId);
+		const whitelisted = await GradualMigrationUser.findByIds(userIds);
+
+		if (whitelisted.length > 0 && (whitelisted.some(w => !!w.migrationDate) || withinMigrationRateLimit(app.id))) {
+			await GradualMigrationUser.setAsMigrated(userIds);
+			return { blockchainVersion: "3", shouldMigrate: true };
+		}
+		// else, user is not whitelisted or is whitelisted but rate limit applied
 	}
-	// user is not whitelisted or is whitelisted but rate limit applied
 	return { blockchainVersion: "2", shouldMigrate: false };
 }
 
 export const accountStatus = async function(req: AccountStatusRequest, res: express.Response) {
 	const publicAddress = req.params.public_address;
 	const appId = req.params.app_id;
-
+	const app = await Application.get(appId);
+	if (!app) {
+		throw NoSuchApp(appId);
+	}
 	logger().info(`handling account status request app_id: ${ appId } public_address: ${ publicAddress }`);
 	const wallet = await WalletApplication.findOne({ walletAddress: publicAddress });
 
 	let blockchainVersion: BlockchainVersion;
 	let shouldMigrate: boolean;
 	if (!wallet) {
-		blockchainVersion = await getAppBlockchainVersion(appId);
+		blockchainVersion = app.config.blockchain_version;
 		shouldMigrate = false; // TODO shouldMigrate non existing wallet on kin3?
 	} else {
 		({ blockchainVersion, shouldMigrate } = await getBlockchainVersionForWallet(publicAddress, appId));

@@ -14,6 +14,7 @@ import { generateId, IdPrefix, Mutable } from "../utils/utils";
 
 import { OrderContext } from "./orders";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
+import { BlockchainVersion } from "./offers";
 
 @Entity({ name: "users" })
 @Register
@@ -235,7 +236,8 @@ export class Wallet extends BaseEntity {
 @Entity({ name: "wallet_application" })
 @Register
 export class WalletApplication extends BaseEntity {
-	public static async updateCreatedDate(walletAddress: string, createdDateField: "createdDateKin2" | "createdDateKin3") {
+	public static async updateCreatedDate(walletAddress: string, blockchainVersion: BlockchainVersion) {
+		const createdDateField = blockchainVersion === "2" ? "createdDateKin2" : "createdDateKin3";
 		await WalletApplication.update({ walletAddress }, { [createdDateField]: new Date() });
 	}
 

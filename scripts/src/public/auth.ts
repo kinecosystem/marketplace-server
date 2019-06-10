@@ -115,7 +115,7 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 	if (app.config.blockchain_version === "3") {
 		return true;
 	}
-	if (app.applyGradualMigration()) {
+	if (app.shouldApplyGradualMigration()) {
 		const wallet = (await user.getWallets(deviceId)).lastUsed() ||
 			(await user.getWallets()).lastUsed();
 		if (!wallet) {

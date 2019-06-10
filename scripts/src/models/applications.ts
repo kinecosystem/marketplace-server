@@ -75,7 +75,7 @@ export class Application extends CreationDateModel {
 
 	// return true if should apply gradual migration from given date
 	// if no date given, use now
-	public applyGradualMigration(date?: Date) {
+	public shouldApplyGradualMigration(date?: Date): boolean {
 		if (isNothing(this.config.gradual_migration_date)) {
 			return false;
 		}

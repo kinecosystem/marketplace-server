@@ -3,7 +3,7 @@ import mock = require("supertest");
 import { app as expressApp } from "../../public/app";
 import * as metrics from "../../metrics";
 import { verify } from "../../public/jwt";
-import { AuthToken, User, Wallet, WalletApplication, Wallets } from "../../models/users";
+import { AuthToken, GradualMigrationUser, User, Wallet, WalletApplication, Wallets } from "../../models/users";
 import { generateId, generateRandomString, IdPrefix } from "../../utils/utils";
 import { WhitelistSignInData } from "../../public/routes/users";
 import { validateRegisterJWT } from "../../public/services/applications";
@@ -27,6 +27,29 @@ describe("api tests for v2 users", async () => {
 	afterEach(async () => {
 		await closeModels();
 		await metrics.destruct();
+	});
+
+	test("gradual migration list", async () => {
+		const app = await helpers.createApp(generateId(IdPrefix.App));
+		const users = [
+			await helpers.createUser({ appId: app.id }),
+			await helpers.createUser({ appId: app.id }),
+			await helpers.createUser({ appId: app.id }),
+			await helpers.createUser({ appId: app.id }),
+		];
+
+		await GradualMigrationUser.addList(app.id, users.map(u => u.appUserId));
+		const res = await GradualMigrationUser.findByIds(users.map(u => u.id));
+		expect(res.length).toEqual(users.length);
+		for (const user of res) {
+			expect(user.migrationDate).toBeNull();
+		}
+
+		await GradualMigrationUser.setAsMigrated(users.map(u => u.id).slice(0, 2));
+		expect((await GradualMigrationUser.findOneById(users[0].id))!.migrationDate).not.toBeNull();
+		expect((await GradualMigrationUser.findOneById(users[1].id))!.migrationDate).not.toBeNull();
+		expect((await GradualMigrationUser.findOneById(users[2].id))!.migrationDate).toBeNull();
+		expect((await GradualMigrationUser.findOneById(users[3].id))!.migrationDate).toBeNull();
 	});
 
 	test("existing user migrate wallet", async () => {

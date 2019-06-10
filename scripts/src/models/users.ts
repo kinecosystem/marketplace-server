@@ -256,17 +256,18 @@ export class WalletApplication extends BaseEntity {
 
 @Entity({ name: "gradual_migration_users" })
 @Register
-export class GradualMigrationUser extends CreationDateModel {
+export class GradualMigrationUser extends BaseEntity {
 	public static async addList(appId: string, appUserIds: string[]) {
 		const BATCH_SIZE = 500;
 		for (let i = 0; i < appUserIds.length; i += BATCH_SIZE) {
 			// translate apUserId to userId and insert to table
-			const users = await User
+			const users: Array<{ id: string }> = await User
 				.createQueryBuilder("user")
 				.select("id")
 				.where("user.appUserId IN (:appUserIds)", { appUserIds })
+				.andWhere("user.appId = :appId", { appId })
 				.getRawMany();
-			const userIds = users.map(u => u.id);
+			const userIds = users.map(u => ({ userId: u.id }));
 
 			await GradualMigrationUser
 				.createQueryBuilder()
@@ -276,18 +277,22 @@ export class GradualMigrationUser extends CreationDateModel {
 				.execute();
 		}
 	}
+
 	public static async setAsMigrated(userIds: string[]) {
 		await GradualMigrationUser
 			.createQueryBuilder("mig")
-			.update()
+			.update(GradualMigrationUser)
+			.set({ migrationDate: () => "CURRENT_TIMESTAMP" })
 			.whereInIds(userIds)
-			.set({ migratedDate: new Date() })
 			.execute();
 	}
 
-	@PrimaryColumn({ name: "user_id", nullable: true })
+	@PrimaryColumn({ name: "user_id" })
 	public userId!: string;
 
-	@Column({ name: "migration_date", nullable: true, default: null })
+	@Column({ name: "migration_date", nullable: true })
 	public migrationDate?: Date; // flag that marks this user has been requested to migrate
+
+	@Column({ name: "created_date", nullable: false, default: () => "CURRENT_TIMESTAMP" })
+	public createdDate!: Date; // flag that marks this user has been requested to migrate
 }

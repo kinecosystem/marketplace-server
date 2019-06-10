@@ -16,6 +16,7 @@ import { assertRateLimitEarn, RateLimit } from "../utils/rate_limit";
 import { localCache } from "../utils/cache";
 import { AuthToken } from "../models/users";
 import mock = require("supertest");
+import { withinMigrationRateLimit } from "../utils/migration";
 
 describe("util functions", () => {
 	test("path should return absolute path in the project", () => {
@@ -172,6 +173,27 @@ describe("util functions", () => {
 		expect(r1.getWindowKeys()).toEqual(r2.getWindowKeys());
 		expect(r1.getWindowKeys().slice(0, 59)).toEqual(r3.getWindowKeys().slice(1));
 	});
+
+	test("rate limit migration", async () => {
+		const limits: LimitConfig = {
+			hourly_migration: 100,
+			minute_migration: 2, // allow 2 requests
+			hourly_user_requests: 10,
+			minute_user_requests: 2,
+			hourly_registration: 20000,
+			minute_registration: 1000,
+			hourly_total_earn: 500000,
+			minute_total_earn: 300,
+			daily_user_earn: 500
+		};
+		const app = await helpers.createApp(utils.generateId(), limits);
+		const user = await helpers.createUser({ appId: app.id });
+		const token = (await AuthToken.findOne({ userId: user.id }))!;
+
+		expect(await withinMigrationRateLimit(app.id)).toBeTruthy();
+		expect(await withinMigrationRateLimit(app.id)).toBeTruthy();
+		expect(await withinMigrationRateLimit(app.id)).toBeFalsy();
+		});
 
 	test("rate limit user requests", async () => {
 		const limits: LimitConfig = {

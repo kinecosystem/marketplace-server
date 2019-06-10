@@ -126,10 +126,10 @@ export const Order = {
 		// XXX add cache
 		const statuses = options.userId ? ["pending"] : ["opened", "pending"];
 
-		const query = OrderImpl.createQueryBuilder("ordr") // don't use 'order', it messed things up
-			.select("ordr.offerId", "offerId")
-			.addSelect("COUNT(DISTINCT(ordr.id))", "cnt")
-			.leftJoin("ordr.contexts", "context");
+		const query = OrderImpl.createQueryBuilder("ordr_OrderObj") // don't use 'order', it messed things up
+			.select("ordr_OrderObj.offerId", "offerId")
+			.addSelect("COUNT(DISTINCT(ordr_OrderObj.id))", "cnt")
+			.leftJoin("ordr_OrderObj.contexts", "context");
 
 		if (options.userId) {
 			query.andWhere("context.userId = :userId", { userId: options.userId });
@@ -138,19 +138,19 @@ export const Order = {
 			query.andWhere("user.appId = :appId", { appId });
 		}
 		if (options.offerId) {
-			query.andWhere("ordr.offerId = :offerId", { offerId: options.offerId });
+			query.andWhere("ordr_OrderObj.offerId = :offerId", { offerId: options.offerId });
 		}
 
 		query.andWhere(new Brackets(qb => {
-			qb.where("ordr.status = :status", { status: "completed" })
+			qb.where("ordr_OrderObj.status = :status", { status: "completed" })
 				.orWhere(
 					new Brackets(qb2 => {
-						qb2.where("ordr.status IN (:statuses)", { statuses })
-							.andWhere("ordr.expirationDate > :date", { date: new Date() });
+						qb2.where("ordr_OrderObj.status IN (:statuses)", { statuses })
+							.andWhere("ordr_OrderObj.expirationDate > :date", { date: new Date() });
 					})
 				);
 		}))
-			.groupBy("ordr.offerId");
+			.groupBy("ordr_OrderObj.offerId");
 
 		const results: Array<{ offerId: string, cnt: number }> = await query.getRawMany();
 		const map = new Map<string, number>();
@@ -164,18 +164,18 @@ export const Order = {
 	countToday(userId: string, type: OfferType, origin: OrderOrigin): Promise<number> {
 		const midnight = new Date((new Date()).setUTCHours(0, 0, 0, 0));
 
-		const query = OrderImpl.createQueryBuilder("ordr")
-			.leftJoinAndSelect("ordr.contexts", "context")
+		const query = OrderImpl.createQueryBuilder("ordr_countToday")
+			.leftJoinAndSelect("ordr_countToday.contexts", "context")
 			.andWhere("context.userId = :userId", { userId })
 			.andWhere("context.type = :type", { type })
-			.andWhere("ordr.origin = :origin", { origin })
-			.andWhere("ordr.currentStatusDate > :midnight", { midnight })
+			.andWhere("ordr_countToday.origin = :origin", { origin })
+			.andWhere("ordr_countToday.currentStatusDate > :midnight", { midnight })
 			.andWhere(new Brackets(qb => {
-				qb.where("ordr.status = :completed", { completed: "completed" })
+				qb.where("ordr_countToday.status = :completed", { completed: "completed" })
 					.orWhere(
 						new Brackets(qb2 => {
-							qb2.where("ordr.status = :pending", { pending: "pending" })
-								.andWhere("ordr.expirationDate > :expirationDate", { expirationDate: new Date() });
+							qb2.where("ordr_countToday.status = :pending", { pending: "pending" })
+								.andWhere("ordr_countToday.expirationDate > :expirationDate", { expirationDate: new Date() });
 						})
 					);
 			}));

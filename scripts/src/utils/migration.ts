@@ -3,7 +3,7 @@ import { BlockchainConfig, getBlockchainConfig } from "../public/services/paymen
 import { getDefaultLogger as logger } from "../logging";
 import { getConfig } from "../public/config";
 import { verify as verifyJwt } from "../public/jwt";
-import { InvalidExternalOrderJwt, MissingFieldJWT } from "../errors";
+import { InvalidExternalOrderJwt, InvalidJwtField, MissingFieldJWT } from "../errors";
 import { assertRateLimitMigration } from "./rate_limit";
 
 const httpClient = getAxiosClient();
@@ -84,7 +84,7 @@ export async function validateMigrationListJWT(jwt: string, appId: string): Prom
 	}
 
 	if (decoded.payload.user_ids.length > 10000) {
-		throw Error("number of users should be less than 10000"); // TODO create error code
+		throw InvalidJwtField("`user_ids` value should be less than 10000");
 	}
 
 	return decoded.payload.user_ids;

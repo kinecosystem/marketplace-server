@@ -1,12 +1,13 @@
 import * as express from "express";
 import * as httpContext from "express-http-context";
-import { dateParser, Mutable } from "../utils/utils";
+import { dateParser, isNothing, Mutable } from "../utils/utils";
 import { AuthToken, GradualMigrationUser, User, WalletApplication } from "../models/users";
 import { getRedisClient } from "../redis";
 import { Application } from "../models/applications";
 import { MissingToken, InvalidToken, TOSMissingOrOldToken, NoSuchApp, WrongBlockchainVersion } from "../errors";
 import { assertRateLimitUserRequests } from "../utils/rate_limit";
 import { withinMigrationRateLimit } from "../utils/migration";
+import moment = require("moment");
 
 const tokenCacheTTL = 15 * 60; // 15 minutes
 type CachedTokenValue = { token: AuthToken, user: User };
@@ -114,7 +115,7 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 	if (app.config.blockchain_version === "3") {
 		return true;
 	}
-	if (app.config.gradual_migration) {
+	if (app.applyGradualMigration()) {
 		const wallet = (await user.getWallets(deviceId)).lastUsed() ||
 			(await user.getWallets()).lastUsed();
 		if (!wallet) {

@@ -57,7 +57,7 @@ async function getBlockchainVersionForWallet(wallet: WalletApplication, app: App
 		return { blockchainVersion: "3", shouldMigrate: true };
 	}
 
-	if (app.config.gradual_migration) {
+	if (app.applyGradualMigration()) {
 		const wallets = await Wallet.find({ select: ["userId"], where: { address: wallet.walletAddress } });
 		const userIds = wallets.map(w => w.userId);
 		const whitelisted = await GradualMigrationUser.findByIds(userIds);

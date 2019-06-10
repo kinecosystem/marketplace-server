@@ -271,7 +271,7 @@ export async function createApp(appId: string, limits?: LimitConfig, blockchain_
 	localCache.clear(); // so this new app will show up when calling Application.get
 	const address = getKeyPair().public;
 	const appConfig: ApplicationConfig = {
-		gradual_migration: false,
+		gradual_migration_date: undefined,
 		max_user_wallets: null,
 		sign_in_types: ["jwt", "whitelist"],
 		daily_earn_offers: 4,

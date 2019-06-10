@@ -121,7 +121,7 @@ async function createWallet(walletAddress: string, user: User, app: Application)
 		await WalletApplication.updateCreatedDate(walletAddress, "3");
 		await payment.createWallet(walletAddress, user.appId, user.id, "3");
 		blockchainVersion = "3";
-	} else if (app.config.gradual_migration) { // TODO only for new users - check registration date
+	} else if (app.applyGradualMigration(user.createdDate)) {
 		// TODO if gradual migration is on, do I need to create a KIN2 account?
 		// TODO should I return version 3 to non existing wallets in migration info when asking on a gradually migrating app?
 		await WalletApplication.updateCreatedDate(walletAddress, "3"); // next auth request/ migration info will trigger user to move to kin3

@@ -51,6 +51,8 @@ describe("util functions", () => {
 
 		test("throwOnAppEarnLimit should fail on 4th request if limit is set to 3 queries", async () => {
 			const limits: LimitConfig = {
+				hourly_migration: 100,
+				minute_migration: 30,
 				hourly_user_requests: 150,
 				minute_user_requests: 20,
 				hourly_registration: 20000,
@@ -173,6 +175,8 @@ describe("util functions", () => {
 
 	test("rate limit user requests", async () => {
 		const limits: LimitConfig = {
+			hourly_migration: 100,
+			minute_migration: 30,
 			hourly_user_requests: 10,
 			minute_user_requests: 2, // allow 2 requests
 			hourly_registration: 20000,

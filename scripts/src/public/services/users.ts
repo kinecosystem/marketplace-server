@@ -20,6 +20,7 @@ import * as payment from "./payment";
 import { assertRateLimitRegistration } from "../../utils/rate_limit";
 import { setHttpContext } from "../auth";
 import { getRedisClient } from "../../redis";
+import { BlockchainVersion } from "../../models/offers";
 
 const notExistsTTL = 15 * 60; // cache the fact that a user doesn't exist for 15 minutes
 export type V1AuthToken = {
@@ -115,12 +116,12 @@ export async function isRestoreAllowed(walletAddress: string, appId: string, add
 }
 
 async function createWallet(walletAddress: string, user: User, app: Application) {
-	logger().info(`creating wallet for user ${ user.appId }: ${ walletAddress } on KIN${ blockchainVersion }`);
-
+	let blockchainVersion: BlockchainVersion;
 	if (app.config.blockchain_version === "3") {
 		await WalletApplication.updateCreatedDate(walletAddress, "3");
 		await payment.createWallet(walletAddress, user.appId, user.id, "3");
-	} else if (app.config.gradual_migration) {
+		blockchainVersion = "3";
+	} else if (app.config.gradual_migration) { // TODO only for new users - check registration date
 		// TODO if gradual migration is on, do I need to create a KIN2 account?
 		// TODO should I return version 3 to non existing wallets in migration info when asking on a gradually migrating app?
 		await WalletApplication.updateCreatedDate(walletAddress, "3"); // next auth request/ migration info will trigger user to move to kin3
@@ -128,7 +129,9 @@ async function createWallet(walletAddress: string, user: User, app: Application)
 			payment.createWallet(walletAddress, user.appId, user.id, "2"),
 			// optimization: create wallets on kin3 to reduce time when migrating
 			payment.createWallet(walletAddress, user.appId, user.id, "3"),
+
 		]);
+		blockchainVersion = "3";
 	} else { // kin2
 		await WalletApplication.updateCreatedDate(walletAddress, "2");
 		await Promise.all([
@@ -136,7 +139,10 @@ async function createWallet(walletAddress: string, user: User, app: Application)
 			// optimization: create wallets on kin3 to reduce time when migrating
 			payment.createWallet(walletAddress, user.appId, user.id, "3"),
 		]);
+		blockchainVersion = "2";
+
 	}
+	logger().info(`creating wallet for user ${ user.appId }: ${ walletAddress } on KIN${ blockchainVersion }`);
 }
 
 export async function updateUser(user: User, props: UpdateUserProps) {

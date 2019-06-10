@@ -110,7 +110,7 @@ type AddGradualMigrationListRequest = express.Request & {
 	};
 };
 
-export const addGradualMigrationList = async function(req: AddGradualMigrationListRequest, res: express.Response) {
+export const addGradualMigrationUsers = async function(req: AddGradualMigrationListRequest, res: express.Response) {
 	const appId = req.params.app_id;
 	const jwt = req.body.jwt;
 	const appUserIds = await validateMigrationListJWT(jwt, appId);

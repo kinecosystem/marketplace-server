@@ -8,6 +8,7 @@ import { MissingToken, InvalidToken, TOSMissingOrOldToken, NoSuchApp, WrongBlock
 import { assertRateLimitUserRequests } from "../utils/rate_limit";
 import { withinMigrationRateLimit } from "../utils/migration";
 import moment = require("moment");
+import { getDefaultLogger as logger } from "../logging";
 
 const tokenCacheTTL = 15 * 60; // 15 minutes
 type CachedTokenValue = { token: AuthToken, user: User };
@@ -106,6 +107,8 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 	const deviceId = req.context.token.deviceId;
 
 	if (blockchainVersionHeader === "3") {
+		logger().info(`kin3 user - dont migrate ${ user.id }`);
+		// TODO user gets stuck in kin2
 		return false; // TODO should we make assertions that the current wallet is on kin3?
 	}
 	const app = await Application.get(user.appId);
@@ -113,6 +116,7 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 		throw NoSuchApp(user.appId);
 	}
 	if (app.config.blockchain_version === "3") {
+		logger().info(`app on kin3 - should migrate ${ user.id }`);
 		return true;
 	}
 	if (app.shouldApplyGradualMigration()) {
@@ -120,18 +124,21 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 			(await user.getWallets()).lastUsed();
 		if (!wallet) {
 			// :( TODO shouldn't happen - log this
+			logger().error(`no wallet found for ${ user.id }`);
 			return false;
 		}
 		const walletApplication = await WalletApplication.findOne({ walletAddress: wallet.address });
 		if (walletApplication && walletApplication.createdDateKin3) {
+			logger().info(`current wallet already on kin3 - should migrate ${ wallet.address } ${ user.id }`);
 			return true;
 		}
 		const whitelist = await GradualMigrationUser.findOneById(user.id);
 		if (whitelist && (whitelist.migrationDate || withinMigrationRateLimit(app.id))) {
 			await GradualMigrationUser.setAsMigrated([user.id]);
+			logger().info(`kin2 user in migration list - should migrate ${ wallet.address } ${ user.id }`);
 			return true;
 		}
 	}
-
+	logger().info(`kin2 user not in migration list - dont migrate ${ user.id }`);
 	return false;
 }

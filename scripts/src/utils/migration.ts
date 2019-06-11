@@ -94,8 +94,10 @@ export async function validateMigrationListJWT(jwt: string, appId: string): Prom
 export async function withinMigrationRateLimit(appId: string) {
 	try {
 		await assertRateLimitMigration(appId);
+		logger().info(`within migration limit for ${ appId }`);
 		return true;
 	} catch (e) {
+		logger().info(`exceeded migration limit for ${ appId }`);
 		return false;
 	}
 }

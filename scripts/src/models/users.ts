@@ -279,6 +279,7 @@ export class GradualMigrationUser extends BaseEntity {
 	}
 
 	public static async setAsMigrated(userIds: string[]) {
+		logger().info(`setting migration users ${userIds}`);
 		await GradualMigrationUser
 			.createQueryBuilder("mig")
 			.update(GradualMigrationUser)

@@ -95,7 +95,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 		shouldMigrate = false; // TODO shouldMigrate non existing wallet on kin3?
 	} else {
 		({ blockchainVersion, shouldMigrate } = await getBlockchainVersionForWallet(wallet, app));
-		if (shouldMigrate && canSkipMigration(publicAddress)) {
+		if (shouldMigrate && await canSkipMigration(publicAddress)) {
 			shouldMigrate = false;
 		}
 	}

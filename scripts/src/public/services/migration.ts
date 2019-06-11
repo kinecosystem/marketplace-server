@@ -72,8 +72,8 @@ async function getBlockchainVersionForWallet(wallet: WalletApplication, app: App
 }
 
 export const accountStatus = async function(req: AccountStatusRequest, res: express.Response) {
-	const publicAddress = req.params.public_address;
-	const appId = req.params.app_id;
+	const publicAddress: string = req.params.public_address;
+	const appId: string = req.params.app_id;
 	const app = await Application.get(appId);
 	if (!app) {
 		throw NoSuchApp(appId);
@@ -87,7 +87,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 		blockchainVersion = app.config.blockchain_version;
 		shouldMigrate = false; // TODO shouldMigrate non existing wallet on kin3?
 	} else {
-		({ blockchainVersion, shouldMigrate } = await getBlockchainVersionForWallet(publicAddress, appId));
+		({ blockchainVersion, shouldMigrate } = await getBlockchainVersionForWallet(wallet, app));
 		if (shouldMigrate && canSkipMigration(publicAddress)) {
 			shouldMigrate = false;
 		}

@@ -1,5 +1,4 @@
 import mock = require("supertest");
-
 import { app as expressApp } from "../../public/app";
 import * as metrics from "../../metrics";
 import { verify } from "../../public/jwt";
@@ -12,9 +11,8 @@ import { validateExternalOrderJWT } from "../../public/services/native_offers";
 import { AuthToken as ApiAuthToken, userExists, UserProfile } from "../../public/services/users";
 
 import * as helpers from "../helpers";
-import { localCache } from "../../utils/cache";
 import { createApp } from "../helpers";
-import { walletCreationFailure, walletCreationSuccess } from "../../internal/services";
+import { localCache } from "../../utils/cache";
 
 describe("api tests for v2 users", async () => {
 	beforeEach(async done => {
@@ -50,6 +48,18 @@ describe("api tests for v2 users", async () => {
 		expect((await GradualMigrationUser.findOneById(users[1].id))!.migrationDate).not.toBeNull();
 		expect((await GradualMigrationUser.findOneById(users[2].id))!.migrationDate).toBeNull();
 		expect((await GradualMigrationUser.findOneById(users[3].id))!.migrationDate).toBeNull();
+	});
+
+	test("migration info - accountStatus", async () => {
+		const app = await helpers.createApp(generateId(IdPrefix.App));
+		const user = await helpers.createUser();
+		const walletAddress = (await user.getWallets()).first!.address;
+		const newWallet = WalletApplication.create({ walletAddress, appId: app.id });
+		await newWallet.save();
+
+		const res = await mock(expressApp)
+			.get(`/v2/migration/info/${ app.id }/${ walletAddress }`)
+			.expect(200);
 	});
 
 	test("existing user migrate wallet", async () => {

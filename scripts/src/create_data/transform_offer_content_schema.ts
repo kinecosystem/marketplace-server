@@ -30,21 +30,21 @@ async function dumpOffers() {
 			if ((page as any as Page).type === PageType.FullPageMultiChoice) {
 				(page as any as RewardPage).rewardText = COMPLETE_POLL;
 				(page as any as RewardPage).rewardValue = "${amount}";
-				(page as any as RewardPage).description = "";
+				// (page as any as RewardPage).description = ""; // XXX backward support
 			} else if ((page as any as Page).type === PageType.TimedFullPageMultiChoice) {
 				(page as any as RewardPage).rewardText = COMPLETE_QUIZ;
 				(page as any as RewardPage).rewardValue = "${amount}";
 				if (!(page as any as RewardPage).title) { // to be able to re-run on same data
 					(page as any as RewardPage).title = (page as any as RewardPage).description;
 				}
-				(page as any as RewardPage).description = "";
+				// (page as any as RewardPage).description = ""; // XXX backward support
 			} else if ((page as any as Page).type === PageType.ImageAndText) {
 				(page as any as RewardPage).rewardText = COMPLETE_TUTORIAL;
 				(page as any as RewardPage).rewardValue = "${amount}";
 				delete (page as any as RewardPage).footerHtml;
 			} else if ((page as any as Page).type === PageType.EarnThankYou) {
 				(page as any as RewardPage).rewardValue = "${amount}";
-				(page as any as RewardPage).description = "";
+				// (page as any as RewardPage).description = ""; // XXX backward support
 			}
 		}
 

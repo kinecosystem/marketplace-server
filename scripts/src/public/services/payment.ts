@@ -6,6 +6,8 @@ import { getConfig } from "../config";
 import { BlockchainVersion } from "../../models/offers";
 import { Application } from "../../models/applications";
 import { getAxiosClient } from "../../utils/axios_client";
+import { WalletApplication } from "../../models/users";
+import { UserHasNoWallet } from "../../errors";
 
 const config = getConfig();
 const webhook = `${ config.internal_service }/v1/internal/webhook`;
@@ -67,17 +69,19 @@ export async function payTo(walletAddress: string, appId: string, amount: number
 	};
 	const t = performance.now();
 
-	const blockchainVersion = (await Application.get(appId))!.config.blockchain_version;
+	const blockchainVersion = await WalletApplication.getBlockchainVersion(walletAddress);
 	await httpClient.post(`${ getPaymentServiceUrl(blockchainVersion) }/payments`, payload);
 
 	logger().info("pay to took " + (performance.now() - t) + "ms");
 }
 
 export async function submitTransaction(recepientAddress: string, senderAddress: string, appId: string, amount: number, orderId: string, transaction: string) {
-	const blockchainVersion = (await Application.get(appId))!.config.blockchain_version;
+	const blockchainVersion = await WalletApplication.getBlockchainVersion(recepientAddress);
+
 	if (blockchainVersion === "2") {
-		return;
+		throw UserHasNoWallet(`${recepientAddress} not on kin3`);
 	}
+
 	logger().info(`submitTransaction of ${ amount } to ${ recepientAddress } from ${ senderAddress } with orderId ${ orderId }`);
 	const payload: SubmitTransactionRequest = {
 		amount,

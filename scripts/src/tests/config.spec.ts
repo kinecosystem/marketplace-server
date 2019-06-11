@@ -42,6 +42,6 @@ describe("Config", () => {
 		app.config.gradual_migration_date = "2019-05-05T10:10:10Z";
 		expect(app.shouldApplyGradualMigration()).toBeTruthy();
 		expect(app.shouldApplyGradualMigration(new Date("2019-06-05T10:10:10Z"))).toBeTruthy();
-		expect(app.shouldApplyGradualMigration(new Date("2019-04-05T10:10:10Z"))).toBeFalsy(); 
+		expect(app.shouldApplyGradualMigration(new Date("2019-04-05T10:10:10Z"))).toBeFalsy();
 	});
 });

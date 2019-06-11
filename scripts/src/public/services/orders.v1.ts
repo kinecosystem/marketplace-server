@@ -1,47 +1,40 @@
-import * as moment from "moment";
 import { Request as ExpressRequest } from "express-serve-static-core";
 
 import { lock } from "../../redis";
 import { pick } from "../../utils/utils";
 import * as metrics from "../../metrics";
-import { User } from "../../models/users";
+import { User, WalletApplication } from "../../models/users";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
 import { getDefaultLogger as logger } from "../../logging";
 import { Application, AppOffer } from "../../models/applications";
 import {
-	isPayToUser,
-	isExternalEarn,
 	ExternalEarnOrderJWT,
+	ExternalPayToUserOrderJWT,
 	ExternalSpendOrderJWT,
-	validateExternalOrderJWT,
-	ExternalPayToUserOrderJWT
+	isExternalEarn,
+	isPayToUser,
+	validateExternalOrderJWT
 } from "./native_offers.v1";
 import {
 	ApiError,
-	NoSuchApp,
-	NoSuchUser,
 	CompletedOrderCantTransitionToFailed,
 	ExternalOrderAlreadyCompleted,
-	InvalidPollAnswers, MarketplaceError,
+	MarketplaceError,
+	NoSuchApp,
 	NoSuchOffer,
 	NoSuchOrder,
-	UserHasNoWallet,
+	NoSuchUser,
 	OfferCapReached,
 	OpenedOrdersOnly,
 	OpenedOrdersUnreturnable,
-	OpenOrderExpired,
-	TransactionTimeout
+	TransactionTimeout,
+	UserHasNoWallet
 } from "../../errors";
 
 import { Paging } from "./index";
-import * as payment from "./payment";
 import { addWatcherEndpoint } from "./payment";
-import * as offerContents from "./offer_contents";
-import {
-	create as createEarnTransactionBroadcastToBlockchainSubmitted
-} from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
 import { submitOrder as v2SubmitOrder } from "./orders";
 
@@ -178,6 +171,12 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 
 	const recipientWallet = (await recipient.getWallets()).lastUsed();
 	if (!recipientWallet) {
+		throw UserHasNoWallet(recipient.id);
+	}
+	// check wallet version matches
+	if (await WalletApplication.getBlockchainVersion(senderWallet.address) !==
+		await WalletApplication.getBlockchainVersion(recipientWallet.address)) {
+		logger().warn("failed p2p creation due to blockchain version mismatch on v1");
 		throw UserHasNoWallet(recipient.id);
 	}
 

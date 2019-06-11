@@ -240,7 +240,13 @@ export class WalletApplication extends BaseEntity {
 		const createdDateField = blockchainVersion === "2" ? "createdDateKin2" : "createdDateKin3";
 		await WalletApplication.update({ walletAddress }, { [createdDateField]: new Date() });
 	}
-
+	public static async getBlockchainVersion(walletAddress: string): Promise<BlockchainVersion> {
+		const wallet = await WalletApplication.findOneById(walletAddress);
+		if (wallet && wallet.createdDateKin3) {
+			return "3";
+		}
+		return "2";
+	}
 	@PrimaryColumn({ name: "wallet_address" })
 	public walletAddress!: string;
 

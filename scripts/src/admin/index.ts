@@ -1,7 +1,6 @@
 import * as http from "http";
 
 import { getConfig } from "./config";
-import { initLogger } from "../logging";
 
 import { app } from "./app";
 

@@ -19,6 +19,7 @@ export type ApplicationConfig = {
 	sign_in_types: SignInType[];
 	limits: LimitConfig;
 	blockchain_version: BlockchainVersion;
+	bulk_user_creation_allowed?: number;
 };
 
 @Entity({ name: "applications" })
@@ -120,11 +121,7 @@ export class AppOffer extends BaseEntity {
 		// }
 
 		const forUser = (await Order.countAllByOffer(this.appId, { offerId: this.offerId, userId })).get(this.offerId) || 0;
-		if (forUser >= this.cap.per_user) {
-			return true;
-		}
-
-		return false;
+		return forUser >= this.cap.per_user;
 	}
 }
 

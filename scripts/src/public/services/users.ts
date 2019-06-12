@@ -226,7 +226,7 @@ export async function logout(user: User, token: DbAuthToken) {
 	await token.save();
 }
 
-async function register(
+export async function register(
 	app: Application,
 	appUserId: string,
 	appId: string,

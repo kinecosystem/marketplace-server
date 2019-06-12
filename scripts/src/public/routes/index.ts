@@ -18,7 +18,7 @@ import {
 	logoutUser,
 	activateUser,
 	v1SignInUser,
-	v1MyUserInfo,
+	v1MyUserInfo, bulkUserCreation,
 } from "./users";
 import {
 	cancelOrder,
@@ -102,5 +102,15 @@ export function createV1Routes(app: express.Express, pathPrefix?: string) {
 	app.post(prefix("users/"), v1SignInUser); // this is different than the new version
 
 	app.get(prefix("config/"), getConfigHandler);
-	app.get("/status", statusHandler);
+}
+
+export function createPublicFacing(app: express.Express, pathPrefix?: string) {
+	function prefix(path: string): string {
+		if (!pathPrefix) {
+			return path;
+		}
+		return `${ pathPrefix }/${ path }`;
+	}
+
+	app.post(prefix("users/bulk"), bulkUserCreation);
 }

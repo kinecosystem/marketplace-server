@@ -2,7 +2,7 @@ import { Request, RequestHandler, Response } from "express";
 
 import { Application } from "../../models/applications";
 import { getDefaultLogger as logger } from "../../logging";
-import { InvalidWalletAddress, NoSuchApp, UnknownSignInType } from "../../errors";
+import { BulkUserCreation, InvalidWalletAddress, NoSuchApp, UnknownSignInType, InvalidJwtField } from "../../errors";
 
 import {
 	logout as logoutService,
@@ -11,7 +11,8 @@ import {
 	updateUser as updateUserService,
 	activateUser as activateUserService,
 	v1GetOrCreateUserCredentials,
-	getUserProfile as getUserProfileService
+	getUserProfile as getUserProfileService,
+	register as registerUser,
 } from "../services/users";
 import {
 	SignInContext,
@@ -19,10 +20,14 @@ import {
 	validateRegisterJWT,
 	v1ValidateRegisterJWT,
 	validateWhitelist,
-	v1ValidateWhitelist,
+	v1ValidateWhitelist, RegisterPayload,
 } from "../services/applications";
 
 import { AuthenticatedRequest } from "../auth";
+import { batch } from "../../utils/utils";
+import * as jsonwebtoken from "jsonwebtoken";
+import { JWTContent } from "../jwt";
+import * as httpContext from "express-http-context";
 
 export type V1WalletData = {
 	wallet_address: string;
@@ -219,3 +224,49 @@ export const logoutUser = async function(req: AuthenticatedRequest, res: Respons
 	await logoutService(req.context.user, req.context.token);
 	res.status(204).send();
 } as any as RequestHandler;
+
+export type BulkUserCreationRequest = Request & { body: { app_id: string, user_data: Array<[string, string]> } };
+
+export const bulkUserCreation = async function(req: BulkUserCreationRequest, res: Response) {
+	const jwtList = req.body.user_data as Array<[string, string]>;
+	const firstJwt = jsonwebtoken.decode(jwtList[0][0], { complete: true }) as JWTContent<Partial<RegisterPayload>, "register">; // Use the app id from the first JWT
+	const app_id = firstJwt.payload.iss;
+	logger().info(`bulkUserCreation for ${ app_id }`);
+	const app = await Application.get(app_id);
+	if (!app) {
+		throw NoSuchApp(app_id);
+	}
+	let allowedCreations: number = app.config.bulk_user_creation_allowed || 0;
+	if (!allowedCreations || allowedCreations < jwtList.length) {
+		throw BulkUserCreation(app.id, jwtList.length, allowedCreations);
+	}
+	await app.save();
+	res.write(`requestId: ${ httpContext.get("reqId") }\n`);
+	await batch(jwtList, app.config.limits.minute_registration, 61 * 1000, async (sublist: Array<[string, string]>, firstIndexOfChunk) => {
+			await Promise.all(sublist.map(async ([jwt, publicAddress], index) => {
+				const currentItem = firstIndexOfChunk + (index + 1);
+				const context = await validateRegisterJWT(jwt);
+				const deviceId = context.deviceId;
+				if (context.appId !== app_id) {
+					throw InvalidJwtField("issuer (iss) fields of all supplied JWT must match");
+				}
+				logger().info(`Creating account for app user id: ${ context.appUserId }, public address: ${ publicAddress }`);
+				const { user } = await registerUser(
+					app,
+					context.appUserId,
+					app.id,
+					deviceId);
+				logger().info(`updateUserService user id ${ context.appUserId }`);
+				await updateUserService(user, { deviceId, walletAddress: publicAddress });
+				logger().info(`User ${ context.appUserId } update, currentItem: ${ currentItem }`);
+				allowedCreations--;
+				res.write(`created user ${ currentItem }: ${ context.appUserId } (${ user.id }), device id: ${ deviceId }, public address ${ publicAddress }\n`);
+			}));
+	});
+
+	logger().info(`new allowedCreations: ${ allowedCreations }`);
+	app.config.bulk_user_creation_allowed = allowedCreations;
+	await app.save();
+	res.write(`Created user accounts, requestId: ${ httpContext.get("reqId") }\n`);
+	res.status(200).end();
+};

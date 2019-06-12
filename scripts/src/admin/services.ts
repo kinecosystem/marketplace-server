@@ -1,9 +1,8 @@
-import { RequestHandler, Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 
-import { Application, AppOffer, ApplicationConfig } from "../models/applications";
-import { BlockchainVersion, Cap, Offer, OfferContent, PollAnswer } from "../models/offers";
-import { getManager } from "typeorm";
-import { GradualMigrationUser, User, Wallet, WalletApplication } from "../models/users";
+import { Application, ApplicationConfig, AppOffer } from "../models/applications";
+import { Cap, Offer, OfferContent, PollAnswer } from "../models/offers";
+import { GradualMigrationUser, User, WalletApplication } from "../models/users";
 import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
 import { IdPrefix, isNothing } from "../utils/utils";
 import * as payment from "../public/services/payment";
@@ -58,8 +57,14 @@ async function appToHtml(app: Application): Promise<string> {
 	<td>${ app.apiKey }</td>
 	<td><a href="/applications/${ app.id }/users">users</a></td>
 	<td><a href="/applications/${ app.id }/offers">offers</a></td>
-	<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.sender }">sender wallet (earn)</a></td>
-	<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.recipient }">recipient wallet (spend)</a></td>
+	<td>
+		<a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.sender }">earn wallet KIN2</a>
+		<a href="${ BLOCKCHAIN3.horizon_url }/accounts/${ app.walletAddresses.sender }">earn wallet KIN3</a>
+	</td>
+	<td>
+		<a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.recipient }">spend wallet KIN2</a>
+		<a href="${ BLOCKCHAIN3.horizon_url }/accounts/${ app.walletAddresses.recipient }">spend wallet KIN3</a>
+		</td>
 	<td><pre>${ JSON.stringify(app.jwtPublicKeys, null, 2) }</pre></td>
 	<td onclick="openEditor(this, '${ app.id }')"><pre>${ JSON.stringify(app.config, null, 2) }</pre></td>
 </tr>`;
@@ -130,6 +135,7 @@ async function orderToHtml(order: Order): Promise<string> {
 				order.blockchainData.recipient_address :
 				order.blockchainData.sender_address;
 		}
+		const blockchain = (await WalletApplication.getBlockchainVersion(userWallet!)) === "3" ? BLOCKCHAIN3 : BLOCKCHAIN;
 
 		html += `<tr>
 <td><a href="/orders/${ order.id }">${ order.id }</a></td>
@@ -143,8 +149,8 @@ async function orderToHtml(order: Order): Promise<string> {
 <td>${ context.meta.description }</td>
 <td><pre>${ context.meta.content }</pre></td>
 <td><a href="/offers/${ order.offerId }">${ order.offerId }</a></td>
-<td><a href="${ BLOCKCHAIN.horizon_url }/transactions/${ transactionId }">${ transactionId }</a></td>
-<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ userWallet }">${ userWallet }</a></td>
+<td><a href="${ blockchain.horizon_url }/transactions/${ transactionId }">${ transactionId }</a></td>
+<td><a href="${ blockchain.horizon_url }/accounts/${ userWallet }">${ userWallet }</a></td>
 <td>${ (order.currentStatusDate || order.createdDate).toISOString() }</td>
 <td><pre><a href="https://jwt.io?token=${ payJwt }">${ payJwt }</a></pre></td>
 </tr>`;
@@ -165,9 +171,10 @@ async function userToHtml(user: User): Promise<string> {
 		.sort((w1, w2) => w1.lastUsedDate.valueOf() - w2.lastUsedDate.valueOf())
 		.map(wallet => {
 			const blockchainVersion = onKin3[wallet.address] ? "3" : "2";
+			const blockchain = blockchainVersion === "3" ? BLOCKCHAIN3 : BLOCKCHAIN;
 			return `
 		<span class="kin${ blockchainVersion }-wallet">KIN${ blockchainVersion } device: ${ wallet.deviceId }
-		<a href="${ BLOCKCHAIN.horizon_url }/accounts/${ wallet.address }">${ wallet.address }</a>
+		<a href="${ blockchain.horizon_url }/accounts/${ wallet.address }">${ wallet.address }</a>
 		<a href="/wallets/${ wallet.address }">balance</a>
 		<a href="/wallets/${ wallet.address }/payments">kin transactions</a></span>`;
 		}).join("<br/>");
@@ -178,9 +185,9 @@ async function userToHtml(user: User): Promise<string> {
 	<li>ecosystem id: <a href="/users/${ user.id }">${ user.id }</a></li>
 	<li>appId: ${ user.appId }</li>
 	<li>appUserId: ${ user.appUserId }</li>
+	<li>Migration: ${ inMigrationList ? "In List" : "NOT in list" } <a class="add-migration-user" onclick="submitData('/migration/users', { user_id: '${ user.id }'})">add to gradual migration list</a></li>
 	<li>wallets:<br/>${ accounts }</li>
 	<li>created: ${ user.createdDate }</li>
-	<li>MigrationList: ${ inMigrationList ? "In List" : "NOT in list" } <a class="add-migration-user" onclick="submitData('/migration/users', { user_id: '${ user.id }'})">add to gradual migration list</a></li>
 	<li><a href="/orders?user_id=${ user.id }">orders</a></li>
 	<li><a href="/users/${ user.id }/offers">offers</a></li>
 	<li><a href="https://analytics.amplitude.com/kinecosystem/project/204515/search/${ user.id }">client events</a></li>

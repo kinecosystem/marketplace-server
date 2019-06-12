@@ -113,27 +113,19 @@ export async function createWallet(walletAddress: string, appId: string, userId:
 	logger().info("wallet creation took " + (performance.now() - t) + "ms");
 }
 
-export async function getWalletData(walletAddress: string, options?: { timeout?: number, blockchainVersion?: BlockchainVersion }): Promise<Wallet> {
+export async function getWalletData(walletAddress: string, options?: { timeout?: number }): Promise<Wallet> {
 	options = options || {};
-	options.blockchainVersion = options.blockchainVersion || "2";
+	const blockchainVersion = await WalletApplication.getBlockchainVersion(walletAddress);
 
-	const res = await httpClient.get(`${ getPaymentServiceUrl(options.blockchainVersion) }/wallets/${ walletAddress }`, { timeout: options.timeout });
+	const res = await httpClient.get(`${ getPaymentServiceUrl(blockchainVersion) }/wallets/${ walletAddress }`, { timeout: options.timeout });
 	return res.data;
 }
 
-export async function getPayments(walletAddress: string, options?: { timeout?: number, blockchainVersion?: BlockchainVersion }): Promise<{ payments: Payment[] }> {
+export async function getPayments(walletAddress: string, options?: { timeout?: number }): Promise<{ payments: Payment[] }> {
 	options = options || {};
-	options.blockchainVersion = options.blockchainVersion || "2";
+	const blockchainVersion = await WalletApplication.getBlockchainVersion(walletAddress);
 
-	const res = await httpClient.get(`${ getPaymentServiceUrl(options.blockchainVersion) }/wallets/${ walletAddress }/payments`, { timeout: options.timeout });
-	return res.data;
-}
-
-export async function getPayment(orderId: string, options?: { timeout?: number, blockchainVersion?: BlockchainVersion }): Promise<Payment> {
-	options = options || {};
-	options.blockchainVersion = options.blockchainVersion || "2";
-
-	const res = await httpClient.get(`${ getPaymentServiceUrl(options.blockchainVersion) }/payments/${ orderId }`, { timeout: options.timeout });
+	const res = await httpClient.get(`${ getPaymentServiceUrl(blockchainVersion) }/wallets/${ walletAddress }/payments`, { timeout: options.timeout });
 	return res.data;
 }
 

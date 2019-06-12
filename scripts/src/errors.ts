@@ -273,7 +273,7 @@ export function InvalidJwtIssuedTime(iat: number) {
 }
 
 export function MissingFieldJWT(fieldName: string) {
-	return BadRequestError("MissingFieldJWT", `The JWT ${ fieldName } field is missing or invalid`);
+	return BadRequestError("MissingFieldJWT", `The JWT ${ fieldName } field is missing`);
 }
 
 export function InvalidJwtField(message: string) {

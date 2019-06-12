@@ -6,13 +6,14 @@
 		"default": "-----BEGIN PUBLIC KEY-----\nMFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEVi3rSAFNLSs4jUVRL6YjoVJ0XbgQnlpr\nEMr0XmzlPCImOzH8rC+5Mzfto1XXwn5NkMpd3RW0Qy3t9A0ZxijEkw==\n-----END PUBLIC KEY-----\n"
 	},
 	"config": {
-		"max_user_wallets": 5,
+		"max_user_wallets": 50,
 		"daily_earn_offers": 100,
 		"sign_in_types": [
 			"jwt",
 			"whitelist"
 		],
 		"blockchain_version": "2",
+		"bulk_user_creation_allowed": 51,
 		"limits": {
 			"hourly_registration": 200000,
 			"minute_registration": 10000,
@@ -20,7 +21,6 @@
 			"minute_total_earn": 85000,
 			"daily_user_earn": 5000
 		},
-		"bulk_user_creation_allowed": 51
 	},
 	"app_id": "smpl",
 	"name": "Sample App"

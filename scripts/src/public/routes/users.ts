@@ -236,19 +236,20 @@ export const bulkUserCreation = async function(req: BulkUserCreationRequest, res
 	if (!app) {
 		throw NoSuchApp(app_id);
 	}
-	let allowedCreations: number = app.config.bulk_user_creation_allowed || 0;
+	let allowedCreations = app.config.bulk_user_creation_allowed || 0;
 	if (!allowedCreations || allowedCreations < jwtList.length) {
 		throw BulkUserCreation(app.id, jwtList.length, allowedCreations);
 	}
-	await app.save();
 	res.write(`requestId: ${ httpContext.get("reqId") }\n`);
-	await batch(jwtList, app.config.limits.minute_registration, 61 * 1000, async (sublist: Array<[string, string]>, firstIndexOfChunk) => {
+	const butchSize = app.config.limits.minute_registration * 0.7;
+	const butchDelay = 61 * 1000;
+	await batch(jwtList, butchSize, butchDelay, async (sublist: Array<[string, string]>, firstIndexOfChunk) => {
 			await Promise.all(sublist.map(async ([jwt, publicAddress], index) => {
 				const currentItem = firstIndexOfChunk + (index + 1);
 				const context = await validateRegisterJWT(jwt);
 				const deviceId = context.deviceId;
 				if (context.appId !== app_id) {
-					throw InvalidJwtField("issuer (iss) fields of all supplied JWT must match");
+					throw InvalidJwtField("issuer (iss) field of all supplied JWT must match");
 				}
 				logger().info(`Creating account for app user id: ${ context.appUserId }, public address: ${ publicAddress }`);
 				const { user } = await registerUser(

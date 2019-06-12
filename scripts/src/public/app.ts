@@ -5,7 +5,7 @@ import { getConfig } from "./config";
 import { init as initModels } from "../models/index";
 import { init as initRemoteConfig } from "./routes/config";
 import { init as initMigration } from "./services/migration";
-import { createRoutes, createV1Routes } from "./routes/index";
+import { createPublicFacing, createRoutes, createV1Routes } from "./routes/index";
 import { generalErrorHandler, init as initCustomMiddleware, notFoundHandler } from "./middleware";
 
 const config = getConfig();
@@ -32,6 +32,7 @@ export const app: express.Express = createApp();
 // routes
 createRoutes(app, "/v2");
 createV1Routes(app, "/v1");
+createPublicFacing(app, "/partners/v1");
 
 // catch 404
 app.use(notFoundHandler);

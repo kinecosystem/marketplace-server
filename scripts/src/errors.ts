@@ -26,7 +26,8 @@ const CODES = {
 			ExpiredJwt: 9,
 			InvalidJwtIssuedTime: 10,
 			MissingFieldJWT: 11,
-			BadJWTInput: 12
+			BadJWTInput: 12,
+			InvalidJwtField: 13,
 		}
 	},
 	Unauthorized: {
@@ -37,6 +38,7 @@ const CODES = {
 			InvalidApiKey: 3,
 			TOSMissingOrOldToken: 4,
 			CrossAppWallet: 5,
+			BulkUserCreation: 6,
 		}
 	},
 	NotFound: {
@@ -153,7 +155,11 @@ export function TOSMissingOrOldToken() {
 }
 
 export function CrossAppWallet(wallet: string, app: string) {
-	return UnauthorizedError("CrossAppWallet", `Wallet ${wallet} does not belong to current app ${app}`);
+	return UnauthorizedError("CrossAppWallet", `Wallet ${ wallet } does not belong to current app ${ app }`);
+}
+
+export function BulkUserCreation(app: string, requestedAmount: number, allowedNumber: number) {
+	return UnauthorizedError("BulkUserCreation", `Bulk creation of ${ allowedNumber } is allowed for app ${ app }, ${ requestedAmount } requested`);
 }
 
 function NotFoundError(key: keyof typeof CODES.NotFound.types, message: string) {
@@ -197,7 +203,7 @@ function ConflictError(key: keyof typeof CODES.Conflict.types, message: string) 
 }
 
 export function ExternalOrderAlreadyCompleted(orderId: string, status: string) {
-	const error = ConflictError("ExternalOrderAlreadyCompleted", `Can't create order for offer. Another order is ${status}`);
+	const error = ConflictError("ExternalOrderAlreadyCompleted", `Can't create order for offer. Another order is ${ status }`);
 	error.setHeader("Location", `/v1/orders/${ orderId }`);
 	return error;
 }
@@ -268,6 +274,10 @@ export function InvalidJwtIssuedTime(iat: number) {
 
 export function MissingFieldJWT(fieldName: string) {
 	return BadRequestError("MissingFieldJWT", `The JWT ${ fieldName } field is missing`);
+}
+
+export function InvalidJwtField(message: string) {
+	return BadRequestError("InvalidJwtField", message);
 }
 
 export function BadJWTInput(token: string) {

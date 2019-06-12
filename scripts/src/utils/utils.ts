@@ -187,3 +187,21 @@ export function dateParser(key: string, value: string) {
 
 	return value;
 }
+
+export async function batch(list: any[], chunkSize: number, delay: number, chunkCb: (chunk: any[], firstIndexOfChunk: number) => Promise<void>) {
+	return new Promise(async resolve => {
+		const runner = async (index: number, ...args: any[]) => {
+			const end = index + chunkSize;
+			if (end > list.length - 1) {  // last chunk
+				console.log("calling last chunkCb, index: %s, list.length: %s", index, list.length);
+				chunkCb(list.slice(index), index).then(() => { resolve(); });
+				return;
+			}
+			console.log("calling ChunkCb, index: %s, list.length: %s", index, list.length);
+			return chunkCb(list.slice(index, end), index).then(async () => {
+				setTimeout(runner.bind(runner, end, ...args), delay);
+			});
+		};
+		runner(0);
+	});
+}

@@ -76,12 +76,6 @@ export async function payTo(walletAddress: string, appId: string, amount: number
 }
 
 export async function submitTransaction(recepientAddress: string, senderAddress: string, appId: string, amount: number, orderId: string, transaction: string) {
-	const blockchainVersion = await WalletApplication.getBlockchainVersion(recepientAddress);
-
-	if (blockchainVersion === "2") {
-		throw UserHasNoWallet(`${recepientAddress} not on kin3`);
-	}
-
 	logger().info(`submitTransaction of ${ amount } to ${ recepientAddress } from ${ senderAddress } with orderId ${ orderId }`);
 	const payload: SubmitTransactionRequest = {
 		amount,

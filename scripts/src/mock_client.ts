@@ -1791,53 +1791,60 @@ async function checkClientMigration() {
 }
 
 async function main() {
-	// v1
-	// await v1RegisterJWT();
-	// await v1OutdatedJWT();
-	// await v1UpdateWallet();
-	// await v1UserProfile();
-	// await v1ExtraTrustlineIsOK();
-	// await v1EarnPollFlow();
-	// await v1EarnTutorial();
-	// await v1SpendFlow();
-	// await v1EarnQuizFlow();
-	// await v1NativeEarnFlow();
-	// await v1NativeSpendFlow();
-	// await v1DidNotApproveTOS();
-	// await v1TestRegisterNewUser();
-	// await v1TryToNativeSpendTwice();
-	// await v1TryToNativeSpendTwiceWithNonce();
-	// await v1P2p();
-	//
-	// // v2
-	// await registerJWT();
-	// await outdatedJWT();
-	// await updateWallet();
-	// await userProfile();
-	// await extraTrustlineIsOK();
-	// await earnPollFlow();
-	await earnTutorial();
-	await spendFlow();
-	await earnQuizFlow();
-	await nativeEarnFlow();
-	await nativeSpendFlow();
-	await didNotApproveTOS();
-	await testRegisterNewUser();
-	await tryToNativeSpendTwice();
-	await tryToNativeSpendTwiceWithNonce();
-	await p2p();
-	await getOfferTranslations();
-	await twoUsersSharingWallet();
-	await checkValidTokenAfterLoginRightAfterLogout();
-	await getOffersVersionSpecificImages();
+	async function v1() {
+		await v1RegisterJWT();
+		await v1OutdatedJWT();
+		await v1UpdateWallet();
+		await v1UserProfile();
+		await v1ExtraTrustlineIsOK();
+		await v1EarnPollFlow();
+		await v1EarnTutorial();
+		await v1SpendFlow();
+		await v1EarnQuizFlow();
+		await v1NativeEarnFlow();
+		await v1NativeSpendFlow();
+		await v1DidNotApproveTOS();
+		await v1TestRegisterNewUser();
+		await v1TryToNativeSpendTwice();
+		await v1TryToNativeSpendTwiceWithNonce();
+		await v1P2p();
+	}
 
-	// kin3 migration
-	await kin3EarnPollFlow();
-	await kin3EarnTutorial();
-	await kin3SpendFlow();
-	await kin3EarnQuizFlow();
-	await checkClientMigration();
-	await walletSharedAcrossApps();
+	async function v2() {
+		await registerJWT();
+		await outdatedJWT();
+		await updateWallet();
+		await userProfile();
+		await extraTrustlineIsOK();
+		await earnPollFlow();
+		await earnTutorial();
+		await spendFlow();
+		await earnQuizFlow();
+		await nativeEarnFlow();
+		await nativeSpendFlow();
+		await didNotApproveTOS();
+		await testRegisterNewUser();
+		await tryToNativeSpendTwice();
+		await tryToNativeSpendTwiceWithNonce();
+		await p2p();
+		await getOfferTranslations();
+		await twoUsersSharingWallet();
+		await checkValidTokenAfterLoginRightAfterLogout();
+		await getOffersVersionSpecificImages();
+	}
+
+	async function migration() {
+		await kin3EarnPollFlow();
+		await kin3EarnTutorial();
+		await kin3SpendFlow();
+		await kin3EarnQuizFlow();
+		await checkClientMigration();
+		await walletSharedAcrossApps();
+	}
+
+	await v1();
+	await v2();
+	await migration();
 }
 
 main()

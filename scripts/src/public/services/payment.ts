@@ -6,6 +6,8 @@ import { getConfig } from "../config";
 import { BlockchainVersion } from "../../models/offers";
 import { Application } from "../../models/applications";
 import { getAxiosClient } from "../../utils/axios_client";
+import { WalletApplication } from "../../models/users";
+import { UserHasNoWallet } from "../../errors";
 
 const config = getConfig();
 const webhook = `${ config.internal_service }/v1/internal/webhook`;
@@ -67,17 +69,13 @@ export async function payTo(walletAddress: string, appId: string, amount: number
 	};
 	const t = performance.now();
 
-	const blockchainVersion = (await Application.get(appId))!.config.blockchain_version;
+	const blockchainVersion = await WalletApplication.getBlockchainVersion(walletAddress);
 	await httpClient.post(`${ getPaymentServiceUrl(blockchainVersion) }/payments`, payload);
 
 	logger().info("pay to took " + (performance.now() - t) + "ms");
 }
 
 export async function submitTransaction(recepientAddress: string, senderAddress: string, appId: string, amount: number, orderId: string, transaction: string) {
-	const blockchainVersion = (await Application.get(appId))!.config.blockchain_version;
-	if (blockchainVersion === "2") {
-		return;
-	}
 	logger().info(`submitTransaction of ${ amount } to ${ recepientAddress } from ${ senderAddress } with orderId ${ orderId }`);
 	const payload: SubmitTransactionRequest = {
 		amount,
@@ -109,27 +107,19 @@ export async function createWallet(walletAddress: string, appId: string, userId:
 	logger().info("wallet creation took " + (performance.now() - t) + "ms");
 }
 
-export async function getWalletData(walletAddress: string, options?: { timeout?: number, blockchainVersion?: BlockchainVersion }): Promise<Wallet> {
+export async function getWalletData(walletAddress: string, options?: { timeout?: number }): Promise<Wallet> {
 	options = options || {};
-	options.blockchainVersion = options.blockchainVersion || "2";
+	const blockchainVersion = await WalletApplication.getBlockchainVersion(walletAddress);
 
-	const res = await httpClient.get(`${ getPaymentServiceUrl(options.blockchainVersion) }/wallets/${ walletAddress }`, { timeout: options.timeout });
+	const res = await httpClient.get(`${ getPaymentServiceUrl(blockchainVersion) }/wallets/${ walletAddress }`, { timeout: options.timeout });
 	return res.data;
 }
 
-export async function getPayments(walletAddress: string, options?: { timeout?: number, blockchainVersion?: BlockchainVersion }): Promise<{ payments: Payment[] }> {
+export async function getPayments(walletAddress: string, options?: { timeout?: number }): Promise<{ payments: Payment[] }> {
 	options = options || {};
-	options.blockchainVersion = options.blockchainVersion || "2";
+	const blockchainVersion = await WalletApplication.getBlockchainVersion(walletAddress);
 
-	const res = await httpClient.get(`${ getPaymentServiceUrl(options.blockchainVersion) }/wallets/${ walletAddress }/payments`, { timeout: options.timeout });
-	return res.data;
-}
-
-export async function getPayment(orderId: string, options?: { timeout?: number, blockchainVersion?: BlockchainVersion }): Promise<Payment> {
-	options = options || {};
-	options.blockchainVersion = options.blockchainVersion || "2";
-
-	const res = await httpClient.get(`${ getPaymentServiceUrl(options.blockchainVersion) }/payments/${ orderId }`, { timeout: options.timeout });
+	const res = await httpClient.get(`${ getPaymentServiceUrl(blockchainVersion) }/wallets/${ walletAddress }/payments`, { timeout: options.timeout });
 	return res.data;
 }
 

@@ -1,40 +1,18 @@
-import { RequestHandler, Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 
-import { Application, AppOffer, ApplicationConfig } from "../models/applications";
+import { Application, ApplicationConfig, AppOffer } from "../models/applications";
 import { Cap, Offer, OfferContent, PollAnswer } from "../models/offers";
-import { getManager } from "typeorm";
-import { User } from "../models/users";
+import { GradualMigrationUser, User, WalletApplication } from "../models/users";
 import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
 import { IdPrefix, isNothing } from "../utils/utils";
 import * as payment from "../public/services/payment";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getOffers as getUserOffersService } from "../public/services/offers";
 
-type OfferStats = {
-	id: string
-	name: string,
-	total_cap: number,
-	orders: number,
-	kin: number,
-	failed_orders: number,
-};
-
-type AppStats = {
-	app_id: string
-	total_users: number,
-	total_activated: number,
-	users_completed_earn: number,
-	users_completed_spend: number,
-	users_failed_earn: number,
-	users_failed_spend: number,
-	earn_orders: number,
-	spend_orders: number,
-	failed_earn_orders: number,
-	failed_spend_orders: number,
-};
-
 let BLOCKCHAIN: BlockchainConfig;
+let BLOCKCHAIN3: BlockchainConfig;
 getBlockchainConfig("2").then(data => BLOCKCHAIN = data);
+getBlockchainConfig("3").then(data => BLOCKCHAIN3 = data);
 
 const OFFER_HEADERS = `<tr>
 <th>ID</th>
@@ -51,28 +29,6 @@ const OFFER_HEADERS = `<tr>
 <th>address</th>
 <th>owner</th>
 <th>date</th>
-</tr>`;
-
-const OFFER_STATS_HEADERS = `<tr>
-<th>ID</th>
-<th>name</th>
-<th>orders</th>
-<th>kin</th>
-<th>failed orders</th>
-</tr>`;
-
-const APP_STATS_HEADERS = `<tr>
-<th>ID</th>
-<th>total users</th>
-<th>activated users</th>
-<th>users completed earn</th>
-<th>users completed spend</th>
-<th>users failed earn</th>
-<th>users failed spend</th>
-<th>total earn orders</th>
-<th>total spend orders</th>
-<th>failed earn orders</th>
-<th>failed spend orders</th>
 </tr>`;
 
 const ORDER_HEADERS = `<tr>
@@ -93,158 +49,6 @@ const ORDER_HEADERS = `<tr>
 <th>payment confirmation</th>
 </tr>`;
 
-function getOfferStatsQuery(appId: string) {
-	return `
-	 with app_orders as (
-    select
-      orders.offer_id,
-      orders.amount,
-      orders.origin,
-      context.type,
-      orders.status,
-      orders.expiration_date
-    from orders
-    inner join orders_contexts context on context.order_id = orders.id
-    inner join users on users.id = context.user_id
-    where users.app_id='${ appId }'
-), app_offers as (
-    select offers.*,
-      (a.cap::json->'total')::text::integer as total_cap
-    from offers
-inner join application_offers a on offers.id = a.offer_id
-where a.app_id='${ appId }')
-select
-  CASE WHEN offers.id IS NULL THEN CONCAT('native ', ordered.type) ELSE offers.id END as id,
-  max(offers.name) as name,
-  MAX(offers.total_cap) as total_cap,
-  SUM(coalesce(ordered.num,0)) as orders,
-  SUM(ordered.kin) as kin,
-  SUM(coalesce(failed_orders.num, 0)) as failed_orders
-from app_offers offers
-full outer join (select offer_id, type, count(*) as num, sum(amount) as kin from app_orders where status = 'completed' group by offer_id, type) as ordered
-on ordered.offer_id = offers.id
-full outer join (select offer_id, type, count(*) as num from app_orders where status != 'completed' group by offer_id, type) as failed_orders
-on failed_orders.offer_id = offers.id
-group by id, ordered.type
-order by orders desc`;
-}
-
-function getApplicationStatsQuery(appId: string | "all") {
-	return `
-SELECT
-	users.app_id,
-	COUNT(DISTINCT users.id) AS total_users,
-	COUNT(DISTINCT users.activated_date) AS total_activated,
-	COUNT(DISTINCT earn.user_id) AS users_completed_earn,
-	COUNT(DISTINCT spend.user_id) AS users_completed_spend,
-	COUNT(DISTINCT failed_earn.user_id) AS users_failed_earn,
-	COUNT(DISTINCT failed_spend.user_id) AS users_failed_spend,
-	SUM(earn.num) AS earn_orders,
-	SUM(spend.num) AS spend_orders,
-	SUM(failed_earn.num) AS failed_earn_orders,
-	SUM(failed_spend.num) AS failed_spend_orders
-FROM
-	users
-	LEFT JOIN
-		(
-			SELECT orders_contexts.user_id, COUNT(*) AS num
-			FROM
-				orders
-				LEFT JOIN orders_contexts
-    				ON orders.id = orders_contexts.order_id
-			WHERE
-				(
-					orders.status = 'completed'
-					OR (
-						(orders.status = 'pending' OR orders.status = 'opened')
-						AND orders.expiration_date > NOW()
-					)
-				)
-				AND orders_contexts.type = 'earn'
-			GROUP BY orders_contexts.user_id
-		) AS earn
-	ON earn.user_id = users.id
-	LEFT JOIN
-		(
-			SELECT orders_contexts.user_id, COUNT(*) AS num
-			FROM
-				orders
-				LEFT JOIN orders_contexts
-					ON orders.id = orders_contexts.order_id
-			WHERE
-				(
-					orders.status = 'completed'
-					OR (
-						(orders.status = 'pending' OR orders.status = 'opened')
-						AND orders.expiration_date > NOW()
-					)
-				)
-				AND orders_contexts.type = 'spend'
-			GROUP BY orders_contexts.user_id
-		) AS spend
-	ON spend.user_id = users.id
-	LEFT JOIN
-		(
-			SELECT orders_contexts.user_id, COUNT(*) AS num
-			FROM
-				orders
-				LEFT JOIN orders_contexts
-					ON orders.id = orders_contexts.order_id
-			WHERE
-				(
-					orders.status = 'failed'
-					OR (orders.status = 'pending' AND orders.expiration_date < NOW())
-				)
-				AND orders_contexts.type = 'earn'
-			GROUP BY orders_contexts.user_id
-		) AS failed_earn
-	ON failed_earn.user_id = users.id
-	LEFT JOIN
-		(
-			SELECT orders_contexts.user_id, COUNT(*) AS num
-			FROM
-				orders
-				LEFT JOIN orders_contexts
-					ON orders.id = orders_contexts.order_id
-			WHERE
-				(
-					orders.status = 'failed'
-					OR (orders.status = 'pending' AND orders.expiration_date < NOW())
-				)
-				AND orders_contexts.type = 'spend'
-			GROUP BY orders_contexts.user_id
-		) AS failed_spend
-	ON failed_spend.user_id = users.id
-WHERE users.app_id = '${ appId }' OR '${ appId }' = 'all'
-GROUP BY users.app_id;`;
-}
-
-function offerStatsToHtml(stats: OfferStats) {
-	return `<tr>
-<td>${ stats.id }</td>
-<td>${ stats.name }</td>
-<td>${ stats.orders }</td>
-<td>${ stats.kin }</td>
-<td>${ stats.failed_orders }</td>
-</tr>`;
-}
-
-function appStatsToHtml(stats: AppStats) {
-	return `<tr>
-<td>${ stats.app_id }</td>
-<td>${ stats.total_users }</td>
-<td>${ stats.total_activated }</td>
-<td>${ stats.users_completed_earn }</td>
-<td>${ stats.users_completed_spend }</td>
-<td>${ stats.users_failed_earn }</td>
-<td>${ stats.users_failed_spend }</td>
-<td>${ stats.earn_orders }</td>
-<td>${ stats.spend_orders }</td>
-<td>${ stats.failed_earn_orders }</td>
-<td>${ stats.failed_spend_orders }</td>
-</tr>`;
-}
-
 async function appToHtml(app: Application): Promise<string> {
 	return `
 <tr>
@@ -253,10 +57,14 @@ async function appToHtml(app: Application): Promise<string> {
 	<td>${ app.apiKey }</td>
 	<td><a href="/applications/${ app.id }/users">users</a></td>
 	<td><a href="/applications/${ app.id }/offers">offers</a></td>
-	<td><a href="/applications/${ app.id }/stats">stats</a></td>
-	<td><a href="/applications/${ app.id }/offers/stats">offer stats</a></td>
-	<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.sender }">sender wallet (earn)</a></td>
-	<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.recipient }">recipient wallet (spend)</a></td>
+	<td>
+		<a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.sender }">earn wallet KIN2</a>
+		<a href="${ BLOCKCHAIN3.horizon_url }/accounts/${ app.walletAddresses.sender }">earn wallet KIN3</a>
+	</td>
+	<td>
+		<a href="${ BLOCKCHAIN.horizon_url }/accounts/${ app.walletAddresses.recipient }">spend wallet KIN2</a>
+		<a href="${ BLOCKCHAIN3.horizon_url }/accounts/${ app.walletAddresses.recipient }">spend wallet KIN3</a>
+		</td>
 	<td><pre>${ JSON.stringify(app.jwtPublicKeys, null, 2) }</pre></td>
 	<td onclick="openEditor(this, '${ app.id }')"><pre>${ JSON.stringify(app.config, null, 2) }</pre></td>
 </tr>`;
@@ -327,6 +135,7 @@ async function orderToHtml(order: Order): Promise<string> {
 				order.blockchainData.recipient_address :
 				order.blockchainData.sender_address;
 		}
+		const blockchain = (await WalletApplication.getBlockchainVersion(userWallet!)) === "3" ? BLOCKCHAIN3 : BLOCKCHAIN;
 
 		html += `<tr>
 <td><a href="/orders/${ order.id }">${ order.id }</a></td>
@@ -340,8 +149,8 @@ async function orderToHtml(order: Order): Promise<string> {
 <td>${ context.meta.description }</td>
 <td><pre>${ context.meta.content }</pre></td>
 <td><a href="/offers/${ order.offerId }">${ order.offerId }</a></td>
-<td><a href="${ BLOCKCHAIN.horizon_url }/transactions/${ transactionId }">${ transactionId }</a></td>
-<td><a href="${ BLOCKCHAIN.horizon_url }/accounts/${ userWallet }">${ userWallet }</a></td>
+<td><a href="${ blockchain.horizon_url }/transactions/${ transactionId }">${ transactionId }</a></td>
+<td><a href="${ blockchain.horizon_url }/accounts/${ userWallet }">${ userWallet }</a></td>
 <td>${ (order.currentStatusDate || order.createdDate).toISOString() }</td>
 <td><pre><a href="https://jwt.io?token=${ payJwt }">${ payJwt }</a></pre></td>
 </tr>`;
@@ -351,22 +160,33 @@ async function orderToHtml(order: Order): Promise<string> {
 }
 
 async function userToHtml(user: User): Promise<string> {
-	const accounts = (await user.getWallets()).all()
+	const wallets = (await user.getWallets()).all();
+
+	const onKin3 = (await WalletApplication.findByIds(wallets.map(w => w.address))).reduce((obj, w) => {
+		obj[w.walletAddress] = !!w.createdDateKin3;
+		return obj;
+	}, {} as { [key: string]: boolean });
+
+	const accounts = wallets
 		.sort((w1, w2) => w1.lastUsedDate.valueOf() - w2.lastUsedDate.valueOf())
 		.map(wallet => {
+			const blockchainVersion = onKin3[wallet.address] ? "3" : "2";
+			const blockchain = blockchainVersion === "3" ? BLOCKCHAIN3 : BLOCKCHAIN;
 			return `
-		<a href="${ BLOCKCHAIN.horizon_url }/accounts/${ wallet.address }">${ wallet.address }</a>
+		<span class="kin${ blockchainVersion }-wallet">KIN${ blockchainVersion } device: ${ wallet.deviceId }
+		<a href="${ blockchain.horizon_url }/accounts/${ wallet.address }">${ wallet.address }</a>
 		<a href="/wallets/${ wallet.address }">balance</a>
-		<a href="/wallets/${ wallet.address }/payments">kin transactions</a>
-		`;
+		<a href="/wallets/${ wallet.address }/payments">kin transactions</a></span>`;
 		}).join("<br/>");
 
+	const inMigrationList = !!(await GradualMigrationUser.findOneById(user.id));
 	return `
 <ul>
 	<li>ecosystem id: <a href="/users/${ user.id }">${ user.id }</a></li>
 	<li>appId: ${ user.appId }</li>
 	<li>appUserId: ${ user.appUserId }</li>
-	<li>stellar accounts:<br/>${ accounts }</li>
+	<li>Migration: ${ inMigrationList ? "In List" : "NOT in list" } <a class="add-migration-user" onclick="submitData('/migration/users', { user_id: '${ user.id }'})">add to gradual migration list</a></li>
+	<li>wallets:<br/>${ accounts }</li>
 	<li>created: ${ user.createdDate }</li>
 	<li><a href="/orders?user_id=${ user.id }">orders</a></li>
 	<li><a href="/users/${ user.id }/offers">offers</a></li>
@@ -458,16 +278,6 @@ export async function getOffer(params: { offer_id: string }, query: any): Promis
 		throw new Error("no such offer: " + params.offer_id);
 	}
 	return `<table>${ OFFER_HEADERS }${ await offerToHtml(offer) }</table>`;
-}
-
-export async function getOfferStats(params: { app_id: string }, query: any): Promise<string> {
-	const stats: OfferStats[] = await getManager().query(getOfferStatsQuery(params.app_id));
-	let ret = `<table>${ OFFER_STATS_HEADERS }`;
-	for (const stat of stats) {
-		ret += offerStatsToHtml(stat);
-	}
-	ret += "</table>";
-	return ret;
 }
 
 export async function getUserOffers(params: { user_id: string }, query: any): Promise<string> {
@@ -566,6 +376,11 @@ export async function retryUserWallet(params: { user_id: string; wallet: string;
 </div>`;
 }
 
+export async function addMigrationUser(body: { user_id: string }, params: any, query: any): Promise<any> {
+	await GradualMigrationUser.create({ userId: body.user_id }).save();
+	return { msg: "OK" };
+}
+
 export async function getOrder(params: { order_id: string }, query: any): Promise<string> {
 	const orders = await Order.queryBuilder("order")
 		.where("LOWER(order.id) = LOWER(:orderId)", { orderId: params.order_id })
@@ -590,16 +405,6 @@ export async function getPollResults(params: { offer_id: string }, query: any): 
 	let ret = `<table>`;
 	for (const answer of answers) {
 		ret += `<tr><td><pre class="wide">${ answer.content }</pre></td></tr>`;
-	}
-	ret += "</table>";
-	return ret;
-}
-
-export async function getApplicationStats(params: { app_id: string }, query: any): Promise<string> {
-	const stats: AppStats[] = await getManager().query(getApplicationStatsQuery(params.app_id));
-	let ret = `<table>${ APP_STATS_HEADERS }`;
-	for (const stat of stats) {
-		ret += appStatsToHtml(stat);
 	}
 	ret += "</table>";
 	return ret;

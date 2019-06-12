@@ -1,6 +1,6 @@
 import { lock } from "../../redis";
 import * as metrics from "../../metrics";
-import { User } from "../../models/users";
+import { User, WalletApplication } from "../../models/users";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
@@ -30,7 +30,7 @@ import {
 	OpenedOrdersOnly,
 	OpenedOrdersUnreturnable,
 	OpenOrderExpired,
-	TransactionTimeout
+	TransactionTimeout, MissingField
 } from "../../errors";
 
 import { Paging } from "./index";
@@ -198,6 +198,13 @@ async function createP2PExternalOrder(sender: User, senderDeviceId: string, jwt:
 		throw UserHasNoWallet(recipient.id);
 	}
 
+	// check wallet version matches
+	if (await WalletApplication.getBlockchainVersion(senderWallet.address) !==
+		await WalletApplication.getBlockchainVersion(recipientWallet.address)) {
+		logger().warn("failed p2p creation due to blockchain version mismatch");
+		throw UserHasNoWallet(recipient.id);
+	}
+
 	const order = db.ExternalOrder.new({
 		offerId: jwt.offer.id,
 		amount: jwt.offer.amount,
@@ -310,7 +317,9 @@ export async function createExternalOrder(jwt: string, user: User, userDeviceId:
 			orderId: order.id
 		});
 	} else if (order.status === "pending" || order.status === "completed") {
-		logger().info(`order cant be created. existing order ${ order.id } for offer ${ order.offerId } is ${ order.status }`,
+		logger().info(
+			`order cant be created. existing order ${ order.id } for offer ${ order.offerId } is ${ order.status }`
+			,
 			{ order });
 		throw ExternalOrderAlreadyCompleted(order.id, order.status);
 	}
@@ -344,6 +353,13 @@ export async function submitOrder(
 	if (order.isEarn()) {
 		// must be after submit form because order.amount changes
 		await assertRateLimitEarn(user, walletAddress, order.amount);
+	} else {
+		const blockchainVersion = await WalletApplication.getBlockchainVersion(order.blockchainData.sender_address!);
+		if (blockchainVersion === "3") {
+			if (!transaction) {
+				throw MissingField("transaction");
+			}
+		}
 	}
 
 	order.setStatus("pending");
@@ -354,8 +370,9 @@ export async function submitOrder(
 		await payment.payTo(order.blockchainData.recipient_address!, user.appId, order.amount, order.id);
 		createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 	} else {
-		await payment.submitTransaction(order.blockchainData.recipient_address!, order.blockchainData.sender_address!, user.appId, order.amount, order.id, transaction!);
-		// createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
+		if (transaction) { // there is only transaction on kin3
+			await payment.submitTransaction(order.blockchainData.recipient_address!, order.blockchainData.sender_address!, user.appId, order.amount, order.id, transaction!);
+		}
 	}
 
 	metrics.submitOrder(order.origin, order.flowType(), user.appId);
@@ -495,6 +512,6 @@ function checkIfTimedOut(order: db.Order): Promise<void> {
 	return Promise.resolve();
 }
 
-function getLockResource(type: "create" | "get", ...ids: string[]) {
+function getLockResource(type: "create" | "get", ...ids: string[]): string {
 	return `locks:orders:${ type }:${ ids.join(":") }`;
 }

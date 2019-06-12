@@ -20,6 +20,7 @@ import * as payment from "./payment";
 import { assertRateLimitRegistration } from "../../utils/rate_limit";
 import { setHttpContext } from "../auth";
 import { getRedisClient } from "../../redis";
+import { BlockchainVersion } from "../../models/offers";
 
 const notExistsTTL = 15 * 60; // cache the fact that a user doesn't exist for 15 minutes
 export type V1AuthToken = {
@@ -114,21 +115,25 @@ export async function isRestoreAllowed(walletAddress: string, appId: string, add
 	return true;
 }
 
-async function createWallet(walletAddress: string, user: User) {
-	const blockchainVersion = (await Application.get(user.appId))!.config.blockchain_version;
-	logger().info(`creating stellar wallet for user ${ user.appId }: ${ walletAddress } on KIN${ blockchainVersion }`);
+async function createWallet(walletAddress: string, user: User, app: Application) {
+	let blockchainVersion: BlockchainVersion;
 
-	if (blockchainVersion === "2") {
-		await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin2");
+	if (app.config.blockchain_version === "3" || app.shouldApplyGradualMigration(user.createdDate)) {
+		// when gradual migration is on, I don't need to create a KIN2 account
+		await WalletApplication.updateCreatedDate(walletAddress, "3");
+		await payment.createWallet(walletAddress, user.appId, user.id, "3");
+		blockchainVersion = "3";
+	} else { // kin2
+		await WalletApplication.updateCreatedDate(walletAddress, "2");
 		await Promise.all([
 			payment.createWallet(walletAddress, user.appId, user.id, "2"),
 			// optimization: create wallets on kin3 to reduce time when migrating
 			payment.createWallet(walletAddress, user.appId, user.id, "3"),
 		]);
-	} else {
-		await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin3");
-		await payment.createWallet(walletAddress, user.appId, user.id, "3");
+		blockchainVersion = "2";
+
 	}
+	logger().info(`creating wallet for user ${ user.appId }: ${ walletAddress } on KIN${ blockchainVersion }`);
 }
 
 export async function updateUser(user: User, props: UpdateUserProps) {
@@ -157,7 +162,7 @@ export async function updateUser(user: User, props: UpdateUserProps) {
 
 		const isNewWallet = await user.updateWallet(props.deviceId, walletAddress);
 		if (isNewWallet) {
-			await createWallet(walletAddress, user);
+			await createWallet(walletAddress, user, app);
 		}
 		metrics.walletAddressUpdate(appId, isNewWallet);
 

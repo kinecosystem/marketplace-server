@@ -31,7 +31,7 @@ import {
 	submitOrder,
 } from "./orders";
 import { authenticateUser } from "../auth";
-import { accountStatus } from "../services/migration";
+import { accountStatus, addGradualMigrationUsers } from "../services/migration";
 
 export function createRoutes(app: express.Express, pathPrefix?: string) {
 	function prefix(path: string): string {
@@ -67,6 +67,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	if (process.env.environment_name !== "production") {
 		app.put(prefix("applications/:app_id/blockchain_version"), setAppBlockchainVersion);
 	}
+	app.post(prefix("applications/:app_id/migration/users"), addGradualMigrationUsers);
 	app.get(prefix("migration/info/:app_id/:public_address"), accountStatus);
 
 	app.get("/status", statusHandler);

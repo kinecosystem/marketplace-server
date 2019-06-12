@@ -226,5 +226,5 @@ export async function initPaymentCallbacks(): Promise<Watcher> {
 }
 
 export async function markWalletBurnt(walletAddress: string) {
-	await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin3");
+	await WalletApplication.updateCreatedDate(walletAddress, "3");
 }

@@ -2,18 +2,30 @@ import * as path from "path";
 import * as fs from "fs";
 import { promisify } from "util";
 
-import { Request, Response, Router, Express, RequestHandler } from "express";
+import { Express, Request, RequestHandler, Response, Router } from "express";
 import { getDefaultLogger as logger } from "../logging";
 
 import {
-	getApplications, getApplication, getOffers,
-	getOffer, getPollResults,
-	getUserData, getApplicationUserData, getOrder,
-	getApplicationUsers, getOfferStats,
-	getOrders, fuzzySearch, getWallet, getWalletPayments,
-	getApplicationOffers, getUserOffers,
-	retryOrder, retryUserWallet, getApplicationStats,
-	changeAppOffer, changeOffer,
+	addMigrationUser,
+	changeAppOffer,
+	changeOffer,
+	fuzzySearch,
+	getApplication,
+	getApplicationOffers,
+	getApplications,
+	getApplicationUserData,
+	getApplicationUsers,
+	getOffer,
+	getOffers,
+	getOrder,
+	getOrders,
+	getPollResults,
+	getUserData,
+	getUserOffers,
+	getWallet,
+	getWalletPayments,
+	retryOrder,
+	retryUserWallet,
 	updateAppConfig
 } from "./services";
 
@@ -57,9 +69,7 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		.get("/applications", wrapService(getApplications))
 		.get("/applications/:app_id", wrapService(getApplication))
 		.get("/applications/:app_id/offers", wrapService(getApplicationOffers))
-		.get("/applications/:app_id/offers/stats", wrapService(getOfferStats))
 		.get("/applications/:app_id/users", wrapService(getApplicationUsers))
-		.get("/applications/:app_id/stats", wrapService(getApplicationStats))
 		.get("/offers", wrapService(getOffers))
 		.get("/orders", wrapService(getOrders))
 		.get("/offers/:offer_id", wrapService(getOffer))
@@ -80,6 +90,7 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 		.post("/offers/:offer_id", jsonResponse(changeOffer))
 
 		.put("/applications/:application_id/config", updateAppConfig)
+		.post("/migration/users", jsonResponse(addMigrationUser))
 	;
 
 	app.use("", router);

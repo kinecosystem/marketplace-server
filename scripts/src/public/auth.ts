@@ -1,11 +1,14 @@
 import * as express from "express";
 import * as httpContext from "express-http-context";
 import { dateParser, Mutable } from "../utils/utils";
-import { AuthToken, User } from "../models/users";
+import { AuthToken, GradualMigrationUser, User, WalletApplication } from "../models/users";
 import { getRedisClient } from "../redis";
 import { Application } from "../models/applications";
-import { MissingToken, InvalidToken, TOSMissingOrOldToken, NoSuchApp, WrongBlockchainVersion } from "../errors";
+import { InvalidToken, MissingToken, NoSuchApp, TOSMissingOrOldToken, WrongBlockchainVersion } from "../errors";
 import { assertRateLimitUserRequests } from "../utils/rate_limit";
+import { withinMigrationRateLimit } from "../utils/migration";
+import { getDefaultLogger as logger } from "../logging";
+import * as metrics from "../metrics";
 
 const tokenCacheTTL = 15 * 60; // 15 minutes
 type CachedTokenValue = { token: AuthToken, user: User };
@@ -90,24 +93,55 @@ export const authenticateUser = async function(req: express.Request, res: expres
 	// this allows a user on kin2 to complete the KIN.login method on the client
 	// and only after that start migration (throwing this error during login kills the client)
 	if (!req.url.startsWith("/v2/users/me")) {
-		await throwOnMigrationError(req as AuthenticatedRequest);
+		if (await checkMigrationNeeded(req as AuthenticatedRequest)) {
+			throw WrongBlockchainVersion("Blockchain version not supported by SDK");
+		}
 	}
 	next();
 } as express.RequestHandler;
 
-async function throwOnMigrationError(req: AuthenticatedRequest) {
+async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean> {
 	const CLIENT_BLOCKCHAIN_HEADER = "x-kin-blockchain-version";
 	const blockchainVersionHeader = req.header(CLIENT_BLOCKCHAIN_HEADER);
+	const user = req.context.user;
+	const deviceId = req.context.token.deviceId;
 
-	const app = await Application.get(req.context.user.appId);
+	if (blockchainVersionHeader === "3") {
+		logger().info(`kin3 user - dont migrate ${ user.id }`);
+		// TODO user gets stuck in kin2
+		return false; // TODO should we make assertions that the current wallet is on kin3?
+	}
+	const app = await Application.get(user.appId);
 	if (!app) { // cached per instance
-		throw NoSuchApp(req.context.user.appId);
+		throw NoSuchApp(user.appId);
 	}
-
-	const isAppMigrated = app.config.blockchain_version === "3";
-	const isAppVersionEqualsToClient = app.config.blockchain_version === blockchainVersionHeader;
-
-	if (isAppMigrated && !isAppVersionEqualsToClient) {
-		throw WrongBlockchainVersion("Blockchain version not supported by SDK");
+	if (app.config.blockchain_version === "3") {
+		metrics.migrationTrigger(app.id, "app_on_kin3");
+		logger().info(`app on kin3 - should migrate ${ user.id }`);
+		return true;
 	}
+	if (app.shouldApplyGradualMigration()) {
+		const wallet = (await user.getWallets(deviceId)).lastUsed() ||
+			(await user.getWallets()).lastUsed();
+		if (!wallet) {
+			// :( TODO shouldn't happen - log this
+			logger().error(`no wallet found for ${ user.id }`);
+			return false;
+		}
+		const walletApplication = await WalletApplication.findOne({ walletAddress: wallet.address });
+		if (walletApplication && walletApplication.createdDateKin3) {
+			metrics.migrationTrigger(app.id, "wallet_on_kin3");
+			logger().info(`current wallet already on kin3 - should migrate ${ wallet.address } ${ user.id }`);
+			return true;
+		}
+		const whitelist = await GradualMigrationUser.findOneById(user.id);
+		if (whitelist && (whitelist.migrationDate || await withinMigrationRateLimit(app.id))) {
+			await GradualMigrationUser.setAsMigrated([user.id]);
+			metrics.migrationTrigger(app.id, "gradual_migration");
+			logger().info(`kin2 user in migration list - should migrate ${ wallet.address } ${ user.id }`);
+			return true;
+		}
+	}
+	logger().info(`kin2 user not in migration list - dont migrate ${ user.id }`);
+	return false;
 }

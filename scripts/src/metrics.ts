@@ -36,7 +36,7 @@ export function createOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType, 
 	statsd.increment("create_order", 1, { order_type: orderOrigin, offer_type: offerType, app_id: appId });
 }
 
-export function submitOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType,  appId: string) {
+export function submitOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType, appId: string) {
 	statsd.increment("submit_order", 1, { offer_type: offerType, app_id: appId });
 }
 
@@ -63,6 +63,24 @@ export function reportProcessAbort(reason: string = "", appId: string = "") {
 	statsd.increment("process_abort", 1, { system: "exit", reason, app_id: appId });
 }
 
+type MigrationReason = "app_on_kin3" | "wallet_on_kin3" | "gradual_migration";
+
+export function migrationRateLimitExceeded(appId: string) {
+	statsd.increment("migration_limit_exceeded", 1, { app_id: appId });
+}
+
+export function migrationTrigger(appId: string, reason: MigrationReason) {
+	statsd.increment("migration_trigger", 1, { app_id: appId, reason });
+}
+
+export function migrationInfo(appId: string, reason: MigrationReason) {
+	statsd.increment("migration_info", 1, { app_id: appId, reason });
+}
+
+export function skipMigration(appId: string) {
+	statsd.increment("skip_migration", 1, { app_id: appId });
+}
+
 export function orderFailed(order: Order) {
 	function safeString(str: string): string {
 		return str.replace(/\W/g, " ");
@@ -77,7 +95,7 @@ export function orderFailed(order: Order) {
 	let message = `## Order <${ order.id }> from ${ appId } failed:
 ID: <${ order.id }> | Type: ${ type } | Origin: ${ order.origin }
 Error: ${ title } | Code: ${ error.code }
-CreatedDate: ${order.createdDate.toISOString()} | LastDate: ${(order.currentStatusDate || order.createdDate).toISOString()}`;
+CreatedDate: ${ order.createdDate.toISOString() } | LastDate: ${ (order.currentStatusDate || order.createdDate).toISOString() }`;
 
 	message += ` sender wallet: ${ order.blockchainData.sender_address }, recipient wallet: ${ order.blockchainData.recipient_address }`;
 	order.forEachContext(context => {

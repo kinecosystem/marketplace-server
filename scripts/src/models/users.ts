@@ -14,6 +14,7 @@ import { generateId, IdPrefix, Mutable } from "../utils/utils";
 
 import { OrderContext } from "./orders";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
+import { BlockchainVersion } from "./offers";
 
 @Entity({ name: "users" })
 @Register
@@ -47,7 +48,7 @@ export class User extends CreationDateModel {
 
 		const wallets = await Wallet.find(conditions);
 		if (wallets.length === 0 && this.walletAddress) {
-			await this.lazyMigrateWallet(deviceId);
+			await this.lazyMigrateWallet(deviceId); // TODO can we get rid of this?
 		}
 
 		return new Wallets(await Wallet.find(conditions));
@@ -235,8 +236,17 @@ export class Wallet extends BaseEntity {
 @Entity({ name: "wallet_application" })
 @Register
 export class WalletApplication extends BaseEntity {
-	public static async updateCreatedDate(walletAddress: string, createdDateField: "createdDateKin2" | "createdDateKin3") {
+	public static async updateCreatedDate(walletAddress: string, blockchainVersion: BlockchainVersion) {
+		const createdDateField = blockchainVersion === "2" ? "createdDateKin2" : "createdDateKin3";
 		await WalletApplication.update({ walletAddress }, { [createdDateField]: new Date() });
+	}
+
+	public static async getBlockchainVersion(walletAddress: string): Promise<BlockchainVersion> {
+		const wallet = await WalletApplication.findOneById(walletAddress);
+		if (wallet && wallet.createdDateKin3) {
+			return "3";
+		}
+		return "2";
 	}
 
 	@PrimaryColumn({ name: "wallet_address" })
@@ -250,4 +260,54 @@ export class WalletApplication extends BaseEntity {
 
 	@Column({ name: "created_date_kin3", nullable: true })
 	public createdDateKin3?: Date;
+}
+
+@Entity({ name: "gradual_migration_users" })
+@Register
+export class GradualMigrationUser extends BaseEntity {
+	public static async addList(appId: string, appUserIds: string[]): Promise<void> {
+		const BATCH_SIZE = 500;
+		for (let i = 0; i < appUserIds.length; i += BATCH_SIZE) {
+			// translate apUserId to userId and insert to table
+			const users: Array<{ id: string }> = await User
+				.createQueryBuilder("user")
+				.select("id")
+				.where("user.appUserId IN (:appUserIds)", { appUserIds })
+				.andWhere("user.appId = :appId", { appId })
+				.getRawMany();
+			const userIds = users.map(u => ({ userId: u.id }));
+
+			await GradualMigrationUser
+				.createQueryBuilder()
+				.insert()
+				.values(userIds)
+				.onConflict(`("user_id") DO NOTHING`)
+				.execute();
+		}
+	}
+
+	public static async setAsMigrated(userIds: string[]): Promise<void> {
+		logger().info(`setting migration users ${ userIds }`);
+		await GradualMigrationUser
+			.createQueryBuilder("mig")
+			.update(GradualMigrationUser)
+			.set({ migrationDate: () => "CURRENT_TIMESTAMP" })
+			.whereInIds(userIds)
+			.execute();
+	}
+
+	public static async findByWallet(walletAddress: string): Promise<GradualMigrationUser[]> {
+		const wallets = await Wallet.find({ select: ["userId"], where: { address: walletAddress } });
+		const userIds = wallets.map(w => w.userId);
+		return await GradualMigrationUser.findByIds(userIds);
+	}
+
+	@PrimaryColumn({ name: "user_id" })
+	public userId!: string;
+
+	@Column({ name: "migration_date", nullable: true })
+	public migrationDate?: Date; // flag that marks this user has been requested to migrate
+
+	@Column({ name: "created_date", nullable: false, default: () => "CURRENT_TIMESTAMP" })
+	public createdDate!: Date; // flag that marks this user has been requested to migrate
 }

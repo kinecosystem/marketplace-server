@@ -1,4 +1,4 @@
-import { generateId, IdPrefix } from "../utils/utils";
+import { generateId, IdPrefix, isNothing } from "../utils/utils";
 import { localCache } from "../utils/cache";
 import { BaseEntity, Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
 import { CreationDateModel, initializer as Initializer, register as Register } from "./index";
@@ -8,6 +8,7 @@ import { Order } from "./orders";
 import { LimitConfig } from "../config";
 import moment = require("moment");
 import { getConfig } from "../public/config";
+import { Moment } from "moment";
 
 const config = getConfig();
 
@@ -20,6 +21,7 @@ export type ApplicationConfig = {
 	limits: LimitConfig;
 	blockchain_version: BlockchainVersion;
 	bulk_user_creation_allowed?: number;
+	gradual_migration_date?: string;  // ISO date format with TZ, i.e. 2010-12-21T10:22:33Z
 };
 
 @Entity({ name: "applications" })
@@ -70,6 +72,17 @@ export class Application extends CreationDateModel {
 	public allowsNewWallet(currentNumberOfWallets: number) {
 		return this.config.max_user_wallets === null || currentNumberOfWallets < this.config.max_user_wallets;
 	}
+
+	// return true if should apply gradual migration from given date
+	// if no date given, use now
+	public shouldApplyGradualMigration(date?: Date): boolean {
+		if (isNothing(this.config.gradual_migration_date)) {
+			return false;
+		}
+		const compareTo = moment(date || new Date());
+		// given date is after the migration date - should migrate
+		return compareTo > moment(this.config.gradual_migration_date);
+	}
 }
 
 @Entity({ name: "application_offers" })
@@ -119,9 +132,12 @@ export class AppOffer extends BaseEntity {
 		// if (total >= this.cap.total) {
 		// 	return true;
 		// }
-
-		const forUser = (await Order.countAllByOffer(this.appId, { offerId: this.offerId, userId })).get(this.offerId) || 0;
+		const forUser = (await Order.countAllByOffer(this.appId, {
+			offerId: this.offerId,
+			userId
+		})).get(this.offerId) || 0;
 		return forUser >= this.cap.per_user;
+
 	}
 }
 

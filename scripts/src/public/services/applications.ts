@@ -1,7 +1,7 @@
 import { getDefaultLogger as logger } from "../../logging";
 
 import { verify as verifyJwt } from "../jwt";
-import { InvalidApiKey, MissingFieldJWT, NoSuchApp } from "../../errors";
+import { InvalidApiKey, MissingField, NoSuchApp } from "../../errors";
 import { Application, AppWhitelists } from "../../models/applications";
 import { BlockchainVersion } from "../../models/offers";
 
@@ -30,10 +30,10 @@ export async function validateRegisterJWT(jwt: string): Promise<SignInContext> {
 
 	// payload.user_id field is mandatory
 	if (!decoded.payload.user_id) {
-		throw MissingFieldJWT("user_id");
+		throw MissingField("user_id");
 	}
 	if (!decoded.payload.device_id) {
-		throw MissingFieldJWT("device_id");
+		throw MissingField("device_id");
 	}
 
 	const appId = decoded.payload.iss;
@@ -48,7 +48,7 @@ export async function v1ValidateRegisterJWT(jwt: string): Promise<V1SignInContex
 
 	// payload.user_id field is mandatory
 	if (!decoded.payload.user_id) {
-		throw MissingFieldJWT("user_id");
+		throw MissingField("user_id");
 	}
 
 	const appId = decoded.payload.iss;

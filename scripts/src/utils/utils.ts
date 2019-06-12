@@ -20,6 +20,13 @@ export function isNothing(obj: any): obj is Nothing {
 	return obj === null || obj === undefined;
 }
 
+export function getOrDefault<T, S extends T>(value: T | undefined | null, defaultValue: S): T {
+	if (isNothing(value)) {
+		return defaultValue;
+	}
+	return value;
+}
+
 export function random(): number;
 export function random(min: number, max: number): number;
 

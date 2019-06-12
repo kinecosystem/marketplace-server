@@ -4,8 +4,8 @@ import { initLogger } from "../logging";
 import { getConfig } from "./config";
 import { init as initModels } from "../models/index";
 import { init as initRemoteConfig } from "./routes/config";
-import { init as initMigration } from "./services/migration";
 import { createPublicFacing, createRoutes, createV1Routes } from "./routes/index";
+import { init as initMigration } from "../utils/migration";
 import { generalErrorHandler, init as initCustomMiddleware, notFoundHandler } from "./middleware";
 
 const config = getConfig();

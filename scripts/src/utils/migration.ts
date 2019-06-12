@@ -3,7 +3,7 @@ import { BlockchainConfig, getBlockchainConfig } from "../public/services/paymen
 import { getDefaultLogger as logger } from "../logging";
 import { getConfig } from "../public/config";
 import { verify as verifyJwt } from "../public/jwt";
-import { InvalidExternalOrderJwt, InvalidJwtField, MissingFieldJWT } from "../errors";
+import { InvalidExternalOrderJwt, InvalidJwtField, MissingField } from "../errors";
 import { assertRateLimitMigration } from "./rate_limit";
 import * as metrics from "../metrics";
 
@@ -77,7 +77,7 @@ export async function validateMigrationListJWT(jwt: string, appId: string): Prom
 	const decoded = await verifyJwt<Partial<MigrationListPayload>, "migration_list">(jwt);
 
 	if (!decoded.payload.user_ids) {
-		throw MissingFieldJWT("user_ids");
+		throw MissingField("user_ids");
 	}
 
 	if (decoded.payload.iss !== appId) {

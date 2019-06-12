@@ -1,5 +1,5 @@
 import { JWTClaims, verify as verifyJWT } from "../jwt";
-import { ExternalOrderByDifferentUser, InvalidExternalOrderJwt, MissingFieldJWT } from "../../errors";
+import { ExternalOrderByDifferentUser, InvalidExternalOrderJwt, MissingField } from "../../errors";
 import { getDefaultLogger as log } from "../../logging";
 import { User } from "../../models/users";
 
@@ -53,7 +53,7 @@ export async function validateExternalOrderJWT(jwt: string, user: User): Promise
 
 	// offer field has to exist in earn/spend/pay_to_user JWTs
 	if (!decoded.payload.offer) {
-		throw MissingFieldJWT("offer");
+		throw MissingField("offer");
 	}
 
 	if (typeof decoded.payload.offer.amount !== "number") {
@@ -67,22 +67,22 @@ export async function validateExternalOrderJWT(jwt: string, user: User): Promise
 	switch (decoded.payload.sub) {
 		case "spend":
 			if (!decoded.payload.sender) {
-				throw MissingFieldJWT("sender");
+				throw MissingField("sender");
 			}
 			break;
 
 		case "earn":
 			if (!decoded.payload.recipient) {
-				throw MissingFieldJWT("recipient");
+				throw MissingField("recipient");
 			}
 			break;
 
 		case "pay_to_user":
 			if (!decoded.payload.sender) {
-				throw MissingFieldJWT("sender");
+				throw MissingField("sender");
 			}
 			if (!decoded.payload.recipient) {
-				throw MissingFieldJWT("recipient");
+				throw MissingField("recipient");
 			}
 			break;
 

@@ -4,7 +4,7 @@ import { app as webApp } from "../../public/app";
 import * as metrics from "../../metrics";
 import { signJwt } from "../helpers";
 import { validateExternalOrderJWT } from "../../public/services/native_offers";
-import { InvalidExternalOrderJwt, MissingFieldJWT } from "../../errors";
+import { InvalidExternalOrderJwt, MissingField } from "../../errors";
 import { close as closeModels, init as initModels } from "../../models";
 import { getAppBlockchainVersion as getAppBlockchainVersionService } from "../../public/services/applications";
 import * as helpers from "../helpers";
@@ -103,6 +103,6 @@ describe("general api checks", async () => {
 		const jwt = await signJwt(app.id, "migrate_users", {
 			blah: users.map(u => u.appUserId),
 		});
-		await expect(validateMigrationListJWT(jwt, app.id)).rejects.toThrow(MissingFieldJWT("user_ids"));
+		await expect(validateMigrationListJWT(jwt, app.id)).rejects.toThrow(MissingField("user_ids"));
 	});
 });

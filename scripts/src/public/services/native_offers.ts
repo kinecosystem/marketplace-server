@@ -3,7 +3,7 @@ import {
 	ExternalOrderByDifferentUser,
 	ExternalOrderByDifferentDevice,
 	InvalidExternalOrderJwt,
-	MissingFieldJWT
+	MissingField
 } from "../../errors";
 import { User } from "../../models/users";
 
@@ -60,23 +60,23 @@ function validateUserPayload(data: any, key: "sender" | "recipient", shouldHaveD
 	const user = data[key] as ExternalUserPayload | undefined;
 
 	if (!user) {
-		throw MissingFieldJWT(key);
+		throw MissingField(key);
 	}
 
 	if (!user.user_id) {
-		throw MissingFieldJWT(`${ key }.user_id`);
+		throw MissingField(`${ key }.user_id`);
 	}
 
 	if (!user.title) {
-		throw MissingFieldJWT(`${ key }.title`);
+		throw MissingField(`${ key }.title`);
 	}
 
 	if (!user.description) {
-		throw MissingFieldJWT(`${ key }.description`);
+		throw MissingField(`${ key }.description`);
 	}
 
 	if (shouldHaveDeviceId && !(user as ExternalUserPayload & ExternalEngagedUserPayload).device_id) {
-		throw MissingFieldJWT(`${ key }.device_id`);
+		throw MissingField(`${ key }.device_id`);
 	}
 }
 
@@ -90,7 +90,7 @@ export async function validateExternalOrderJWT(jwt: string, user: User, deviceId
 
 	// offer field has to exist in earn/spend/pay_to_user JWTs
 	if (!payload.offer) {
-		throw MissingFieldJWT("offer");
+		throw MissingField("offer");
 	}
 	if (typeof payload.offer.amount !== "number") {
 		console.log("throwing");

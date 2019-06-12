@@ -1,6 +1,5 @@
 import * as express from "express";
 import { BlockchainVersion } from "../../models/offers";
-import { getAppBlockchainVersion } from "./applications";
 import { GradualMigrationUser, Wallet, WalletApplication } from "../../models/users";
 import { getDefaultLogger as logger } from "../../logging";
 import {
@@ -11,7 +10,7 @@ import {
 } from "../../utils/migration";
 import { Application } from "../../models/applications";
 import { NoSuchApp } from "../../errors";
-import { log } from "util";
+import * as metrics from "../../metrics";
 
 type AccountStatusRequest = express.Request & {
 	params: {
@@ -53,28 +52,28 @@ async function canSkipMigration(walletAddress: string): Promise<boolean> {
 async function getBlockchainVersionForWallet(wallet: WalletApplication, app: Application): Promise<{ blockchainVersion: BlockchainVersion, shouldMigrate: boolean }> {
 
 	if (wallet.createdDateKin3) {
-		logger().info(`wallet created on kin3 - dont migrate ${wallet.walletAddress}`);
+		logger().info(`wallet created on kin3 - dont migrate ${ wallet.walletAddress }`);
+		metrics.migrationInfo(app.id, "wallet_on_kin3");
 		return { blockchainVersion: "3", shouldMigrate: false };
 	}
 
 	if (app.config.blockchain_version === "3") {
-		logger().info(`app on kin3 - should migrate ${wallet.walletAddress}`);
+		logger().info(`app on kin3 - should migrate ${ wallet.walletAddress }`);
+		metrics.migrationInfo(app.id, "app_on_kin3");
 		return { blockchainVersion: "3", shouldMigrate: true };
 	}
 
 	if (app.shouldApplyGradualMigration()) {
-		const wallets = await Wallet.find({ select: ["userId"], where: { address: wallet.walletAddress } });
-		const userIds = wallets.map(w => w.userId);
-		const whitelisted = await GradualMigrationUser.findByIds(userIds);
-
+		const whitelisted = await GradualMigrationUser.findByWallet(wallet.walletAddress);
 		if (whitelisted.length > 0 && (whitelisted.some(w => !!w.migrationDate) || await withinMigrationRateLimit(app.id))) {
-			await GradualMigrationUser.setAsMigrated(userIds);
-			logger().info(`kin2 user on migration list - should migrate ${wallet.walletAddress}`);
+			await GradualMigrationUser.setAsMigrated(whitelisted.map(w => w.userId));
+			logger().info(`kin2 user on migration list - should migrate ${ wallet.walletAddress }`);
+			metrics.migrationInfo(app.id, "gradual_migration");
 			return { blockchainVersion: "3", shouldMigrate: true };
 		}
 		// else, user is not whitelisted or is whitelisted but rate limit applied
 	}
-	logger().info(`kin2 user not on migration list - dont migrate ${wallet.walletAddress}`);
+	logger().info(`kin2 user not on migration list - dont migrate ${ wallet.walletAddress }`);
 	return { blockchainVersion: "2", shouldMigrate: false };
 }
 
@@ -96,6 +95,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 	} else {
 		({ blockchainVersion, shouldMigrate } = await getBlockchainVersionForWallet(wallet, app));
 		if (shouldMigrate && await canSkipMigration(publicAddress)) {
+			metrics.skipMigration(appId);
 			shouldMigrate = false;
 		}
 	}

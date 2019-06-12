@@ -5,6 +5,7 @@ import { getConfig } from "../public/config";
 import { verify as verifyJwt } from "../public/jwt";
 import { InvalidExternalOrderJwt, InvalidJwtField, MissingFieldJWT } from "../errors";
 import { assertRateLimitMigration } from "./rate_limit";
+import * as metrics from "../metrics";
 
 const httpClient = getAxiosClient();
 let BLOCKCHAIN: BlockchainConfig;
@@ -37,7 +38,7 @@ export async function hasKin2ZeroBalance(walletAddress: string): Promise<boolean
 		}
 		return true; // no balance is zero balance
 	} catch (e) {
-		logger().warn("couldn't reach horizon to check user balance - assuming non-zero");
+		logger().warn("couldn't reach horizon to check user balance - assuming non-zero", { walletAddress });
 		return false; // assume user has non zero balance if can't reach horizon
 	}
 }
@@ -97,6 +98,7 @@ export async function withinMigrationRateLimit(appId: string) {
 		logger().info(`within migration limit for ${ appId }`);
 		return true;
 	} catch (e) {
+		metrics.migrationRateLimitExceeded(appId);
 		logger().info(`exceeded migration limit for ${ appId }`);
 		return false;
 	}

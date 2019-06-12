@@ -240,6 +240,7 @@ export class WalletApplication extends BaseEntity {
 		const createdDateField = blockchainVersion === "2" ? "createdDateKin2" : "createdDateKin3";
 		await WalletApplication.update({ walletAddress }, { [createdDateField]: new Date() });
 	}
+
 	public static async getBlockchainVersion(walletAddress: string): Promise<BlockchainVersion> {
 		const wallet = await WalletApplication.findOneById(walletAddress);
 		if (wallet && wallet.createdDateKin3) {
@@ -247,6 +248,7 @@ export class WalletApplication extends BaseEntity {
 		}
 		return "2";
 	}
+
 	@PrimaryColumn({ name: "wallet_address" })
 	public walletAddress!: string;
 
@@ -263,7 +265,7 @@ export class WalletApplication extends BaseEntity {
 @Entity({ name: "gradual_migration_users" })
 @Register
 export class GradualMigrationUser extends BaseEntity {
-	public static async addList(appId: string, appUserIds: string[]) {
+	public static async addList(appId: string, appUserIds: string[]): Promise<void> {
 		const BATCH_SIZE = 500;
 		for (let i = 0; i < appUserIds.length; i += BATCH_SIZE) {
 			// translate apUserId to userId and insert to table
@@ -284,14 +286,20 @@ export class GradualMigrationUser extends BaseEntity {
 		}
 	}
 
-	public static async setAsMigrated(userIds: string[]) {
-		logger().info(`setting migration users ${userIds}`);
+	public static async setAsMigrated(userIds: string[]): Promise<void> {
+		logger().info(`setting migration users ${ userIds }`);
 		await GradualMigrationUser
 			.createQueryBuilder("mig")
 			.update(GradualMigrationUser)
 			.set({ migrationDate: () => "CURRENT_TIMESTAMP" })
 			.whereInIds(userIds)
 			.execute();
+	}
+
+	public static async findByWallet(walletAddress: string): Promise<GradualMigrationUser[]> {
+		const wallets = await Wallet.find({ select: ["userId"], where: { address: walletAddress } });
+		const userIds = wallets.map(w => w.userId);
+		return await GradualMigrationUser.findByIds(userIds);
 	}
 
 	@PrimaryColumn({ name: "user_id" })

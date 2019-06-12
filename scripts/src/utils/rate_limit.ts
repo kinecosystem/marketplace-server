@@ -4,6 +4,7 @@ import { getRedisClient, RedisAsyncClient } from "../redis";
 import { MarketplaceError, TooManyRegistrations, TooManyUserRequests, TooMuchEarnOrdered } from "../errors";
 import { User } from "../models/users";
 import { Application } from "../models/applications";
+import { getOrDefault } from "./utils";
 
 export class RateLimit {
 	public readonly bucketPrefix: string;
@@ -112,8 +113,8 @@ export async function assertRateLimitUserRequests(user: User) {
 	const app = (await Application.get(user.appId))!;
 
 	const limiters = [
-		await checkRateLimitUserRequests(user.id, app.config.limits.hourly_user_requests || 150, moment.duration({ hours: 1 })),
-		await checkRateLimitUserRequests(user.id, app.config.limits.minute_user_requests || 20, moment.duration({ minutes: 1 }))
+		await checkRateLimitUserRequests(user.id, getOrDefault(app.config.limits.hourly_user_requests, 250), moment.duration({ hours: 1 })),
+		await checkRateLimitUserRequests(user.id, getOrDefault(app.config.limits.minute_user_requests, 50), moment.duration({ minutes: 1 }))
 	];
 	await Promise.all(limiters.map(limiter => limiter.inc(1)));
 }
@@ -127,8 +128,8 @@ export async function assertRateLimitMigration(appId: string) {
 	const app = (await Application.get(appId))!;
 
 	const limiters = [
-		await checkRateLimitMigration(app.id, app.config.limits.hourly_migration || 1000, moment.duration({ hours: 1 })),
-		await checkRateLimitMigration(app.id, app.config.limits.minute_migration || 150, moment.duration({ minutes: 1 })),
+		await checkRateLimitMigration(app.id, getOrDefault(app.config.limits.hourly_migration, 72000), moment.duration({ hours: 1 })),
+		await checkRateLimitMigration(app.id, getOrDefault(app.config.limits.minute_migration, 1200), moment.duration({ minutes: 1 })),
 	];
 	await Promise.all(limiters.map(limiter => limiter.inc(1)));
 }

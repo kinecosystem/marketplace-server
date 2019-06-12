@@ -1,13 +1,12 @@
 import * as express from "express";
 import * as httpContext from "express-http-context";
-import { dateParser, isNothing, Mutable } from "../utils/utils";
+import { dateParser, Mutable } from "../utils/utils";
 import { AuthToken, GradualMigrationUser, User, WalletApplication } from "../models/users";
 import { getRedisClient } from "../redis";
 import { Application } from "../models/applications";
-import { MissingToken, InvalidToken, TOSMissingOrOldToken, NoSuchApp, WrongBlockchainVersion } from "../errors";
+import { InvalidToken, MissingToken, NoSuchApp, TOSMissingOrOldToken, WrongBlockchainVersion } from "../errors";
 import { assertRateLimitUserRequests } from "../utils/rate_limit";
 import { withinMigrationRateLimit } from "../utils/migration";
-import moment = require("moment");
 import { getDefaultLogger as logger } from "../logging";
 
 const tokenCacheTTL = 15 * 60; // 15 minutes
@@ -133,7 +132,7 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 			return true;
 		}
 		const whitelist = await GradualMigrationUser.findOneById(user.id);
-		if (whitelist && (whitelist.migrationDate || withinMigrationRateLimit(app.id))) {
+		if (whitelist && (whitelist.migrationDate || await withinMigrationRateLimit(app.id))) {
 			await GradualMigrationUser.setAsMigrated([user.id]);
 			logger().info(`kin2 user in migration list - should migrate ${ wallet.address } ${ user.id }`);
 			return true;

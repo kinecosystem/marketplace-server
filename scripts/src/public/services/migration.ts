@@ -67,7 +67,7 @@ async function getBlockchainVersionForWallet(wallet: WalletApplication, app: App
 		const userIds = wallets.map(w => w.userId);
 		const whitelisted = await GradualMigrationUser.findByIds(userIds);
 
-		if (whitelisted.length > 0 && (whitelisted.some(w => !!w.migrationDate) || withinMigrationRateLimit(app.id))) {
+		if (whitelisted.length > 0 && (whitelisted.some(w => !!w.migrationDate) || await withinMigrationRateLimit(app.id))) {
 			await GradualMigrationUser.setAsMigrated(userIds);
 			logger().info(`kin2 user on migration list - should migrate ${wallet.walletAddress}`);
 			return { blockchainVersion: "3", shouldMigrate: true };

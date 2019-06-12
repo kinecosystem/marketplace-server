@@ -270,18 +270,18 @@ export async function register(
 }
 
 async function createUserProfileObject(user: User, deviceId: string): Promise<UserProfile> {
-	const data: Array<{ type: string; last_date: string; cnt: number; }> = await Order.queryBuilder("ordr")
+	const data: Array<{ type: string; last_date: string; cnt: number; }> = await Order.queryBuilder("ordr_createUserProfileObject")
 		.select("context.type", "type")
-		.addSelect("MAX(ordr.createdDate)", "last_date")
+		.addSelect("MAX(ordr_createUserProfileObject.createdDate)", "last_date")
 		.addSelect("COUNT(*)", "cnt")
-		.leftJoin("ordr.contexts", "context")
+		.leftJoin("ordr_createUserProfileObject.contexts", "context")
 		.where("context.userId = :userId", { userId: user.id })
 		.andWhere(new Brackets(qb => {
-			qb.where("ordr.status = :status", { status: "completed" })
+			qb.where("ordr_createUserProfileObject.status = :status", { status: "completed" })
 				.orWhere(
 					new Brackets(qb2 => {
-						qb2.where("ordr.status IN (:statuses)", { statuses: ["pending", "opened"] })
-							.andWhere("ordr.expirationDate > :date", { date: new Date() });
+						qb2.where("ordr_createUserProfileObject.status IN (:statuses)", { statuses: ["pending", "opened"] })
+							.andWhere("ordr_createUserProfileObject.expirationDate > :date", { date: new Date() });
 					})
 				);
 		}))

@@ -18,27 +18,29 @@ export enum PageType {
 	"SuccessBasedThankYou",
 }
 
-export interface PollPage {
+export interface Page {
 	type: PageType;
+}
+
+export interface PollPage extends Page {
 	title: string;
 	description: string;
 	question: Question;
 }
 
-export interface QuizPage {
-	type: PageType;
+export interface QuizPage extends Page {
 	description: string;
 	amount: number;
 	rightAnswer: number; // XXX change answers to have an id
 	question: Question;
 }
 
-export interface EarnThankYouPage {
+export interface EarnThankYouPage extends Page {
 	type: PageType.EarnThankYou;
 	description: string;
 }
 
-export interface SuccessBasedThankYouPage {
+export interface SuccessBasedThankYouPage  extends Page  {
 	type: PageType.SuccessBasedThankYou;
 	description: string;
 }
@@ -51,14 +53,14 @@ export interface Quiz {
 	pages: Array<QuizPage | SuccessBasedThankYouPage>;
 }
 
-export type TutorialPage = {
-	type: PageType.ImageAndText,
-	title: string,
-	image: string,
-	bodyHtml: string,
-	footerHtml: string,
-	buttonText: string
-};
+export interface TutorialPage  extends Page {
+	type: PageType.ImageAndText;
+	title: string;
+	image: string;
+	bodyHtml: string;
+	footerHtml: string;
+	buttonText: string;
+}
 
 export interface Tutorial {
 	pages: Array<TutorialPage | EarnThankYouPage>;

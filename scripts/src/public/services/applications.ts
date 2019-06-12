@@ -4,6 +4,7 @@ import { verify as verifyJwt } from "../jwt";
 import { InvalidApiKey, MissingField, NoSuchApp } from "../../errors";
 import { Application, AppWhitelists } from "../../models/applications";
 import { BlockchainVersion } from "../../models/offers";
+import moment = require("moment");
 
 export type RegisterPayload = {
 	user_id: string;
@@ -71,7 +72,7 @@ export async function validateWhitelist(appUserId: string, deviceId: string, api
 		return { appUserId, deviceId, appId: app.id };
 	}
 	// XXX raise an exception
-	logger().warn(`user ${appUserId} not found in whitelist for app ${ app.id }`);
+	logger().warn(`user ${ appUserId } not found in whitelist for app ${ app.id }`);
 
 	return { appUserId, deviceId, appId: app.id };
 }
@@ -90,7 +91,7 @@ export async function v1ValidateWhitelist(appUserId: string, apiKey: string): Pr
 		return { appUserId, appId: app.id };
 	}
 	// XXX raise an exception
-	logger().warn(`user ${appUserId} not found in whitelist for app ${ app.id }`);
+	logger().warn(`user ${ appUserId } not found in whitelist for app ${ app.id }`);
 
 	return { appUserId, appId: app.id };
 }
@@ -103,16 +104,22 @@ export async function getAppBlockchainVersion(app_id: string): Promise<Blockchai
 	return app.config.blockchain_version;
 }
 
-export async function setAppBlockchainVersion(app_id: string, blockchain_version: BlockchainVersion): Promise<void> {
+export async function setAppBlockchainVersion(app_id: string, blockchain_version: BlockchainVersion | "gradual"): Promise<void> {
 	const app = await Application.get(app_id);
 	if (!app) {
 		throw NoSuchApp(app_id);
 	}
 
-	app.config.blockchain_version = blockchain_version;
+	if (blockchain_version === "gradual") {
+		app.config.blockchain_version = "2";
+		app.config.gradual_migration_date = moment().toISOString();
+	} else {
+		app.config.blockchain_version = blockchain_version;
+		app.config.gradual_migration_date = null;
+	}
 	await Application.createQueryBuilder()
 		.update("applications")
-		.set({ config : app.config })
-		.where("id = :id", { id : app_id })
+		.set({ config: app.config })
+		.where("id = :id", { id: app_id })
 		.execute();
 }

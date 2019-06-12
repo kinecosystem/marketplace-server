@@ -21,7 +21,7 @@ export type ApplicationConfig = {
 	limits: LimitConfig;
 	blockchain_version: BlockchainVersion;
 	bulk_user_creation_allowed?: number;
-	gradual_migration_date?: string;  // ISO date format with TZ, i.e. 2010-12-21T10:22:33Z
+	gradual_migration_date?: string | null;  // ISO date format with TZ, i.e. 2010-12-21T10:22:33Z
 };
 
 @Entity({ name: "applications" })

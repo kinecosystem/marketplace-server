@@ -1,11 +1,12 @@
 pipeline {
     agent any
-      environment {
-        //tr command is used with a pipe to remove double quote at the first and last character of the output
-        //trailing slash is used to skip single quote in tr command
+    environment {
+        STELLAR_ADDRESS = '$(aws ssm get-parameter --region eu-west-1 --name /CI/Jenkins/STELLAR_ADDRESS | jq -r ".Parameter.Value")'
+        STELLAR_BASE_SEED = '$(aws ssm get-parameter --region eu-west-1 --name /CI/Jenkins/STELLAR_BASE_SEED | jq -r ".Parameter.Value")'
+        CLUSTER_URL = '$(aws ssm get-parameter --region eu-west-1 --name /CI/Jenkins/CLUSTER_URL | jq -r ".Parameter.Value")'
 
-        STELLAR_ADDRESS='$(aws --region=eu-west-1  ssm get-parameters --names /CI/Jenkins/STELLAR_ADDRESS --query Parameters[0].Value | tr -d \"'
-  }
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -16,10 +17,10 @@ pipeline {
             }
         }
         stage('Create secrets for tests') {
+
             steps {
                 echo 'Creating secrets for tests'
-                echo "${STELLAR_ADDRESS}"
-                sh 'mkdir -p ./secrets/ && echo export STELLAR_BASE_SEED=${STELLAR_BASE_SEED} STELLAR_ADDRESS=${STELLAR_ADDRESS} > ./secrets/.secrets'
+                sh "mkdir -p ./secrets/ && echo export STELLAR_BASE_SEED=$STELLAR_BASE_SEED STELLAR_ADDRESS=$STELLAR_ADDRESS > ./secrets/.secrets"
             }
         }
         stage('Create-jwt-keys') {
@@ -46,15 +47,29 @@ pipeline {
                 sh 'make build-image'
             }
         }
-        stage('Create testing env') {
+        stage('Deploy to env') {
             steps {
-                echo 'Creating env'
+                // get k8s environment
+                script {
+                    env['K8S_CLUSTER_URL'] = sh (
+                            script: "echo $CLUSTER_URL",
+                            returnStdout: true
+                       ).trim()
+                }
+                echo "Deploying env to: $env.K8S_CLUSTER_URL"
 
-            }
-        }
-        stage('Deploy') {
-            steps {
-                echo 'Todo: Deploying env'
+                withKubeConfig([credentialsId: 'default2',
+                serverUrl: env.K8S_CLUSTER_URL,
+                clusterName: 'test'
+                ]) {
+                    sh '''
+                        #create namespace if doesn't exists
+                        cat namespace.yaml | sed 's/\$ENVIRONMENT'"/ci/g"  |kubectl apply -f - || true
+                        #remove
+                        cat marketplace-public-deployment.yaml | sed  "s/\$ENVIRONMENT/ci/;s/\$SSM_PATH/\/CI\/marketplace\// ;s/\$VERSION/latest/" | kubectl apply  -f -
+                    '''
+                    }
+
             }
         }
         stage('Integration/System tests') {

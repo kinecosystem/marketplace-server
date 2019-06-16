@@ -1,0 +1,8 @@
+#Run example, including placeholder substitution:
+#cat namespace.yaml | sed 's/\$ENVIRONMENT'"/ci/g"  |kubectl apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: $ENVIRONMENT
+  labels:
+    name: $ENVIRONMENT

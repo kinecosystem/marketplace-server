@@ -1,0 +1,48 @@
+
+#Run example, including placeholder substitution:
+#  cat marketplace-public-deployment.yaml \
+#  | sed  " \
+#  s/\$ENVIRONMENT/ci/; \
+#  s/\$SERVER_ROLE/public/; \
+#  s/\$VERSION/latest/" \
+#  s/\$REPLICAS/2/" \
+#  | kubectl apply  -f -
+
+#TODO: add resources (CPU/Memory) limitations
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  annotations:
+        iam.amazonaws.com/role: ci-marketplace-service
+  labels:
+    app: marketplace-$SERVER_ROLE
+  name: marketplace-$SERVER_ROLE
+  namespace: $ENVIRONMENT
+spec:
+  replicas: $REPLICAS
+  selector:
+    matchLabels:
+      app: marketplace-$SERVER_ROLE
+  template:
+    metadata:
+      labels:
+        app: marketplace-$SERVER_ROLE
+        name: marketplace-$SERVER_ROLE
+        version: "$VERSION"
+    spec:
+      restartPolicy: Always
+      containers:
+        - command:  ["/bin/sh"]
+          args: [ "-c",  "./startup.sh" ]
+          image: kinecosystem/marketplace-server-ittiel:$VERSION
+          name: marketplace-$SERVER_ROLE
+          ports:
+          - containerPort: 3000
+          env:
+            - name: ENVIRONMENT
+              # i.e "/CI/marketplace-public/"
+              value: $ENVIRONMENT
+            - name: SERVER_ROLE
+              value: $SERVER_ROLE

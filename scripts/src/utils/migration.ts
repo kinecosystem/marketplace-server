@@ -12,13 +12,16 @@ let BLOCKCHAIN: BlockchainConfig;
 let BLOCKCHAIN3: BlockchainConfig;
 const ALREADY_MIGRATED_ERROR = 4002;
 
-type WalletResponse = {
+export type WalletResponse = {
 	balances: Array<{
 		balance: string,
 		asset_type: "credit_alphanum4" | "native",
 		asset_code?: string,
 		asset_issuer?: string
-	}>
+	}>;
+	signers: Array<{
+		weight: number;
+	}>;
 };
 
 export async function init() {

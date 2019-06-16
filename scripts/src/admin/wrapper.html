@@ -1,15 +1,28 @@
 <html>
-	<head>
-		<title>Marketplace Admin</title>
-		<style>
+<head>
+	<title>Marketplace Admin</title>
+	<style>
 		body {
 			font-family: Arial;
 			background: #ffffff;
 		}
-		td { vertical-align: bottom; }
-		tr:nth-child(even) { background: #FFFFFF; }
-		tr:nth-child(odd) { background: #FFEEEE; }
-		img { height: 50px; }
+
+		td {
+			vertical-align: bottom;
+		}
+
+		tr:nth-child(even) {
+			background: #FFFFFF;
+		}
+
+		tr:nth-child(odd) {
+			background: #FFEEEE;
+		}
+
+		img {
+			height: 50px;
+		}
+
 		pre {
 			font-family: "Courier New";
 			background: #eeeeee;
@@ -17,31 +30,39 @@
 			width: 250px;
 			overflow: scroll;
 		}
+
 		.alert {
 			color: red;
 		}
+
 		.wide {
 			width: 1250px;
 		}
+
 		.status_completed a {
 			color: green;
 			font-weight: bold;
 		}
+
 		.status_failed a {
 			color: red;
 			font-weight: bold;
 		}
+
 		.status_pending a {
 			color: yellow;
 			font-weight: bold;
 		}
+
 		.status_opened a {
 			color: purple;
 			font-weight: bold;
 		}
+
 		input {
 			width: 70px;
 		}
+
 		#footer {
 			height: 70px;
 			width: 100%;
@@ -90,10 +111,11 @@
 			left: 0;
 			right: 0;
 			bottom: 0;
-			background-color: rgba(0,0,0,0.5);
+			background-color: rgba(0, 0, 0, 0.5);
 			z-index: 2;
 			cursor: pointer;
 		}
+
 		.overlay-content {
 			position: absolute;
 			width: 80%;
@@ -103,61 +125,96 @@
 			padding: 2%;
 			color: black;
 			background-color: white;
-			-ms-transform: translate(-50%,-50%);
-			transform: translate(-50%,-50%);
+			-ms-transform: translate(-50%, -50%);
+			transform: translate(-50%, -50%);
 		}
 
 		.overlay-content div {
 			margin: 5px;
 		}
 
-		.overlay-content .text{
+		.overlay-content .text {
 			flex: 4 1 auto;
 			overflow-y: scroll;
 			font-size: 15px;
 			max-height: 99%;
 			padding-right: 5px;
 		}
+
 		.overlay-content .controls {
 			flex: 1 1 auto;
 			text-align: center;
 		}
+
 		.overlay-content .preview {
 			flex: 2 1 auto;
-			}
-		.overlay-content .preview iframe{
+		}
+
+		.overlay-content .preview iframe {
 			height: 100%;
 			width: 100%;
 		}
+
 		#toast.show {
 			visibility: visible;
 			-webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
 			animation: fadein 0.5s, fadeout 0.5s 2.5s;
 		}
 
-		.offer-row .offer-id a{
+		.offer-row .offer-id a {
 			cursor: hand;
 			color: blue;
 			text-decoration: underline;
 		}
+
 		@-webkit-keyframes fadein {
-			from {bottom: 0; opacity: 0;}
-			to {bottom: 30px; opacity: 1;}
-		}
-		@keyframes fadein {
-			from {bottom: 0; opacity: 0;}
-			to {bottom: 30px; opacity: 1;}
-		}
-		@-webkit-keyframes fadeout {
-			from {bottom: 30px; opacity: 1;}
-			to {bottom: 0; opacity: 0;}
-		}
-		@keyframes fadeout {
-			from {bottom: 30px; opacity: 1;}
-			to {bottom: 0; opacity: 0;}
+			from {
+				bottom: 0;
+				opacity: 0;
+			}
+			to {
+				bottom: 30px;
+				opacity: 1;
+			}
 		}
 
-		td[onclick] div.jsoneditor-tree div.jsoneditor-tree-inner { padding-bottom: 0; }
+		@keyframes fadein {
+			from {
+				bottom: 0;
+				opacity: 0;
+			}
+			to {
+				bottom: 30px;
+				opacity: 1;
+			}
+		}
+
+		@-webkit-keyframes fadeout {
+			from {
+				bottom: 30px;
+				opacity: 1;
+			}
+			to {
+				bottom: 0;
+				opacity: 0;
+			}
+		}
+
+		@keyframes fadeout {
+			from {
+				bottom: 30px;
+				opacity: 1;
+			}
+			to {
+				bottom: 0;
+				opacity: 0;
+			}
+		}
+
+		td[onclick] div.jsoneditor-tree div.jsoneditor-tree-inner {
+			padding-bottom: 0;
+		}
+
 		button.editor-btn {
 			-webkit-appearance: none;
 			border: none;
@@ -167,221 +224,269 @@
 			color: white;
 			font-size: 1.2rem;
 		}
+
 		button.editor-btn:last-child {
 			border-left: 1px solid;
 		}
 
-        .add-migration-user {
-          cursor: pointer;
-          color: blue;
-          text-decoration: underline;
-        }
-        .kin2-wallet {
-          background: #bbf;
-        }
-        .kin3-wallet {
-          background: #bfb;
-        }
-		</style>
-		<link href="https://cdn.kinmarketplace.com/admin/jsoneditor.min.css" rel="stylesheet" type="text/css">
-	</head>
-	<body>
+		.add-migration-user {
+			cursor: pointer;
+			color: blue;
+			text-decoration: underline;
+		}
 
-		<h1><a href="/">Marketplace Admin</a></h1>
-		<div id="toast">MSG TOAST</div>
-		<div class="overlay"">
-			<div class="overlay-content flex-row-container">
-				<div class="text" class="wide"></div>
-				<div class="controls">
-					<button class="preview-btn btn">Refresh Preview</button>
-					<br />
-					<button class="publish-btn btn">Publish</button>
-					<br />
-					<button class="btn" onclick="overlayOff()">Close</button>
-				</div>
-				<div class="preview"><iframe></iframe></div>
-			</div>
-		</div>
-		<div id="content">${ content }</div>
-		<div id="footer"></div>
+		.kin2-wallet {
+			background: #bbf;
+		}
 
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js" async></script>
-		<script src="https://cdn.kinmarketplace.com/admin/jsoneditor.min.js" async></script>
+		.kin3-wallet {
+			background: #bfb;
+		}
+	</style>
+	<link href="https://cdn.kinmarketplace.com/admin/jsoneditor.min.css" rel="stylesheet" type="text/css">
+</head>
+<body>
 
-		<script>
-			let overlayElement;
-			let overlayTextElement;
-			let toastElemnt;
-			let previewElemnt;
-			let previewBtnElemnt;
-			let publishBtnElemnt;
-			var overlayJsonEditor;
+<h1><a href="/">Marketplace Admin</a></h1>
+<div id="toast">MSG TOAST</div>
+<div class="overlay"
+">
+<div class="overlay-content flex-row-container">
+	<div class="text" class="wide"></div>
+	<div class="controls">
+		<button class="preview-btn btn">Refresh Preview</button>
+		<br/>
+		<button class="publish-btn btn">Publish</button>
+		<br/>
+		<button class="btn" onclick="overlayOff()">Close</button>
+	</div>
+	<div class="preview">
+		<iframe></iframe>
+	</div>
+</div>
+</div>
+<div id="content">${ content }</div>
+<div id="footer"></div>
 
-			document.addEventListener("DOMContentLoaded", function() {
-				overlayElement = document.querySelector(".overlay");
-				overlayTextElement = document.querySelector(".overlay .text");
-				previewBtnElemnt = document.querySelector(".overlay .preview-btn");
-				previewElemnt = document.querySelector(".overlay .preview iframe");
-				publishBtnElemnt = document.querySelector(".overlay .publish-btn");
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js" async></script>
+<script src="https://cdn.kinmarketplace.com/admin/jsoneditor.min.js" async></script>
 
-				toastElemnt = document.querySelector("#toast");
-				previewBtnElemnt.addEventListener("click", refreshPreviewBtnHandler)
-				publishBtnElemnt.addEventListener("click", publishBtnHandler)
-			});
+<script>
+	let overlayElement;
+	let overlayTextElement;
+	let toastElemnt;
+	let previewElemnt;
+	let previewBtnElemnt;
+	let publishBtnElemnt;
+	var overlayJsonEditor;
 
-			function toast(msg) {
-				toastElemnt.innerText = msg;
-				toastElemnt.className = "show";
-				setTimeout(function(){ toastElemnt.className = toastElemnt.className.replace("show", ""); }, 3000);
+	document.addEventListener("DOMContentLoaded", function () {
+		overlayElement = document.querySelector(".overlay");
+		overlayTextElement = document.querySelector(".overlay .text");
+		previewBtnElemnt = document.querySelector(".overlay .preview-btn");
+		previewElemnt = document.querySelector(".overlay .preview iframe");
+		publishBtnElemnt = document.querySelector(".overlay .publish-btn");
+
+		toastElemnt = document.querySelector("#toast");
+		previewBtnElemnt.addEventListener("click", refreshPreviewBtnHandler);
+		publishBtnElemnt.addEventListener("click", publishBtnHandler);
+
+		document.querySelectorAll(".kin2-wallet").forEach(element => previewBalance(element));
+		document.querySelectorAll(".kin3-wallet").forEach(element => previewBalance(element));
+	});
+
+	function previewBalance(element) {
+		function showBalance(walletAddress) {
+			axios.get(`/migration/wallets/${walletAddress}/status`)
+			.then(res => toast(`kin2: ${res.data.kin2} (${res.data.burned ? "burned": "not burned"}), kin3: ${res.data.kin3}`))
+			.catch(err => alert("error: " + JSON.stringify(err)));
+		}
+
+		const walletAddress = element.querySelector("a").innerText;
+		element.addEventListener("mouseover", () => showBalance(walletAddress));
+	}
+	function toast(msg) {
+		toastElemnt.innerText = msg;
+		toastElemnt.className = "show";
+		setTimeout(function () {
+			toastElemnt.className = toastElemnt.className.replace("show", "");
+		}, 3000);
+	}
+
+	function submitData(url, data) {
+		axios.post(url, data)
+		.then(res => toast("ok"))
+		.catch(err => alert("error: " + JSON.stringify(err)));
+	}
+
+	function addToMigration(userId) {
+		submitData('/migration/users', {user_id: userId});
+		document.querySelector(`#migration-list-status-${userId}`).innerText = "Migration: In List";
+	}
+
+	function overlayOn(text, offerId) {
+		var jsonEditorOptions = {
+			mode: 'form',
+			modes: ['view', 'form', 'tree', 'code']
+
+		};
+		overlayElement.style.display = "block";
+		overlayElement.dataset.offerId = offerId;
+
+		overlayJsonEditor = new JSONEditor(overlayTextElement, jsonEditorOptions, JSON.parse(unescape(text), null, 2));
+		overlayJsonEditor.expandAll();
+	}
+
+	function overlayOff() {
+		overlayElement.style.display = "none";
+		overlayTextElement.textContent = "";
+		previewElemnt.src = "";
+	}
+
+	function stringifyJson(json) {
+		// This isn't really needed because the JSON editor escapes and protects but just to be on the safe side
+		try {
+			jsonData = JSON.stringify(json);
+			return jsonData;
+		} catch {
+			toast("Invaid JSON");
+			return false;
+		}
+	}
+
+	function editAppConfigs(json, appId) {
+		console.log(json)
+		var jsonEditorOptions = {
+			mode: 'form',
+			modes: ['view', 'form', 'tree', 'code']
+
+		};
+		overlayElement.style.display = "block";
+		overlayElement.dataset.appId = appId;
+
+		overlayJsonEditor = new JSONEditor(overlayTextElement, jsonEditorOptions, JSON.parse(unescape(json)));
+		overlayJsonEditor.expandAll();
+	}
+
+
+	function publishBtnHandler() {
+		const json = stringifyJson(overlayJsonEditor.get());
+		if (!json) {
+			return;
+		}
+		var data = {
+			content: json,
+		};
+		submitData("/offers/" + overlayElement.dataset.offerId, data);
+	}
+
+	function refreshPreviewBtnHandler() {
+		refreshPreview(overlayJsonEditor.get());
+	}
+
+	function refreshPreview(json) {
+		let jsonData = stringifyJson(json);
+		if (!jsonData) {
+			return;
+		}
+		previewElemnt.src = "${ webview }?cacheBuster=${ now }&jsonData=" + encodeURIComponent(jsonData);
+	}
+
+	function openEditor(jsonArea, appId) {
+		if (jsonArea.querySelector('.jsoneditor')) {
+			return false;
+		}
+		jsonArea.dataset.appId = appId;
+		jsonArea.querySelector('pre').hidden = true;
+
+		const editor = new JSONEditor(
+			jsonArea,
+			{
+				mode: 'form',
+				modes: ['view', 'form', 'tree', 'code']
+			},
+			JSON.parse(unescape(jsonArea.querySelector('pre').textContent))
+		);
+		editor.expandAll();
+		toast('Ctrl+Enter updates the config, Esc closes the editor');
+
+		jsonArea.querySelector('.jsoneditor').tabindex = 1;
+		jsonArea.querySelector('.jsoneditor').focus();
+		setTimeout(() => {
+			jsonArea.querySelector('.jsoneditor').addEventListener('keyup', e => {
+				attachEditorKeyboardEvents(editor, e)
+			})
+		}, 0)
+
+		const submitBtn = document.createElement('button')
+		submitBtn.textContent = 'Save ✓'
+		submitBtn.classList.add('editor-btn')
+		jsonArea.append(submitBtn)
+		submitBtn.addEventListener('click', e => {
+			e.stopPropagation();
+			updateConfig(editor);
+		})
+
+		const closeBtn = document.createElement('button')
+		closeBtn.textContent = '✖'
+		closeBtn.classList.add('editor-btn')
+		closeBtn.addEventListener('click', e => {
+			e.stopPropagation();
+			closeEditor(editor);
+		})
+		jsonArea.append(closeBtn)
+	}
+
+	async function updateConfig(editor) {
+		let json;
+		const appId = editor.frame.parentNode.dataset.appId;
+		try {
+			json = editor.get();
+			const isLimitsNumbers = (obj, limitName) => typeof obj.limits[limitName] === 'number';
+			if (!json.limits || !Object.keys(json.limits).every(isLimitsNumbers.bind(null, json))) {
+				toast('Invalid app limits format')
+				return false;
 			}
-			function submitData(url, data) {
-				axios.post(url, data)
-					.then(res => toast("ok"))
-					.catch(err => alert("error: " + JSON.stringify(err)));
-			}
-			function overlayOn(text, offerId) {
-				var jsonEditorOptions = {
-					mode: 'form',
-					modes: ['view', 'form', 'tree', 'code']
 
-				};
-				overlayElement.style.display = "block";
-				overlayElement.dataset.offerId = offerId;
-
-				overlayJsonEditor = new JSONEditor(overlayTextElement, jsonEditorOptions, JSON.parse(unescape(text), null,  2));
-				overlayJsonEditor.expandAll();
+			const response = await fetch(`/applications/${appId}/config`, {
+				method: 'PUT',
+				body: JSON.stringify(json),
+				headers: new Headers({'Content-Type': 'application/json'})
+			})
+			if (response.ok) {
+				closeEditor(editor)
+			} else {
+				toast('Config is incorrect (rejected by server)')
 			}
-			function overlayOff() {
-				overlayElement.style.display = "none";
-				overlayTextElement.textContent = "";
-				previewElemnt.src = "";
-			}
+		} catch (e) {
+			toast('smth is wrong');
+		}
+	}
 
-			function stringifyJson(json){
-				// This isn't really needed because the JSON editor escapes and protects but just to be on the safe side
-				try {
-					jsonData = JSON.stringify(json);
-					return jsonData;
-				} catch {
-					toast("Invaid JSON");
-					return false;
+	function closeEditor(editor) {
+		const jsonArea = editor.frame.parentNode;
+		const configJson = JSON.stringify(editor.get(), null, 2);
+		editor.destroy();
+		Array.from(jsonArea.querySelectorAll('.editor-btn')).forEach(btn => {
+			btn.remove();
+		})
+		jsonArea.querySelector('pre').textContent = configJson;
+		jsonArea.querySelector('pre').removeAttribute('hidden')
+	}
+
+	function attachEditorKeyboardEvents(editor, e) {
+		switch (e.keyCode) {
+			case 13:
+				if (e.ctrlKey) {
+					updateConfig(editor)
 				}
-			}
-
-			function editAppConfigs(json, appId) {
-				console.log(json)
-				var jsonEditorOptions = {
-					mode: 'form',
-					modes: ['view', 'form', 'tree', 'code']
-
-				};
-				overlayElement.style.display = "block";
-				overlayElement.dataset.appId = appId;
-
-				overlayJsonEditor = new JSONEditor(overlayTextElement, jsonEditorOptions, JSON.parse(unescape(json)));
-				overlayJsonEditor.expandAll();
-			}
-
-
-			function publishBtnHandler(){
-				const json = stringifyJson(overlayJsonEditor.get());
-				if (!json){
-					return;
-				}
-				var data = {
-					content: json,
-				};
-				submitData("/offers/" + overlayElement.dataset.offerId, data);
-			}
-
-			function refreshPreviewBtnHandler (){
-				refreshPreview(overlayJsonEditor.get());
-			}
-			function refreshPreview(json){
-				let jsonData = stringifyJson(json);
-				if (!jsonData){
-					return;
-				}
-				previewElemnt.src = "${ webview }?cacheBuster=${ now }&jsonData=" + encodeURIComponent(jsonData);
-			}
-
-			function openEditor(jsonArea, appId) {
-				if (jsonArea.querySelector('.jsoneditor')) { return false; }
-				jsonArea.dataset.appId = appId;
-				jsonArea.querySelector('pre').hidden = true;
-
-				const editor = new JSONEditor(
-					jsonArea,
-					{
-						mode: 'form',
-						modes: ['view', 'form', 'tree', 'code']
-					},
-					JSON.parse(unescape(jsonArea.querySelector('pre').textContent))
-				);
-				editor.expandAll();
-				toast('Ctrl+Enter updates the config, Esc closes the editor');
-
-				jsonArea.querySelector('.jsoneditor').tabindex = 1;
-				jsonArea.querySelector('.jsoneditor').focus();
-				setTimeout(() => {
-					jsonArea.querySelector('.jsoneditor').addEventListener('keyup', e => { attachEditorKeyboardEvents(editor, e) })
-				}, 0)
-
-				const submitBtn = document.createElement('button')
-				submitBtn.textContent = 'Save ✓'
-				submitBtn.classList.add('editor-btn')
-				jsonArea.append(submitBtn)
-				submitBtn.addEventListener('click', e => { e.stopPropagation(); updateConfig(editor); })
-
-				const closeBtn = document.createElement('button')
-				closeBtn.textContent = '✖'
-				closeBtn.classList.add('editor-btn')
-				closeBtn.addEventListener('click', e => { e.stopPropagation(); closeEditor(editor); })
-				jsonArea.append(closeBtn)
-			}
-
-			async function updateConfig(editor) {
-				let json;
-				const appId = editor.frame.parentNode.dataset.appId;
-				try {
-					json = editor.get();
-					const isLimitsNumbers = (obj, limitName) => typeof obj.limits[limitName] === 'number';
-					if (!json.limits || !Object.keys(json.limits).every(isLimitsNumbers.bind(null, json))) {
-						toast('Invalid app limits format')
-						return false;
-					}
-
-					const response = await fetch(`/applications/${appId}/config`, {
-						method: 'PUT',
-						body: JSON.stringify(json),
-						headers: new Headers({'Content-Type': 'application/json'})
-					})
-					if (response.ok) {
-						closeEditor(editor)
-					} else {
-						toast('Config is incorrect (rejected by server)')
-					}
-				} catch (e) {
-					toast('smth is wrong');
-				}
-			}
-
-			function closeEditor(editor) {
-				const jsonArea = editor.frame.parentNode;
-				const configJson = JSON.stringify(editor.get(), null, 2);
-				editor.destroy();
-				Array.from(jsonArea.querySelectorAll('.editor-btn')).forEach(btn => { btn.remove(); })
-				jsonArea.querySelector('pre').textContent = configJson;
-				jsonArea.querySelector('pre').removeAttribute('hidden')
-			}
-
-			function attachEditorKeyboardEvents(editor, e) {
-				switch (e.keyCode) {
-					case 13: if (e.ctrlKey) { updateConfig(editor) } break;
-					case 27: closeEditor(editor); break;
-				}
-			}
-	</script>
-	</body>
+				break;
+			case 27:
+				closeEditor(editor);
+				break;
+		}
+	}
+</script>
+</body>
 
 </html>

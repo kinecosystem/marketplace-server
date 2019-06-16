@@ -14,7 +14,7 @@ import {
 	getApplicationOffers,
 	getApplications,
 	getApplicationUserData,
-	getApplicationUsers,
+	getApplicationUsers, getMigrationStatus,
 	getOffer,
 	getOffers,
 	getOrder,
@@ -91,6 +91,8 @@ export function createRoutes(app: Express, pathPrefix?: string) {
 
 		.put("/applications/:application_id/config", updateAppConfig)
 		.post("/migration/users", jsonResponse(addMigrationUser))
+		.get("/migration/wallets/:wallet_address/status", jsonResponse(getMigrationStatus))
+
 	;
 
 	app.use("", router);

@@ -3,10 +3,10 @@ import "express-async-errors";  // handle async/await errors in middleware
 
 import { getConfig } from "./config";
 import { initLogger } from "../logging";
+import { init as initMigration } from "./migration";
 
 const config = getConfig();
 const logger = initLogger(...config.loggers!);
-
 import { createRoutes } from "./routes";
 import { init as initModels } from "../models/index";
 import { notFoundHandler, generalErrorHandler } from "../middleware";
@@ -32,7 +32,12 @@ app.use(notFoundHandler);
 // catch errors
 app.use(generalErrorHandler);
 
+async function init() {
+	await initMigration();
+	await initModels();
+}
+
 // initializing db and models
-initModels().then(msg => {
-	logger.info("init db");
+init().then(msg => {
+	logger.info("init admin");
 });

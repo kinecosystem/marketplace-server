@@ -8,6 +8,7 @@ import { IdPrefix, isNothing } from "../utils/utils";
 import * as payment from "../public/services/payment";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getOffers as getUserOffersService } from "../public/services/offers";
+import { getKin2Balance, isBurned, getKin3Balance } from "./migration";
 
 let BLOCKCHAIN: BlockchainConfig;
 let BLOCKCHAIN3: BlockchainConfig;
@@ -180,12 +181,13 @@ async function userToHtml(user: User): Promise<string> {
 		}).join("<br/>");
 
 	const inMigrationList = !!(await GradualMigrationUser.findOneById(user.id));
+	const addToMigration = `<a class="add-migration-user" onclick="addToMigration('${ user.id }')">add to gradual migration list</a>`;
 	return `
 <ul>
 	<li>ecosystem id: <a href="/users/${ user.id }">${ user.id }</a></li>
 	<li>appId: ${ user.appId }</li>
 	<li>appUserId: ${ user.appUserId }</li>
-	<li>Migration: ${ inMigrationList ? "In List" : "NOT in list" } <a class="add-migration-user" onclick="submitData('/migration/users', { user_id: '${ user.id }'})">add to gradual migration list</a></li>
+	<li id="migration-list-status-${ user.id }">Migration: ${ inMigrationList ? "In List" : addToMigration }</li>
 	<li>wallets:<br/>${ accounts }</li>
 	<li>created: ${ user.createdDate }</li>
 	<li><a href="/orders?user_id=${ user.id }">orders</a></li>
@@ -423,6 +425,15 @@ export async function fuzzySearch(params: { some_id: string }, query: any): Prom
 		default:
 			return "unknown";
 	}
+}
+
+export async function getMigrationStatus(body: any, params: { wallet_address: string }, query: any): Promise<any> {
+	const [burned, kin2, kin3] = await Promise.all([
+		isBurned(params.wallet_address),
+		getKin2Balance(params.wallet_address),
+		getKin3Balance(params.wallet_address)]);
+
+	return { burned, kin2, kin3 };
 }
 
 export async function getWallet(params: { wallet_address: string }, query: any): Promise<string> {

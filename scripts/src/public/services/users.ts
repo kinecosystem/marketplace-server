@@ -308,7 +308,7 @@ async function createUserProfileObject(user: User, deviceId: string): Promise<Us
 		}
 	}
 
-	const wallet = (await user.getWallets(deviceId)).lastUsed();
+	const wallet = (await user.getWallets(deviceId)).lastUsed() || (await user.getWallets()).lastUsed();
 
 	return {
 		stats,

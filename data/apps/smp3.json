@@ -20,7 +20,7 @@
 			"hourly_total_earn": 5000000,
 			"minute_total_earn": 85000,
 			"daily_user_earn": 5000
-		},
+		}
 	},
 	"app_id": "smp3",
 	"name": "Sample App KIN3"

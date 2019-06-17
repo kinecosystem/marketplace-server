@@ -38,12 +38,17 @@ pipeline {
         stage('Unit Test') {
             steps {
                 echo 'Unit testing'
-                echo 'Todo: place holder for unit tests'
+                sh '''
+                    npm run transpile
+	                npm test
+                '''
             }
         }
         stage ('Code Quality'){
             steps {
-                echo 'Todo: placeholder for codecov/sonarcube'
+                echo "Running codecov"
+                //todo: consider using sonarcube instead
+                sh './node_modules/codecov/bin/codecov'
                 echo 'Todo: Quality and security plugins (FindBugs, CheckMarx, etc.)'
             }
         }
@@ -71,11 +76,10 @@ pipeline {
                 ]) {
                     sh '''
                         #create namespace if doesn't exists
-                    cat namespace.yaml | sed 's/\__ENVIRONMENT'"/${Environment}/g"  |kubectl apply -f - || true
+                    cat k8s/namespace.yaml | sed 's/__ENVIRONMENT'"/${Environment}/g"  |kubectl apply -f - || true
                         #add new version (in addition to the existing version
-                        SED_ARGS="s/\__ENVIRONMENT/${Environment}/g; s/\__SERVER_ROLE/${ROLE}/g; s/\__VERSION/${Version}/g; s/\__REPLICAS/${Num_of_instances}/g"
-                        echo "${SED_ARGS}"
-                        cat marketplace-public-deployment.yaml \
+                        SED_ARGS="s/__ENVIRONMENT/${Environment}/g; s/__SERVER_ROLE/${Role}/g; s/__VERSION/${Version}/g; s/__REPLICAS/${Num_of_instances}/g"
+                        cat k8s/marketplace-public-deployment.yaml \
                           | sed  "${SED_ARGS}" \
                           | kubectl apply  -f -
                      '''

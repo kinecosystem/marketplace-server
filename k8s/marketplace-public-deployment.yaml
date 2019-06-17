@@ -2,11 +2,11 @@
 #Run example, including placeholder substitution:
 #  cat marketplace-public-deployment.yaml \
 #  | sed  " \
-#  s/\__ENVIRONMENT/ci/; \
-#  s/\__SERVER_ROLE/public/; \
-#  s/\__DEBUG/False/" \
-#  s/\__REPLICAS/2/" \
-#  s/\__VERSION/latest/" \
+#  s/__ENVIRONMENT/ci/; \
+#  s/__SERVER_ROLE/public/; \
+#  s/__DEBUG/False/" \
+#  s/__REPLICAS/2/" \
+#  s/__VERSION/latest/" \
 #  | kubectl apply  -f -
 
 #TODO: add resources (CPU/Memory) limitations
@@ -36,7 +36,7 @@ spec:
       restartPolicy: Always
       containers:
         - command:  ["/bin/sh"]
-          args: [ "-c",  "./startup.sh" ]
+          args: [ "-c",  "./config/startup.sh" ]
           image: kinecosystem/marketplace-server-ittiel:__VERSION
           name: marketplace-__SERVER_ROLE
           ports:

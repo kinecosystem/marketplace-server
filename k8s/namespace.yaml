@@ -1,5 +1,5 @@
 #Run example, including placeholder substitution:
-#cat namespace.yaml | sed 's/\__ENVIRONMENT'"/ci/g"  |kubectl apply -f -
+#cat namespace.yaml | sed 's/__ENVIRONMENT'"/ci/g"  |kubectl apply -f -
 apiVersion: v1
 kind: Namespace
 metadata:

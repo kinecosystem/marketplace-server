@@ -32,7 +32,7 @@ ENV BUILD_TIMESTAMP $BUILD_TIMESTAMP
 EXPOSE 80
 HEALTHCHECK --interval=1m --timeout=5s --retries=3 CMD wget localhost/status -q -O - > /dev/null 2>&1
 
-RUN chmod 775 startup.sh
+RUN chmod 775 ./config/*.sh
 #get ssm paramaeter as environment variable
 # run the api server
 #CMD ["/bin/sh", "-c",   "./startup.sh" ]

@@ -1,5 +1,5 @@
 #Run example, including placeholder substitution:
-#cat marketplace-public-service.yaml | sed 's/\$ENVIRONMENT'"/ci/g"  |kubectl apply -f -
+#cat marketplace-public-service.yaml | sed 's/__ENVIRONMENT'"/ci/g"  |kubectl apply -f -
 #TODO: support variables: $SERVER_ROLE, PORT
 #TODO support labels?
 #TODO: replace load balancer with Ingress
@@ -8,7 +8,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: marketplace-public
-  namespace: $ENVIRONMENT
+  namespace: __ENVIRONMENT
   labels:
     app: marketplace-public
     name: marketplace-public

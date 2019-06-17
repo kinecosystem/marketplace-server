@@ -5,14 +5,13 @@
 #  s/__ENVIRONMENT/ci/; \
 #  s/__SERVER_ROLE/public/; \
 #  s/__DEBUG/False/" \
-#  s/__REPLICAS/2/" \
+#  s/__REPLICAS/1/" \
 #  s/__VERSION/latest/" \
 #  | kubectl apply  -f -
 
 #TODO: add resources (CPU/Memory) limitations
-
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 
 metadata:
   annotations:
@@ -22,10 +21,7 @@ metadata:
   name: marketplace-test-__SERVER_ROLE
   namespace: __ENVIRONMENT
 spec:
-  replicas: __REPLICAS
-  selector:
-    matchLabels:
-      app: marketplace-test__SERVER_ROLE
+
   template:
     metadata:
       labels:
@@ -33,10 +29,10 @@ spec:
         name: marketplace-test__SERVER_ROLE
         version: "__VERSION"
     spec:
-      restartPolicy: Always
+      restartPolicy: "Never"
       containers:
         - command:  ["/bin/sh"]
-          args: [ "-c",  "./startup.sh" ]
+          args: [ "-c",  "./config/test.sh" ]
           image: kinecosystem/marketplace-server-ittiel:__VERSION
           name: marketplace-__SERVER_ROLE
           ports:

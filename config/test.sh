@@ -9,7 +9,6 @@
 
 
 REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | awk -F\" '{print $4}')
-PARAMETERS=`aws ssm --region ${REGION} get-parameters-by-path --path /${ENVIRONMENT}/marketplace/ --with-decryption --recursive`
 
 
 if [ ${DEBUG} == "True" ]; then

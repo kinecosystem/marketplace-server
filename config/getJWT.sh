@@ -7,6 +7,9 @@
 #todo: replace with get-parameters-by-path
 #todo: consider replacing the SSM keys
 
+REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | awk -F\" '{print $4}')
+
+
 #Get private keys
 PUBLIC_FLAG=
 DIR=jwt/private_keys

@@ -25,5 +25,7 @@ fi
 . ./getJWT.sh
 
 
-echo "Starting: npm run start-marketplace-${SERVER_ROLE}"
-npm run start-marketplace-${SERVER_ROLE}
+echo "Starting: npm tests"
+
+npm run transpile
+npm test

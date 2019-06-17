@@ -1,9 +1,13 @@
 pipeline {
     agent any
     environment {
-        STELLAR_ADDRESS = '$(aws ssm get-parameter --region eu-west-1 --name /CI/Jenkins/STELLAR_ADDRESS | jq -r ".Parameter.Value")'
-        STELLAR_BASE_SEED = '$(aws ssm get-parameter --region eu-west-1 --name /CI/Jenkins/STELLAR_BASE_SEED | jq -r ".Parameter.Value")'
-        CLUSTER_URL = '$(aws ssm get-parameter --region eu-west-1 --name /CI/Jenkins/CLUSTER_URL | jq -r ".Parameter.Value")'
+
+        //Get AWS region
+        //Assume Jenkins is running on the same region as the cluster
+        REGION =  sh(script:'curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region', returnStdout: true)
+        STELLAR_ADDRESS = '$(aws ssm get-parameter --region $REGION --name /${Environment}/jenkins/STELLAR_ADDRESS | jq -r ".Parameter.Value")'
+        STELLAR_BASE_SEED = '$(aws ssm get-parameter --region $REGION --name /${Environment}/jenkins/STELLAR_BASE_SEED | jq -r ".Parameter.Value")'
+        CLUSTER_URL = '$(aws ssm get-parameter --region $REGION --name /${Environment}/jenkins/CLUSTER_URL | jq -r ".Parameter.Value")'
 
     }
 
@@ -24,6 +28,7 @@ pipeline {
                 sh "mkdir -p ./secrets/ && echo export STELLAR_BASE_SEED=$STELLAR_BASE_SEED STELLAR_ADDRESS=$STELLAR_ADDRESS > ./secrets/.secrets"
             }
         }
+        // todo: only for tests?
         stage('Create-jwt-keys') {
             steps {
                 echo 'Compiling'
@@ -51,6 +56,7 @@ pipeline {
         stage('Deploy to env') {
             steps {
                 // get k8s environment
+
                 script {
                     env['K8S_CLUSTER_URL'] = sh (
                             script: "echo $CLUSTER_URL",
@@ -65,10 +71,14 @@ pipeline {
                 ]) {
                     sh '''
                         #create namespace if doesn't exists
-                        cat namespace.yaml | sed 's/\$ENVIRONMENT'"/ci/g"  |kubectl apply -f - || true
-                        #remove
-                        cat marketplace-public-deployment.yaml | sed  "s/\$ENVIRONMENT/CI/;s/\$SSM_PATH/\/CI\/marketplace\// ;s/\$VERSION/latest/" | kubectl apply  -f -
-                    '''
+                    cat namespace.yaml | sed 's/\__ENVIRONMENT'"/${Environment}/g"  |kubectl apply -f - || true
+                        #add new version (in addition to the existing version
+                        SED_ARGS="s/\__ENVIRONMENT/${Environment}/g; s/\__SERVER_ROLE/${ROLE}/g; s/\__VERSION/${Version}/g; s/\__REPLICAS/${Num_of_instances}/g"
+                        echo "${SED_ARGS}"
+                        cat marketplace-public-deployment.yaml \
+                          | sed  "${SED_ARGS}" \
+                          | kubectl apply  -f -
+                     '''
                     }
 
             }

@@ -2,11 +2,11 @@
 #Run example, including placeholder substitution:
 #  cat marketplace-public-deployment.yaml \
 #  | sed  " \
-#  s/\$ENVIRONMENT/ci/; \
-#  s/\$SERVER_ROLE/public/; \
-#  s/\$DEBUG/False/" \
-#  s/\$REPLICAS/2/" \
-#  s/\$VERSION/latest/" \
+#  s/\__ENVIRONMENT/ci/; \
+#  s/\__SERVER_ROLE/public/; \
+#  s/\__DEBUG/False/" \
+#  s/\__REPLICAS/2/" \
+#  s/\__VERSION/latest/" \
 #  | kubectl apply  -f -
 
 #TODO: add resources (CPU/Memory) limitations
@@ -18,35 +18,35 @@ metadata:
   annotations:
         iam.amazonaws.com/role: ci-marketplace-service
   labels:
-    app: marketplace-$SERVER_ROLE
-  name: marketplace-$SERVER_ROLE
-  namespace: $ENVIRONMENT
+    app: marketplace-__SERVER_ROLE
+  name: marketplace-__SERVER_ROLE
+  namespace: __ENVIRONMENT
 spec:
-  replicas: $REPLICAS
+  replicas: __REPLICAS
   selector:
     matchLabels:
-      app: marketplace-$SERVER_ROLE
+      app: marketplace-__SERVER_ROLE
   template:
     metadata:
       labels:
-        app: marketplace-$SERVER_ROLE
-        name: marketplace-$SERVER_ROLE
-        version: "$VERSION"
+        app: marketplace-__SERVER_ROLE
+        name: marketplace-__SERVER_ROLE
+        version: "__VERSION"
     spec:
       restartPolicy: Always
       containers:
         - command:  ["/bin/sh"]
           args: [ "-c",  "./startup.sh" ]
-          image: kinecosystem/marketplace-server-ittiel:$VERSION
-          name: marketplace-$SERVER_ROLE
+          image: kinecosystem/marketplace-server-ittiel:__VERSION
+          name: marketplace-__SERVER_ROLE
           ports:
           - containerPort: 3000
           env:
             - name: ENVIRONMENT
               # i.e "/ci/marketplace-public/"
-              value: $ENVIRONMENT
+              value: __ENVIRONMENT
             - name: SERVER_ROLE
-              value: $SERVER_ROLE
+              value: __SERVER_ROLE
               # Debug startup script
             - name: DEBUG
-              value: $DEBUG
+              value: __DEBUG

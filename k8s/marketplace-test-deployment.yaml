@@ -5,7 +5,6 @@
 #  s/__ENVIRONMENT/ci/; \
 #  s/__SERVER_ROLE/public/; \
 #  s/__DEBUG/False/" \
-#  s/__REPLICAS/1/" \
 #  s/__VERSION/latest/" \
 #  | kubectl apply  -f -
 
@@ -21,7 +20,8 @@ metadata:
   name: marketplace-test-__SERVER_ROLE
   namespace: __ENVIRONMENT
 spec:
-
+  #time to save pod before cleanup
+  ttlSecondsAfterFinished: 3600
   template:
     metadata:
       labels:
@@ -29,10 +29,11 @@ spec:
         name: marketplace-test__SERVER_ROLE
         version: "__VERSION"
     spec:
-      restartPolicy: "Never"
+
+      restartPolicy: Never
       containers:
         - command:  ["/bin/sh"]
-          args: [ "-c",  "./config/test.sh" ]
+          args: [ "-c",  ". ./config/getKeys.sh ; ./config/getJWT.sh; npm run transpile; npm test" ]
           image: kinecosystem/marketplace-server-ittiel:__VERSION
           name: marketplace-__SERVER_ROLE
           ports:

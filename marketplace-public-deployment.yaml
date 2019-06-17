@@ -4,8 +4,9 @@
 #  | sed  " \
 #  s/\$ENVIRONMENT/ci/; \
 #  s/\$SERVER_ROLE/public/; \
-#  s/\$VERSION/latest/" \
+#  s/\$DEBUG/False/" \
 #  s/\$REPLICAS/2/" \
+#  s/\$VERSION/latest/" \
 #  | kubectl apply  -f -
 
 #TODO: add resources (CPU/Memory) limitations
@@ -42,7 +43,10 @@ spec:
           - containerPort: 3000
           env:
             - name: ENVIRONMENT
-              # i.e "/CI/marketplace-public/"
+              # i.e "/ci/marketplace-public/"
               value: $ENVIRONMENT
             - name: SERVER_ROLE
               value: $SERVER_ROLE
+              # Debug startup script
+            - name: DEBUG
+              value: $DEBUG

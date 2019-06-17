@@ -17,6 +17,7 @@ pipeline {
             }
         }
         stage('Create secrets for tests') {
+        // todo: should be on the test docker only!
 
             steps {
                 echo 'Creating secrets for tests'
@@ -66,7 +67,7 @@ pipeline {
                         #create namespace if doesn't exists
                         cat namespace.yaml | sed 's/\$ENVIRONMENT'"/ci/g"  |kubectl apply -f - || true
                         #remove
-                        cat marketplace-public-deployment.yaml | sed  "s/\$ENVIRONMENT/ci/;s/\$SSM_PATH/\/CI\/marketplace\// ;s/\$VERSION/latest/" | kubectl apply  -f -
+                        cat marketplace-public-deployment.yaml | sed  "s/\$ENVIRONMENT/CI/;s/\$SSM_PATH/\/CI\/marketplace\// ;s/\$VERSION/latest/" | kubectl apply  -f -
                     '''
                     }
 

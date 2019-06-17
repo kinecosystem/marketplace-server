@@ -19,10 +19,10 @@ fi
 
 # Get all SSM params from path per region
 # Export key/values as environment variables
-. ./getKeys.sh
+. ./config/getKeys.sh
 
 #Get JWT public and private files from SSM
-. ./getJWT.sh
+. ./config/getJWT.sh
 
 
 echo "Starting: npm tests"

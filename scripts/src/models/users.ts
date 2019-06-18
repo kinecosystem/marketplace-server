@@ -15,6 +15,7 @@ import { generateId, IdPrefix, Mutable } from "../utils/utils";
 import { OrderContext } from "./orders";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
 import { BlockchainVersion } from "./offers";
+import { getRedisClient } from "../redis";
 
 @Entity({ name: "users" })
 @Register
@@ -239,14 +240,32 @@ export class WalletApplication extends BaseEntity {
 	public static async updateCreatedDate(walletAddress: string, blockchainVersion: BlockchainVersion) {
 		const createdDateField = blockchainVersion === "2" ? "createdDateKin2" : "createdDateKin3";
 		await WalletApplication.update({ walletAddress }, { [createdDateField]: new Date() });
+
+		const redis = getRedisClient().async;
+		const key = `wallet_app:${ walletAddress }`;
+		await redis.del(key);
 	}
 
 	public static async getBlockchainVersion(walletAddress: string): Promise<BlockchainVersion> {
-		const wallet = await WalletApplication.findOneById(walletAddress);
+		const wallet = await WalletApplication.get(walletAddress);
 		if (wallet && wallet.createdDateKin3) {
 			return "3";
 		}
 		return "2";
+	}
+
+	public static async get(walletAddress: string): Promise<WalletApplication | undefined> {
+		const redis = getRedisClient().async;
+		const key = `wallet_app:${ walletAddress }`;
+		const valStr = await redis.get(key);
+		let val = valStr ? JSON.parse(valStr) as WalletApplication : undefined;
+		if (!val) {
+			val = await WalletApplication.findOneById(walletAddress);
+			if (val) {
+				await redis.set(key, JSON.stringify(val));
+			}
+		}
+		return val;
 	}
 
 	@PrimaryColumn({ name: "wallet_address" })

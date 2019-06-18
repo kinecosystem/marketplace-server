@@ -128,7 +128,7 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 			logger().error(`no wallet found for ${ user.id }`);
 			return false;
 		}
-		const walletApplication = await WalletApplication.findOne({ walletAddress: wallet.address });
+		const walletApplication = await WalletApplication.get(wallet.address);
 		if (walletApplication && walletApplication.createdDateKin3) {
 			metrics.migrationTrigger(app.id, "wallet_on_kin3");
 			logger().info(`current wallet already on kin3 - should migrate ${ wallet.address } ${ user.id }`);

@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as crypto from "crypto";
 
 import { path } from "./path";
+import { getRedisClient, RedisAsyncClient } from "../redis";
 
 export type ServerError = Error & { syscall: string; code: string; };
 
@@ -201,7 +202,9 @@ export async function batch(list: any[], chunkSize: number, delay: number, chunk
 			const end = index + chunkSize;
 			if (end > list.length - 1) {  // last chunk
 				console.log("calling last chunkCb, index: %s, list.length: %s", index, list.length);
-				chunkCb(list.slice(index), index).then(() => { resolve(); });
+				chunkCb(list.slice(index), index).then(() => {
+					resolve();
+				});
 				return;
 			}
 			console.log("calling ChunkCb, index: %s, list.length: %s", index, list.length);
@@ -211,4 +214,30 @@ export async function batch(list: any[], chunkSize: number, delay: number, chunk
 		};
 		runner(0);
 	});
+}
+
+// cache a function that returns a promise
+// use keygen to calcualte the cache key
+// add a .clear method on the function to clear the cache.
+export function cached(cache: RedisAsyncClient, keygen: (...args: any[]) => string) {
+	return function(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+		const originalMethod = descriptor.value;
+		descriptor.value = async function() {
+			const cacheKey = keygen(...arguments);
+			const resultStr = await cache.async.get(cacheKey);
+			let result = resultStr ? JSON.parse(resultStr) : undefined;
+			if (!result) {
+				result = await originalMethod.apply(this, arguments);
+				if (result) {
+					await cache.async.set(cacheKey, JSON.stringify(result));
+				}
+			}
+			return result;
+		};
+		descriptor.value.clear = async function() {
+			const cacheKey = keygen(...arguments);
+			await cache.async.del(cacheKey);
+		};
+		return descriptor;
+	};
 }

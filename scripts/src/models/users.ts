@@ -10,7 +10,7 @@ import {
 	PrimaryColumn
 } from "typeorm";
 import { getDefaultLogger as logger } from "../logging";
-import { generateId, IdPrefix, Mutable } from "../utils/utils";
+import { cached, generateId, IdPrefix, Mutable } from "../utils/utils";
 
 import { OrderContext } from "./orders";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
@@ -240,10 +240,7 @@ export class WalletApplication extends BaseEntity {
 	public static async updateCreatedDate(walletAddress: string, blockchainVersion: BlockchainVersion) {
 		const createdDateField = blockchainVersion === "2" ? "createdDateKin2" : "createdDateKin3";
 		await WalletApplication.update({ walletAddress }, { [createdDateField]: new Date() });
-
-		const redis = getRedisClient().async;
-		const key = `wallet_app:${ walletAddress }`;
-		await redis.del(key);
+		(WalletApplication.get as any).clear(walletAddress);
 	}
 
 	public static async getBlockchainVersion(walletAddress: string): Promise<BlockchainVersion> {
@@ -254,18 +251,9 @@ export class WalletApplication extends BaseEntity {
 		return "2";
 	}
 
+	@cached(getRedisClient(), (walletAddress: string) => `wallet_app:${ walletAddress }`)
 	public static async get(walletAddress: string): Promise<WalletApplication | undefined> {
-		const redis = getRedisClient().async;
-		const key = `wallet_app:${ walletAddress }`;
-		const valStr = await redis.get(key);
-		let val = valStr ? JSON.parse(valStr) as WalletApplication : undefined;
-		if (!val) {
-			val = await WalletApplication.findOneById(walletAddress);
-			if (val) {
-				await redis.set(key, JSON.stringify(val));
-			}
-		}
-		return val;
+		return await WalletApplication.findOneById(walletAddress);
 	}
 
 	@PrimaryColumn({ name: "wallet_address" })

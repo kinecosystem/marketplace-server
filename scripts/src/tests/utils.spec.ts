@@ -2,7 +2,7 @@ import * as path from "path";
 import * as moment from "moment";
 
 import * as utils from "../utils/utils";
-import { delay } from "../utils/utils";
+import { cached, delay, generateId } from "../utils/utils";
 import { app as webApp } from "../public/app";
 
 import { path as _path } from "../utils/path";
@@ -14,11 +14,51 @@ import { MarketplaceError } from "../errors";
 import { close as closeModels, init as initModels } from "../models/index";
 import { assertRateLimitEarn, RateLimit } from "../utils/rate_limit";
 import { localCache } from "../utils/cache";
-import { AuthToken } from "../models/users";
+import { AuthToken, WalletApplication } from "../models/users";
 import mock = require("supertest");
 import { withinMigrationRateLimit } from "../utils/migration";
+import { getRedisClient } from "../redis";
 
 describe("util functions", () => {
+	test("cached decorator", async () => {
+		const redis = getRedisClient();
+
+		class TestMe {
+			@cached(redis, (a: number, b: number) => `key:${ a }:${ b }`)
+			public async foo(a: number, b: number): Promise<number> {
+				return a * b;
+			}
+
+			@cached(redis, (a: number, b: number) => `key:${ a }:${ b }`)
+			public async foo10(a: number, b: number): Promise<number> {
+				// return a different result than foo, but use same key
+				return a * b * 10;
+			}
+		}
+
+		const t = new TestMe();
+		expect(await t.foo(4, 5)).toEqual(4 * 5);
+		expect(await t.foo10(4, 5)).toEqual(4 * 5);
+		expect(await t.foo(4, 6)).toEqual(4 * 6);
+		expect(await t.foo10(4, 6)).toEqual(4 * 6);
+		await (t.foo as any).clear(4, 6);
+		expect(await t.foo10(4, 6)).toEqual(4 * 6 * 10);
+	});
+
+	test("cached decorator on walletApplication", async () => {
+		const walletAddress = generateId();
+		await WalletApplication.create({ walletAddress, appId: "someApp" }).save();
+		await WalletApplication.updateCreatedDate(walletAddress, "2");
+		let wallet = await WalletApplication.get(walletAddress);
+		expect(wallet!.createdDateKin2).toBeTruthy();
+		expect(wallet!.createdDateKin3).toBeFalsy();
+
+		await WalletApplication.updateCreatedDate(walletAddress, "3");
+		wallet = await WalletApplication.get(walletAddress);
+		expect(wallet!.createdDateKin3).toBeTruthy();
+
+	});
+
 	test("path should return absolute path in the project", () => {
 		expect(_path("my.file")).toEqual(path.resolve(__dirname, "../../../", "my.file"));
 	});
@@ -193,7 +233,7 @@ describe("util functions", () => {
 		expect(await withinMigrationRateLimit(app.id)).toBeTruthy();
 		expect(await withinMigrationRateLimit(app.id)).toBeTruthy();
 		expect(await withinMigrationRateLimit(app.id)).toBeFalsy();
-		});
+	});
 
 	test("rate limit user requests", async () => {
 		const limits: LimitConfig = {

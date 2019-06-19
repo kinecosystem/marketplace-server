@@ -1,7 +1,7 @@
 import { getDefaultLogger as logger } from "../logging";
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
-import { User, Wallet } from "../models/users";
+import { User } from "../models/users";
 import { pick, removeDuplicates } from "../utils/utils";
 import { Asset, OrderValue } from "../models/offers";
 import { WalletApplication } from "../models/users";
@@ -10,6 +10,7 @@ import { create as createSpendOrderPaymentConfirmed } from "../analytics/events/
 import { create as createStellarAccountCreationFailed } from "../analytics/events/stellar_account_creation_failed";
 import { create as createStellarAccountCreationSucceeded } from "../analytics/events/stellar_account_creation_succeeded";
 import { create as createEarnTransactionBroadcastToBlockchainFailed } from "../analytics/events/earn_transaction_broadcast_to_blockchain_failed";
+import { create as createSpendTransactionBroadcastToBlockchainFailed } from "../analytics/events/spend_transaction_broadcast_to_blockchain_failed";
 import { create as createEarnTransactionBroadcastToBlockchainSucceeded } from "../analytics/events/earn_transaction_broadcast_to_blockchain_succeeded";
 
 import { sign as signJWT } from "./jwt";
@@ -184,7 +185,8 @@ export async function paymentComplete(payment: CompletedPayment) {
 		order.flowType(),
 		prevStatus,
 		(order.currentStatusDate.getTime() - prevStatusDate.getTime()) / 1000,
-		payment.app_id);
+		payment.app_id,
+		await WalletApplication.getBlockchainVersion(order.contexts[0].wallet));
 
 	logger().info(`completed order with payment <${ payment.id }, ${ payment.transaction_id }>`);
 }
@@ -196,10 +198,19 @@ export async function paymentFailed(payment: FailedPayment) {
 		return;
 	}
 
-	if (order.isP2P()) {
-		createEarnTransactionBroadcastToBlockchainFailed(order.recipient.id, payment.reason, order.offerId, order.id).report();
-	} else if (order.isNormal() && order.type === "earn") {
-		createEarnTransactionBroadcastToBlockchainFailed(order.user.id, payment.reason, order.offerId, order.id).report();
+	if (order.isNormal()) {
+		if (order.type === "earn") {
+			createEarnTransactionBroadcastToBlockchainFailed(order.user.id, payment.reason, order.offerId, order.id).report();
+		} else {
+			// only on kin3
+			createSpendTransactionBroadcastToBlockchainFailed(order.user.id, payment.reason, order.offerId, order.id).report();
+		}
+	} else {
+		order.forEachContext(context => {
+			if (context.type === "spend") {
+				createSpendTransactionBroadcastToBlockchainFailed(context.user.id, payment.reason, order.offerId, order.id).report();
+			}
+		});
 	}
 
 	await setFailedOrder(order, BlockchainError(payment.reason));

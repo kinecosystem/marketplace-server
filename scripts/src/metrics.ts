@@ -3,6 +3,7 @@ import { getConfig } from "./config";
 
 import { MarketplaceError } from "./errors";
 import { Order, OrderFlowType, OrderOrigin } from "./models/orders";
+import { BlockchainVersion } from "./models/offers";
 
 // XXX can add general tags to the metrics (i.e. - public/ internal, machine name etc)
 const statsd = new StatsD(Object.assign({ prefix: "marketplace_" }, getConfig().statsd));
@@ -33,17 +34,26 @@ export function timeRequest(time: number, method: string, path: string, appId: s
 }
 
 export function createOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType, appId: string) {
-	statsd.increment("create_order", 1, { order_type: orderOrigin, offer_type: offerType, app_id: appId });
+	statsd.increment("create_order", 1, {
+		order_type: orderOrigin,
+		offer_type: offerType,
+		app_id: appId,
+	});
 }
 
-export function submitOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType, appId: string) {
-	statsd.increment("submit_order", 1, { offer_type: offerType, app_id: appId });
+export function submitOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType, appId: string, blockchainVersion: BlockchainVersion) {
+	statsd.increment("submit_order", 1, { offer_type: offerType, app_id: appId, kin_version: blockchainVersion });
 }
 
-export function completeOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType, prevStatus: string, time: number, appId: string) {
-	statsd.increment("complete_order", 1, { offer_type: offerType, app_id: appId });
+export function completeOrder(orderOrigin: OrderOrigin, offerType: OrderFlowType, prevStatus: string, time: number, appId: string, blockchainVersion: BlockchainVersion) {
+	statsd.increment("complete_order", 1, { offer_type: offerType, app_id: appId, kin_version: blockchainVersion });
 	// time from last status
-	statsd.timing("complete_order_time", time, { offer_type: offerType, prev_status: prevStatus, app_id: appId });
+	statsd.timing("complete_order_time", time, {
+		offer_type: offerType,
+		prev_status: prevStatus,
+		app_id: appId,
+		kin_version: blockchainVersion
+	});
 }
 
 export function offersReturned(numOffers: number, appId: string) {

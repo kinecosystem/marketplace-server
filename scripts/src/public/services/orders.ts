@@ -39,6 +39,9 @@ import { addWatcherEndpoint } from "./payment";
 import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
+import {
+	create as createSpendTransactionBroadcastToBlockchainSubmitted
+} from "../../analytics/events/spend_transaction_broadcast_to_blockchain_submitted";
 import { OrderTranslations } from "../routes/orders";
 import { assertRateLimitEarn } from "../../utils/rate_limit";
 import { submitFormAndMutateMarketplaceOrder } from "./offer_contents";
@@ -350,11 +353,12 @@ export async function submitOrder(
 	if (order.isMarketplaceOrder()) {
 		await submitFormAndMutateMarketplaceOrder(order, form);
 	}
+	const blockchainVersion = await WalletApplication.getBlockchainVersion(walletAddress);
+
 	if (order.isEarn()) {
 		// must be after submit form because order.amount changes
 		await assertRateLimitEarn(user, walletAddress, order.amount);
 	} else {
-		const blockchainVersion = await WalletApplication.getBlockchainVersion(order.blockchainData.sender_address!);
 		if (blockchainVersion === "3") {
 			if (!transaction) {
 				throw MissingField("transaction");
@@ -372,10 +376,11 @@ export async function submitOrder(
 	} else {
 		if (transaction) { // there is only transaction on kin3
 			await payment.submitTransaction(order.blockchainData.recipient_address!, order.blockchainData.sender_address!, user.appId, order.amount, order.id, transaction!);
+			createSpendTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 		}
 	}
 
-	metrics.submitOrder(order.origin, order.flowType(), user.appId);
+	metrics.submitOrder(order.origin, order.flowType(), user.appId, blockchainVersion);
 	return await orderDbToApi(order, user.id, walletAddress);
 }
 

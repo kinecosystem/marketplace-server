@@ -48,7 +48,8 @@ function wrapService(func: (params: any, query: any) => Promise<string>): Reques
 		const html = (await readFile(path.join(__dirname, genericServiceTemplatePath), { encoding: "utf8" }))
 			.replace("${ content }", content)
 			.replace("${ webview }", getConfig().webview)
-			.replace("${ now }", Date.now().toString());
+			.replace("${ now }", Date.now().toString())
+			.replace(/\$isProduction\$/g, (process.env.environment_name === "production").toString());
 
 		res.status(200).send(html);
 	} as any as RequestHandler;

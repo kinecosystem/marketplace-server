@@ -7,6 +7,12 @@
 			background: #ffffff;
 		}
 
+		body.live-production {
+			border: 13px red inset;
+			margin: 0;
+			padding: 2px;
+		}
+
 		td {
 			vertical-align: bottom;
 		}
@@ -293,18 +299,22 @@
 
 		document.querySelectorAll(".kin2-wallet").forEach(element => previewBalance(element));
 		document.querySelectorAll(".kin3-wallet").forEach(element => previewBalance(element));
+		if ($isProduction$) {  // template variable
+			document.body.classList.add("live-production")
+		}
 	});
 
 	function previewBalance(element) {
 		function showBalance(walletAddress) {
 			axios.get(`/migration/wallets/${walletAddress}/status`)
-			.then(res => toast(`kin2: ${res.data.kin2} (${res.data.burned ? "burned": "not burned"}), kin3: ${res.data.kin3}`))
-			.catch(err => alert("error: " + JSON.stringify(err)));
+				.then(res => toast(`kin2: ${res.data.kin2} (${res.data.burned ? "burned" : "not burned"}), kin3: ${res.data.kin3}`))
+				.catch(err => alert("error: " + JSON.stringify(err)));
 		}
 
 		const walletAddress = element.querySelector("a").innerText;
 		element.addEventListener("mouseover", () => showBalance(walletAddress));
 	}
+
 	function toast(msg) {
 		toastElemnt.innerText = msg;
 		toastElemnt.className = "show";
@@ -314,9 +324,11 @@
 	}
 
 	function submitData(url, data) {
-		axios.post(url, data)
-		.then(res => toast("ok"))
-		.catch(err => alert("error: " + JSON.stringify(err)));
+		confirmCbIfProduction(() => {
+			axios.post(url, data)
+				.then(res => toast("ok"))
+				.catch(err => alert("error: " + JSON.stringify(err)));
+		});
 	}
 
 	function addToMigration(userId) {
@@ -418,14 +430,14 @@
 			})
 		}, 0)
 
-		const submitBtn = document.createElement('button')
-		submitBtn.textContent = 'Save ✓'
-		submitBtn.classList.add('editor-btn')
-		jsonArea.append(submitBtn)
+		const submitBtn = document.createElement('button');
+		submitBtn.textContent = 'Save ✓';
+		submitBtn.classList.add('editor-btn');
+		jsonArea.append(submitBtn);
 		submitBtn.addEventListener('click', e => {
 			e.stopPropagation();
-			updateConfig(editor);
-		})
+			confirmCbIfProduction(updateConfig.bind(this, editor));
+		});
 
 		const closeBtn = document.createElement('button')
 		closeBtn.textContent = '✖'
@@ -485,6 +497,12 @@
 				closeEditor(editor);
 				break;
 		}
+	}
+
+	function confirmCbIfProduction(cb) {
+		if (!$isProduction$ || confirm("Save to production?")) {
+			cb();
+		};
 	}
 </script>
 </body>

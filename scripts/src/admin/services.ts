@@ -36,7 +36,7 @@ const USER_WALLET_HEADERS = `<tr>
 <th>Public Address</th>
 <th>User ID</th>
 <th>Device ID</th>
-<th>created_date</th>
+<th>Created date</th>
 <th>Last used date</th>
 <th>Last earn date</th>
 <th>Last spend date</th>
@@ -436,7 +436,7 @@ export async function getUserWallet(params: { public_address: string }, query: a
 		return `
 		<tr>
 		<td>${ wallet.address }</td>
-		<td>${ wallet.userId }</td>
+		<td><a href="/users/${ wallet.userId }">${ wallet.userId }</a></td>
 		<td>${ wallet.deviceId }</td>
 		<td>${ wallet.createdDate }</td>
 		<td>${ wallet.lastUsedDate }</td>

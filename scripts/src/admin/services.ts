@@ -429,7 +429,7 @@ export async function getUserWallet(params: { public_address: string }, query: a
 				address: params.public_address
 			}
 	});
-	if (!wallet) {
+	if (!wallets.length) {
 		throw new Error("no such wallet: " + params.public_address);
 	}
 	const walletsHTML = wallets.map(wallet => {

@@ -2,7 +2,7 @@ import { Request, RequestHandler, Response } from "express";
 
 import { Application, ApplicationConfig, AppOffer } from "../models/applications";
 import { Cap, Offer, OfferContent, PollAnswer } from "../models/offers";
-import { GradualMigrationUser, User, WalletApplication } from "../models/users";
+import { GradualMigrationUser, User, WalletApplication, Wallet as UserWallets } from "../models/users";
 import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
 import { IdPrefix, isNothing } from "../utils/utils";
 import * as payment from "../public/services/payment";
@@ -30,6 +30,16 @@ const OFFER_HEADERS = `<tr>
 <th>address</th>
 <th>owner</th>
 <th>date</th>
+</tr>`;
+
+const USER_WALLET_HEADERS = `<tr>
+<th>Public Address</th>
+<th>User ID</th>
+<th>Device ID</th>
+<th>created_date</th>
+<th>Last used date</th>
+<th>Last earn date</th>
+<th>Last spend date</th>
 </tr>`;
 
 const ORDER_HEADERS = `<tr>
@@ -412,6 +422,32 @@ export async function getPollResults(params: { offer_id: string }, query: any): 
 	return ret;
 }
 
+export async function getUserWallet(params: { public_address: string }, query: any): Promise<string> {
+	const wallets = await UserWallets.find({
+		where:
+			{
+				address: params.public_address
+			}
+	});
+	if (!wallet) {
+		throw new Error("no such wallet: " + params.public_address);
+	}
+	const walletsHTML = wallets.map(wallet => {
+		return `
+		<tr>
+		<td>${ wallet.address }</td>
+		<td>${ wallet.userId }</td>
+		<td>${ wallet.deviceId }</td>
+		<td>${ wallet.createdDate }</td>
+		<td>${ wallet.lastUsedDate }</td>
+		<td>${ wallet.lastEarnDate }</td>
+		<td>${ wallet.lastSpendDate }</td>
+		</tr>
+		`;
+	});
+	return `<table>${ USER_WALLET_HEADERS }${ walletsHTML.join() }</table>`;
+}
+
 export async function fuzzySearch(params: { some_id: string }, query: any): Promise<string> {
 	switch (params.some_id[0]) {
 		case IdPrefix.App:
@@ -422,6 +458,8 @@ export async function fuzzySearch(params: { some_id: string }, query: any): Prom
 			return getOrder({ order_id: params.some_id }, query);
 		case IdPrefix.User:
 			return getUserData({ user_id: params.some_id }, query);
+		case IdPrefix.BlockchainPublicAddress:
+			return getUserWallet({ public_address: params.some_id }, query);
 		default:
 			return "unknown";
 	}

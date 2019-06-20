@@ -10,11 +10,12 @@ import {
 	PrimaryColumn
 } from "typeorm";
 import { getDefaultLogger as logger } from "../logging";
-import { generateId, IdPrefix, Mutable } from "../utils/utils";
+import { cached, generateId, IdPrefix, Mutable } from "../utils/utils";
 
 import { OrderContext } from "./orders";
 import { CreationDateModel, register as Register, initializer as Initializer } from "./index";
 import { BlockchainVersion } from "./offers";
+import { getRedisClient } from "../redis";
 
 @Entity({ name: "users" })
 @Register
@@ -239,14 +240,20 @@ export class WalletApplication extends BaseEntity {
 	public static async updateCreatedDate(walletAddress: string, blockchainVersion: BlockchainVersion) {
 		const createdDateField = blockchainVersion === "2" ? "createdDateKin2" : "createdDateKin3";
 		await WalletApplication.update({ walletAddress }, { [createdDateField]: new Date() });
+		(WalletApplication.get as any).clear(walletAddress);
 	}
 
 	public static async getBlockchainVersion(walletAddress: string): Promise<BlockchainVersion> {
-		const wallet = await WalletApplication.findOneById(walletAddress);
+		const wallet = await WalletApplication.get(walletAddress);
 		if (wallet && wallet.createdDateKin3) {
 			return "3";
 		}
 		return "2";
+	}
+
+	@cached(getRedisClient(), (walletAddress: string) => `wallet_app:${ walletAddress }`)
+	public static async get(walletAddress: string): Promise<WalletApplication | undefined> {
+		return await WalletApplication.findOneById(walletAddress);
 	}
 
 	@PrimaryColumn({ name: "wallet_address" })

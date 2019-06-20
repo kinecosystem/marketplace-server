@@ -85,7 +85,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 		throw NoSuchApp(appId);
 	}
 	logger().info(`handling account status request app_id: ${ appId } public_address: ${ publicAddress }`);
-	const wallet = await WalletApplication.findOne({ walletAddress: publicAddress });
+	const wallet = await WalletApplication.get(publicAddress);
 
 	let blockchainVersion: BlockchainVersion;
 	let shouldMigrate: boolean;

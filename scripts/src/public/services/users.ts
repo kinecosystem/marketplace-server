@@ -94,7 +94,7 @@ export type UpdateUserProps = {
 };
 
 export async function isRestoreAllowed(walletAddress: string, appId: string, addOnNonExisting: boolean = true): Promise<boolean> {
-	const appWallet = await WalletApplication.findOne({ walletAddress });
+	const appWallet = await WalletApplication.get(walletAddress);
 	if (appWallet) {
 		logger().info(`Wallet ${ walletAddress } is associated with app ${ appWallet.appId }, current app is ${ appId }`);
 		if (appWallet.appId !== appId) {
@@ -107,7 +107,7 @@ export async function isRestoreAllowed(walletAddress: string, appId: string, add
 			await newWallet.save();
 		} catch (e) {
 			// might catch a "violates unique constraint" error, check by finding the wallet again
-			if (!await WalletApplication.findOne({ walletAddress, appId })) {
+			if (!await WalletApplication.get(walletAddress)) {
 				throw e;
 			}
 		}

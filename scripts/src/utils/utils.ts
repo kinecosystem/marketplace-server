@@ -65,6 +65,7 @@ export enum IdPrefix {
 	App = "A",
 	Transaction = "T",
 	Offer = "O",
+	BlockchainPublicAddress = "G",
 	None = "",
 }
 

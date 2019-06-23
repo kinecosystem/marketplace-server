@@ -44,9 +44,9 @@ spec:
           env:
             - name: ENVIRONMENT
               # i.e "/ci/marketplace-public/"
-              value: __ENVIRONMENT
+              value: "__ENVIRONMENT"
             - name: SERVER_ROLE
-              value: __SERVER_ROLE
+              value: "__SERVER_ROLE"
               # Debug startup script
             - name: DEBUG
-              value: __DEBUG
+              value: "__DEBUG"

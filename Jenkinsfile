@@ -8,6 +8,7 @@ pipeline {
         STELLAR_ADDRESS = '$(aws ssm get-parameter --region $REGION --name /${Environment}/jenkins/STELLAR_ADDRESS | jq -r ".Parameter.Value")'
         STELLAR_BASE_SEED = '$(aws ssm get-parameter --region $REGION --name /${Environment}/jenkins/STELLAR_BASE_SEED | jq -r ".Parameter.Value")'
         CLUSTER_URL = '$(aws ssm get-parameter --region $REGION --name /${Environment}/jenkins/CLUSTER_URL | jq -r ".Parameter.Value")'
+        GIT_REVISION = sh (script : 'git rev-parse --short HEAD', returnStdout: true).trim()
 
     }
 
@@ -69,14 +70,14 @@ pipeline {
                        ).trim()
                 }
                 echo "Deploying env to: $env.K8S_CLUSTER_URL"
-
+                // Require to define the default2 (Kubernetes token) in Jenkins credentials
                 withKubeConfig([credentialsId: 'default2',
                 serverUrl: env.K8S_CLUSTER_URL,
                 clusterName: 'test'
                 ]) {
                     sh '''
                         #create namespace if doesn't exists
-                    cat k8s/namespace.yaml | sed 's/__ENVIRONMENT'"/${Environment}/g"  |kubectl apply -f - || true
+                        cat k8s/namespace.yaml | sed 's/__ENVIRONMENT'"/${Environment}/g" | kubectl apply -f - || true
                         #add new version (in addition to the existing version
                         SED_ARGS="s/__ENVIRONMENT/${Environment}/g; s/__SERVER_ROLE/${Role}/g; s/__VERSION/${Version}/g; s/__REPLICAS/${Num_of_instances}/g"
                         cat k8s/marketplace-public-deployment.yaml \
@@ -92,5 +93,23 @@ pipeline {
                 echo 'Todo: Testing'
             }
         }
+        stage('Push Docker image') {
+            steps {
+                echo 'Pushing Docker image to dockerhub'
+                withDockerRegistry([ credentialsId: "dockerhub", url: "" ]) {
+                    sh 'make push-image'
+                }
+            }
+        }
+    }
+    post {
+       // only triggered when blue or green sign
+       success {
+           slackSend ( color: '#00FF00', message: "SUCCESSFUL: Docker image (${GIT_REVISION}) deployed to docker hub for  '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+       }
+       // triggered when red sign
+       failure {
+           slackSend (color: '#FF0000', message: "FAILED: Docker image (${GIT_REVISION}) failure (creating or sending) '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+       }
     }
 }

@@ -1,14 +1,9 @@
 #!/bin/sh
-
-
-
 # Usage:
-# . ./startup.sh  <PATH>
+# . ./test.sh  <PATH>
 # Example:
-# . ./startup.sh ci marketplace-public
+# . ./test.sh ci marketplace-public
 
-
-REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | awk -F\" '{print $4}')
 
 
 if [ ${DEBUG} == "True" ]; then

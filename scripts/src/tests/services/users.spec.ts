@@ -44,10 +44,16 @@ describe("api tests for v2 users", async () => {
 		}
 
 		await GradualMigrationUser.setAsMigrated(users.map(u => u.id).slice(0, 2));
-		expect((await GradualMigrationUser.findOneById(users[0].id))!.migrationDate).not.toBeNull();
-		expect((await GradualMigrationUser.findOneById(users[1].id))!.migrationDate).not.toBeNull();
-		expect((await GradualMigrationUser.findOneById(users[2].id))!.migrationDate).toBeNull();
-		expect((await GradualMigrationUser.findOneById(users[3].id))!.migrationDate).toBeNull();
+		expect((await GradualMigrationUser.get(users[0].id))!.migrationDate).not.toBeNull();
+		expect((await GradualMigrationUser.get(users[1].id))!.migrationDate).not.toBeNull();
+		expect((await GradualMigrationUser.get(users[2].id))!.migrationDate).toBeFalsy();
+		expect((await GradualMigrationUser.get(users[3].id))!.migrationDate).toBeFalsy();
+
+		const user1 = await helpers.createUser({ appId: app.id });
+		const user2 = await helpers.createUser({ appId: app.id });
+
+		expect((await GradualMigrationUser.get(user1.id))).toBeFalsy();
+		expect((await GradualMigrationUser.get(user2.id))).toBeFalsy();
 	});
 
 	test("migration info - accountStatus", async () => {

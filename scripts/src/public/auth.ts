@@ -134,7 +134,7 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 			logger().info(`current wallet already on kin3 - should migrate ${ wallet.address } ${ user.id }`);
 			return true;
 		}
-		const whitelist = await GradualMigrationUser.findOneById(user.id);
+		const whitelist = await GradualMigrationUser.get(user.id);
 		if (whitelist && (whitelist.migrationDate || await withinMigrationRateLimit(app.id))) {
 			await GradualMigrationUser.setAsMigrated([user.id]);
 			metrics.migrationTrigger(app.id, "gradual_migration");

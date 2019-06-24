@@ -290,6 +290,11 @@ export class GradualMigrationUser extends BaseEntity {
 				.values(userIds)
 				.onConflict(`("user_id") DO NOTHING`)
 				.execute();
+			const redis = getRedisClient();
+			for (const user of userIds) {
+				await redis.async.set(`grad_user:${ user.userId }`,
+					JSON.stringify(GradualMigrationUser.create({ userId: user.userId })));
+			}
 		}
 	}
 
@@ -300,13 +305,35 @@ export class GradualMigrationUser extends BaseEntity {
 			.update(GradualMigrationUser)
 			.set({ migrationDate: () => "CURRENT_TIMESTAMP" })
 			.whereInIds(userIds)
+			.andWhere("migration_date is null")
 			.execute();
+
+		const redis = getRedisClient();
+		const now = new Date();
+		for (const userId of userIds) {
+			await redis.async.set(`grad_user:${ userId }`,
+				JSON.stringify(GradualMigrationUser.create({ userId, migrationDate: now })));
+		}
+	}
+
+	@cached(getRedisClient(), (userId: string) => `grad_user:${ userId }`)
+	public static async get(userId: string) {
+		console.log("got from DB", userId);
+		return await GradualMigrationUser.findOneById(userId);
 	}
 
 	public static async findByWallet(walletAddress: string): Promise<GradualMigrationUser[]> {
 		const wallets = await Wallet.find({ select: ["userId"], where: { address: walletAddress } });
 		const userIds = wallets.map(w => w.userId);
-		return await GradualMigrationUser.findByIds(userIds);
+		if (userIds.length > 1) {
+			return await GradualMigrationUser.findByIds(userIds);
+		} else if (userIds.length === 1) {
+			const res = await GradualMigrationUser.get(userIds[0]);
+			if (res) {
+				return [res];
+			}
+		}
+		return [];
 	}
 
 	@PrimaryColumn({ name: "user_id" })

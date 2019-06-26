@@ -6,6 +6,7 @@ import { verify as verifyJwt } from "../public/jwt";
 import { InvalidExternalOrderJwt, InvalidJwtField, MissingField } from "../errors";
 import { assertRateLimitMigration } from "./rate_limit";
 import * as metrics from "../metrics";
+import { Application } from "../models/applications";
 
 const httpClient = getAxiosClient();
 let BLOCKCHAIN: BlockchainConfig;
@@ -86,8 +87,9 @@ export async function validateMigrationListJWT(jwt: string, appId: string): Prom
 	if (decoded.payload.iss !== appId) {
 		throw InvalidExternalOrderJwt("issuer must match appId");
 	}
-
-	if (decoded.payload.user_ids.length > 10000) {
+	const app = (await Application.get(appId))!;
+	const defaultUsersLimit = 500000;
+	if (decoded.payload.user_ids.length > (app.config.gradual_migration_jwt_users_limit || defaultUsersLimit)) {
 		throw InvalidJwtField("`user_ids` value should be less than 10000");
 	}
 

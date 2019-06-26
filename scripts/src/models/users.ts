@@ -279,17 +279,19 @@ export class GradualMigrationUser extends BaseEntity {
 			const users: Array<{ id: string }> = await User
 				.createQueryBuilder("user")
 				.select("id")
-				.where("user.appUserId IN (:appUserIds)", { appUserIds })
+				.where("user.appUserId IN (:appUserIds)", { appUserIds: appUserIds.slice(i, i + BATCH_SIZE) })
 				.andWhere("user.appId = :appId", { appId })
 				.getRawMany();
 			const userIds = users.map(u => ({ userId: u.id }));
 
-			await GradualMigrationUser
-				.createQueryBuilder()
-				.insert()
-				.values(userIds)
-				.onConflict(`("user_id") DO NOTHING`)
-				.execute();
+			if (userIds.length) {
+				await GradualMigrationUser
+					.createQueryBuilder()
+					.insert()
+					.values(userIds)
+					.onConflict(`("user_id") DO NOTHING`)
+					.execute();
+			}
 		}
 	}
 

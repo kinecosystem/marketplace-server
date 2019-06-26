@@ -1,5 +1,6 @@
 import * as express from "express";
 import "express-async-errors"; // handle async/await errors in middleware
+import * as typeis from "type-is";
 import { initLogger } from "../logging";
 import { getConfig } from "./config";
 import { init as initModels } from "../models/index";
@@ -15,8 +16,11 @@ function createApp() {
 	const app = express();
 	app.set("port", config.port);
 
+	const isBigJsonRequest = (req: express.Request) => typeis(req, "application/bigjson");
+
 	const bodyParser = require("body-parser");
-	app.use(bodyParser.json());
+	app.use(bodyParser.json({ limit: 52428800, type: isBigJsonRequest } ));  // 50Mb limit for requests with content type: "application/bigjson"
+	app.use(bodyParser.json({}));
 	app.use(bodyParser.urlencoded({ extended: false }));
 
 	const cookieParser = require("cookie-parser");

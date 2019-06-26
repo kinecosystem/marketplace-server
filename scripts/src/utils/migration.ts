@@ -90,7 +90,7 @@ export async function validateMigrationListJWT(jwt: string, appId: string): Prom
 	const app = (await Application.get(appId))!;
 	const defaultUsersLimit = 500000;
 	if (decoded.payload.user_ids.length > (app.config.gradual_migration_jwt_users_limit || defaultUsersLimit)) {
-		throw InvalidJwtField("`user_ids` value should be less than 10000");
+		throw InvalidJwtField(`'user_ids' value should be less than ${(app.config.gradual_migration_jwt_users_limit || defaultUsersLimit)}`);
 	}
 
 	return decoded.payload.user_ids;

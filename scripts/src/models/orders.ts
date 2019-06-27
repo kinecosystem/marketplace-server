@@ -60,7 +60,7 @@ export type GetOrderFilters = {
 	status?: OrderStatusAndNegation;
 };
 
-export type OrderFlowType = "p2p" | "earn" | "spend";
+export type OrderFlowType = "p2p" | "earn" | "spend" ;
 
 export interface Order {
 	readonly id: string;
@@ -281,6 +281,10 @@ export type ExternalOrderFactory = OrderFactory & {
 	"new"(data: DeepPartial<Order>, context1: DeepPartial<OrderContext>, context2?: DeepPartial<OrderContext>): Order;
 };
 
+export type CrossAppOrderFactory = OrderFactory & {
+	"new"(data: DeepPartial<Order>, context1: DeepPartial<OrderContext>): CrossAppOrder;
+};
+
 function extendedOrder(origin: OrderOrigin): (typeof Order) & OrderFactory {
 	return Object.assign({}, Order, {
 		"new"(data?: DeepPartial<Order>, ...context: Array<DeepPartial<OrderContext>>): Order {
@@ -313,6 +317,7 @@ export type ExternalOrder = Order;
 
 export const ExternalOrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
 export const P2POrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
+export const CrossAppOrder = extendedOrder("external") as (typeof Order) & CrossAppOrderFactory;
 
 export type NormalOrder = Order & {
 	user: User;
@@ -327,6 +332,14 @@ export type P2POrder = Order & {
 	senderMeta: OrderMeta;
 	recipientMeta: OrderMeta;
 	contexts: [OrderContext, OrderContext];
+};
+
+export type CrossAppOrder = Order & {
+	sender: User;
+	recipient: User;
+	senderMeta: OrderMeta;
+	recipientMeta: OrderMeta;
+	contexts: [OrderContext];
 };
 
 @Entity({ name: "orders" })

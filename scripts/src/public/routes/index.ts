@@ -26,6 +26,7 @@ import {
 	createExternalOrder,
 	v1CreateExternalOrder,
 	createMarketplaceOrder,
+	createCrossAppOrder,
 	getOrder,
 	getOrderHistory,
 	submitOrder,
@@ -71,6 +72,9 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.get(prefix("migration/info/:app_id/:public_address"), accountStatus);
 
 	app.get("/status", statusHandler);
+
+	app.post(prefix("offers/cross-app/orders"), authenticateUser, createCrossAppOrder);
+
 }
 
 export function createV1Routes(app: express.Express, pathPrefix?: string) {

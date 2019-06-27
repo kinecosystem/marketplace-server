@@ -14,6 +14,7 @@ import {
 	getOrderHistory as getOrderHistoryService,
 	createExternalOrder as createExternalOrderService,
 	createMarketplaceOrder as createMarketplaceOrderService,
+	createCrossAppOrder as createCrossAppOrderService,
 } from "../services/orders";
 import { createExternalOrder as v1CreateExternalOrderService } from "../services/orders.v1";
 
@@ -142,4 +143,19 @@ export const getOrderHistory = async function(req: GetOrderHistoryRequest, res: 
 	};
 	const orderList = await getOrderHistoryService(req.context.user, req.context.token.deviceId, filters, req.query.limit);
 	res.status(200).send(orderList);
+} as any as RequestHandler;
+
+export type CreateCrossAppOrderRequest = AuthenticatedRequest & {
+	body: {
+		wallet_address: string,
+  	app_id: string,
+  	title: string,
+  	description: string,
+  	amount: number
+	}
+};
+
+export const createCrossAppOrder = async function(req: CreateCrossAppOrderRequest, res: Response) {
+	const order = await createCrossAppOrderService(req.body.wallet_address, req.body.app_id, req.body.title, req.body.description, req.body.amount, req.context.user, req.context.token.deviceId);
+	res.status(201).send(order);
 } as any as RequestHandler;

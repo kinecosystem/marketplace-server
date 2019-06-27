@@ -121,8 +121,7 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 		return true;
 	}
 	if (app.shouldApplyGradualMigration() && !await checkedMigrationRecently(user.id)) {
-		const wallet = (await user.getWallets(deviceId)).lastUsed() ||
-			(await user.getWallets()).lastUsed();
+		const wallet = (await user.getWallets(deviceId)).lastUsed();
 		if (!wallet) {
 			// :( TODO shouldn't happen - log this
 			logger().error(`no wallet found for ${ user.id }`);

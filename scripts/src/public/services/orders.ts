@@ -521,7 +521,11 @@ function getLockResource(type: "create" | "get", ...ids: string[]): string {
 	return `locks:orders:${ type }:${ ids.join(":") }`;
 }
 
-export async function createCrossAppOrder(recipientWalletAddress: string, appId: string, title: string, description: string, amount: number, sender: User, senderDeviceId: string): Promise<db.CrossAppOrder> {
+// export async function createCrossAppOrder(recipientWalletAddress: string, appId: string, title: string, description: string, amount: number, sender: User, senderDeviceId: string): Promise<db.CrossAppOrder> {
+export async function createCrossAppOrder(recipientWalletAddress: string, appId: string, title: string, description: string, amount: number, sender: User, senderDeviceId: string): Promise<OpenOrder> {
+
+	logger().info("creating a cross app order")
+
 	const senderWallet = (await sender.getWallets(senderDeviceId)).lastUsed();
 	if (!senderWallet) {
 		throw UserHasNoWallet(sender.id, senderDeviceId);
@@ -561,7 +565,9 @@ export async function createCrossAppOrder(recipientWalletAddress: string, appId:
 
 	await order.save();
 
+	logger().info("created a cross app order")
+
 	// await addWatcherEndpoint(recipientWalletAddress, order.id, sender.appId);
-	// return openOrderDbToApi(order, sender.id);
-	return order;
+	return openOrderDbToApi(order, sender.id);
+	// return order;
 }

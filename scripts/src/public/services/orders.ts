@@ -544,10 +544,8 @@ export async function createCrossAppOrder(recipientWalletAddress: string, appId:
 		throw UserHasNoWallet(sender.id);
 	}
 
-	const util = require('util')
-
 	const order = db.CrossAppOrder.new({
-		offerId: 'CROSS-APP',
+		offerId: `cross-app_${sender.appId}_to_${appId}`,
 		amount: amount,
 		status: "opened",
 		blockchainData: {
@@ -562,7 +560,6 @@ export async function createCrossAppOrder(recipientWalletAddress: string, appId:
 	});
 
 	await order.save();
-	console.log(util.inspect(order,{depth:8}))
 
 	// await addWatcherEndpoint(recipientWalletAddress, order.id, sender.appId);
 	// return openOrderDbToApi(order, sender.id);

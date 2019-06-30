@@ -521,7 +521,6 @@ function getLockResource(type: "create" | "get", ...ids: string[]): string {
 	return `locks:orders:${ type }:${ ids.join(":") }`;
 }
 
-// export async function createCrossAppOrder(recipientWalletAddress: string, appId: string, title: string, description: string, amount: number, sender: User, senderDeviceId: string): Promise<db.CrossAppOrder> {
 export async function createCrossAppOrder(recipientWalletAddress: string, appId: string, title: string, description: string, amount: number, sender: User, senderDeviceId: string): Promise<OpenOrder> {
 
 	logger().info("creating a cross app order")
@@ -531,17 +530,6 @@ export async function createCrossAppOrder(recipientWalletAddress: string, appId:
 		throw UserHasNoWallet(sender.id, senderDeviceId);
 	}
 
-	// const recipient = await User.findOne({ appId: sender.appId, appUserId: jwt.recipient.user_id });
-	// if (!recipient) {
-	// 	throw NoSuchUser(jwt.recipient.user_id);
-	// }
-	//
-	// const recipientWallet = (await recipient.getWallets()).lastUsed();
-	// if (!recipientWallet) {
-	// 	throw UserHasNoWallet(recipient.id);
-	// }
-
-	// check wallet version matches
 	if (await WalletApplication.getBlockchainVersion(senderWallet.address) !==
 		await WalletApplication.getBlockchainVersion(recipientWalletAddress)) {
 		logger().warn("failed cross app order creation due to blockchain version mismatch");
@@ -567,7 +555,5 @@ export async function createCrossAppOrder(recipientWalletAddress: string, appId:
 
 	logger().info("created a cross app order")
 
-	// await addWatcherEndpoint(recipientWalletAddress, order.id, sender.appId);
 	return openOrderDbToApi(order, sender.id);
-	// return order;
 }

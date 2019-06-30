@@ -723,6 +723,6 @@ describe("test v2 orders", async () => {
 		await sender.updateWallet(deviceId1, senderWalletAddress);
 		await receiver.updateWallet(deviceId1, receiverWalletAddress);
 		const order = await createCrossAppOrder(receiverWalletAddress, receiverApp.id, 'a title', 'a description', 1000, sender, deviceId1);
-		expect(order).toBeTruthy();
+		expect(order).toMatchObject({amount: 1000})
 	})
 });

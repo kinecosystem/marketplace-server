@@ -22,7 +22,8 @@ import {
 	Order as OrderData,
 	OrderList,
 	setFailedOrder,
-	submitOrder
+	submitOrder,
+	createCrossAppOrder
 } from "../../public/services/orders";
 
 import * as helpers from "../helpers";
@@ -710,4 +711,18 @@ describe("test v2 orders", async () => {
 		expect(history1.length).toBe(history2.length);
 		history1.forEach(o => expect(history2).toContain(o));
 	});
+
+	test("create a cross-app order shaharsol", async () => {
+		const senderApp = await helpers.createApp("sender-app");
+		const receiverApp = await helpers.createApp("receiver-app");
+		const deviceId1 = `device_${ generateId() }`;
+		const senderWalletAddress = `wallet-${ generateId() }`;
+		const receiverWalletAddress = `wallet-${ generateId() }`;
+		const sender = await helpers.createUser({ deviceId: deviceId1, appId: senderApp.id, createWallet: false });
+		const receiver = await helpers.createUser({ deviceId: deviceId1, appId: receiverApp.id, createWallet: false });
+		await sender.updateWallet(deviceId1, senderWalletAddress);
+		await receiver.updateWallet(deviceId1, receiverWalletAddress);
+		const order = await createCrossAppOrder(receiverWalletAddress, receiverApp.id, 'a title', 'a description', 1000, sender, deviceId1);
+		expect(order).toBeTruthy();
+	})
 });

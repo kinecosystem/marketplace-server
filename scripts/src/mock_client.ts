@@ -1790,6 +1790,22 @@ async function checkClientMigration() {
 	await client.changeAppBlockchainVersion("2");
 }
 
+async function checkTransferKin(){
+	console.log("===================================== checkTransferKin =====================================");
+
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
+	let jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
+
+	const receiverWalletAddress = `wallet-${ generateId() }`;
+	const order = await client.createCrossAppOrder(receiverWalletAddress,'sender-app','mock client title','mock client description',1000);
+	expect(order).toMatchObject({amount: 1000})
+
+}
+
 async function main() {
 	async function v1() {
 		await v1RegisterJWT();
@@ -1831,6 +1847,7 @@ async function main() {
 		await twoUsersSharingWallet();
 		await checkValidTokenAfterLoginRightAfterLogout();
 		await getOffersVersionSpecificImages();
+		await checkTransferKin();
 	}
 
 	async function migration() {

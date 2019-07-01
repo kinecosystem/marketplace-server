@@ -13,7 +13,7 @@ import { Application, AppOffer } from "../../models/applications";
 import { TransactionTimeout, UserHasNoWallet } from "../../errors";
 import { getOffers, Offer as OfferData } from "../../public/services/offers";
 import { close as closeModels, init as initModels } from "../../models/index";
-import { generateId, IdPrefix, random, randomInteger } from "../../utils/utils";
+import { generateId, IdPrefix, random, randomInteger, generateRandomString } from "../../utils/utils";
 import {
 	changeOrder,
 	createMarketplaceOrder,
@@ -716,10 +716,10 @@ describe("test v2 orders", async () => {
 		const senderApp = await helpers.createApp("sender-app");
 		const receiverApp = await helpers.createApp("receiver-app");
 		const deviceId1 = `device_${ generateId() }`;
-		const senderWalletAddress = `wallet-${ generateId() }`;
-		const receiverWalletAddress = `wallet-${ generateId() }`;
 		const sender = await helpers.createUser({ deviceId: deviceId1, appId: senderApp.id, createWallet: false });
 		const receiver = await helpers.createUser({ deviceId: deviceId1, appId: receiverApp.id, createWallet: false });
+		const senderWalletAddress = `wallet-${ generateRandomString({ prefix: sender.id, length: 56 }) }`;
+		const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: receiver.id, length: 56 }) }`;
 		await sender.updateWallet(deviceId1, senderWalletAddress);
 		await receiver.updateWallet(deviceId1, receiverWalletAddress);
 		const order = await createCrossAppOrder(receiverWalletAddress, receiverApp.id, 'a title', 'a description', 1000, sender, deviceId1);

@@ -23,7 +23,7 @@ import {
 	OrderList,
 	setFailedOrder,
 	submitOrder,
-	createCrossAppOrder
+	createOutgoingTransferOrder
 } from "../../public/services/orders";
 
 import * as helpers from "../helpers";
@@ -722,7 +722,7 @@ describe("test v2 orders", async () => {
 		const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: receiver.id, length: 56 }) }`;
 		await sender.updateWallet(deviceId1, senderWalletAddress);
 		await receiver.updateWallet(deviceId1, receiverWalletAddress);
-		const order = await createCrossAppOrder(receiverWalletAddress, receiverApp.id, 'a title', 'a description', 1000, sender, deviceId1);
+		const order = await createOutgoingTransferOrder(receiverWalletAddress, receiverApp.id, 'a title', 'a description', 'a memo' , 1000, sender, deviceId1);
 		expect(order).toMatchObject({amount: 1000})
 	})
 });

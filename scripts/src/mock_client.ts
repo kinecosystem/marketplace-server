@@ -13,7 +13,7 @@ import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
 import { Order as DbOrder } from "./models/orders";
 import { Client as V1MarketplaceClient } from "./client.v1";
-import { generateId, randomInteger, retry, delay } from "./utils/utils";
+import { generateId, randomInteger, retry, delay, generateRandomString } from "./utils/utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { Client as MarketplaceClient, ClientError, JWTPayload } from "./client";
@@ -1790,8 +1790,8 @@ async function checkClientMigration() {
 	await client.changeAppBlockchainVersion("2");
 }
 
-async function checkTransferKin(){
-	console.log("===================================== checkTransferKin =====================================");
+async function checkOutgoingTransferOrder(){
+	console.log("===================================== checkOutgoingTransferOrder =====================================");
 
 	const userId = generateId();
 	const deviceId = generateId();
@@ -1800,8 +1800,9 @@ async function checkTransferKin(){
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
 
-	const receiverWalletAddress = `wallet-${ generateId() }`;
-	const order = await client.createCrossAppOrder(receiverWalletAddress,'sender-app','mock client title','mock client description',1000);
+	// const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: userId, length: 56 }) }`;
+	const receiverWalletAddress = Keypair.random().publicKey();
+	const order = await client.createOutgoingTransferOrder(receiverWalletAddress, 'sender-app', 'mock client title', 'mock client description', 'mock memo', 1000);
 	expect(order).toMatchObject({amount: 1000})
 
 }
@@ -1847,7 +1848,7 @@ async function main() {
 		await twoUsersSharingWallet();
 		await checkValidTokenAfterLoginRightAfterLogout();
 		await getOffersVersionSpecificImages();
-		await checkTransferKin();
+		await checkOutgoingTransferOrder();
 	}
 
 	async function migration() {

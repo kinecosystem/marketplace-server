@@ -22,7 +22,7 @@ import {
 	validateWhitelist,
 	v1ValidateWhitelist, RegisterPayload,
 } from "../services/applications";
-
+import * as metrics from "../../metrics";
 import { AuthenticatedRequest } from "../auth";
 import { batch } from "../../utils/utils";
 import * as jsonwebtoken from "jsonwebtoken";
@@ -231,7 +231,7 @@ export const bulkUserCreation = async function(req: BulkUserCreationRequest, res
 	const jwtList = req.body.user_data as Array<[string, string]>;
 	const firstJwt = jsonwebtoken.decode(jwtList[0][0], { complete: true }) as JWTContent<Partial<RegisterPayload>, "register">; // Use the app id from the first JWT
 	const app_id = firstJwt.payload.iss;
-	logger().info(`bulkUserCreation for ${ app_id }`);
+	logger().info(`bulkUserCreation of ${ jwtList.length } users for ${ app_id }`);
 	const app = await Application.get(app_id);
 	if (!app) {
 		throw NoSuchApp(app_id);
@@ -240,6 +240,7 @@ export const bulkUserCreation = async function(req: BulkUserCreationRequest, res
 	if (!allowedCreations || allowedCreations < jwtList.length) {
 		throw BulkUserCreation(app.id, jwtList.length, allowedCreations);
 	}
+	metrics.bulkUserCreationRequest(app_id, jwtList.length);
 	res.write(`requestId: ${ httpContext.get("reqId") }\n`);
 	const butchSize = app.config.limits.minute_registration * 0.7;
 	const butchDelay = 61 * 1000;
@@ -261,6 +262,7 @@ export const bulkUserCreation = async function(req: BulkUserCreationRequest, res
 				await updateUserService(user, { deviceId, walletAddress: publicAddress });
 				logger().info(`User ${ context.appUserId } update, currentItem: ${ currentItem }`);
 				allowedCreations--;
+				metrics.bulkUserCreated(app_id);
 				res.write(`created user ${ currentItem }: ${ context.appUserId } (${ user.id }), device id: ${ deviceId }, public address ${ publicAddress }\n`);
 			}));
 	});

@@ -1796,14 +1796,14 @@ async function checkOutgoingTransferOrder(){
 	const userId = generateId();
 	const deviceId = generateId();
 	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
-	let jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
 
 	// const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: userId, length: 56 }) }`;
 	const receiverWalletAddress = Keypair.random().publicKey();
-	const order = await client.createOutgoingTransferOrder(receiverWalletAddress, 'sender-app', 'mock client title', 'mock client description', 'mock memo', 1000);
-	expect(order).toMatchObject({amount: 1000})
+	const order = await client.createOutgoingTransferOrder(receiverWalletAddress, "sender-app", "mock client title", "mock client description", "mock memo", 1000);
+	expect(order).toMatchObject({ amount: 1000 });
 
 }
 

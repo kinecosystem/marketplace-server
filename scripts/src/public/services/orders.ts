@@ -522,7 +522,7 @@ function getLockResource(type: "create" | "get", ...ids: string[]): string {
 }
 
 export async function createOutgoingTransferOrder(recipientWalletAddress: string, appId: string, title: string, description: string, memo: string, amount: number, sender: User, senderDeviceId: string): Promise<OpenOrder> {
-	logger().info("creating an outgoing transfer order")
+	logger().info("creating an outgoing transfer order");
 	const senderWallet = (await sender.getWallets(senderDeviceId)).lastUsed();
 	if (!senderWallet) {
 		throw UserHasNoWallet(sender.id, senderDeviceId);
@@ -530,7 +530,7 @@ export async function createOutgoingTransferOrder(recipientWalletAddress: string
 
 	const order = db.OutgoingTransferOrder.new({
 		offerId: `cross-app_${sender.appId}_to_${appId}`,
-		amount: amount,
+		amount,
 		status: "opened",
 		blockchainData: {
 			sender_address: senderWallet.address,
@@ -541,12 +541,12 @@ export async function createOutgoingTransferOrder(recipientWalletAddress: string
 		user: sender,
 		type: "spend",
 		wallet: senderWallet.address,
-		meta: {title, description}
+		meta: { title, description }
 	});
 
 	await order.save();
 
-	logger().info("created an outgoing transfer order")
+	logger().info("created an outgoing transfer order");
 
 	return openOrderDbToApi(order, sender.id);
 }

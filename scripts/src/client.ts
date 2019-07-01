@@ -401,7 +401,7 @@ export class Client {
 	public async createOutgoingTransferOrder(walletAddress: string, appId: string, title: string, description: string, memo: string, amount: number): Promise<OpenOrder> {
 		try {
 			const res = await this.requests
-				.request(`/v2/offers/cross-app/orders`, {
+				.request(`/v2/transfers/outgoing/orders`, {
 						wallet_address: walletAddress,
 						app_id: appId,
 						title,

@@ -73,8 +73,6 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.get(prefix("migration/info/:app_id/:public_address"), accountStatus);
 
 	app.get("/status", statusHandler);
-
-
 }
 
 export function createV1Routes(app: express.Express, pathPrefix?: string) {

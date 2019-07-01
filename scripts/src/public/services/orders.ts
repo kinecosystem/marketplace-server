@@ -528,12 +528,6 @@ export async function createCrossAppOrder(recipientWalletAddress: string, appId:
 		throw UserHasNoWallet(sender.id, senderDeviceId);
 	}
 
-	if (await WalletApplication.getBlockchainVersion(senderWallet.address) !==
-		await WalletApplication.getBlockchainVersion(recipientWalletAddress)) {
-		logger().warn("failed cross app order creation due to blockchain version mismatch");
-		throw UserHasNoWallet(sender.id);
-	}
-
 	const order = db.CrossAppOrder.new({
 		offerId: `cross-app_${sender.appId}_to_${appId}`,
 		amount: amount,

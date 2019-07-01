@@ -281,8 +281,8 @@ export type ExternalOrderFactory = OrderFactory & {
 	"new"(data: DeepPartial<Order>, context1: DeepPartial<OrderContext>, context2?: DeepPartial<OrderContext>): Order;
 };
 
-export type CrossAppOrderFactory = OrderFactory & {
-	"new"(data: DeepPartial<Order>, context1: DeepPartial<OrderContext>): CrossAppOrder;
+export type OutgoingTransferOrderFactory = OrderFactory & {
+	"new"(data: DeepPartial<Order>, context1: DeepPartial<OrderContext>): OutgoingTransferOrder;
 };
 
 function extendedOrder(origin: OrderOrigin): (typeof Order) & OrderFactory {
@@ -317,7 +317,7 @@ export type ExternalOrder = Order;
 
 export const ExternalOrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
 export const P2POrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
-export const CrossAppOrder = extendedOrder("external") as (typeof Order) & CrossAppOrderFactory;
+export const OutgoingTransferOrder = extendedOrder("external") as (typeof Order) & OutgoingTransferOrderFactory;
 
 export type NormalOrder = Order & {
 	user: User;
@@ -334,7 +334,7 @@ export type P2POrder = Order & {
 	contexts: [OrderContext, OrderContext];
 };
 
-export type CrossAppOrder = Order & {
+export type OutgoingTransferOrder = Order & {
 	sender: User;
 	recipient: User;
 	senderMeta: OrderMeta;

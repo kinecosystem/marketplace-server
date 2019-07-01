@@ -522,9 +522,7 @@ function getLockResource(type: "create" | "get", ...ids: string[]): string {
 }
 
 export async function createCrossAppOrder(recipientWalletAddress: string, appId: string, title: string, description: string, amount: number, sender: User, senderDeviceId: string): Promise<OpenOrder> {
-
 	logger().info("creating a cross app order")
-
 	const senderWallet = (await sender.getWallets(senderDeviceId)).lastUsed();
 	if (!senderWallet) {
 		throw UserHasNoWallet(sender.id, senderDeviceId);

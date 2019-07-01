@@ -26,7 +26,7 @@ import {
 	createExternalOrder,
 	v1CreateExternalOrder,
 	createMarketplaceOrder,
-	createCrossAppOrder,
+	createOutgoingTransferOrder,
 	getOrder,
 	getOrderHistory,
 	submitOrder,
@@ -45,7 +45,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.get(prefix("offers/"), authenticateUser, getOffers);
 
 	app.post(prefix("offers/external/orders"), authenticateUser, createExternalOrder);
-	app.post(prefix("offers/cross-app/orders"), authenticateUser, createCrossAppOrder);
+	app.post(prefix("transfers/outgoing/orders"), authenticateUser, createOutgoingTransferOrder);
 	app.post(prefix("offers/:offer_id/orders"), authenticateUser, createMarketplaceOrder);
 
 	app.get(prefix("orders/"), authenticateUser, getOrderHistory);

@@ -60,7 +60,7 @@ export type GetOrderFilters = {
 	status?: OrderStatusAndNegation;
 };
 
-export type OrderFlowType = "p2p" | "earn" | "spend" ;
+export type OrderFlowType = "p2p" | "earn" | "spend";
 
 export interface Order {
 	readonly id: string;

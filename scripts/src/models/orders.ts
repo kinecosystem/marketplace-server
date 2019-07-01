@@ -282,7 +282,7 @@ export type ExternalOrderFactory = OrderFactory & {
 };
 
 export type OutgoingTransferOrderFactory = OrderFactory & {
-	"new"(data: DeepPartial<Order>, context1: DeepPartial<OrderContext>): OutgoingTransferOrder;
+	"new"(data: DeepPartial<Order>, context1: DeepPartial<OrderContext>): Order;
 };
 
 function extendedOrder(origin: OrderOrigin): (typeof Order) & OrderFactory {
@@ -332,14 +332,6 @@ export type P2POrder = Order & {
 	senderMeta: OrderMeta;
 	recipientMeta: OrderMeta;
 	contexts: [OrderContext, OrderContext];
-};
-
-export type OutgoingTransferOrder = Order & {
-	sender: User;
-	recipient: User;
-	senderMeta: OrderMeta;
-	recipientMeta: OrderMeta;
-	contexts: [OrderContext];
 };
 
 @Entity({ name: "orders" })

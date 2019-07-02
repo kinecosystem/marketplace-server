@@ -521,7 +521,7 @@ function getLockResource(type: "create" | "get", ...ids: string[]): string {
 	return `locks:orders:${ type }:${ ids.join(":") }`;
 }
 
-export async function createOutgoingTransferOrder(recipientWalletAddress: string, appId: string, title: string, description: string, memo: string, amount: number, sender: User, senderDeviceId: string): Promise<OpenOrder> {
+export async function createOutgoingTransferOrder(recipientWalletAddress: string, recipientAppId: string, title: string, description: string, memo: string, amount: number, sender: User, senderDeviceId: string): Promise<OpenOrder> {
 	logger().info("creating an outgoing transfer order");
 	const senderWallet = (await sender.getWallets(senderDeviceId)).lastUsed();
 	if (!senderWallet) {
@@ -529,7 +529,7 @@ export async function createOutgoingTransferOrder(recipientWalletAddress: string
 	}
 
 	const order = db.OutgoingTransferOrder.new({
-		offerId: `cross-app_${sender.appId}_to_${appId}`,
+		offerId: `cross-app_${sender.appId}_to_${recipientAppId}`,
 		amount,
 		status: "opened",
 		blockchainData: {

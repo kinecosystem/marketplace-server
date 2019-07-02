@@ -107,7 +107,7 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 	const deviceId = req.context.token.deviceId;
 
 	if (blockchainVersionHeader === "3") {
-		logger().info(`kin3 user - dont migrate ${ user.id }`);
+		logger().debug(`kin3 user - dont migrate ${ user.id }`);
 		// TODO user gets stuck in kin2
 		return false; // TODO should we make assertions that the current wallet is on kin3?
 	}
@@ -117,7 +117,7 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 	}
 	if (app.config.blockchain_version === "3") {
 		metrics.migrationTrigger(app.id, "app_on_kin3");
-		logger().info(`app on kin3 - should migrate ${ user.id }`);
+		logger().debug(`app on kin3 - should migrate ${ user.id }`);
 		return true;
 	}
 	if (app.shouldApplyGradualMigration() && !await checkedMigrationRecently(user.id)) {
@@ -130,18 +130,18 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 		const walletApplication = await WalletApplication.get(wallet.address);
 		if (walletApplication && walletApplication.createdDateKin3) {
 			metrics.migrationTrigger(app.id, "wallet_on_kin3");
-			logger().info(`current wallet already on kin3 - should migrate ${ wallet.address } ${ user.id }`);
+			logger().debug(`current wallet already on kin3 - should migrate ${ wallet.address } ${ user.id }`);
 			return true;
 		}
 		const whitelist = await GradualMigrationUser.findOneById(user.id);
 		if (whitelist && (whitelist.migrationDate || await withinMigrationRateLimit(app.id))) {
 			await GradualMigrationUser.setAsMigrated([user.id]);
 			metrics.migrationTrigger(app.id, "gradual_migration");
-			logger().info(`kin2 user in migration list - should migrate ${ wallet.address } ${ user.id }`);
+			logger().debug(`kin2 user in migration list - should migrate ${ wallet.address } ${ user.id }`);
 			return true;
 		}
 	}
-	logger().info(`kin2 user not in migration list - dont migrate ${ user.id }`);
+	logger().debug(`kin2 user not in migration list - dont migrate ${ user.id }`);
 	return false;
 }
 

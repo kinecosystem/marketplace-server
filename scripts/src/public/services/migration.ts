@@ -37,14 +37,14 @@ async function canSkipMigration(walletAddress: string): Promise<boolean> {
 		try {
 			await migrateZeroBalance(walletAddress);
 			// XXX - this is called by migration servic: await WalletApplication.updateCreatedDate(walletAddress, "createdDateKin3")
-			logger().info(`can skip migration for ${ walletAddress }`);
+			logger().debug(`can skip migration for ${ walletAddress }`);
 			return true;
 		} catch (e) {
 			logger().warn("migration on behalf of user failed ", { reason: (e as Error).message });
 			// fail to call migrate - let user call it instead
 		}
 	}
-	logger().info(`can NOT skip migration for ${ walletAddress }`);
+	logger().debug(`can NOT skip migration for ${ walletAddress }`);
 	return false;
 }
 
@@ -52,13 +52,13 @@ async function canSkipMigration(walletAddress: string): Promise<boolean> {
 async function getBlockchainVersionForWallet(wallet: WalletApplication, app: Application): Promise<{ blockchainVersion: BlockchainVersion, shouldMigrate: boolean }> {
 
 	if (wallet.createdDateKin3) {
-		logger().info(`wallet created on kin3 - dont migrate ${ wallet.walletAddress }`);
+		logger().debug(`wallet created on kin3 - dont migrate ${ wallet.walletAddress }`);
 		metrics.migrationInfo(app.id, "wallet_on_kin3");
 		return { blockchainVersion: "3", shouldMigrate: false };
 	}
 
 	if (app.config.blockchain_version === "3") {
-		logger().info(`app on kin3 - should migrate ${ wallet.walletAddress }`);
+		logger().debug(`app on kin3 - should migrate ${ wallet.walletAddress }`);
 		metrics.migrationInfo(app.id, "app_on_kin3");
 		return { blockchainVersion: "3", shouldMigrate: true };
 	}
@@ -67,13 +67,13 @@ async function getBlockchainVersionForWallet(wallet: WalletApplication, app: App
 		const whitelisted = await GradualMigrationUser.findByWallet(wallet.walletAddress);
 		if (whitelisted.length > 0 && (whitelisted.some(w => !!w.migrationDate) || await withinMigrationRateLimit(app.id))) {
 			await GradualMigrationUser.setAsMigrated(whitelisted.map(w => w.userId));
-			logger().info(`kin2 user on migration list - should migrate ${ wallet.walletAddress }`);
+			logger().debug(`kin2 user on migration list - should migrate ${ wallet.walletAddress }`);
 			metrics.migrationInfo(app.id, "gradual_migration");
 			return { blockchainVersion: "3", shouldMigrate: true };
 		}
 		// else, user is not whitelisted or is whitelisted but rate limit applied
 	}
-	logger().info(`kin2 user not on migration list - dont migrate ${ wallet.walletAddress }`);
+	logger().debug(`kin2 user not on migration list - dont migrate ${ wallet.walletAddress }`);
 	return { blockchainVersion: "2", shouldMigrate: false };
 }
 
@@ -84,7 +84,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 	if (!app) {
 		throw NoSuchApp(appId);
 	}
-	logger().info(`handling account status request app_id: ${ appId } public_address: ${ publicAddress }`);
+	logger().debug(`handling account status request app_id: ${ appId } public_address: ${ publicAddress }`);
 	const wallet = await WalletApplication.get(publicAddress);
 
 	let blockchainVersion: BlockchainVersion;
@@ -99,7 +99,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 			shouldMigrate = false;
 		}
 	}
-	logger().info(`handling account status response app_id: ${ appId } public_address: ${ publicAddress }, ${ shouldMigrate }, ${ blockchainVersion }`);
+	logger().debug(`handling account status response app_id: ${ appId } public_address: ${ publicAddress }, ${ shouldMigrate }, ${ blockchainVersion }`);
 
 	res.status(200).send({
 		should_migrate: shouldMigrate,

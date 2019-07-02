@@ -73,6 +73,14 @@ export function reportProcessAbort(reason: string = "", appId: string = "") {
 	statsd.increment("process_abort", 1, { system: "exit", reason, app_id: appId });
 }
 
+export function bulkUserCreationRequest(appId: string, numberOfUsersRequested: number) {
+	statsd.increment("bulk_user_creation_request", numberOfUsersRequested, { app_id: appId });
+}
+
+export function bulkUserCreated(appId: string) {
+	statsd.increment("bulk_user_creation", 1, { app_id: appId });
+}
+
 type MigrationReason = "app_on_kin3" | "wallet_on_kin3" | "gradual_migration";
 
 export function migrationRateLimitExceeded(appId: string) {

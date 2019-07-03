@@ -166,16 +166,19 @@ async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string, appL
 	if (appList[0] === "ALL") {
 		appList = (await Application.find({ select: ["id"] })).map(app => app.id);
 	}
-	await Promise.all(appList.map(async appId => {
+
+	for (let i = 0; i < appList.length; i++) {
+		const appId = appList[i];
 		let appOffer = await AppOffer.findOne({ appId, offerId: offer.id });
 		appOffer && options.verbose && console.log("Updating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
 
 		if (!appOffer) {
 			options.verbose && console.log("Creating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
-			appOffer = await AppOffer.create({ appId, offerId: offer.id });
+			appOffer = await AppOffer.generate(appId, offer.id, cap, walletAddress);
+		} else {
+			appOffer.walletAddress = walletAddress;
+			appOffer.cap = cap;
 		}
-		appOffer.walletAddress = walletAddress;
-		appOffer.cap = cap;
 		!options.dryRun && await appOffer.save();
-	}));
+	}
 }

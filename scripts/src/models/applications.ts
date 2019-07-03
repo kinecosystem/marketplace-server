@@ -120,6 +120,9 @@ export class AppOffer extends BaseEntity {
 	@Column({ name: "wallet_address" })
 	public walletAddress!: string;
 
+	@Column({ name: "ordering", type: "int" })
+	public ordering!: number;
+
 	@ManyToOne(type => Offer, { eager: true })
 	@JoinColumn({ name: "offer_id" })
 	public readonly offer!: Offer;
@@ -138,7 +141,14 @@ export class AppOffer extends BaseEntity {
 			userId
 		})).get(this.offerId) || 0;
 		return forUser >= this.cap.per_user;
+	}
 
+	public static async generate(appId: string, offerId: string, cap: Cap, walletAddress: string): Promise<AppOffer> {
+		const lastAppOffer = await AppOffer.findOne({ where: { appId }, order: { ordering: "DESC" } })
+		const orderingBufferStep = 10;
+		const lastAppOfferOrdering = lastAppOffer ? (lastAppOffer.ordering + 1) : 1;
+		const newAppOfferOrdering = lastAppOfferOrdering * orderingBufferStep;
+		return await AppOffer.create({ appId, offerId: offerId, cap, walletAddress, ordering: newAppOfferOrdering });
 	}
 }
 

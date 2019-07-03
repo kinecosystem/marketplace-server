@@ -1,4 +1,3 @@
-
 #Run example, including placeholder substitution:
 #  cat marketplace-public-deployment.yaml \
 #  | sed  " \
@@ -8,34 +7,35 @@
 #  s/__VERSION/latest/" \
 #  | kubectl apply  -f -
 
-#TODO: add resources (CPU/Memory) limitations
+# TODO: add resources (CPU/Memory) limitations
+
 apiVersion: batch/v1
 kind: Job
-
 metadata:
   annotations:
         iam.amazonaws.com/role: ci-marketplace-service
   labels:
-    app: marketplace-test-__SERVER_ROLE
-  name: marketplace-test-__SERVER_ROLE
+    app: marketplace-test
+  name: marketplace-test
   namespace: __ENVIRONMENT
 spec:
   #time to save pod before cleanup
-  ttlSecondsAfterFinished: 3600
+  ttlSecondsAfterFinished: 60
   template:
     metadata:
       labels:
-        app: marketplace-test__SERVER_ROLE
-        name: marketplace-test__SERVER_ROLE
+        app: marketplace-test
+        name: marketplace-test
         version: "__VERSION"
     spec:
-
       restartPolicy: Never
       containers:
         - command:  ["/bin/sh"]
-          args: [ "-c",  ". ./config/getKeys.sh ; ./config/getJWT.sh; npm run transpile; npm test" ]
+          args: [ "-c",  "./config/test.sh" ]
           image: kinecosystem/marketplace-server-ittiel:__VERSION
-          name: marketplace-__SERVER_ROLE
+          name: marketplace-test-__SERVER_ROLE
+          #TODO: check if port can be removed
+          # application port is taken from SSM
           ports:
           - containerPort: 3000
           env:
@@ -43,7 +43,7 @@ spec:
               # i.e "/ci/marketplace-public/"
               value: __ENVIRONMENT
             - name: SERVER_ROLE
-              value: __SERVER_ROLE
+              value: "__SERVER_ROLE"
               # Debug startup script
             - name: DEBUG
-              value: __DEBUG
+              value: "__DEBUG"

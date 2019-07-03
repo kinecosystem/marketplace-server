@@ -2,11 +2,11 @@
 #Run example, including placeholder substitution:
 #  cat marketplace-public-deployment.yaml \
 #  | sed  " \
-#  s/__ENVIRONMENT/ci/; \
-#  s/__SERVER_ROLE/public/; \
-#  s/__DEBUG/False/" \
-#  s/__REPLICAS/2/" \
-#  s/__VERSION/latest/" \
+#  s/__ENVIRONMENT/ci/g; \
+#  s/__SERVER_ROLE/public/g; \
+#  s/__DEBUG/False/g;" \
+#  s/__REPLICAS/2/g;" \
+#  s/__VERSION/latest/g" \
 #  | kubectl apply  -f -
 
 #TODO: add resources (CPU/Memory) limitations
@@ -39,6 +39,8 @@ spec:
           args: [ "-c",  "./config/startup.sh" ]
           image: kinecosystem/marketplace-server-ittiel:__VERSION
           name: marketplace-__SERVER_ROLE
+          #TODO: check if port can be removed
+          # application port is taken from SSM
           ports:
           - containerPort: 3000
           env:

@@ -1,21 +1,25 @@
 #Run example, including placeholder substitution:
-#cat marketplace-public-service.yaml | sed 's/__ENVIRONMENT'"/ci/g"  |kubectl apply -f -
+#cat marketplace-public-service.yaml |
+# sed 's/__ENVIRONMENT'"/ci/g
+#  s/__SERVER_ROLE/public/;" \
+#  |kubectl apply -f -
 #TODO: support variables: $SERVER_ROLE, PORT
 #TODO support labels?
-#TODO: replace load balancer with Ingress
 
 apiVersion: v1
 kind: Service
 metadata:
-  name: marketplace-public
+  name: marketplace-__SERVER_ROLE
   namespace: __ENVIRONMENT
   labels:
-    app: marketplace-public
-    name: marketplace-public
+    app: marketplace-__SERVER_ROLE
+    name: marketplace-__SERVER_ROLE
 spec:
-  type: LoadBalancer
+  type: NodePort
   ports:
-   - port: 3000
-     targetPort: 3000
+    - protocol: TCP
+      port: 80
+      #SSM APP_PORT
+      targetPort: 3000
   selector:
-   app: marketplace-public
+   app: marketplace-__SERVER_ROLE

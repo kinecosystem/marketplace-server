@@ -108,6 +108,14 @@ export class AppOffer extends BaseEntity {
 		return appOffers;
 	}
 
+	public static async generate(appId: string, offerId: string, cap: Cap, walletAddress: string): Promise<AppOffer> {
+		const lastAppOffer = await AppOffer.findOne({ where: { appId }, order: { ordering: "DESC" } });
+		const orderingBufferStep = 10;
+		const lastAppOfferOrdering = (lastAppOffer && lastAppOffer.ordering) ? Number(lastAppOffer.ordering) : 0;
+		const newAppOfferOrdering = lastAppOfferOrdering + 1 * orderingBufferStep;
+		return await AppOffer.create({ appId, offerId, cap, walletAddress, ordering: newAppOfferOrdering });
+	}
+
 	@PrimaryColumn({ name: "app_id" })
 	public appId!: string;
 
@@ -141,14 +149,6 @@ export class AppOffer extends BaseEntity {
 			userId
 		})).get(this.offerId) || 0;
 		return forUser >= this.cap.per_user;
-	}
-
-	public static async generate(appId: string, offerId: string, cap: Cap, walletAddress: string): Promise<AppOffer> {
-		const lastAppOffer = await AppOffer.findOne({ where: { appId }, order: { ordering: "DESC" } })
-		const orderingBufferStep = 10;
-		const lastAppOfferOrdering = lastAppOffer ? (lastAppOffer.ordering + 1) : 1;
-		const newAppOfferOrdering = lastAppOfferOrdering * orderingBufferStep;
-		return await AppOffer.create({ appId, offerId: offerId, cap, walletAddress, ordering: newAppOfferOrdering });
 	}
 }
 

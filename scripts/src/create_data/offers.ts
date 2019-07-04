@@ -167,8 +167,7 @@ async function saveAppOffers(offer: Offer, cap: Cap, walletAddress: string, appL
 		appList = (await Application.find({ select: ["id"] })).map(app => app.id);
 	}
 
-	for (let i = 0; i < appList.length; i++) {
-		const appId = appList[i];
+	for (const appId of appList) {
 		let appOffer = await AppOffer.findOne({ appId, offerId: offer.id });
 		appOffer && options.verbose && console.log("Updating AppOffer for offer %s id %s, App:", offer.name, offer.id, appId, options.dryRun ? "(dry run)" : "");
 

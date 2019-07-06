@@ -99,8 +99,7 @@ export class AppOffer extends BaseEntity {
 				.leftJoinAndSelect("app_offer.app", "app")
 				.where("app_offer.appId = :appId", { appId })
 				.andWhere("offer.type = :type", { type })
-				.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
-				.addOrderBy("offer.id", "ASC")
+				.orderBy("offer.ordering", "ASC")
 				.getMany();
 			localCache.set(cacheKey, appOffers);
 		}

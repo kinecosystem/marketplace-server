@@ -45,14 +45,19 @@ export class User extends CreationDateModel {
 
 		if (deviceId) {
 			conditions.deviceId = deviceId;
+			const wallets = await Wallet.find(conditions);
+			if (wallets.length) {
+				return new Wallets(wallets);
+			} // else delete deviceId and let find generic wallets
+			delete conditions.deviceId;
 		}
 
-		const wallets = await Wallet.find(conditions);
+		let wallets = await Wallet.find(conditions);
 		if (wallets.length === 0 && this.walletAddress) {
-			await this.lazyMigrateWallet(deviceId); // TODO can we get rid of this?
+			await this.lazyMigrateWallet(deviceId);
+			wallets = await Wallet.find(conditions);
 		}
-
-		return new Wallets(await Wallet.find(conditions));
+		return new Wallets(wallets);
 	}
 
 	public async updateWallet(deviceId: string, walletAddress: string): Promise<boolean> {
@@ -279,17 +284,19 @@ export class GradualMigrationUser extends BaseEntity {
 			const users: Array<{ id: string }> = await User
 				.createQueryBuilder("user")
 				.select("id")
-				.where("user.appUserId IN (:appUserIds)", { appUserIds })
+				.where("user.appUserId IN (:appUserIds)", { appUserIds: appUserIds.slice(i, i + BATCH_SIZE) })
 				.andWhere("user.appId = :appId", { appId })
 				.getRawMany();
 			const userIds = users.map(u => ({ userId: u.id }));
 
-			await GradualMigrationUser
-				.createQueryBuilder()
-				.insert()
-				.values(userIds)
-				.onConflict(`("user_id") DO NOTHING`)
-				.execute();
+			if (userIds.length) {
+				await GradualMigrationUser
+					.createQueryBuilder()
+					.insert()
+					.values(userIds)
+					.onConflict(`("user_id") DO NOTHING`)
+					.execute();
+			}
 		}
 	}
 

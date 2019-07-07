@@ -120,9 +120,8 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 		logger().info(`app on kin3 - should migrate ${ user.id }`);
 		return true;
 	}
-	if (app.shouldApplyGradualMigration()) {
-		const wallet = (await user.getWallets(deviceId)).lastUsed() ||
-			(await user.getWallets()).lastUsed();
+	if (app.shouldApplyGradualMigration() && !await checkedMigrationRecently(user.id)) {
+		const wallet = (await user.getWallets(deviceId)).lastUsed();
 		if (!wallet) {
 			// :( TODO shouldn't happen - log this
 			logger().error(`no wallet found for ${ user.id }`);
@@ -143,5 +142,18 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 		}
 	}
 	logger().info(`kin2 user not in migration list - dont migrate ${ user.id }`);
+	return false;
+}
+
+// return true if migration check was done recently
+async function checkedMigrationRecently(userId: string) {
+	const redis = getRedisClient();
+	const key = `check_mig:${userId}`;
+	const CHECK_MIGRATION_TTL = 60;
+
+	if (await redis.async.get(key)) {
+		return true;
+	}
+	await redis.async.setex(key, CHECK_MIGRATION_TTL, "1");
 	return false;
 }

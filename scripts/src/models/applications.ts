@@ -99,13 +99,20 @@ export class AppOffer extends BaseEntity {
 				.leftJoinAndSelect("app_offer.app", "app")
 				.where("app_offer.appId = :appId", { appId })
 				.andWhere("offer.type = :type", { type })
-				.orderBy("offer.amount", type === "earn" ? "DESC" : "ASC")
-				.addOrderBy("offer.id", "ASC")
+				.orderBy("offer.ordering", "ASC")
 				.getMany();
 			localCache.set(cacheKey, appOffers);
 		}
 
 		return appOffers;
+	}
+
+	public static async generate(appId: string, offerId: string, cap: Cap, walletAddress: string): Promise<AppOffer> {
+		const lastAppOffer = await AppOffer.findOne({ where: { appId }, order: { ordering: "DESC" } });
+		const orderingBufferStep = 10;
+		const lastAppOfferOrdering = (lastAppOffer && lastAppOffer.ordering) ? Number(lastAppOffer.ordering) : 0;
+		const newAppOfferOrdering = lastAppOfferOrdering + 1 * orderingBufferStep;
+		return await AppOffer.create({ appId, offerId, cap, walletAddress, ordering: newAppOfferOrdering });
 	}
 
 	@PrimaryColumn({ name: "app_id" })
@@ -119,6 +126,9 @@ export class AppOffer extends BaseEntity {
 
 	@Column({ name: "wallet_address" })
 	public walletAddress!: string;
+
+	@Column({ name: "ordering", type: "int" })
+	public ordering!: number;
 
 	@ManyToOne(type => Offer, { eager: true })
 	@JoinColumn({ name: "offer_id" })
@@ -138,7 +148,6 @@ export class AppOffer extends BaseEntity {
 			userId
 		})).get(this.offerId) || 0;
 		return forUser >= this.cap.per_user;
-
 	}
 }
 

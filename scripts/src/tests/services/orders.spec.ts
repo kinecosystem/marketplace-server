@@ -7,7 +7,7 @@ import { initLogger } from "../../logging";
 import { JWTContent } from "../../public/jwt";
 import { localCache } from "../../utils/cache";
 import { AuthToken, User } from "../../models/users";
-import { JWTValue, Offer } from "../../models/offers";
+import { JWTValue, Offer, Cap } from "../../models/offers";
 import { ExternalOrder, Order } from "../../models/orders";
 import { Application, AppOffer } from "../../models/applications";
 import { TransactionTimeout, UserHasNoWallet } from "../../errors";
@@ -500,12 +500,8 @@ describe("test v2 orders", async () => {
 		for (let i = 0; i < offers.length; i++) {
 			if (i % 2 === 0) {
 				offersIds.push(offers[i].id);
-				await AppOffer.create({
-					appId: app.id,
-					offerId: offers[i].id,
-					cap: { total: 10, per_user: 10 },
-					walletAddress: "some_address"
-				}).save();
+				const cap: Cap = { total: 10, per_user: 10 };
+				(await AppOffer.generate(app.id, offers[i].id, cap, "some_address")).save();
 			}
 		}
 
@@ -527,12 +523,8 @@ describe("test v2 orders", async () => {
 		async function createAppUser(offer: Offer, appId: string): Promise<User> {
 			const app = await helpers.createApp(appId);
 			const user = await helpers.createUser({ appId: app.id });
-			await AppOffer.create({
-				appId: app.id,
-				offerId: offer.id,
-				cap: { total: 1, per_user: 1 },
-				walletAddress: "some_address"
-			}).save();
+			const cap: Cap = { total: 1, per_user: 1 };
+			(await AppOffer.generate(app.id, offer.id, cap, "some_address")).save();
 
 			return user;
 		}

@@ -1802,7 +1802,7 @@ async function checkOutgoingTransferOrder(){
 
 	// const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: userId, length: 56 }) }`;
 	const receiverWalletAddress = Keypair.random().publicKey();
-	const order = await client.createOutgoingTransferOrder(receiverWalletAddress, "sender-app", "mock client title", "mock client description", "mock memo", 1000);
+	const order = await client.createOutgoingTransferOrder(receiverWalletAddress, "sender-app", "mock client title", "mock client description", "mock-memo", 1000);
 	expect(order).toMatchObject({ amount: 1000 });
 
 }
@@ -1819,7 +1819,7 @@ async function checkIncomingTransferOrder(){
 
 	// const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: userId, length: 56 }) }`;
 	const senderWalletAddress = Keypair.random().publicKey();
-	const order = await client.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mock memo");
+	const order = await client.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mock-memo");
 	expect(order).toMatchObject({ title: "mock client title" });
 }
 
@@ -1899,23 +1899,26 @@ async function checkTransferOrderE2E(){
 	const util = require("util");
 	// console.log(senderClient.wallet.address());
 
-	// const incomingOrder = await receiverClient.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mock memo");
-	const incomingOrder = await receiverClient.createIncomingTransferOrder(senderKeys.publicKey(), "sender-app", "mock client title", "mock client description", "mock memo");
+	// const incomingOrder = await receiverClient.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mock-memo");
+	const incomingOrder = await receiverClient.createIncomingTransferOrder(senderKeys.publicKey(), "sender-app", "mock client title", "mock client description", "mock-memo");
 	console.log("incoming order is %s", util.inspect(incomingOrder));
 	expect(incomingOrder).toMatchObject({ title: "mock client title" });
 
-	const outgoingOrder = await senderClient.createOutgoingTransferOrder(receiverKeys.publicKey(), "receiver-app", "mock client title", "mock client description", "mock memo",10);
+	const outgoingOrder = await senderClient.createOutgoingTransferOrder(receiverKeys.publicKey(), "receiver-app", "mock client title", "mock client description", "mock-memo", amount);
 	console.log("outgoing order is %s", util.inspect(outgoingOrder));
 	expect(outgoingOrder).toMatchObject({ title: "mock client title" });
 
-	await senderClient.submitOrder(outgoingOrder.id);
+	const transaction = await senderClient.getTransactionXdr(receiverKeys.publicKey(), amount, outgoingOrder.id);
+	await senderClient.submitOrder(outgoingOrder.id, { transaction });
 
+	console.log("waiting for completion of outgoing order");
 	const updatedOutgoingOrder = await retry(() => senderClient.getOrder(outgoingOrder.id), order => order.status === "completed", "order did not turn completed");
 	expect(updatedOutgoingOrder).toMatchObject({
 		status: "completed",
 		amount
 	});
 
+	console.log("waiting for completion of incoming order");
 	const updatedIncomingOrder = await retry(() => senderClient.getOrder(incomingOrder.id), order => order.status === "completed", "order did not turn completed");
 	expect(updatedIncomingOrder).toMatchObject({
 		status: "completed",

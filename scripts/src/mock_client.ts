@@ -1901,39 +1901,27 @@ async function checkTransferOrderE2E(){
 
 	// const incomingOrder = await receiverClient.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mock memo");
 	const incomingOrder = await receiverClient.createIncomingTransferOrder(senderKeys.publicKey(), "sender-app", "mock client title", "mock client description", "mock memo");
-	console.log("order is %s", util.inspect(incomingOrder));
+	console.log("incoming order is %s", util.inspect(incomingOrder));
 	expect(incomingOrder).toMatchObject({ title: "mock client title" });
 
-	// receiverClient.submitOrder(incomingOrder.id);
+	const outgoingOrder = await senderClient.createOutgoingTransferOrder(receiverKeys.publicKey(), "receiver-app", "mock client title", "mock client description", "mock memo",10);
+	console.log("outgoing order is %s", util.inspect(outgoingOrder));
+	expect(outgoingOrder).toMatchObject({ title: "mock client title" });
 
-	// TBD now do a blockchain transaction, this should trigger the internal hook
-	const transaction = await senderClient.getTransactionXdr(receiverKeys.publicKey(), amount, "abc123");
-	// senderClient.pay(receiverKeys.publicKey(), amount, "abc123");
-	// await senderClient.submitOrder("TW8YGLFGPI11RqFUOnl5f", { transaction });
-	// await payment.submitTransaction(receiverKeys.publicKey(), senderKeys.publicKey(), "smp3", amount, "TW8YGLFGPI11RqFUOnl5f", transaction);
+	await senderClient.submitOrder(outgoingOrder.id);
 
-	const payload = {
-		amount,
-		app_id: "smp3",
-		recipient_address: receiverKeys.publicKey(),
-		sender_address: senderKeys.publicKey(),
-		id: "TW8YGLFGPI11RqFUOnl5f",
-		callback: `${ getConfig().internal_service }/v1/internal/webhook`,
-		transaction,
-	};
+	const updatedOutgoingOrder = await retry(() => senderClient.getOrder(outgoingOrder.id), order => order.status === "completed", "order did not turn completed");
+	expect(updatedOutgoingOrder).toMatchObject({
+		status: "completed",
+		amount
+	});
 
-	console.log(util.inspect(payload));
+	const updatedIncomingOrder = await retry(() => senderClient.getOrder(incomingOrder.id), order => order.status === "completed", "order did not turn completed");
+	expect(updatedIncomingOrder).toMatchObject({
+		status: "completed",
+		amount
+	});
 
-	// const httpClient = getAxiosClient();
-	// const res = await httpClient.post(`http://localhost:32868/tx/submit`, payload);
-	// console.log(util.inspect(res));
-
-	// TBD check that the incomingOrder status has changed to "completed" and the the amount was set correctly
-	// const updatedOrder = await retry(() => receiverClient.getOpenOrder(incomingOrder.id), order => order.status === "completed", "order did not turn completed");
-	// expect(updatedOrder).toMatchObject({
-	// 	status: "completed",
-	// 	amount
-	// });
 }
 
 async function main() {
@@ -1957,28 +1945,28 @@ async function main() {
 	}
 
 	async function v2() {
-		await registerJWT();
-		await outdatedJWT();
-		await updateWallet();
-		await userProfile();
-		await extraTrustlineIsOK();
-		await earnPollFlow();
-		await earnTutorial();
-		await spendFlow();
-		await earnQuizFlow();
-		await nativeEarnFlow();
-		await nativeSpendFlow();
-		await didNotApproveTOS();
-		await testRegisterNewUser();
-		await tryToNativeSpendTwice();
-		await tryToNativeSpendTwiceWithNonce();
-		await p2p();
-		await getOfferTranslations();
-		await twoUsersSharingWallet();
-		await checkValidTokenAfterLoginRightAfterLogout();
-		await getOffersVersionSpecificImages();
-		await checkOutgoingTransferOrder();
-		await checkIncomingTransferOrder();
+		// await registerJWT();
+		// await outdatedJWT();
+		// await updateWallet();
+		// await userProfile();
+		// await extraTrustlineIsOK();
+		// await earnPollFlow();
+		// await earnTutorial();
+		// await spendFlow();
+		// await earnQuizFlow();
+		// await nativeEarnFlow();
+		// await nativeSpendFlow();
+		// await didNotApproveTOS();
+		// await testRegisterNewUser();
+		// await tryToNativeSpendTwice();
+		// await tryToNativeSpendTwiceWithNonce();
+		// await p2p();
+		// await getOfferTranslations();
+		// await twoUsersSharingWallet();
+		// await checkValidTokenAfterLoginRightAfterLogout();
+		// await getOffersVersionSpecificImages();
+		// await checkOutgoingTransferOrder();
+		// await checkIncomingTransferOrder();
 		await checkTransferOrderE2E();
 	}
 
@@ -1991,9 +1979,9 @@ async function main() {
 		await walletSharedAcrossApps();
 	}
 
-	await v1();
+	// await v1();
 	await v2();
-	await migration();
+	// await migration();
 }
 
 main()

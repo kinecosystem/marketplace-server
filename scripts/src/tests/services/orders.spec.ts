@@ -501,7 +501,7 @@ describe("test v2 orders", async () => {
 			if (i % 2 === 0) {
 				offersIds.push(offers[i].id);
 				const cap: Cap = { total: 10, per_user: 10 };
-				(await AppOffer.generate(app.id, offers[i].id, cap, "some_address")).save();
+				await (await AppOffer.generate(app.id, offers[i].id, cap, "some_address")).save();
 			}
 		}
 
@@ -524,7 +524,7 @@ describe("test v2 orders", async () => {
 			const app = await helpers.createApp(appId);
 			const user = await helpers.createUser({ appId: app.id });
 			const cap: Cap = { total: 1, per_user: 1 };
-			(await AppOffer.generate(app.id, offer.id, cap, "some_address")).save();
+			await (await AppOffer.generate(app.id, offer.id, cap, "some_address")).save();
 
 			return user;
 		}

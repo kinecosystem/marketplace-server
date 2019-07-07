@@ -99,7 +99,7 @@ export class AppOffer extends BaseEntity {
 				.leftJoinAndSelect("app_offer.app", "app")
 				.where("app_offer.appId = :appId", { appId })
 				.andWhere("offer.type = :type", { type })
-				.orderBy("offer.ordering", "ASC")
+				.orderBy("app_offer.sortIndex", "ASC")
 				.getMany();
 			localCache.set(cacheKey, appOffers);
 		}
@@ -108,11 +108,11 @@ export class AppOffer extends BaseEntity {
 	}
 
 	public static async generate(appId: string, offerId: string, cap: Cap, walletAddress: string): Promise<AppOffer> {
-		const lastAppOffer = await AppOffer.findOne({ where: { appId }, order: { ordering: "DESC" } });
+		const lastAppOffer = await AppOffer.findOne({ where: { appId }, order: { sortIndex: "DESC" } });
 		const orderingBufferStep = 10;
-		const lastAppOfferOrdering = (lastAppOffer && lastAppOffer.ordering) ? Number(lastAppOffer.ordering) : 0;
+		const lastAppOfferOrdering = (lastAppOffer && lastAppOffer.sortIndex) ? Number(lastAppOffer.sortIndex) : 0;
 		const newAppOfferOrdering = lastAppOfferOrdering + 1 * orderingBufferStep;
-		return await AppOffer.create({ appId, offerId, cap, walletAddress, ordering: newAppOfferOrdering });
+		return await AppOffer.create({ appId, offerId, cap, walletAddress, sortIndex: newAppOfferOrdering });
 	}
 
 	@PrimaryColumn({ name: "app_id" })
@@ -127,8 +127,8 @@ export class AppOffer extends BaseEntity {
 	@Column({ name: "wallet_address" })
 	public walletAddress!: string;
 
-	@Column({ name: "ordering", type: "int" })
-	public ordering!: number;
+	@Column({ name: "sort_index", type: "int" })
+	public sortIndex!: number;
 
 	@ManyToOne(type => Offer, { eager: true })
 	@JoinColumn({ name: "offer_id" })

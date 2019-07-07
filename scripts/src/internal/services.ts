@@ -1,3 +1,4 @@
+import { getRedisClient } from "../redis";
 import { getDefaultLogger as logger } from "../logging";
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
@@ -101,7 +102,12 @@ async function getPaymentJWT(order: db.Order, appId: string, user: User): Promis
 }
 
 export async function paymentComplete(payment: CompletedPayment) {
-	const order = await db.Order.getOne({ orderId: payment.id });
+	// if I can find the "paytment.id" in the redis, it means its a memo and the value is the real order id
+	const redis = getRedisClient();
+	const incomingOrderId = await redis.async.get(payment.id);
+
+	// order id will be either the incomingOrderId realized from cache, or the actual order id from the hook payload
+	const order = await db.Order.getOne({ orderId: incomingOrderId || payment.id });
 	if (!order) {
 		logger().error(`received payment for unknown order id ${ payment.id }`);
 		return;
@@ -178,7 +184,17 @@ export async function paymentComplete(payment: CompletedPayment) {
 	const prevStatus = order.status;
 	const prevStatusDate = order.currentStatusDate;
 	order.setStatus("completed");
+
+	// an incoming transfer was created with amount: 0. we need to change that.
+	if (incomingOrderId) {
+		order.setAmount(payment.amount);
+	}
 	await order.save();
+
+	// if it was an incoming transfer, clear the cache so we wont process again
+	if (incomingOrderId) {
+		await redis.async.del(payment.id);
+	}
 
 	metrics.completeOrder(
 		order.origin,

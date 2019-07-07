@@ -398,6 +398,25 @@ export class Client {
 		}
 	}
 
+	public async createOutgoingTransferOrder(walletAddress: string, appId: string, title: string, description: string, memo: string, amount: number): Promise<OpenOrder> {
+		try {
+			const res = await this.requests
+				.request(`/v2/transfers/outgoing/orders`, {
+						wallet_address: walletAddress,
+						app_id: appId,
+						title,
+						description,
+						memo,
+						amount
+				 })
+				.post<OpenOrder>();
+			return res.data;
+		} catch (e) {
+			console.log(`error while creating cross app order`);
+			throw e;
+		}
+	}
+
 	public async getUserProfile(userId: string = "me"): Promise<UserProfile> {
 		try {
 			const res = await this.requests

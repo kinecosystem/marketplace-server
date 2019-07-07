@@ -13,7 +13,7 @@ import { Order } from "./public/services/orders";
 import { Offer } from "./public/services/offers";
 import { Order as DbOrder } from "./models/orders";
 import { Client as V1MarketplaceClient } from "./client.v1";
-import { generateId, randomInteger, retry, delay } from "./utils/utils";
+import { generateId, randomInteger, retry, delay, generateRandomString } from "./utils/utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
 import { ExternalOfferPayload } from "./public/services/native_offers";
 import { Client as MarketplaceClient, ClientError, JWTPayload } from "./client";
@@ -1790,6 +1790,23 @@ async function checkClientMigration() {
 	await client.changeAppBlockchainVersion("2");
 }
 
+async function checkOutgoingTransferOrder(){
+	console.log("===================================== checkOutgoingTransferOrder =====================================");
+
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
+
+	// const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: userId, length: 56 }) }`;
+	const receiverWalletAddress = Keypair.random().publicKey();
+	const order = await client.createOutgoingTransferOrder(receiverWalletAddress, "sender-app", "mock client title", "mock client description", "mock memo", 1000);
+	expect(order).toMatchObject({ amount: 1000 });
+
+}
+
 async function main() {
 	async function v1() {
 		await v1RegisterJWT();
@@ -1831,6 +1848,7 @@ async function main() {
 		await twoUsersSharingWallet();
 		await checkValidTokenAfterLoginRightAfterLogout();
 		await getOffersVersionSpecificImages();
+		await checkOutgoingTransferOrder();
 	}
 
 	async function migration() {

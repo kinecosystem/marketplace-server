@@ -520,3 +520,33 @@ function checkIfTimedOut(order: db.Order): Promise<void> {
 function getLockResource(type: "create" | "get", ...ids: string[]): string {
 	return `locks:orders:${ type }:${ ids.join(":") }`;
 }
+
+export async function createOutgoingTransferOrder(recipientWalletAddress: string, recipientAppId: string, title: string, description: string, memo: string, amount: number, sender: User, senderDeviceId: string): Promise<OpenOrder> {
+	logger().info("creating an outgoing transfer order");
+	const senderWallet = (await sender.getWallets(senderDeviceId)).lastUsed();
+	if (!senderWallet) {
+		throw UserHasNoWallet(sender.id, senderDeviceId);
+	}
+
+	const order = db.OutgoingTransferOrder.new({
+		offerId: `cross-app_${sender.appId}_to_${recipientAppId}`,
+		amount,
+		status: "opened",
+		blockchainData: {
+			sender_address: senderWallet.address,
+			recipient_address: recipientWalletAddress,
+			memo
+		}
+	}, {
+		user: sender,
+		type: "spend",
+		wallet: senderWallet.address,
+		meta: { title, description }
+	});
+
+	await order.save();
+
+	logger().info("created an outgoing transfer order");
+
+	return openOrderDbToApi(order, sender.id);
+}

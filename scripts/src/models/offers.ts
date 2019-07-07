@@ -11,6 +11,7 @@ export type BlockchainData = {
 	transaction_id?: string;
 	sender_address?: string;
 	recipient_address?: string;
+	memo?: string;
 };
 
 export type BlockchainVersion = "2" | "3";

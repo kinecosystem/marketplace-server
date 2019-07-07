@@ -13,7 +13,7 @@ import { Application, AppOffer } from "../../models/applications";
 import { TransactionTimeout, UserHasNoWallet } from "../../errors";
 import { getOffers, Offer as OfferData } from "../../public/services/offers";
 import { close as closeModels, init as initModels } from "../../models/index";
-import { generateId, IdPrefix, random, randomInteger } from "../../utils/utils";
+import { generateId, IdPrefix, random, randomInteger, generateRandomString } from "../../utils/utils";
 import {
 	changeOrder,
 	createMarketplaceOrder,
@@ -22,7 +22,8 @@ import {
 	Order as OrderData,
 	OrderList,
 	setFailedOrder,
-	submitOrder
+	submitOrder,
+	createOutgoingTransferOrder
 } from "../../public/services/orders";
 
 import * as helpers from "../helpers";
@@ -709,5 +710,19 @@ describe("test v2 orders", async () => {
 		const history2 = (await getHistory(token2)).map(o => o.id);
 		expect(history1.length).toBe(history2.length);
 		history1.forEach(o => expect(history2).toContain(o));
+	});
+
+	test("create a cross-app order shaharsol", async () => {
+		const senderApp = await helpers.createApp("sender-app");
+		const receiverApp = await helpers.createApp("receiver-app");
+		const deviceId1 = `device_${ generateId() }`;
+		const sender = await helpers.createUser({ deviceId: deviceId1, appId: senderApp.id, createWallet: false });
+		const receiver = await helpers.createUser({ deviceId: deviceId1, appId: receiverApp.id, createWallet: false });
+		const senderWalletAddress = `wallet-${ generateRandomString({ prefix: sender.id, length: 56 }) }`;
+		const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: receiver.id, length: 56 }) }`;
+		await sender.updateWallet(deviceId1, senderWalletAddress);
+		await receiver.updateWallet(deviceId1, receiverWalletAddress);
+		const order = await createOutgoingTransferOrder(receiverWalletAddress, receiverApp.id, "a title", "a description", "a memo" , 1000, sender, deviceId1);
+		expect(order).toMatchObject({ amount: 1000 });
 	});
 });

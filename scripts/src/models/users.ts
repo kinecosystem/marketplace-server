@@ -256,7 +256,7 @@ export class WalletApplication extends BaseEntity {
 		return "2";
 	}
 
-	@cached(getRedisClient(), (walletAddress: string) => `wallet_app:${ walletAddress }`)
+	@cached(getRedisClient(), (walletAddress: string) => `wallet_app:2:${ walletAddress }`, moment.duration(10, "minute").asSeconds())
 	public static async get(walletAddress: string): Promise<WalletApplication | undefined> {
 		return await WalletApplication.findOneById(walletAddress);
 	}

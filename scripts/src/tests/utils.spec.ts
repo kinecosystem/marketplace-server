@@ -24,12 +24,12 @@ describe("util functions", () => {
 		const redis = getRedisClient();
 
 		class TestMe {
-			@cached(redis, (a: number, b: number) => `key:${ a }:${ b }`)
+			@cached(redis, (a: number, b: number) => `key:${ a }:${ b }`, 10)
 			public async foo(a: number, b: number): Promise<number> {
 				return a * b;
 			}
 
-			@cached(redis, (a: number, b: number) => `key:${ a }:${ b }`)
+			@cached(redis, (a: number, b: number) => `key:${ a }:${ b }`, 10)
 			public async foo10(a: number, b: number): Promise<number> {
 				// return a different result than foo, but use same key
 				return a * b * 10;

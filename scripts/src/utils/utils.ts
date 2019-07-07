@@ -220,7 +220,7 @@ export async function batch(list: any[], chunkSize: number, delay: number, chunk
 // cache a function that returns a promise
 // use keygen to calcualte the cache key
 // add a .clear method on the function to clear the cache.
-export function cached(cache: RedisAsyncClient, keygen: (...args: any[]) => string) {
+export function cached(cache: RedisAsyncClient, keygen: (...args: any[]) => string, timeout: number) {
 	return function(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
 		const originalMethod = descriptor.value;
 		descriptor.value = async function() {
@@ -230,7 +230,7 @@ export function cached(cache: RedisAsyncClient, keygen: (...args: any[]) => stri
 			if (!result) {
 				result = await originalMethod.apply(this, arguments);
 				if (result) {
-					await cache.async.set(cacheKey, JSON.stringify(result));
+					await cache.async.setex(cacheKey, timeout, JSON.stringify(result));
 				}
 			}
 			return result;

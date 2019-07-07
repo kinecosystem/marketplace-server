@@ -127,7 +127,7 @@ export class AppOffer extends BaseEntity {
 	@Column({ name: "wallet_address" })
 	public walletAddress!: string;
 
-	@Column({ name: "sortIndex", type: "int" })
+	@Column({ name: "sort_index", type: "int" })
 	public sortIndex!: number;
 
 	@ManyToOne(type => Offer, { eager: true })

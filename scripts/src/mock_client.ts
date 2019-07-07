@@ -1807,6 +1807,135 @@ async function checkOutgoingTransferOrder(){
 
 }
 
+async function checkIncomingTransferOrder(){
+	console.log("===================================== checkIncomingTransferOrder =====================================");
+
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
+
+	// const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: userId, length: 56 }) }`;
+	const senderWalletAddress = Keypair.random().publicKey();
+	const order = await client.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mock memo");
+	expect(order).toMatchObject({ title: "mock client title" });
+}
+
+async function checkTransferOrderE2E(){
+
+	function choosePollAnswers(poll: Poll): Answers {
+		const answers: Answers = {};
+		for (const page of poll.pages.slice(0, poll.pages.length - 1)) {
+			const p = (page as PollPage);
+			const choice = randomInteger(0, p.question.answers.length);
+			answers[p.question.id] = choice;
+		}
+		return answers;
+	}
+
+	console.log("===================================== checkTransferOrderE2E =====================================");
+
+	const amount = 10; // kins to be transferred
+
+	const sender = generateId();
+	const receiver = generateId();
+	const senderDeviceId = generateId();
+	const receiverDeviceId = generateId();
+
+	// const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
+	const appClient = new SampleAppClient(SMP3_APP_CONFIG.jwtAddress);
+
+	const senderJwt = await appClient.getRegisterJWT(sender, senderDeviceId);
+	const receiverJwt = await appClient.getRegisterJWT(receiver, receiverDeviceId);
+	const senderClient = await MarketplaceClient.create({ jwt: senderJwt });
+	const receiverClient = await MarketplaceClient.create({ jwt: receiverJwt });
+
+	const senderKeys = Keypair.random();
+	const receiverKeys = Keypair.random();
+
+	// const senderWalletAddress = Keypair.random().publicKey();
+	// const receiverWalletAddress = Keypair.random().publicKey();
+
+	await senderClient.updateWalletKeys(senderKeys);
+	await receiverClient.updateWalletKeys(receiverKeys);
+	// await senderClient.updateWallet(senderWalletAddress);
+	// await receiverClient.updateWallet(receiverWalletAddress);
+	// await senderClient.updateWallet("");
+	// await receiverClient.updateWallet("");
+
+	await senderClient.activate();
+	await receiverClient.activate();
+
+	// ============ use an earn poll flow to charge the sender wallet with balance ============
+	const selectedOffer = await getOffer(senderClient, "earn", "poll");
+
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
+	const openOrder = await senderClient.createOrder(selectedOffer.id);
+	console.log(`got open order`, openOrder);
+
+	// fill in the poll
+	console.log("poll " + selectedOffer.content);
+	const poll: Poll = JSON.parse(selectedOffer.content);
+
+	const content = JSON.stringify(choosePollAnswers(poll));
+	console.log("answers " + content);
+
+	const submittedOrder = await senderClient.submitOrder(openOrder.id, { content });
+
+	//
+	const order = await retry(() => senderClient.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
+	console.log(`completion date: ${ order.completion_date }`);
+
+	// check order on blockchain
+	const apayment = (await retry(() => senderClient.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+
+	console.log(`payment on blockchain:`, apayment);
+	// ============ end poll section ============
+
+	// const senderWalletAddress = senderClient.wallet.publicKey();
+	const util = require("util");
+	// console.log(senderClient.wallet.address());
+
+	// const incomingOrder = await receiverClient.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mock memo");
+	const incomingOrder = await receiverClient.createIncomingTransferOrder(senderKeys.publicKey(), "sender-app", "mock client title", "mock client description", "mock memo");
+	console.log("order is %s", util.inspect(incomingOrder));
+	expect(incomingOrder).toMatchObject({ title: "mock client title" });
+
+	// receiverClient.submitOrder(incomingOrder.id);
+
+	// TBD now do a blockchain transaction, this should trigger the internal hook
+	const transaction = await senderClient.getTransactionXdr(receiverKeys.publicKey(), amount, "abc123");
+	// senderClient.pay(receiverKeys.publicKey(), amount, "abc123");
+	// await senderClient.submitOrder("TW8YGLFGPI11RqFUOnl5f", { transaction });
+	// await payment.submitTransaction(receiverKeys.publicKey(), senderKeys.publicKey(), "smp3", amount, "TW8YGLFGPI11RqFUOnl5f", transaction);
+
+	const payload = {
+		amount,
+		app_id: "smp3",
+		recipient_address: receiverKeys.publicKey(),
+		sender_address: senderKeys.publicKey(),
+		id: "TW8YGLFGPI11RqFUOnl5f",
+		callback: `${ getConfig().internal_service }/v1/internal/webhook`,
+		transaction,
+	};
+
+	console.log(util.inspect(payload));
+
+	// const httpClient = getAxiosClient();
+	// const res = await httpClient.post(`http://localhost:32868/tx/submit`, payload);
+	// console.log(util.inspect(res));
+
+	// TBD check that the incomingOrder status has changed to "completed" and the the amount was set correctly
+	// const updatedOrder = await retry(() => receiverClient.getOpenOrder(incomingOrder.id), order => order.status === "completed", "order did not turn completed");
+	// expect(updatedOrder).toMatchObject({
+	// 	status: "completed",
+	// 	amount
+	// });
+}
+
 async function main() {
 	async function v1() {
 		await v1RegisterJWT();
@@ -1849,6 +1978,8 @@ async function main() {
 		await checkValidTokenAfterLoginRightAfterLogout();
 		await getOffersVersionSpecificImages();
 		await checkOutgoingTransferOrder();
+		await checkIncomingTransferOrder();
+		await checkTransferOrderE2E();
 	}
 
 	async function migration() {

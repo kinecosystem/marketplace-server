@@ -14,6 +14,7 @@ import { Mutable } from "./utils/utils";
 import { CLIENT_SDK_VERSION_HEADER } from "./middleware";
 import * as jsonwebtoken from "jsonwebtoken";
 import { BlockchainVersion } from "./models/offers";
+import { Keypair } from "@kinecosystem/kin.js";
 
 const MEMO_VERSION = "1";
 const MARKETPLACE_BASE = process.env.MARKETPLACE_BASE;
@@ -257,6 +258,26 @@ export class Client {
 		console.log("wallet with balance", this.wallet.balance.cached);
 	}
 
+	public async updateWalletKeys(keys: Keypair) {
+		const kinjs = this.requests.blockchainVersion === "2" ? kinjs1 : kinjs2;
+
+		if (keys.canSign()) {
+			console.log("updating wallet with keys: ", { public: keys.publicKey(), private: keys.secret() });
+		} else {
+			console.log("updating wallet with public key only: ", { public: keys.publicKey() });
+		}
+
+		await this.requests.request("/v2/users/me", { wallet_address: keys.publicKey() }).patch();
+
+		if (this.requests.blockchainVersion === "2") {
+			this.wallet = await kinjs1.createWallet(this.network2, keys as kinjs1.Keypair);
+		} else {
+			this.wallet = await kinjs2.createWallet(this.network3, keys as kinjs2.Keypair);
+		}
+
+		console.log("wallet with balance", this.wallet.balance.cached);
+	}
+
 	public async pay(recipient: string, amount: number, orderId: string): Promise<kinjs1.Payment> {
 		if (!this.wallet) {
 			throw new Error("first set a wallet");
@@ -408,6 +429,24 @@ export class Client {
 						description,
 						memo,
 						amount
+				 })
+				.post<OpenOrder>();
+			return res.data;
+		} catch (e) {
+			console.log(`error while creating cross app order`);
+			throw e;
+		}
+	}
+
+	public async createIncomingTransferOrder(walletAddress: string, appId: string, title: string, description: string, memo: string): Promise<OpenOrder> {
+		try {
+			const res = await this.requests
+				.request(`/v2/transfers/incoming/orders`, {
+						wallet_address: walletAddress,
+						app_id: appId,
+						title,
+						description,
+						memo,
 				 })
 				.post<OpenOrder>();
 			return res.data;

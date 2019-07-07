@@ -87,6 +87,8 @@ export interface Order {
 
 	setStatus(status: OpenOrderStatus): void;
 
+	setAmount(amount: number): void;
+
 	isExpired(): boolean;
 
 	isExternalOrder(): this is ExternalOrder;
@@ -414,6 +416,10 @@ class OrderImpl extends CreationDateModel implements Order {
 			default:
 				this.expirationDate = null as any;
 		}
+	}
+
+	public setAmount(amount: number) {
+		this.amount = amount;
 	}
 
 	public isExpired(): boolean {

@@ -1845,7 +1845,6 @@ async function checkTransferOrderE2E(){
 	const senderDeviceId = generateId();
 	const receiverDeviceId = generateId();
 
-	// const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
 	const appClient = new SampleAppClient(SMP3_APP_CONFIG.jwtAddress);
 
 	const senderJwt = await appClient.getRegisterJWT(sender, senderDeviceId);
@@ -1856,15 +1855,8 @@ async function checkTransferOrderE2E(){
 	const senderKeys = Keypair.random();
 	const receiverKeys = Keypair.random();
 
-	// const senderWalletAddress = Keypair.random().publicKey();
-	// const receiverWalletAddress = Keypair.random().publicKey();
-
 	await senderClient.updateWalletKeys(senderKeys);
 	await receiverClient.updateWalletKeys(receiverKeys);
-	// await senderClient.updateWallet(senderWalletAddress);
-	// await receiverClient.updateWallet(receiverWalletAddress);
-	// await senderClient.updateWallet("");
-	// await receiverClient.updateWallet("");
 
 	await senderClient.activate();
 	await receiverClient.activate();
@@ -1885,7 +1877,6 @@ async function checkTransferOrderE2E(){
 
 	const submittedOrder = await senderClient.submitOrder(openOrder.id, { content });
 
-	//
 	const order = await retry(() => senderClient.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
 
 	console.log(`completion date: ${ order.completion_date }`);
@@ -1896,21 +1887,16 @@ async function checkTransferOrderE2E(){
 	console.log(`payment on blockchain:`, apayment);
 	// ============ end poll section ============
 
-	// const senderWalletAddress = senderClient.wallet.publicKey();
 	const util = require("util");
-	// console.log(senderClient.wallet.address());
 
 	// const incomingOrder = await receiverClient.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mockmemo");
 	const incomingOrder = await receiverClient.createIncomingTransferOrder(senderKeys.publicKey(), "sender-app", "mock client title", "mock client description", "mockmemo");
-	console.log("incoming order is %s", util.inspect(incomingOrder));
 	expect(incomingOrder).toMatchObject({ title: "mock client title" });
 
 	const memoFromRedis = await getRedisClient().async.get("mockmemo");
-	console.log("memo from redis is %s", util.inspect(memoFromRedis));
-	// expect(memoFromRedis).toEqual("mockmemo");
+	expect(memoFromRedis).toEqual("mockmemo");
 
 	const outgoingOrder = await senderClient.createOutgoingTransferOrder(receiverKeys.publicKey(), "receiver-app", "mock client title", "mock client description", "mockmemo", amount);
-	console.log("outgoing order is %s", util.inspect(outgoingOrder));
 	expect(outgoingOrder).toMatchObject({ title: "mock client title" });
 
 	const transaction = await senderClient.getTransactionXdr(receiverKeys.publicKey(), amount, "mockmemo");

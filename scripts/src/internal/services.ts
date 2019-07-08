@@ -128,6 +128,11 @@ export async function paymentComplete(payment: CompletedPayment) {
 		}
 	});
 
+	// an incoming transfer was created with amount: 0. we need to change that.
+	if (incomingOrderId) {
+		order.setAmount(payment.amount);
+	}
+
 	// validate payment
 	if (order.amount !== payment.amount) {
 		logger().error(`payment <${ payment.id }, ${ payment.transaction_id }>` +
@@ -185,10 +190,6 @@ export async function paymentComplete(payment: CompletedPayment) {
 	const prevStatusDate = order.currentStatusDate;
 	order.setStatus("completed");
 
-	// an incoming transfer was created with amount: 0. we need to change that.
-	if (incomingOrderId) {
-		order.setAmount(payment.amount);
-	}
 	await order.save();
 
 	// if it was an incoming transfer, clear the cache so we wont process again

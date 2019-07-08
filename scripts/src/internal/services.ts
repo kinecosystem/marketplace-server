@@ -104,7 +104,7 @@ async function getPaymentJWT(order: db.Order, appId: string, user: User): Promis
 export async function paymentComplete(payment: CompletedPayment) {
 	// if I can find the "paytment.id" in the redis, it means its a memo and the value is the real order id
 	const redis = getRedisClient();
-	const incomingOrderId = await redis.async.get(payment.id);
+	const incomingOrderId = await redis.async.get("transfer_" + payment.id);
 
 	// order id will be either the incomingOrderId realized from cache, or the actual order id from the hook payload
 	const order = await db.Order.getOne({ orderId: incomingOrderId || payment.id });

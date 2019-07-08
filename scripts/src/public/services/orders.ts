@@ -551,7 +551,7 @@ export async function createOutgoingTransferOrder(recipientWalletAddress: string
 	return openOrderDbToApi(order, sender.id);
 }
 
-export async function createIncomingTransferOrder(title: string, description: string, memo: string, senderWalletAddress: string, appId: string, receiver: User, receiverDeviceId: string): Promise<OpenOrder> {
+export async function createIncomingTransferOrder(title: string, description: string, memo: string, senderWalletAddress: string, appId: string, receiver: User, receiverDeviceId: string): Promise<Order> {
 	logger().info("creating an incoming transfer order");
 	const receiverWallet = (await receiver.getWallets(receiverDeviceId)).lastUsed();
 	if (!receiverWallet) {
@@ -560,7 +560,7 @@ export async function createIncomingTransferOrder(title: string, description: st
 
 	const order = db.IncomingTransferOrder.new({
 		offerId: `cross-app_${appId}_to_${receiver.appId}`,
-		status: "opened",
+		status: "pending",
 		amount: 0, // not allowed to insert an order without amount
 		blockchainData: {
 			sender_address: senderWalletAddress,
@@ -580,11 +580,12 @@ export async function createIncomingTransferOrder(title: string, description: st
 	// i.e. when the watch we gonna add triggers a callback
 	const redis = getRedisClient();
 	await redis.async.set(memo, order.id);
-	// await addWatcherEndpoint(receiverWallet.address, memo, receiver.appId);
+
+	// adding a watch
 	const res = await setWatcherEndpoint([receiverWallet.address], receiver.appId);
 	await addWatcherEndpoint(receiverWallet.address, memo, receiver.appId);
 
 	logger().info("created an incoming transfer order");
 
-	return openOrderDbToApi(order, receiver.id);
+	return orderDbToApi(order, receiver.id, receiverWallet.address);
 }

@@ -578,12 +578,13 @@ export async function createIncomingTransferOrder(title: string, description: st
 
 	// we create a redis entry so this memo can uniquely identify this order.id down the line
 	// i.e. when the watch we gonna add triggers a callback
+	const parts = memo.split("-"); // extract order id from memo
 	const redis = getRedisClient();
-	await redis.async.set(memo, order.id);
+	await redis.async.set("transfer_" + parts[2], order.id);
 
 	// adding a watch
 	const res = await setWatcherEndpoint([receiverWallet.address], receiver.appId);
-	await addWatcherEndpoint(receiverWallet.address, memo, receiver.appId);
+	await addWatcherEndpoint(receiverWallet.address, parts[2], receiver.appId);
 
 	logger().info("created an incoming transfer order");
 

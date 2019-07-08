@@ -30,6 +30,7 @@ import {
 import { AnswersBackwardSupport } from "./public/services/offer_contents";
 import { Keypair } from "@kinecosystem/kin.js";
 import { BlockchainVersion } from "./models/offers";
+import { getRedisClient } from "./redis";
 
 const SMPL_APP_CONFIG = {
 	jwtAddress: process.env.JWT_SERVICE_BASE!,
@@ -1802,7 +1803,7 @@ async function checkOutgoingTransferOrder(){
 
 	// const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: userId, length: 56 }) }`;
 	const receiverWalletAddress = Keypair.random().publicKey();
-	const order = await client.createOutgoingTransferOrder(receiverWalletAddress, "sender-app", "mock client title", "mock client description", "mock-memo", 1000);
+	const order = await client.createOutgoingTransferOrder(receiverWalletAddress, "sender-app", "mock client title", "mock client description", "mockmemo", 1000);
 	expect(order).toMatchObject({ amount: 1000 });
 
 }
@@ -1819,7 +1820,7 @@ async function checkIncomingTransferOrder(){
 
 	// const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: userId, length: 56 }) }`;
 	const senderWalletAddress = Keypair.random().publicKey();
-	const order = await client.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mock-memo");
+	const order = await client.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mockmemo");
 	expect(order).toMatchObject({ title: "mock client title" });
 }
 
@@ -1899,16 +1900,20 @@ async function checkTransferOrderE2E(){
 	const util = require("util");
 	// console.log(senderClient.wallet.address());
 
-	// const incomingOrder = await receiverClient.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mock-memo");
-	const incomingOrder = await receiverClient.createIncomingTransferOrder(senderKeys.publicKey(), "sender-app", "mock client title", "mock client description", "mock-memo");
+	// const incomingOrder = await receiverClient.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mockmemo");
+	const incomingOrder = await receiverClient.createIncomingTransferOrder(senderKeys.publicKey(), "sender-app", "mock client title", "mock client description", "mockmemo");
 	console.log("incoming order is %s", util.inspect(incomingOrder));
 	expect(incomingOrder).toMatchObject({ title: "mock client title" });
 
-	const outgoingOrder = await senderClient.createOutgoingTransferOrder(receiverKeys.publicKey(), "receiver-app", "mock client title", "mock client description", "mock-memo", amount);
+	const memoFromRedis = await getRedisClient().async.get("mockmemo");
+	console.log("memo from redis is %s", util.inspect(memoFromRedis));
+	// expect(memoFromRedis).toEqual("mockmemo");
+
+	const outgoingOrder = await senderClient.createOutgoingTransferOrder(receiverKeys.publicKey(), "receiver-app", "mock client title", "mock client description", "mockmemo", amount);
 	console.log("outgoing order is %s", util.inspect(outgoingOrder));
 	expect(outgoingOrder).toMatchObject({ title: "mock client title" });
 
-	const transaction = await senderClient.getTransactionXdr(receiverKeys.publicKey(), amount, outgoingOrder.id);
+	const transaction = await senderClient.getTransactionXdr(receiverKeys.publicKey(), amount, "mockmemo");
 	await senderClient.submitOrder(outgoingOrder.id, { transaction });
 
 	console.log("waiting for completion of outgoing order");
@@ -1919,7 +1924,7 @@ async function checkTransferOrderE2E(){
 	});
 
 	console.log("waiting for completion of incoming order");
-	const updatedIncomingOrder = await retry(() => senderClient.getOrder(incomingOrder.id), order => order.status === "completed", "order did not turn completed");
+	const updatedIncomingOrder = await retry(() => receiverClient.getOrder(incomingOrder.id), order => order.status === "completed", "order did not turn completed");
 	expect(updatedIncomingOrder).toMatchObject({
 		status: "completed",
 		amount
@@ -1948,28 +1953,28 @@ async function main() {
 	}
 
 	async function v2() {
-		// await registerJWT();
-		// await outdatedJWT();
-		// await updateWallet();
-		// await userProfile();
-		// await extraTrustlineIsOK();
-		// await earnPollFlow();
-		// await earnTutorial();
-		// await spendFlow();
-		// await earnQuizFlow();
-		// await nativeEarnFlow();
-		// await nativeSpendFlow();
-		// await didNotApproveTOS();
-		// await testRegisterNewUser();
-		// await tryToNativeSpendTwice();
-		// await tryToNativeSpendTwiceWithNonce();
-		// await p2p();
-		// await getOfferTranslations();
-		// await twoUsersSharingWallet();
-		// await checkValidTokenAfterLoginRightAfterLogout();
-		// await getOffersVersionSpecificImages();
-		// await checkOutgoingTransferOrder();
-		// await checkIncomingTransferOrder();
+		await registerJWT();
+		await outdatedJWT();
+		await updateWallet();
+		await userProfile();
+		await extraTrustlineIsOK();
+		await earnPollFlow();
+		await earnTutorial();
+		await spendFlow();
+		await earnQuizFlow();
+		await nativeEarnFlow();
+		await nativeSpendFlow();
+		await didNotApproveTOS();
+		await testRegisterNewUser();
+		await tryToNativeSpendTwice();
+		await tryToNativeSpendTwiceWithNonce();
+		await p2p();
+		await getOfferTranslations();
+		await twoUsersSharingWallet();
+		await checkValidTokenAfterLoginRightAfterLogout();
+		await getOffersVersionSpecificImages();
+		await checkOutgoingTransferOrder();
+		await checkIncomingTransferOrder();
 		await checkTransferOrderE2E();
 	}
 
@@ -1982,9 +1987,9 @@ async function main() {
 		await walletSharedAcrossApps();
 	}
 
-	// await v1();
+	await v1();
 	await v2();
-	// await migration();
+	await migration();
 }
 
 main()

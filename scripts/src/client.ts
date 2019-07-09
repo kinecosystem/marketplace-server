@@ -448,7 +448,7 @@ export class Client {
 						description,
 						memo,
 				 })
-				.post<OpenOrder>();
+				.post<Order>();
 			return res.data;
 		} catch (e) {
 			console.log(`error while creating cross app order`);

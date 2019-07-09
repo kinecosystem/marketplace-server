@@ -1,5 +1,5 @@
 #Run example, including placeholder substitution:
-#  cat marketplace-public-deployment.yaml \
+#  cat marketplace-test-deployment.yaml \
 #  | sed  " \
 #  s/__ENVIRONMENT/ci/; \
 #  s/__SERVER_ROLE/public/; \
@@ -32,7 +32,7 @@ spec:
       containers:
         - command:  ["/bin/sh"]
           args: [ "-c",  "./config/test.sh" ]
-          image: kinecosystem/marketplace-server-ittiel:__VERSION
+          image: kinecosystem/marketplace-server:__VERSION
           name: marketplace-test-__SERVER_ROLE
           #TODO: check if port can be removed
           # application port is taken from SSM

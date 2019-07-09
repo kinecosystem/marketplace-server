@@ -1,5 +1,5 @@
 #Run example, including placeholder substitution:
-#cat marketplace-public-service.yaml |
+#cat marketplace-service.yaml |
 # sed 's/__ENVIRONMENT'"/ci/g
 #  s/__SERVER_ROLE/public/;" \
 #  |kubectl apply -f -

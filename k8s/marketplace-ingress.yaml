@@ -2,7 +2,7 @@
 # Need to create (manually for now) the related hosts on AWS Route53
 
 # Run example, including placeholder substitution:
-#   cat ingress-marketplace.yaml |
+#   cat marketplace-ingress.yaml |
 #   sed 's/__ENVIRONMENT'"/ci/g" \
 #   |kubectl apply -f -
 
@@ -18,21 +18,21 @@ metadata:
     app: marketplace-ingress
 spec:
   rules:
-  - host: __ENVIRONMENT.marketplace-public.kinecosystembeta.com
+  - host: __ENVIRONMENT-marketplace-public.kinecosystembeta.com
     http:
       paths:
       - path: /
         backend:
           serviceName: marketplace-public
           servicePort: 80
-  - host: __ENVIRONMENT.marketplace-internal.kinecosystembeta.com
-    http:
-      paths:
-      - path: /
-        backend:
-          serviceName: marketplace-internal
-          servicePort: 80
-  - host: __ENVIRONMENT.marketplace-admin.kinecosystembeta.com
+#  - host: __ENVIRONMENT-marketplace-internal.kinecosystembeta.com
+#    http:
+#      paths:
+#      - path: /
+#        backend:
+#          serviceName: marketplace-internal
+#          servicePort: 80
+  - host: __ENVIRONMENT-marketplace-admin.kinecosystembeta.com
     http:
       paths:
       - path: /

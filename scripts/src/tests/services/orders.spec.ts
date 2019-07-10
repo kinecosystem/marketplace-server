@@ -727,7 +727,7 @@ describe("test v2 orders", async () => {
 		expect(order).toMatchObject({ amount: 1000 });
 	});
 
-	test("create an incoming transfer order shaharsol", async () => {
+	test("create an incoming transfer order", async () => {
 		const senderApp = await helpers.createApp("sender-app");
 		const receiverApp = await helpers.createApp("receiver-app");
 		const deviceId1 = `device_${ generateId() }`;

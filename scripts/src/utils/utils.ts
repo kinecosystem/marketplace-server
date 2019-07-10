@@ -242,3 +242,18 @@ export function cached(cache: RedisAsyncClient, keygen: (...args: any[]) => stri
 		return descriptor;
 	};
 }
+
+export type Memo = {
+	version: string;
+	appId: string;
+	orderId: string;
+};
+
+export function parseMemo(memo: string): Memo{
+	const parts = memo.split("-");
+	return {
+		version: parts[0],
+		appId: parts[1],
+		orderId: parts[2]
+	};
+}

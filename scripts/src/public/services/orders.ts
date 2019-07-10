@@ -5,7 +5,7 @@ import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
 import { getDefaultLogger as logger } from "../../logging";
-import { pick, capitalizeFirstLetter } from "../../utils/utils";
+import { pick, capitalizeFirstLetter, parseMemo } from "../../utils/utils";
 import { Application, AppOffer } from "../../models/applications";
 import {
 	isPayToUser,
@@ -578,13 +578,13 @@ export async function createIncomingTransferOrder(title: string, description: st
 
 	// we create a redis entry so this memo can uniquely identify this order.id down the line
 	// i.e. when the watch we gonna add triggers a callback
-	const parts = memo.split("-"); // extract order id from memo
+	const parsedMemo = parseMemo(memo);
 	const redis = getRedisClient();
-	await redis.async.set(`transfer:${parts[2]}`, order.id);
+	await redis.async.set(`transfer:${parsedMemo.orderId}`, order.id);
 
 	// adding a watch
 	const res = await setWatcherEndpoint([receiverWallet.address], receiver.appId);
-	await addWatcherEndpoint(receiverWallet.address, parts[2], receiver.appId);
+	await addWatcherEndpoint(receiverWallet.address, parsedMemo.orderId, receiver.appId);
 
 	logger().info("created an incoming transfer order");
 

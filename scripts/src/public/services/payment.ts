@@ -127,19 +127,13 @@ export async function setWatcherEndpoint(addresses: string[], appId?: string): P
 	const blockchainVersion = appId ? (await Application.get(appId))!.config.blockchain_version : "2";
 	// should be called from the internal server api upon creation
 	const payload: Watcher = { wallet_addresses: addresses, callback: webhook };
-	// only in blockchain v2 we have a watcher service
 	const res = await httpClient.put(`${ getPaymentServiceUrl(blockchainVersion) }/services/${ SERVICE_ID }`, payload);
 	return res.data;
 }
 
 export async function addWatcherEndpoint(address: string, paymentId: string, appId: string) {
-	// only in blockchain v2 we have a watcher service
 	const blockchainVersion = (await Application.get(appId))!.config.blockchain_version;
 	logger().info("watch url will be " + `${ getPaymentServiceUrl(blockchainVersion) }/services/${ SERVICE_ID }/watchers/${ address }/payments/${ paymentId }`);
-	// if (blockchainVersion === "3") {
-	// 	return;
-	// }
-	// await httpClient.put(`${ getPaymentServiceUrl("2") }/services/${ SERVICE_ID }/watchers/${ address }/payments/${ paymentId }`);
 	await httpClient.put(`${ getPaymentServiceUrl(blockchainVersion) }/services/${ SERVICE_ID }/watchers/${ address }/payments/${ paymentId }`);
 }
 

@@ -1819,7 +1819,6 @@ async function checkIncomingTransferOrder(){
 	const client = await MarketplaceClient.create({ jwt });
 	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
 
-	// const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: userId, length: 56 }) }`;
 	const senderWalletAddress = Keypair.random().publicKey();
 	const order = await client.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mockmemo");
 	expect(order).toMatchObject({ title: "mock client title" });
@@ -1889,8 +1888,6 @@ async function checkTransferOrderE2E(){
 	console.log(`payment on blockchain:`, apayment);
 	// ============ end poll section ============
 
-	const util = require("util");
-
 	const incomingOrder = await receiverClient.createIncomingTransferOrder(senderKeys.publicKey(), "sender-app", "mock client title", "mock client description", memo);
 	expect(incomingOrder).toMatchObject({ title: "mock client title" });
 
@@ -1898,7 +1895,6 @@ async function checkTransferOrderE2E(){
 	expect(outgoingOrder).toMatchObject({ title: "mock client title" });
 
 	const parts = memo.split("-");
-	// const transaction = await senderClient.getTransactionXdr(receiverKeys.publicKey(), amount, memo);
 	const transaction = await senderClient.getTransactionXdr(receiverKeys.publicKey(), amount, parts[2]);
 	await senderClient.submitOrder(outgoingOrder.id, { transaction });
 

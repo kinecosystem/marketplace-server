@@ -1809,22 +1809,22 @@ async function checkOutgoingTransferOrder(){
 
 async function main() {
 	async function v1() {
-		// await v1RegisterJWT();
-		// await v1OutdatedJWT();
-		// await v1UpdateWallet();
-		// await v1UserProfile();
-		// await v1ExtraTrustlineIsOK();
-		// await v1EarnPollFlow();
-		// await v1EarnTutorial();
+		await v1RegisterJWT();
+		await v1OutdatedJWT();
+		await v1UpdateWallet();
+		await v1UserProfile();
+		await v1ExtraTrustlineIsOK();
+		await v1EarnPollFlow();
+		await v1EarnTutorial();
 		await v1SpendFlow();
-		// await v1EarnQuizFlow();
-		// await v1NativeEarnFlow();
-		// await v1NativeSpendFlow();
-		// await v1DidNotApproveTOS();
-		// await v1TestRegisterNewUser();
-		// await v1TryToNativeSpendTwice();
-		// await v1TryToNativeSpendTwiceWithNonce();
-		// await v1P2p();
+		await v1EarnQuizFlow();
+		await v1NativeEarnFlow();
+		await v1NativeSpendFlow();
+		await v1DidNotApproveTOS();
+		await v1TestRegisterNewUser();
+		await v1TryToNativeSpendTwice();
+		await v1TryToNativeSpendTwiceWithNonce();
+		await v1P2p();
 	}
 
 	async function v2() {
@@ -1861,7 +1861,7 @@ async function main() {
 	}
 
 	await v1();
-	// await v2();
+	await v2();
 	// await migration();
 }
 

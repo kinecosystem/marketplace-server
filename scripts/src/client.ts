@@ -438,7 +438,7 @@ export class Client {
 		}
 	}
 
-	public async createIncomingTransferOrder(walletAddress: string, appId: string, title: string, description: string, memo: string): Promise<OpenOrder> {
+	public async createIncomingTransferOrder(walletAddress: string, appId: string, title: string, description: string, memo: string): Promise<Order> {
 		try {
 			const res = await this.requests
 				.request(`/v2/transfers/incoming/orders`, {

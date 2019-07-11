@@ -1,7 +1,8 @@
 import * as uuid from "uuid";
 import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse } from "axios";
 import * as kinjs2 from "@kinecosystem/kin.js";
-import * as kinjs1 from "@kinecosystem/kin.js-v1";
+// import * as kinjs1 from "@kinecosystem/kin.js-v1";
+import * as kinjs1 from "shaharsolkin.js-v1";
 
 import { ApiError } from "./errors";
 import { AuthToken, UserProfile } from "./public/services/users";

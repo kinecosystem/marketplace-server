@@ -26,6 +26,7 @@ after_failure:
 branches:
   only:
     - master
+    - shaharsol/ECO-1417/make_tests_great_again
 
 deploy:
   provider: script

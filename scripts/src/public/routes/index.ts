@@ -46,9 +46,10 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.get(prefix("offers/"), authenticateUser, getOffers);
 
 	app.post(prefix("offers/external/orders"), authenticateUser, createExternalOrder);
+	app.post(prefix("offers/:offer_id/orders"), authenticateUser, createMarketplaceOrder);
+
 	app.post(prefix("transfers/outgoing/orders"), authenticateUser, createOutgoingTransferOrder);
 	app.post(prefix("transfers/incoming/orders"), authenticateUser, createIncomingTransferOrder);
-	app.post(prefix("offers/:offer_id/orders"), authenticateUser, createMarketplaceOrder);
 
 	app.get(prefix("orders/"), authenticateUser, getOrderHistory);
 	app.get(prefix("orders/:order_id"), authenticateUser, getOrder);

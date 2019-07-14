@@ -35,7 +35,7 @@ import {
 
 import { Paging } from "./index";
 import * as payment from "./payment";
-import { addWatcherEndpoint, setWatcherEndpoint } from "./payment";
+import { addWatcherEndpoint } from "./payment";
 import {
 	create as createEarnTransactionBroadcastToBlockchainSubmitted
 } from "../../analytics/events/earn_transaction_broadcast_to_blockchain_submitted";
@@ -583,7 +583,6 @@ export async function createIncomingTransferOrder(title: string, description: st
 	await redis.async.set(transferKey(parsedMemo.orderId), order.id);
 
 	// adding a watch
-	const res = await setWatcherEndpoint([receiverWallet.address], receiver.appId);
 	await addWatcherEndpoint(receiverWallet.address, parsedMemo.orderId, receiver.appId);
 
 	logger().info("created an incoming transfer order");

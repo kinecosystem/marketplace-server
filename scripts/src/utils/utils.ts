@@ -249,6 +249,10 @@ export type Memo = {
 	orderId: string;
 };
 
+/*
+A memo is structured as {version}-{appId}-{orderId}
+e.g. 1-kik-xapp_kit_125
+*/
 export function parseMemo(memo: string): Memo{
 	const parts = memo.split("-");
 	return {
@@ -256,4 +260,8 @@ export function parseMemo(memo: string): Memo{
 		appId: parts[1],
 		orderId: parts[2]
 	};
+}
+
+export function transferKey(orderId: string): string {
+	return `transfer:${orderId}`;
 }

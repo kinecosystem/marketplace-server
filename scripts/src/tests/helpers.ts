@@ -19,7 +19,7 @@ import { Event } from "../analytics";
 import { getConfig } from "../internal/config";
 import { localCache } from "../utils/cache";
 
-const animalPoll: Poll = {
+const animalPoll = JSON.stringify({
 	pages: [{
 		type: PageType.FullPageMultiChoice,
 		title: "Whats your favourite animal?",
@@ -29,7 +29,7 @@ const animalPoll: Poll = {
 			answers: ["dog", "cat", "monkey", "mouse"],
 		},
 	}],
-};
+});
 
 export async function createUser(options: { appId?: string; deviceId?: string; createWallet?: boolean } = {}): Promise<User> {
 	const uniqueId = generateId();

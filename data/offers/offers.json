@@ -1,0 +1,485 @@
+[
+	{
+		"id": "OWBCUknBhfQjfbYlqHj5Q",
+		"name": "Kin Faucet",
+		"amount": 5000,
+		"type": "earn",
+		"meta": "{\"title\":\"Kin Faucet\",\"image\":\"https://s3.amazonaws.com/assets.kinecosystembeta.com/images/kin_faucet.png\",\"description\":\"Get Kin\",\"order_meta\":{\"title\":\"Kin Faucet\",\"description\":\"Got Kin\"}}"
+	},
+	{
+		"id": "O147EohMsgNL9wzIA5o9v",
+		"name": "Online Poll #1",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a survey\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png\",\"description\":\"Share a thought\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OINFd69e2bklVyL17D1pl",
+		"name": "Finance Poll #1",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Tell us more!\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/take_a_survaey.png\",\"description\":\"Share your opinion\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OWfUCoW1tp7YdjlJDSlhD",
+		"name": "Favourites Poll #1",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Do you like..\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/do_you_like.png\",\"description\":\"More about you!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OXz07rDlIMAjBUOAeiDVs",
+		"name": "Future Poll#1",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Answer a poll\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/tell_us_more.png\",\"description\":\"What's your take?\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "Of0HAdLOzukCFVnQNNNK3",
+		"name": "Finance Poll #2",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Big spender?\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png\",\"description\":\"Tell us more!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "O75Wdaf3tjaCwSKopnXyO",
+		"name": "Marketplace Poll #1",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a survey\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/tell_us_more.png\",\"description\":\"What’s your view?\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OgfnizCuEL2e9SR0eDVM2",
+		"name": "Kik Poll #1",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Answer a poll\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png\",\"description\":\"Share your view\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OKSw6ITgNoMubhvSKX4Tb",
+		"name": "Generic Poll #1",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a Survey\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/favorites.png\",\"description\":\"Do you like...\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "ODsaeMT9FzfzCjVzMSdTC",
+		"name": "Generic Poll #2",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Travel much?\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png\",\"description\":\"Let us know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OFAFqCHNgng5Gl4qpgoTZ",
+		"name": "Generic Poll #3",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Answer a Poll\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/favorites.png\",\"description\":\"Share your view\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OiztvbBSgko7yDAQooZdU",
+		"name": "Generic Poll #4",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Meal Time\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/take_a_survaey.png\",\"description\":\"Answer a poll!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "O1JV5nGm2uecEzkM1Kr2r",
+		"name": "Generic Poll #5",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a survey\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/tell_us_more.png\",\"description\":\"Let us know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "O7hABE5JWSCo2zDru1pmo",
+		"name": "Generic Poll #6",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a survey\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/take_a_survaey.png\",\"description\":\"Share your view\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OLdc1sjzxgzfYy27yn1TT",
+		"name": "Generic Poll #7",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Sports fan?\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/sport.png\",\"description\":\"Tell us more!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OWHYZSdhR4GK1MfNizLMj",
+		"name": "Generic Poll #8",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Answer a Poll\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png\",\"description\":\"What's your view?\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "Omr8LP5KvJ2Vi81sC47EO",
+		"name": "Generic Poll #9",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a survey\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/tell_us_more.png\",\"description\":\"Share your view\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "Ot8SoJbK5qt61vBpyT5F9",
+		"name": "Generic Poll #10",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Favorite food\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/favorites.png\",\"description\":\"Let us know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OZVYDwHY3Eg1aqriaKS2U",
+		"name": "Generic Poll #11",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Cellphones\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/take_a_survaey.png\",\"description\":\"What's your view?\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OL10S24qKbOyBtp0vSHCV",
+		"name": "Generic Poll #12",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a survey\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/tell_us_more.png\",\"description\":\"Share your view\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "ONOLnjrjPlIJow82accAB",
+		"name": "Generic Poll #13",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Answer a poll\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/do_you_like.png\",\"description\":\"Do you like...\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OrwM9F9ACXENswnEzQoxJ",
+		"name": "Generic Poll #14",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Movies\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/movies.png\",\"description\":\"Let us know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OOIQwDJ3P9Hg4D1qHKF0D",
+		"name": "Generic Poll #15",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Food\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/do_you_like.png\",\"description\":\"What's your view\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "O0nCSDQCxv9IeXY5eD49s",
+		"name": "Generic Poll #16",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a survey\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png\",\"description\":\"Answer a poll\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "Oh6kQSDkQYVvOw9Nac3Tc",
+		"name": "Generic Poll #17",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Big reader?\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/do_you_like.png\",\"description\":\"Let us know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OXVfDmI3IUbsgW2qINYYx",
+		"name": "Generic Poll #18",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Breakfast\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/favorites.png\",\"description\":\"Share your view\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "Om4d45mbVOLs5ODtaUKKF",
+		"name": "Generic Poll #23",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"In 12 months...\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/take_a_survaey.png\",\"description\":\"Share your view\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OPpd5NsqdX0mUMOZ0TwbQ",
+		"name": "Generic Poll #19",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Budgeting\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/take_a_survaey.png\",\"description\":\"Answer a poll\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OhiinJ1Rvo19dRlTjzxAH",
+		"name": "Generic Poll #20",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Answer a poll\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png\",\"description\":\"Do you like...\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "Or00tFc8TXU5kYssZxQ6C",
+		"name": "Generic Poll #24",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Internet\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png\",\"description\":\"Let us know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "O6Rgk9zfD2MPXXDdyvZEF",
+		"name": "Generic Poll #26",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Sports\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/sport.png\",\"description\":\"Answer a poll\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OWbR2hxCoiKkY5qemLdIv",
+		"name": "Generic Poll #27",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Television\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png\",\"description\":\"Do you like...\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OwXfSJhPHVeACw6xId2z5",
+		"name": "Generic Poll #29",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Extreme Sports\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/sport.png\",\"description\":\"Let us know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OZtMW6RK5VXLo7Z99B4Kn",
+		"name": "Generic Poll #32",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Would you?\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/take_a_survaey.png\",\"description\":\"Answer a poll\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OJZaU7z9uk9FoGMUL8LnS",
+		"name": "Generic Poll #33",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Answer a poll\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/favorites.png\",\"description\":\"Let us Know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OWKRnHDQ2aWnP2124AwdY",
+		"name": "Generic Poll #34",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Would you?\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/tell_us_more.png\",\"description\":\"Answer a poll\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OMJil7PH7RE6uGkZZxdlR",
+		"name": "Generic Poll #35",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Grilling\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/do_you_like.png\",\"description\":\"What's your view\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OcXo2GoG3prvhMpAR7R2k",
+		"name": "Generic Poll #37",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Answer a poll\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png\",\"description\":\"Let us know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OUSW8TbFEVElwti25ChCK",
+		"name": "Generic Poll #39",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a survey\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/take_a_survaey.png\",\"description\":\"Answer a poll\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OSCGnqIqcR3wlTqRo7sMD",
+		"name": "Generic Poll #40",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Favorites\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/favorites.png\",\"description\":\"Let us know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "ORpha6G57RbC3f4coXNPM",
+		"name": "Online Quiz #1",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png\",\"description\":\"Kik\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OzVkEuGXt7XPjZslGtYWf",
+		"name": "Generic Poll #21",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Commuting\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/take_a_survaey.png\",\"description\":\"Answer a poll\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "Of9w3b9S7FHOcivsv9G4f",
+		"name": "Online Quiz #2",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png\",\"description\":\"Nobel Prize\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OrCDp1ydAX9joTXImramf",
+		"name": "Online Quiz #4",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png\",\"description\":\"Bitcoin\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "O6DsXmXdYibERo5NNCvga",
+		"name": "Online Quiz #10",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png\",\"description\":\"Music\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "ObkrgTNYbtdAIr0r3pYRU",
+		"name": "Online Quiz #14",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png\",\"description\":\"General\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OtaNeK4kD7YwARtbbHthk",
+		"name": "Online Quiz #18",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png\",\"description\":\"Tech\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "O3hPCB1n3qLqyEtWKwjHo",
+		"name": "Generic Poll #22",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Hygiene \",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/tell_us_more.png\",\"description\":\"Answer a poll\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "Or7Sc3okCfONEeHOdzAbU",
+		"name": "Generic Poll #38",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Would you?\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/tell_us_more.png\",\"description\":\"Answer a poll\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OQOct1rGPsn5LJVkAU3sX",
+		"name": "Online Quiz #3",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png\",\"description\":\"Tech\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OVr34Ly1p13W481bBHtOx",
+		"name": "Online Quiz #5",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png\",\"description\":\"Canada\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OrIlBYreRNmI1Glc61xTt",
+		"name": "Online Quiz #6",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png\",\"description\":\"Tech\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OJuMDyW9CcE0yFhqTiZII",
+		"name": "Online Quiz #8",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png\",\"description\":\"Mountains\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OmBo58NTEAZMKzXOLtvQw",
+		"name": "Online Quiz #16",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png\",\"description\":\"Fun\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "O2FBVUvR8aZPLpjPAXBZx",
+		"name": "Generic Poll #25",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Instruments\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/tell_us_more.png\",\"description\":\"Let us know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OgUXqlhwElB3abhbS3i4v",
+		"name": "Generic Poll #28",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Kinit\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/do_you_like.png\",\"description\":\"What's your view\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "ObdtcbKn6iFLyWRC98IKe",
+		"name": "Generic Poll #30",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Color\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/favorites.png\",\"description\":\"Answer a poll\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "Olp7NwsPaY7umff8nhb7J",
+		"name": "Generic Poll #31",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Answer a poll\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/answer_poll.png\",\"description\":\"Let us know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OTIzi6RJpFIoLAuuRZ7K9",
+		"name": "Generic Poll #36",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Favorites\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn-cover-images-v2/favorites.png\",\"description\":\"Let us know!\",\"order_meta\":{\"title\":\"Poll\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OEiz5DY1qdh3VtHbWpliU",
+		"name": "Online Quiz #9",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png\",\"description\":\"Science\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OSuRRRrrmgk8E2KMyLw8b",
+		"name": "Online Quiz #17",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png\",\"description\":\"General\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OrQ7kfhfAva8b8yqWcQP7",
+		"name": "Kin Tutorial #1",
+		"amount": 130,
+		"type": "earn",
+		"meta": "{\"title\":\"About Kin\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/earn_offer3.png\",\"description\":\"A quick tutorial\",\"order_meta\":{\"title\":\"Tutorial\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OE3x7R9BfTEghPdRqf1HB",
+		"name": "Online Quiz #7",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png\",\"description\":\"Cryptocurrency\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "ORp91SCV2GkPE5Wbv4sAg",
+		"name": "Online Quiz #11",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_1.png\",\"description\":\"Geography\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OgR4ga5TZIwwaBWZmC8D0",
+		"name": "Online Quiz #12",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_2.png\",\"description\":\"Travel\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OoTvFYp0O3Sj6Spa0k3iE",
+		"name": "Online Quiz #13",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_3.png\",\"description\":\"Games\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "O0rAxQVNweD04V3SFvmHs",
+		"name": "Online Quiz #15",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_5.png\",\"description\":\"TV&Movies\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "OfwPXBvUXJCrUHu0gXKlI",
+		"name": "Online Quiz #19",
+		"amount": 15,
+		"type": "earn",
+		"meta": "{\"title\":\"Take a quiz\",\"image\":\"https://cdn.kinecosystem.com/thumbnails/offers/quiz_4.png\",\"description\":\"Science\",\"order_meta\":{\"title\":\"Quiz\",\"description\":\"Completed\"}}"
+	},
+	{
+		"id": "Oxk1yCRc4DSxvpfZCHC1U",
+		"name": "Bad Offer",
+		"amount": 666666,
+		"type": "earn",
+		"meta": "{\"title\":\"Limit is 15 characters\",\"image\":\"https://s3.amazonaws.com/assets.kinecosystembeta.com/images/222x222/offer_placeholder.png\",\"description\":\"The limit is 40 characters. This text is 60 characters long\",\"order_meta\":{\"title\":\"Bad Offer\",\"description\":\"Bad Offer\"}}"
+	}
+]

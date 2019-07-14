@@ -105,7 +105,7 @@ export async function createEarn(
 	brand: string, title: string, description: string, image: string, amount: number,
 	capTotal: number, capPerUser: number,
 	orderTitle: string, orderDescription: string, contentType: ContentType,
-	poll: Quiz | Poll | Tutorial,
+	offerContent: string, // of Quiz | Poll | Tutorial
 	appList: string[] = [],
 	options: EarnOptions = {}): Promise<Offer | null> {
 
@@ -150,7 +150,7 @@ export async function createEarn(
 				description: orderDescription,
 			}
 		};
-		content.content = JSON.stringify(poll);
+		content.content = offerContent;
 	}
 
 	if (!options.dryRun) {

@@ -89,6 +89,8 @@ export interface Order {
 
 	setAmount(amount: number): void;
 
+	setSenderAddress(senderAddress: string): void;
+
 	isExpired(): boolean;
 
 	isExternalOrder(): this is ExternalOrder;
@@ -420,6 +422,10 @@ class OrderImpl extends CreationDateModel implements Order {
 
 	public setAmount(amount: number) {
 		this.amount = amount;
+	}
+
+	public setSenderAddress(senderAddress: string) {
+		this.blockchainData.sender_address = senderAddress;
 	}
 
 	public isExpired(): boolean {

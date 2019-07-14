@@ -131,6 +131,7 @@ export async function paymentComplete(payment: CompletedPayment) {
 	// an incoming transfer was created with amount: 0. we need to change that.
 	if (incomingOrderId) {
 		order.setAmount(payment.amount);
+		order.setSenderAddress(payment.sender_address);
 	}
 
 	// validate payment

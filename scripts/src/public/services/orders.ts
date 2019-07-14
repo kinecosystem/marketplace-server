@@ -585,7 +585,7 @@ export async function createIncomingTransferOrder(title: string, description: st
 	// adding a watch
 	await addWatcherEndpoint(receiverWallet.address, parsedMemo.orderId, receiver.appId);
 
-	logger().info("created an incoming transfer order");
+	logger().info("created an incoming transfer order", { title, description, memo, senderWalletAddress, appId });
 
 	return orderDbToApi(order, receiver.id, receiverWallet.address);
 }

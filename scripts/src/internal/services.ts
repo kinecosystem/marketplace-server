@@ -3,7 +3,7 @@ import { getDefaultLogger as logger } from "../logging";
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
 import { User } from "../models/users";
-import { pick, removeDuplicates } from "../utils/utils";
+import { pick, removeDuplicates, transferKey } from "../utils/utils";
 import { Asset, OrderValue } from "../models/offers";
 import { WalletApplication } from "../models/users";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
@@ -102,9 +102,9 @@ async function getPaymentJWT(order: db.Order, appId: string, user: User): Promis
 }
 
 export async function paymentComplete(payment: CompletedPayment) {
-	// if I can find the "paytment.id" in the redis, it means its a memo and the value is the real order id
+	// if I can find the "payment.id" in the redis, it means its a memo and the value is the real order id
 	const redis = getRedisClient();
-	const incomingOrderId = await redis.async.get(`transfer:${payment.id}`);
+	const incomingOrderId = await redis.async.get(transferKey(payment.id));
 
 	// order id will be either the incomingOrderId realized from cache, or the actual order id from the hook payload
 	const order = await db.Order.getOne({ orderId: incomingOrderId || payment.id });

@@ -250,7 +250,8 @@ export async function initPaymentCallbacks(): Promise<Watcher> {
 	);
 
 	logger().info("setting payment watching addresses", { addresses });
-	return await setWatcherEndpoint(addresses);
+	await setWatcherEndpoint(addresses, "2");
+	return await setWatcherEndpoint([], "3"); // only for incoming transfer
 }
 
 export async function markWalletBurnt(walletAddress: string) {

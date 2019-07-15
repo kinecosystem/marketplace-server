@@ -19,7 +19,7 @@
 			"minute_registration": 10000,
 			"hourly_total_earn": 5000000,
 			"minute_total_earn": 85000,
-			"daily_user_earn": 5000
+			"daily_user_earn": 50000
 		}
 	},
 	"app_id": "smpl",

@@ -111,6 +111,7 @@ export async function createEarn(
 	const existingOffer = await Offer.findOne({ name: offerName });
 	let offer;
 	let content;
+	console.log("creating earn offer %s of type %s associated apps: %s: ", offerName, contentType, appList);
 	if (existingOffer) {
 		if (options.doNotUpdateExiting) {
 			options.verbose && console.log(`existing offer: ${offerName}`);

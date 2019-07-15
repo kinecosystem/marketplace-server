@@ -1862,7 +1862,7 @@ async function main() {
 
 	await v1();
 	await v2();
-	// await migration();
+	await migration();
 }
 
 main()

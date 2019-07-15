@@ -1,6 +1,7 @@
 import * as uuid from "uuid";
 import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse } from "axios";
-import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "@kinecosystem/kin.js-v1";
+// import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "@kinecosystem/kin.js-v1";
+import { KinWallet, createWallet, KinNetwork, Payment, Keypair } from "shaharsolkin.js-v1";
 
 import { ApiError } from "./errors";
 import { AuthToken, UserProfile } from "./public/services/users";

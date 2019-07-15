@@ -8,7 +8,7 @@ import { join } from "path";
 import { Keypair } from "@kinecosystem/kin.js";
 
 import { close as closeDbConnection, init as initModels } from "./models";
-import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
+import { Poll, Quiz } from "./public/services/offer_contents";
 import { createEarn, createSpend, EarnOptions } from "./create_data/offers";
 import { ContentType, Offer, SdkVersionRule } from "./models/offers";
 import { Application, ApplicationConfig, StringMap } from "./models/applications";
@@ -272,15 +272,15 @@ export async function initDb(scriptConfig: ScriptConfig, closeConnectionWhenDone
 
 		const offerList: OfferData[] = require(path(join(offersDir, OFFERS_JSON_FILENAME)));
 		const offerContents: OfferContentData[] = require(path(join(offersDir, OFFERS_CONTENTS_JSON_FILENAME)));
-		const offerContentsDict = offerContents.reduce((acc: any, value) => {
+		const offerContentsDict: { [offerId: string]: OfferContentData } = offerContents.reduce((acc: any, value) => {
 			acc[value.offer_id] = value;
 			return acc;
 		}, {});
 		const offerData: Array<OfferData & OfferContentData> = offerList.map(value => Object.assign(value, offerContentsDict[value.id]));
-		await Promise.all(offerData.map(async offer => {
+		for (const offer of offerData) {
 			const offerMeta: OfferDataMeta = JSON.parse(offer.meta);
 			if (offer.type === "earn") {
-				return await createEarn(
+				await createEarn(
 					offer.name,
 					STELLAR_ADDRESS!,
 					KIN_BRAND,
@@ -292,12 +292,17 @@ export async function initDb(scriptConfig: ScriptConfig, closeConnectionWhenDone
 					DEFAULT_USER_CAP,
 					offerMeta.order_meta.title,
 					offerMeta.order_meta.description,
-					offer.content_type, JSON.parse(offer.content), appList, createOfferOptions);
+					offer.content_type,
+					/*
+					* The data files were exported using PSQL, and for some reason it exports the string quoted twice, so you have to json.parse it twice to get the JSON. In order to leave the exported files untouched we normalize it by pre-parsing it.
+					* */
+					JSON.parse(offer.content), appList, createOfferOptions);
+
 			}
 			if (offer.type === "spend") {
 				throw Error("Spend offer parsing isn't implemented");
 			}
-		}));
+		}
 	}
 	const translationsFile = scriptConfig.trans_file;
 	const translationsLanguage = scriptConfig.trans_lang;

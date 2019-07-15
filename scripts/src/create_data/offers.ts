@@ -105,10 +105,9 @@ export async function createEarn(
 	brand: string, title: string, description: string, image: string, amount: number,
 	capTotal: number, capPerUser: number,
 	orderTitle: string, orderDescription: string, contentType: ContentType,
-	offerContent: string, // of Quiz | Poll | Tutorial
+	offerContent: string, // string of Quiz | Poll | Tutorial
 	appList: string[] = [],
 	options: EarnOptions = {}): Promise<Offer | null> {
-
 	const existingOffer = await Offer.findOne({ name: offerName });
 	let offer;
 	let content;

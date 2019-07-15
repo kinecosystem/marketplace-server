@@ -9,7 +9,7 @@ import { ContentType, Offer, OfferContent } from "../models/offers";
 import { OfferTranslation } from "../models/translations";
 import { path } from "../utils/path";
 
-function  parseContent(content: string): OfferContentContent {
+function parseContent(content: string): OfferContentContent {
 	const validContent = content.replace(/:\s(\${[\w\.-_]+})/g, ": \"$1\"");  //  Content must be escape as it isn't a valid JSON
 	return JSON.parse(validContent);
 }

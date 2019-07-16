@@ -353,7 +353,9 @@ export async function submitOrder(
 	if (order.isMarketplaceOrder()) {
 		await submitFormAndMutateMarketplaceOrder(order, form);
 	}
-	const blockchainVersion = await WalletApplication.getBlockchainVersion(walletAddress);
+
+	const app = (await Application.all()).get(context.user.appId)!;
+	const blockchainVersion = app.config.blockchain_version === "3" ? "3" : await WalletApplication.getBlockchainVersion(walletAddress);
 
 	if (order.isEarn()) {
 		// must be after submit form because order.amount changes

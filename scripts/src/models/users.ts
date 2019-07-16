@@ -245,7 +245,6 @@ export class WalletApplication extends BaseEntity {
 	public static async updateCreatedDate(walletAddress: string, blockchainVersion: BlockchainVersion) {
 		const createdDateField = blockchainVersion === "2" ? "createdDateKin2" : "createdDateKin3";
 		await WalletApplication.update({ walletAddress }, { [createdDateField]: new Date() });
-		(WalletApplication.get as any).clear(walletAddress);
 	}
 
 	public static async getBlockchainVersion(walletAddress: string): Promise<BlockchainVersion> {

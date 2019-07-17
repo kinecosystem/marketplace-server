@@ -358,7 +358,8 @@ export async function retryOrder(params: { order_id: string }, query: any): Prom
 	}
 	order.setStatus("pending");
 	await order.save();
-	await payment.payTo(order.blockchainData.recipient_address!, order.contexts[0].user.appId, order.amount, order.id);
+	await payment.payTo(order.blockchainData.recipient_address!, order.contexts[0].user.appId, order.amount, order.id,
+		await WalletApplication.getBlockchainVersion(order.blockchainData.recipient_address!));
 
 	return `<h3>Retrying...</h3>
 <div><a href="/orders/${ order.id }">Go Back</a>

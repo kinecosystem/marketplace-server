@@ -87,6 +87,10 @@ export interface Order {
 
 	setStatus(status: OpenOrderStatus): void;
 
+	setAmount(amount: number): void;
+
+	setSenderAddress(senderAddress: string): void;
+
 	isExpired(): boolean;
 
 	isExternalOrder(): this is ExternalOrder;
@@ -285,6 +289,10 @@ export type OutgoingTransferOrderFactory = OrderFactory & {
 	"new"(data: DeepPartial<Order>, context1: DeepPartial<OrderContext>): Order;
 };
 
+export type IncomingTransferOrderFactory = OrderFactory & {
+	"new"(data: DeepPartial<Order>, context1: DeepPartial<OrderContext>): Order;
+};
+
 function extendedOrder(origin: OrderOrigin): (typeof Order) & OrderFactory {
 	return Object.assign({}, Order, {
 		"new"(data?: DeepPartial<Order>, ...context: Array<DeepPartial<OrderContext>>): Order {
@@ -318,6 +326,7 @@ export type ExternalOrder = Order;
 export const ExternalOrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
 export const P2POrder = extendedOrder("external") as (typeof Order) & ExternalOrderFactory;
 export const OutgoingTransferOrder = extendedOrder("external") as (typeof Order) & OutgoingTransferOrderFactory;
+export const IncomingTransferOrder = extendedOrder("external") as (typeof Order) & IncomingTransferOrderFactory;
 
 export type NormalOrder = Order & {
 	user: User;
@@ -409,6 +418,14 @@ class OrderImpl extends CreationDateModel implements Order {
 			default:
 				this.expirationDate = null as any;
 		}
+	}
+
+	public setAmount(amount: number) {
+		this.amount = amount;
+	}
+
+	public setSenderAddress(senderAddress: string) {
+		this.blockchainData.sender_address = senderAddress;
 	}
 
 	public isExpired(): boolean {

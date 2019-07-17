@@ -67,6 +67,14 @@ services:
       CHANNEL_SALT: some_salt
       MAX_CHANNELS: 1
 
+  payment-watcher-v3:
+    image: kinecosystem/payment-service-v3:b56f930
+    command: pipenv run python watcher.py
+    links:
+      - redis
+    environment:
+      <<: *payment3_env_vars
+
   migration-service:
     image: kinecosystem/migration-server:1911c1c
     restart: on-failure

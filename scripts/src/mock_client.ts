@@ -16,7 +16,7 @@ import { Client as V1MarketplaceClient } from "./client.v1";
 import { generateId, randomInteger, retry, delay, generateRandomString } from "./utils/utils";
 import { ContentType, JWTValue, OfferType } from "./models/offers";
 import { ExternalOfferPayload } from "./public/services/native_offers";
-import { Client as MarketplaceClient, ClientError, JWTPayload } from "./client";
+import { Client as MarketplaceClient, ClientError, JWTPayload, ClientRequests } from "./client";
 import { CompletedPayment, JWTBodyPaymentConfirmation } from "./internal/services";
 import {
 	Answers,
@@ -30,6 +30,8 @@ import {
 import { AnswersBackwardSupport } from "./public/services/offer_contents";
 import { Keypair } from "@kinecosystem/kin.js";
 import { BlockchainVersion } from "./models/offers";
+import { getRedisClient } from "./redis";
+import * as kinjs2 from "@kinecosystem/kin.js";
 
 const SMPL_APP_CONFIG = {
 	jwtAddress: process.env.JWT_SERVICE_BASE!,
@@ -1802,8 +1804,202 @@ async function checkOutgoingTransferOrder(){
 
 	// const receiverWalletAddress = `wallet-${ generateRandomString({ prefix: userId, length: 56 }) }`;
 	const receiverWalletAddress = Keypair.random().publicKey();
-	const order = await client.createOutgoingTransferOrder(receiverWalletAddress, "sender-app", "mock client title", "mock client description", "mock memo", 1000);
+	const order = await client.createOutgoingTransferOrder(receiverWalletAddress, "sender-app", "mock client title", "mock client description", "mockmemo", 1000);
 	expect(order).toMatchObject({ amount: 1000 });
+
+}
+
+async function checkIncomingTransferOrder(){
+	console.log("===================================== checkIncomingTransferOrder =====================================");
+
+	const userId = generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.publicKey());
+
+	const senderWalletAddress = Keypair.random().publicKey();
+	const order = await client.createIncomingTransferOrder(senderWalletAddress, "sender-app", "mock client title", "mock client description", "mockmemo");
+	expect(order).toMatchObject({ title: "mock client title" });
+}
+
+async function checkTransferOrderE2E(){
+
+	function choosePollAnswers(poll: Poll): Answers {
+		const answers: Answers = {};
+		for (const page of poll.pages.slice(0, poll.pages.length - 1)) {
+			const p = (page as PollPage);
+			const choice = randomInteger(0, p.question.answers.length);
+			answers[p.question.id] = choice;
+		}
+		return answers;
+	}
+
+	console.log("===================================== checkTransferOrderE2E =====================================");
+
+	const amount = 10; // kins to be transferred
+	const memo = "1-abc-xyz";
+
+	const sender = generateId();
+	const receiver = generateId();
+	const senderDeviceId = generateId();
+	const receiverDeviceId = generateId();
+
+	const appClient = new SampleAppClient(SMP3_APP_CONFIG.jwtAddress);
+
+	const senderJwt = await appClient.getRegisterJWT(sender, senderDeviceId);
+	const receiverJwt = await appClient.getRegisterJWT(receiver, receiverDeviceId);
+	const senderClient = await MarketplaceClient.create({ jwt: senderJwt });
+	const receiverClient = await MarketplaceClient.create({ jwt: receiverJwt });
+
+	const senderKeys = Keypair.random();
+	const receiverKeys = Keypair.random();
+
+	await senderClient.updateWalletKeys(senderKeys);
+	await receiverClient.updateWalletKeys(receiverKeys);
+
+	await senderClient.activate();
+	await receiverClient.activate();
+
+	// ============ use an earn poll flow to charge the sender wallet with balance ============
+	const selectedOffer = await getOffer(senderClient, "earn", "poll");
+
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
+	const openOrder = await senderClient.createOrder(selectedOffer.id);
+	console.log(`got open order`, openOrder);
+
+	// fill in the poll
+	console.log("poll " + selectedOffer.content);
+	const poll: Poll = JSON.parse(selectedOffer.content);
+
+	const content = JSON.stringify(choosePollAnswers(poll));
+	console.log("answers " + content);
+
+	const submittedOrder = await senderClient.submitOrder(openOrder.id, { content });
+
+	const order = await retry(() => senderClient.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
+	console.log(`completion date: ${ order.completion_date }`);
+
+	// check order on blockchain
+	const apayment = (await retry(() => senderClient.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+
+	console.log(`payment on blockchain:`, apayment);
+	// ============ end poll section ============
+
+	const incomingOrder = await receiverClient.createIncomingTransferOrder(senderKeys.publicKey(), "sender-app", "mock client title", "mock client description", memo);
+	expect(incomingOrder).toMatchObject({ title: "mock client title" });
+
+	const outgoingOrder = await senderClient.createOutgoingTransferOrder(receiverKeys.publicKey(), "receiver-app", "mock client title", "mock client description", memo, amount);
+	expect(outgoingOrder).toMatchObject({ title: "mock client title" });
+
+	const parts = memo.split("-");
+	const transaction = await senderClient.getTransactionXdr(receiverKeys.publicKey(), amount, parts[2]);
+	await senderClient.submitOrder(outgoingOrder.id, { transaction });
+
+	console.log("waiting for completion of outgoing order");
+	const updatedOutgoingOrder = await retry(() => senderClient.getOrder(outgoingOrder.id), order => order.status === "completed", "order did not turn completed");
+	expect(updatedOutgoingOrder).toMatchObject({
+		status: "completed",
+		amount
+	});
+
+	console.log("waiting for completion of incoming order");
+	const updatedIncomingOrder = await retry(() => receiverClient.getOrder(incomingOrder.id), order => order.status === "completed", "order did not turn completed");
+	expect(updatedIncomingOrder).toMatchObject({
+		status: "completed",
+		amount
+	});
+
+}
+
+async function checkExternalTransferOrderE2E(){
+
+	function choosePollAnswers(poll: Poll): Answers {
+		const answers: Answers = {};
+		for (const page of poll.pages.slice(0, poll.pages.length - 1)) {
+			const p = (page as PollPage);
+			const choice = randomInteger(0, p.question.answers.length);
+			answers[p.question.id] = choice;
+		}
+		return answers;
+	}
+
+	console.log("===================================== checkExternalTransferOrderE2E =====================================");
+	const amount = 10; // kins to be transferred
+	const memo = "1-abc-xyz";
+
+	const receiver = generateId();
+	const sender = generateId();
+	const receiverDeviceId = generateId();
+	const senderDeviceId = generateId();
+
+	const appClient = new SampleAppClient(SMP3_APP_CONFIG.jwtAddress);
+
+	const receiverJwt = await appClient.getRegisterJWT(receiver, receiverDeviceId);
+	const senderJwt = await appClient.getRegisterJWT(sender, senderDeviceId);
+	const receiverClient = await MarketplaceClient.create({ jwt: receiverJwt });
+	const senderClient = await MarketplaceClient.create({ jwt: senderJwt });
+
+	const senderKeys = Keypair.random();
+	const receiverKeys = Keypair.random();
+
+	const util = require("util");
+
+	const serverConfig = await ClientRequests.getServerConfig();
+	// console.log("server config is %s", util.inspect(serverConfig));
+	const senderNetwork = kinjs2.KinNetwork.from(
+		serverConfig.blockchain3.network_passphrase,
+		serverConfig.blockchain3.horizon_url);
+	const clientRequests = await ClientRequests.create({ jwt: senderJwt });
+	await clientRequests.request("/v2/users/me", { wallet_address: senderKeys.publicKey() }).patch();
+
+	const senderWallet = await kinjs2.createWallet(senderNetwork, senderKeys);
+
+	await receiverClient.updateWalletKeys(receiverKeys);
+	await senderClient.updateWalletKeys(senderKeys);
+
+	await receiverClient.activate();
+	await senderClient.activate();
+
+	// ============ use an earn poll flow to charge the sender wallet with balance ============
+	const selectedOffer = await getOffer(senderClient, "earn", "poll");
+
+	console.log(`requesting order for offer: ${ selectedOffer.id }: ${ selectedOffer.content }`);
+	const openOrder = await senderClient.createOrder(selectedOffer.id);
+	console.log(`got open order`, openOrder);
+
+	// fill in the poll
+	console.log("poll " + selectedOffer.content);
+	const poll: Poll = JSON.parse(selectedOffer.content);
+
+	const content = JSON.stringify(choosePollAnswers(poll));
+	console.log("answers " + content);
+
+	const submittedOrder = await senderClient.submitOrder(openOrder.id, { content });
+
+	const order = await retry(() => senderClient.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
+	console.log(`completion date: ${ order.completion_date }`);
+
+	// check order on blockchain
+	const apayment = (await retry(() => senderClient.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+
+	console.log(`payment on blockchain:`, apayment);
+	// ============ end poll section ============
+
+	const incomingOrder = await receiverClient.createIncomingTransferOrder(senderKeys.publicKey(), "", "mock client title", "mock client description", memo);
+	expect(incomingOrder).toMatchObject({ title: "mock client title" });
+
+	await senderWallet.pay(receiverKeys.publicKey(), amount, memo);
+
+	console.log("waiting for completion of incoming order");
+	const updatedIncomingOrder = await retry(() => receiverClient.getOrder(incomingOrder.id), order => order.status === "completed", "order did not turn completed");
+	expect(updatedIncomingOrder).toMatchObject({
+		status: "completed",
+		amount
+	});
 
 }
 
@@ -1849,6 +2045,9 @@ async function main() {
 		await checkValidTokenAfterLoginRightAfterLogout();
 		await getOffersVersionSpecificImages();
 		await checkOutgoingTransferOrder();
+		await checkIncomingTransferOrder();
+		await checkTransferOrderE2E();
+		await checkExternalTransferOrderE2E();
 	}
 
 	async function migration() {

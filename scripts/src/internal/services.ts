@@ -1,8 +1,9 @@
+import { getRedisClient } from "../redis";
 import { getDefaultLogger as logger } from "../logging";
 import * as metrics from "../metrics";
 import * as db from "../models/orders";
 import { User } from "../models/users";
-import { pick, removeDuplicates } from "../utils/utils";
+import { pick, removeDuplicates, transferKey } from "../utils/utils";
 import { Asset, OrderValue } from "../models/offers";
 import { WalletApplication } from "../models/users";
 import { setWatcherEndpoint, Watcher } from "../public/services/payment";
@@ -101,7 +102,12 @@ async function getPaymentJWT(order: db.Order, appId: string, user: User): Promis
 }
 
 export async function paymentComplete(payment: CompletedPayment) {
-	const order = await db.Order.getOne({ orderId: payment.id });
+	// if I can find the "payment.id" in the redis, it means its a memo and the value is the real order id
+	const redis = getRedisClient();
+	const incomingOrderId = await redis.async.get(transferKey(payment.id));
+
+	// order id will be either the incomingOrderId realized from cache, or the actual order id from the hook payload
+	const order = await db.Order.getOne({ orderId: incomingOrderId || payment.id });
 	if (!order) {
 		logger().error(`received payment for unknown order id ${ payment.id }`);
 		return;
@@ -121,6 +127,12 @@ export async function paymentComplete(payment: CompletedPayment) {
 			createSpendOrderPaymentConfirmed(context.user.id, payment.transaction_id, order.offerId, order.id, order.isExternalOrder(), order.origin).report();
 		}
 	});
+
+	// an incoming transfer was created with amount: 0. we need to change that.
+	if (incomingOrderId) {
+		order.setAmount(payment.amount);
+		order.setSenderAddress(payment.sender_address);
+	}
 
 	// validate payment
 	if (order.amount !== payment.amount) {
@@ -178,7 +190,13 @@ export async function paymentComplete(payment: CompletedPayment) {
 	const prevStatus = order.status;
 	const prevStatusDate = order.currentStatusDate;
 	order.setStatus("completed");
+
 	await order.save();
+
+	// if it was an incoming transfer, clear the cache so we wont process again
+	if (incomingOrderId) {
+		await redis.async.del(payment.id);
+	}
 
 	metrics.completeOrder(
 		order.origin,
@@ -233,7 +251,8 @@ export async function initPaymentCallbacks(): Promise<Watcher> {
 	);
 
 	logger().info("setting payment watching addresses", { addresses });
-	return await setWatcherEndpoint(addresses);
+	await setWatcherEndpoint(addresses, "2");
+	return await setWatcherEndpoint([], "3"); // only for incoming transfer
 }
 
 export async function markWalletBurnt(walletAddress: string) {

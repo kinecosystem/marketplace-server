@@ -122,22 +122,16 @@ export async function getPayments(walletAddress: string, options?: { timeout?: n
 	return res.data;
 }
 
-export async function setWatcherEndpoint(addresses: string[]): Promise<Watcher> {
-	// should be called from the internal server api upon creation
+export async function setWatcherEndpoint(addresses: string[], blockchainVersion: BlockchainVersion): Promise<Watcher> {
 	const payload: Watcher = { wallet_addresses: addresses, callback: webhook };
-	// only in blockchain v2 we have a watcher service
-	const res = await httpClient.put(`${ getPaymentServiceUrl("2") }/services/${ SERVICE_ID }`, payload);
+	const res = await httpClient.put(`${ getPaymentServiceUrl(blockchainVersion) }/services/${ SERVICE_ID }`, payload);
 	return res.data;
 }
 
 export async function addWatcherEndpoint(address: string, paymentId: string, appId: string) {
-	// only in blockchain v2 we have a watcher service
 	const blockchainVersion = (await Application.get(appId))!.config.blockchain_version;
-
-	if (blockchainVersion === "3") {
-		return;
-	}
-	await httpClient.put(`${ getPaymentServiceUrl("2") }/services/${ SERVICE_ID }/watchers/${ address }/payments/${ paymentId }`);
+	logger().info("watch url will be " + `${ getPaymentServiceUrl(blockchainVersion) }/services/${ SERVICE_ID }/watchers/${ address }/payments/${ paymentId }`);
+	await httpClient.put(`${ getPaymentServiceUrl(blockchainVersion) }/services/${ SERVICE_ID }/watchers/${ address }/payments/${ paymentId }`);
 }
 
 export type BlockchainConfig = {

@@ -354,7 +354,7 @@ export async function submitOrder(
 		await submitFormAndMutateMarketplaceOrder(order, form);
 	}
 
-	const app = (await Application.all()).get(context.user.appId)!;
+	const app = (await Application.get(context.user.appId))!;
 	const blockchainVersion = app.config.blockchain_version === "3" ? "3" : await WalletApplication.getBlockchainVersion(walletAddress);
 
 	if (order.isEarn()) {
@@ -373,7 +373,7 @@ export async function submitOrder(
 	logger().info("order changed to pending", { orderId });
 
 	if (order.isEarn()) {
-		await payment.payTo(order.blockchainData.recipient_address!, user.appId, order.amount, order.id);
+		await payment.payTo(order.blockchainData.recipient_address!, user.appId, order.amount, order.id, blockchainVersion);
 		createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 	} else {
 		if (transaction) { // there is only transaction on kin3

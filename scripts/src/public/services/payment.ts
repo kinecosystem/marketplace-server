@@ -58,7 +58,7 @@ export interface Watcher {
 
 const SERVICE_ID = "marketplace";
 
-export async function payTo(walletAddress: string, appId: string, amount: number, orderId: string) {
+export async function payTo(walletAddress: string, appId: string, amount: number, orderId: string, blockchainVersion: BlockchainVersion) {
 	logger().info(`paying ${ amount } to ${ walletAddress } with orderId ${ orderId }`);
 	const payload: PaymentRequest = {
 		amount,
@@ -69,7 +69,6 @@ export async function payTo(walletAddress: string, appId: string, amount: number
 	};
 	const t = performance.now();
 
-	const blockchainVersion = await WalletApplication.getBlockchainVersion(walletAddress);
 	await httpClient.post(`${ getPaymentServiceUrl(blockchainVersion) }/payments`, payload);
 
 	logger().info("pay to took " + (performance.now() - t) + "ms");

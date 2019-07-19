@@ -1860,7 +1860,7 @@ async function main() {
 		await walletSharedAcrossApps();
 	}
 
-	// await v1();
+	await v1();
 	await v2();
 	await migration();
 }

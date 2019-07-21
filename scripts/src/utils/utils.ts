@@ -242,3 +242,26 @@ export function cached(cache: RedisAsyncClient, keygen: (...args: any[]) => stri
 		return descriptor;
 	};
 }
+
+export type Memo = {
+	version: string;
+	appId: string;
+	orderId: string;
+};
+
+/*
+A memo is structured as {version}-{appId}-{orderId}
+e.g. 1-kik-xapp_kit_125
+*/
+export function parseMemo(memo: string): Memo{
+	const parts = memo.split("-");
+	return {
+		version: parts[0],
+		appId: parts[1],
+		orderId: parts[2]
+	};
+}
+
+export function transferKey(orderId: string): string {
+	return `transfer:${orderId}`;
+}

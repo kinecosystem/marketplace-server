@@ -15,6 +15,7 @@ import {
 	createExternalOrder as createExternalOrderService,
 	createMarketplaceOrder as createMarketplaceOrderService,
 	createOutgoingTransferOrder as createOutgoingTransferOrderService,
+	createIncomingTransferOrder as createIncomingTransferOrderService,
 } from "../services/orders";
 import { createExternalOrder as v1CreateExternalOrderService } from "../services/orders.v1";
 
@@ -158,5 +159,20 @@ export type CreateOutgoingTransferOrderRequest = AuthenticatedRequest & {
 
 export const createOutgoingTransferOrder = async function(req: CreateOutgoingTransferOrderRequest, res: Response) {
 	const order = await createOutgoingTransferOrderService(req.body.wallet_address, req.body.app_id, req.body.title, req.body.description, req.body.memo, req.body.amount, req.context.user, req.context.token.deviceId);
+	res.status(201).send(order);
+} as any as RequestHandler;
+
+export type CreateIncomingTransferOrderRequest = AuthenticatedRequest & {
+	body: {
+		title: string;
+		description: string;
+		memo: string;
+		wallet_address: string;
+		app_id: string;
+	}
+};
+
+export const createIncomingTransferOrder = async function(req: CreateIncomingTransferOrderRequest, res: Response) {
+	const order = await createIncomingTransferOrderService(req.body.title, req.body.description, req.body.memo, req.body.wallet_address, req.body.app_id, req.context.user, req.context.token.deviceId);
 	res.status(201).send(order);
 } as any as RequestHandler;

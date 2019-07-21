@@ -8,7 +8,6 @@ import { Order } from "./orders";
 import { LimitConfig } from "../config";
 import moment = require("moment");
 import { getConfig } from "../public/config";
-import { Moment } from "moment";
 
 const config = getConfig();
 

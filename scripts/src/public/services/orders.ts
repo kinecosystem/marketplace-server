@@ -1,11 +1,11 @@
-import { lock } from "../../redis";
+import { lock, getRedisClient } from "../../redis";
 import * as metrics from "../../metrics";
 import { User, WalletApplication } from "../../models/users";
 import * as db from "../../models/orders";
 import * as offerDb from "../../models/offers";
 import { OrderValue } from "../../models/offers";
 import { getDefaultLogger as logger } from "../../logging";
-import { pick, capitalizeFirstLetter } from "../../utils/utils";
+import { pick, capitalizeFirstLetter, parseMemo, transferKey } from "../../utils/utils";
 import { Application, AppOffer } from "../../models/applications";
 import {
 	isPayToUser,
@@ -353,7 +353,9 @@ export async function submitOrder(
 	if (order.isMarketplaceOrder()) {
 		await submitFormAndMutateMarketplaceOrder(order, form);
 	}
-	const blockchainVersion = await WalletApplication.getBlockchainVersion(walletAddress);
+
+	const app = (await Application.get(context.user.appId))!;
+	const blockchainVersion = app.config.blockchain_version === "3" ? "3" : await WalletApplication.getBlockchainVersion(walletAddress);
 
 	if (order.isEarn()) {
 		// must be after submit form because order.amount changes
@@ -371,7 +373,7 @@ export async function submitOrder(
 	logger().info("order changed to pending", { orderId });
 
 	if (order.isEarn()) {
-		await payment.payTo(order.blockchainData.recipient_address!, user.appId, order.amount, order.id);
+		await payment.payTo(order.blockchainData.recipient_address!, user.appId, order.amount, order.id, blockchainVersion);
 		createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 	} else {
 		if (transaction) { // there is only transaction on kin3
@@ -549,4 +551,43 @@ export async function createOutgoingTransferOrder(recipientWalletAddress: string
 	logger().info("created an outgoing transfer order");
 
 	return openOrderDbToApi(order, sender.id);
+}
+
+export async function createIncomingTransferOrder(title: string, description: string, memo: string, senderWalletAddress: string, appId: string, receiver: User, receiverDeviceId: string): Promise<Order> {
+	logger().info("creating an incoming transfer order");
+	const receiverWallet = (await receiver.getWallets(receiverDeviceId)).lastUsed();
+	if (!receiverWallet) {
+		throw UserHasNoWallet(receiver.id, receiverDeviceId);
+	}
+
+	const order = db.IncomingTransferOrder.new({
+		offerId: `cross-app_${appId}_to_${receiver.appId}`,
+		status: "pending",
+		amount: 0, // not allowed to insert an order without amount
+		blockchainData: {
+			sender_address: senderWalletAddress,
+			recipient_address: receiverWallet.address,
+			memo
+		}
+	}, {
+		user: receiver,
+		type: "earn",
+		wallet: receiverWallet.address,
+		meta: { title, description }
+	});
+
+	await order.save();
+
+	// we create a redis entry so this memo can uniquely identify this order.id down the line
+	// i.e. when the watch we gonna add triggers a callback
+	const parsedMemo = parseMemo(memo);
+	const redis = getRedisClient();
+	await redis.async.set(transferKey(parsedMemo.orderId), order.id);
+
+	// adding a watch
+	await addWatcherEndpoint(receiverWallet.address, parsedMemo.orderId, receiver.appId);
+
+	logger().info("created an incoming transfer order", { title, description, memo, senderWalletAddress, appId });
+
+	return orderDbToApi(order, receiver.id, receiverWallet.address);
 }

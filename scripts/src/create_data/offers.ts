@@ -105,13 +105,13 @@ export async function createEarn(
 	brand: string, title: string, description: string, image: string, amount: number,
 	capTotal: number, capPerUser: number,
 	orderTitle: string, orderDescription: string, contentType: ContentType,
-	poll: Quiz | Poll | Tutorial,
+	offerContent: string, // string of Quiz | Poll | Tutorial
 	appList: string[] = [],
 	options: EarnOptions = {}): Promise<Offer | null> {
-
 	const existingOffer = await Offer.findOne({ name: offerName });
 	let offer;
 	let content;
+	console.log("creating earn offer %s of type %s associated apps: %s", offerName, contentType, appList);
 	if (existingOffer) {
 		if (options.doNotUpdateExiting) {
 			options.verbose && console.log(`existing offer: ${offerName}`);
@@ -150,7 +150,7 @@ export async function createEarn(
 				description: orderDescription,
 			}
 		};
-		content.content = JSON.stringify(poll);
+		content.content = offerContent;
 	}
 
 	if (!options.dryRun) {

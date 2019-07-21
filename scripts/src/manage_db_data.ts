@@ -8,7 +8,7 @@ import { join } from "path";
 import { Keypair } from "@kinecosystem/kin.js";
 
 import { close as closeDbConnection, init as initModels } from "./models";
-import { PageType, Poll, Quiz, Tutorial } from "./public/services/offer_contents";
+import { Poll, Quiz } from "./public/services/offer_contents";
 import { createEarn, createSpend, EarnOptions } from "./create_data/offers";
 import { ContentType, Offer, SdkVersionRule } from "./models/offers";
 import { Application, ApplicationConfig, StringMap } from "./models/applications";
@@ -37,7 +37,12 @@ type ScriptConfig = {
 };
 let scriptConfig: ScriptConfig;
 
+const OFFERS_JSON_FILENAME = "offers.json";
+const OFFERS_CONTENTS_JSON_FILENAME = "offer_contents.json";
 const STELLAR_ADDRESS = process.env.STELLAR_ADDRESS;  // address to use instead of the ones defined in the data
+const KIN_BRAND = "Kin";
+const DEFAULT_TOTAL_CAP = 1000;
+const DEFAULT_USER_CAP = 1;
 type AppDef = { app_id: string, name: string, api_key: string, jwt_public_keys: StringMap, config: ApplicationConfig };
 
 async function createApp(appId: string, name: string, jwtPublicKeys: StringMap, apiKey: string, appConfig: ApplicationConfig, dryRun?: boolean): Promise<Application> {
@@ -113,98 +118,6 @@ async function parseSpend(data: string[][], appList: string[]) {
 	return results;
 }
 
-async function parseEarn(data: string[][], contentType: ContentType, appList: string[], config: EarnOptions) {
-	const list = toMap(data);
-
-	const poll: Quiz | Poll | Tutorial = { pages: [] };
-	let offer: Map<string, string> | undefined;
-
-	const results: Array<Offer | null> = [];
-
-	async function createEarnInner(v: Map<string, string>, poll: Quiz | Poll | Tutorial): Promise<Offer | null> {
-		return await createEarn(
-			v.get("OfferName")!,
-			STELLAR_ADDRESS || v.get("WalletAddress")!,
-			v.get("Brand")!, v.get("Title")!,
-			v.get("Description")!,
-			v.get("Image")!,
-			parseInt(v.get("Amount")!, 10),
-			parseInt(v.get("CapTotal")!, 10),
-			parseInt(v.get("CapPerUser")!, 10),
-			v.get("OrderTitle")!,
-			v.get("OrderDescription")!, contentType, poll, appList, config);
-	}
-
-	for (const v of list) {
-		if (v.get("OfferName") !== "") {
-			if (offer) {
-				results.push(await createEarnInner(offer, poll));
-			}
-			offer = v;
-			poll.pages = [];
-		}
-
-		// continue from last row
-		if (v.get("PollPageType")! === "FullPageMultiChoice") {
-			(poll as Poll).pages.push({
-				type: PageType.FullPageMultiChoice,
-				title: v.get("PollTitle")!,
-				description: v.get("PollDescription")!,
-				question: {
-					id: v.get("PollQuestionId")!,
-					answers: [
-						v.get("PollAnswer1")!,
-						v.get("PollAnswer2")!,
-						v.get("PollAnswer3")!,
-						v.get("PollAnswer4")!,
-					],
-				},
-			});
-		} else if (v.get("PollPageType")! === "TimedFullPageMultiChoice") {
-			(poll as Quiz).pages.push({
-				type: PageType.TimedFullPageMultiChoice,
-				description: v.get("PollDescription")!,
-				question: {
-					id: v.get("PollQuestionId")!,
-					answers: [
-						v.get("PollAnswer1")!,
-						v.get("PollAnswer2")!,
-						v.get("PollAnswer3")!,
-						v.get("PollAnswer4")!,
-					],
-				},
-				rightAnswer: parseInt(v.get("rightAnswer")!, 10),
-				amount: parseInt(v.get("amount")!, 10),
-			});
-		} else if (v.get("PollPageType")! === "EarnThankYou") {
-			(poll as Poll).pages.push({
-				type: PageType.EarnThankYou,
-				description: v.get("PollDescription") || v.get("PollFooterHtml")!
-			});
-		} else if (v.get("PollPageType")! === "SuccessBasedThankYou") {
-			(poll as Quiz).pages.push({
-				type: PageType.SuccessBasedThankYou,
-				description: v.get("PollDescription")!
-			});
-		} else if (v.get("PollPageType")! === "ImageAndText") {
-			(poll as Tutorial).pages.push({
-				type: PageType.ImageAndText,
-				image: v.get("PollImage")!,
-				title: v.get("PollTitle")!,
-				bodyHtml: v.get("PollBodyHtml")!,
-				footerHtml: v.get("PollFooterHtml")!,
-				buttonText: v.get("PollButtonText")!
-			});
-		} else {
-			console.log(`poll type unknown: ${ v.get("PollPageType") }`);
-		}
-	}
-	if (offer) {
-		results.push(await createEarnInner(offer, poll));
-	}
-	return results.filter(v => !!v);
-}
-
 function getStellarAddresses() {
 	if (STELLAR_ADDRESS) {
 		return { recipient: STELLAR_ADDRESS, sender: STELLAR_ADDRESS };
@@ -226,7 +139,7 @@ function initArgsParser(): ScriptConfig {
 		help: "Location (directory) of app config json files"
 	});
 	parser.addArgument(["--offers-dir"], {
-		help: "Location (directory) of offers csv files"
+		help: "Location (directory) of the offers.json and offer_contents.json files"
 	});
 	parser.addArgument(["--app-list"], {
 		help: "Comma separated list of apps (i.e smpl, test...) to have the earn offers added to (ALL, in caps, to add to all apps)",
@@ -328,8 +241,7 @@ export async function initDb(scriptConfig: ScriptConfig, closeConnectionWhenDone
 				}
 			}));
 		}
-		// create offers from csv
-		const parseCsv = require("csv-parse/lib/sync");
+		// create offers from json
 		const createOfferOptions: EarnOptions = {
 			doNotUpdateExiting: scriptConfig.no_update!,
 			dryRun: scriptConfig.dry_run!,
@@ -337,25 +249,58 @@ export async function initDb(scriptConfig: ScriptConfig, closeConnectionWhenDone
 			onlyUpdateMetaImage: scriptConfig.update_earn_thumbnails,
 			onlyUpdate: scriptConfig.only_update,
 		};
-		for (const filename of fs.readdirSync(path(offersDir))) {
-			console.log(`read ${ filename }`);
+		type OfferData = {
+			id: string;
+			name: string;
+			amount: number;
+			type: "earn" | "spend";
+			meta: string;
+		};
+		type OfferDataMeta = {
+			title: string,
+			image: string,
+			description: string,
+			order_meta: { title: "Poll" | "Quiz", description: "Completed" }
+		};
 
-			const offersCsv = fs.readFileSync(path(join(offersDir, filename)));
-			const parsed = parseCsv(offersCsv);
+		type OfferContentData = {
+			id: string;
+			offer_id: string;
+			content: string;
+			content_type: ContentType;
+		};
 
-			const title = readTitle(parsed[0][0]);
-			const contentType = parsed[0][0].split(/ +/, 2)[1].toLowerCase() as ContentType;
-			let results = [];
-			if (title === "Spend") {
-				results = await
-					parseSpend(parsed, appList);
-				createOfferOptions.verbose && console.log(`created spend:${ contentType } offers`);
-			} else if (title === "Earn") {
-				results = await
-					parseEarn(parsed, contentType, appList, createOfferOptions);
-				createOfferOptions.verbose && console.log(`created earn:${ contentType } offers`);
-			} else {
-				throw new Error("Failed to parse " + parsed[0][0]);
+		const offerList: OfferData[] = require(path(join(offersDir, OFFERS_JSON_FILENAME)));
+		const offerContents: OfferContentData[] = require(path(join(offersDir, OFFERS_CONTENTS_JSON_FILENAME)));
+		const offerContentsDict: { [offerId: string]: OfferContentData } = offerContents.reduce((acc: any, value) => {
+			acc[value.offer_id] = value;
+			return acc;
+		}, {});
+		const offerData: Array<OfferData & OfferContentData> = offerList.map(value => Object.assign(value, offerContentsDict[value.id]));
+		for (const offer of offerData) {
+			const offerMeta: OfferDataMeta = JSON.parse(offer.meta);
+			if (offer.type === "earn") {
+				await createEarn(
+					offer.name,
+					STELLAR_ADDRESS!,
+					KIN_BRAND,
+					offerMeta.title,
+					offerMeta.description,
+					offerMeta.image,
+					offer.amount,
+					DEFAULT_TOTAL_CAP,
+					DEFAULT_USER_CAP,
+					offerMeta.order_meta.title,
+					offerMeta.order_meta.description,
+					offer.content_type,
+					/*
+					* The data files were exported using PSQL, and for some reason it exports the string quoted twice, so you have to json.parse it twice to get the JSON. In order to leave the exported files untouched we normalize it by pre-parsing it.
+					* */
+					JSON.parse(offer.content), appList, createOfferOptions);
+
+			}
+			if (offer.type === "spend") {
+				throw Error("Spend offer parsing isn't implemented");
 			}
 		}
 	}
@@ -384,7 +329,7 @@ export async function initDb(scriptConfig: ScriptConfig, closeConnectionWhenDone
 				const assetType = filename.split(".")[0] as "image";
 				const rule = SdkVersionRule.new({ comparator: data.comparator, assetType, data: data.data });
 				console.log(`adding rule ${ rule.comparator } for asset ${ rule.assetType }`);
-				!scriptConfig.dry_run && await rule.save() && console.log(`Rule ${rule.comparator} saved`);
+				!scriptConfig.dry_run && await rule.save() && console.log(`Rule ${ rule.comparator } saved`);
 				await rule.save();
 				await SdkVersionRule.find();
 			}));

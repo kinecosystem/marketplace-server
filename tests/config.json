@@ -18,7 +18,7 @@
 		"synchronize": true,
 		"logging": false
 	},
-	"redis": "mock",
+	"redis": "redis://localhost:26379/0",
 	"statsd": {
 		"host": "localhost",
 		"port": 8125

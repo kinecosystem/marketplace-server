@@ -17,7 +17,7 @@ import { localCache } from "../utils/cache";
 import { AuthToken, WalletApplication } from "../models/users";
 import mock = require("supertest");
 import { withinMigrationRateLimit } from "../utils/migration";
-import { getRedisClient } from "../redis";
+import { getRedisClient, lock } from "../redis";
 
 describe("util functions", () => {
 	test("cached decorator", async () => {
@@ -274,5 +274,23 @@ describe("util functions", () => {
 			.set("x-request-id", "123")
 			.set("Authorization", `Bearer ${ token2.id }`)
 			.expect(res => res.status < 300);
+	});
+
+	test("lock function", async () => {
+		let num = 0;
+
+		async function f() {
+			num += 1;
+			if (num === 2) {
+				throw new Error("shouldn't reach 2");
+			}
+			await delay(500);
+			num -= 1;
+		}
+
+		const resource = `uniq:${ generateId() }`;
+		await Promise.all([
+			lock(resource, f),
+			lock(resource, f)]);
 	});
 });

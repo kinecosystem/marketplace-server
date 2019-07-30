@@ -52,7 +52,7 @@ const CHARACTER_LIMITS: { [path: string]: number } = {
 	"quiz:offer_contents:content:pages.question.answers": 22,
 };
 
-const KEY_TO_PATH_REGEX = /\b([\w_]+:)\w+:|\[\d\]/g;
+// const KEY_TO_PATH_REGEX = /\b([\w_]+:)\w+:|\[\d\]/g;
 
 const EXCLUDED = [
 	"tutorial",
@@ -61,7 +61,9 @@ const EXCLUDED = [
 ];
 
 function constructRow(contentType: ContentType, key: string, str: string) {
-	const path = `${ contentType }:${ key.replace(KEY_TO_PATH_REGEX, "$1") }`;
+	// const path = `${ contentType }:${ key.replace(KEY_TO_PATH_REGEX, "$1") }`;
+	const path = `${ contentType }:${ key.replace(/:(.*?):/, ":").replace(/\[.\]/g, "") }`;
+
 	if (EXCLUDED.includes(path) || EXCLUDED.includes(contentType)) {
 		return;
 	}
@@ -123,18 +125,21 @@ async function getCsvRowData() {
 	let rows: CsvRow[] = [];
 	allOffers.forEach(offer => {
 		const offerId = offer.id;
+		const offerName = offer.name;
 		const offerContent: OfferContent = allContent.filter(obj => obj.offerId === offerId)[0];
 		// quote unquoted template values
 		const offerContentContent = parseContent(offerContent.content);
 		const boundConstructRow = constructRow.bind({}, offerContent.contentType);
-		let keyBase = `offer:${ offerId }`;
+		// let keyBase = `offer:${ offerId }`;
+		let keyBase = `offer:${ offerName }`;
 		rows = rows.concat([
 			boundConstructRow(`${ keyBase }:title`, offer.meta.title),
 			boundConstructRow(`${ keyBase }:description`, offer.meta.description),
 			boundConstructRow(`${ keyBase }:orderTitle`, offer.meta.order_meta.title),
 			boundConstructRow(`${ keyBase }:orderDescription`, offer.meta.order_meta.description),
 		]);
-		keyBase = `offer_contents:${ offerId }`;
+		// keyBase = `offer_contents:${ offerId }`;
+		keyBase = `offer_contents:${ offerName }`;
 		if (offerContentContent.pages) {
 			rows = rows.concat(constructRowsFromArray(`${ keyBase }:content:pages`, offerContentContent.pages, boundConstructRow));
 		} else if (offerContentContent.confirmation) {

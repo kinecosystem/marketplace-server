@@ -9,6 +9,8 @@ import { ContentType, Offer, OfferContent } from "../models/offers";
 import { OfferTranslation } from "../models/translations";
 import { path } from "../utils/path";
 
+import * as _ from "lodash";
+
 function parseContent(content: string): OfferContentContent {
 	const validContent = content.replace(/:\s(\${[\w\.-_]+})/g, ": \"$1\"");  //  Content must be escape as it isn't a valid JSON
 	return JSON.parse(validContent);
@@ -52,7 +54,7 @@ const CHARACTER_LIMITS: { [path: string]: number } = {
 	"quiz:offer_contents:content:pages.question.answers": 22,
 };
 
-// const KEY_TO_PATH_REGEX = /\b([\w_]+:)\w+:|\[\d\]/g;
+const KEY_TO_PATH_REGEX = /\b([\w_]+:)\w+:|\[\d\]/g;
 
 const EXCLUDED = [
 	"tutorial",
@@ -277,31 +279,39 @@ async function insertIntoDb(data: OffersTranslation, language: string) {
 
 //  TODO: add validation
 async function processTranslationData(csvDataRows: TranslationData) {
+	const allOffers = await Offer.find({ type: "earn" });
 	const allOfferContents = await OfferContent.find({ select: ["offerId", "content"] } as FindManyOptions<OfferContent>);
 	const allContentTranslations: OffersTranslation = {};
 	csvDataRows.forEach(([__, csvKey, ___, translation]) => {
 		if (!translation) {
 			return;
 		}
-		const [table, offerId, column, jsonPath] = getCsvKeyElements(csvKey);
-		let offerTranslations;
-		if (offerId in allContentTranslations) {
-			offerTranslations = allContentTranslations[offerId];
-		} else {
-			offerTranslations = { content: getOfferContentFromJson(allOfferContents.find(content => content.offerId === offerId)) } as OfferTranslationData;
-		}
-		if (table === "offer") {
-			offerTranslations[column] = translation;
-		} else {
-			const evalString = `offerTranslations.content.${ jsonPath }=translation`;
-			try {
-				/* tslint:disable-next-line:no-eval */
-				eval(evalString);
-			} catch (e) {
-				console.error("content eval failed: \neval string: %s\n error message: %s", evalString, e);
+		// const [table, offerId, column, jsonPath] = getCsvKeyElements(csvKey);
+		const [table, offerName, column, jsonPath] = getCsvKeyElements(csvKey);
+		const currentOffer = _.find(allOffers, function(offer: Offer) {
+			return offer.name === offerName;
+		});
+		if (currentOffer){
+			const offerId = currentOffer.id;
+			let offerTranslations;
+			if (offerId in allContentTranslations) {
+				offerTranslations = allContentTranslations[offerId];
+			} else {
+				offerTranslations = { content: getOfferContentFromJson(allOfferContents.find(content => content.offerId === offerId)) } as OfferTranslationData;
 			}
+			if (table === "offer") {
+				offerTranslations[column] = translation;
+			} else {
+				const evalString = `offerTranslations.content.${ jsonPath }=translation`;
+				try {
+					/* tslint:disable-next-line:no-eval */
+					eval(evalString);
+				} catch (e) {
+					console.error("content eval failed: \neval string: %s\n error message: %s", evalString, e);
+				}
+			}
+			allContentTranslations[offerId] = offerTranslations;
 		}
-		allContentTranslations[offerId] = offerTranslations;
 	});
 	return allContentTranslations;
 }

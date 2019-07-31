@@ -104,6 +104,10 @@ async function getPaymentJWT(order: db.Order, appId: string, user: User): Promis
 export async function paymentComplete(payment: CompletedPayment) {
 	// if I can find the "payment.id" in the redis, it means its a memo and the value is the real order id
 	const redis = getRedisClient();
+	if (!payment.id) {
+		logger().error(`received payment without an id`, { payment });
+		return;
+	}
 	const incomingOrderId = await redis.async.get(transferKey(payment.id));
 
 	// order id will be either the incomingOrderId realized from cache, or the actual order id from the hook payload
@@ -210,6 +214,10 @@ export async function paymentComplete(payment: CompletedPayment) {
 }
 
 export async function paymentFailed(payment: FailedPayment) {
+	if (!payment.id) {
+		logger().error(`received payment without an id`, { payment });
+		return;
+	}
 	const order = await db.Order.getOne({ orderId: payment.id });
 	if (!order) {
 		logger().error(`received payment for unknown order id ${ payment.id }`);

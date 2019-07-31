@@ -63,7 +63,6 @@ const EXCLUDED = [
 ];
 
 function constructRow(contentType: ContentType, key: string, str: string) {
-	// const path = `${ contentType }:${ key.replace(KEY_TO_PATH_REGEX, "$1") }`;
 	const path = `${ contentType }:${ key.replace(/:(.*?):/, ":").replace(/\[.\]/g, "") }`;
 
 	if (EXCLUDED.includes(path) || EXCLUDED.includes(contentType)) {
@@ -132,7 +131,6 @@ async function getCsvRowData() {
 		// quote unquoted template values
 		const offerContentContent = parseContent(offerContent.content);
 		const boundConstructRow = constructRow.bind({}, offerContent.contentType);
-		// let keyBase = `offer:${ offerId }`;
 		let keyBase = `offer:${ offerName }`;
 		rows = rows.concat([
 			boundConstructRow(`${ keyBase }:title`, offer.meta.title),
@@ -140,7 +138,6 @@ async function getCsvRowData() {
 			boundConstructRow(`${ keyBase }:orderTitle`, offer.meta.order_meta.title),
 			boundConstructRow(`${ keyBase }:orderDescription`, offer.meta.order_meta.description),
 		]);
-		// keyBase = `offer_contents:${ offerId }`;
 		keyBase = `offer_contents:${ offerName }`;
 		if (offerContentContent.pages) {
 			rows = rows.concat(constructRowsFromArray(`${ keyBase }:content:pages`, offerContentContent.pages, boundConstructRow));
@@ -187,20 +184,20 @@ export async function writeCsvTemplateToFile(fileName: string = "translation_tem
 
 /*** Example CSV:
  Type,Key,Default,Translation,Character Limit
- poll,offer:OKKmC7OHkK2GztnaD3VF3:title,Favorites,Favoritos,14
- poll,offer:OKKmC7OHkK2GztnaD3VF3:description,Let us know!,Avise-nos!,18
- poll,offer:OKKmC7OHkK2GztnaD3VF3:orderTitle,Poll,Enquete,8
- poll,offer:OKKmC7OHkK2GztnaD3VF3:orderDescription,Completed,Concluído,24
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].title,Choose your favorite city,Escolha sua cidade preferida,38
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[0],San Francisco,São Francisco,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[1],New York City,Cidade de Nova York,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[2],Miami,Miami,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[3],Austin,Austin,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].title,Choose your favorite flower,Escolha sua flor preferida,38
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[0],Rose,Rosa,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[1],Daffodil,Narciso,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[2],Petunia,Petúnia,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[3],Daisy,Margarida,22
+ poll,offer:Generic Poll #40:title,Favorites,Favoritos,14
+ poll,offer:Generic Poll #40:description,Let us know!,Avise-nos!,18
+ poll,offer:Generic Poll #40:orderTitle,Poll,Enquete,8
+ poll,offer:Generic Poll #40:orderDescription,Completed,Concluído,24
+ poll,offer_contents:Generic Poll #40:content:pages[0].title,Choose your favorite city,Escolha sua cidade preferida,38
+ poll,offer_contents:Generic Poll #40:content:pages[0].question.answers[0],San Francisco,São Francisco,22
+ poll,offer_contents:Generic Poll #40:content:pages[0].question.answers[1],New York City,Cidade de Nova York,22
+ poll,offer_contents:Generic Poll #40:content:pages[0].question.answers[2],Miami,Miami,22
+ poll,offer_contents:Generic Poll #40:content:pages[0].question.answers[3],Austin,Austin,22
+ poll,offer_contents:Generic Poll #40:content:pages[1].title,Choose your favorite flower,Escolha sua flor preferida,38
+ poll,offer_contents:Generic Poll #40:content:pages[1].question.answers[0],Rose,Rosa,22
+ poll,offer_contents:Generic Poll #40:content:pages[1].question.answers[1],Daffodil,Narciso,22
+ poll,offer_contents:Generic Poll #40:content:pages[1].question.answers[2],Petunia,Petúnia,22
+ poll,offer_contents:Generic Poll #40:content:pages[1].question.answers[3],Daisy,Margarida,22
  ***/
 
 export type CsvParse = ((input: Buffer, options?: Options) => any) & typeof csvParse;

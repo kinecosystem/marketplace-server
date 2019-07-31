@@ -270,7 +270,7 @@ async function insertIntoDb(data: OffersTranslation, language: string) {
 	});
 	console.info(`inserting ${ dbReadyData.length } translations`);
 	await OfferTranslation.createQueryBuilder().insert().values(dbReadyData)
-		.onConflict(`("offer_id", "context", "path", "language") DO NOTHING`)
+		.onConflict(`("offer_id", "context", "path", "language") DO UPDATE`)
 		.execute();
 }
 

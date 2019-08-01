@@ -46,12 +46,17 @@ const CHARACTER_LIMITS: { [path: string]: number } = {
 	"poll:offer_contents:content:pages.title": 38,
 	"poll:offer_contents:content:pages.description": 24,
 	"poll:offer_contents:content:pages.question.answers": 22,
+	"poll:offer_contents:content:pages.rewardText": 30,
+	"poll:offer_contents:content:pages.rewardValue": 12,
 	"quiz:offer:title": 14,
 	"quiz:offer:description": 18,
 	"quiz:offer:orderTitle": 8,
 	"quiz:offer:orderDescription": 24,
+	"quiz:offer_contents:content:pages.title": 38,
 	"quiz:offer_contents:content:pages.description": 66,
 	"quiz:offer_contents:content:pages.question.answers": 22,
+	"quiz:offer_contents:content:pages.rewardText": 30,
+	"quiz:offer_contents:content:pages.rewardValue": 12,
 };
 
 const KEY_TO_PATH_REGEX = /\b([\w_]+:)\w+:|\[\d\]/g;

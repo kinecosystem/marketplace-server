@@ -9,6 +9,7 @@ import * as payment from "../public/services/payment";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getOffers as getUserOffersService } from "../public/services/offers";
 import { getKin2Balance, isBurned, getKin3Balance } from "./migration";
+import moment = require("moment");
 
 let BLOCKCHAIN: BlockchainConfig;
 let BLOCKCHAIN3: BlockchainConfig;
@@ -562,6 +563,12 @@ export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: 
 	}
 
 	const app = (await Application.findOne({ id: req.params.application_id }))!;
+
+	// if the change is migrating from v2 to v3, enforce gradual migration
+	if (app.config.blockchain_version === "2" && config.blockchain_version === "3"){
+		config.gradual_migration_date = moment().toISOString();
+	}
+
 	try {
 		app.config = config;
 		await app.save();

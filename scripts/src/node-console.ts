@@ -1,10 +1,35 @@
-export function start() {
+import { Socket } from "net";
+
+export function start(socket?: Socket, intro?: string) {
 	const repl = require("repl");
-// const babel = require("@babel/core");
+	const util = require("util");
+
+	function log(value: any = "No Value To Log", ...args: any[]) {
+		let print = console.log;
+		if (socket) {
+			print = (...params: any[]) => socket.write(util.format(...params) + "\n");
+		}
+		print("value is ", typeof value);
+		if (value.then && typeof value.then === "function") {
+			value.then(log);
+			args.length && log(...args);
+			return;
+		}
+		if (typeof value === "function") {
+			log(value.toString(), ...args);
+			return;
+		}
+		if (Array.isArray(value) ||  typeof value === "object") {
+			print(util.inspect(value, { showHidden: false, depth: null, color: true }));
+			print(...args);
+			return;
+		}
+		print(value, ...args);
+	}
+
+	// const babel = require("@babel/core");  //  We can have babel transpile in realtime to get ESNext syntax support (see reference below)
 
 	const BASE_MODULE_PATH = "./";
-
-	const util = require("util");
 
 // ***** Terminal Colors and Formats ***** //
 	const TERMINAL_STYLE = {
@@ -34,10 +59,11 @@ export function start() {
 		bgcyan: "\x1b[46m",
 		bgwhite: "\x1b[47m",
 	};
+// const colors = { RED: "31", GREEN: "32", YELLOW: "33", BLUE: "34", MAGENTA: "35" };
+// const colorize = (color, s) => `\x1b[${color}m${s}\x1b[0m`;
+	log("%s%sTo use the DB, initialize one of the server apps, shortcuts available: .admin, .public, .internal%s", TERMINAL_STYLE.bggreen, TERMINAL_STYLE.fgblack, TERMINAL_STYLE.reset);
 
-	console.log(TERMINAL_STYLE.bggreen, TERMINAL_STYLE.fgblack, "To use DB init one of the server apps, shortcuts available: .admin, .public, .internal", TERMINAL_STYLE.reset);
-
-	/*** Keeping for reference ***/
+	/*** Keeping for reference (was a little processing intensive but with a little work can be a nice feature) ***/
 	/*const BABEL_OPTIONS = {
 		babelrc: false,
 		"presets": ["es2015", { "modules": true }]
@@ -45,21 +71,35 @@ export function start() {
 
 	const evaluatorFunc = function(cmd, context, filename, callback) {
 		babel.transform(cmd, BABEL_OPTIONS, function(err, result) {
-			console.log(result.code);
+			log(result.code);
 			eval(result.code);
 			callback(null, result.code);
 			replServer.displayPrompt(true);
 		});
 	};*/
 
+// init
 	const replServer = repl.start({
 		prompt: "marketplace > ",
 		useColors: true,
+		useGlobal: true,
+		terminal: true,
 		// ignoreUndefined: true,
 		replMode: repl.REPL_MODE_SLOPPY,
+		...(socket ? { input: socket, output: socket } : {})
 	});
 
-// init
+	if (socket) {
+		replServer.on("exit", function() {
+			log("REPL server exit");
+			socket.end();
+		});
+		socket.on("close", function close() {
+			console.log("REPL server socket disconnected."); // we don't have a socket to use log with
+			socket.removeListener("close", close);
+		});
+	}
+
 	const context = replServer.context;
 	const r = context.r = function r(module: string, reload?: boolean) {
 		if (reload && require.cache[require.resolve(BASE_MODULE_PATH + module)]) {
@@ -68,23 +108,7 @@ export function start() {
 		return require(BASE_MODULE_PATH + module);
 	};
 
-	context.log = function log(value: any = "No Value To Log", ...args: any[]) {
-		if (value.then && typeof value.then === "function") {
-			value.then(log);
-			args.length && log(...args);
-			return;
-		}
-		if (typeof value === "function") {
-			log(value.toString(), ...args);
-			return;
-		}
-		if (args) {
-			console.log.apply(console, [value].concat(args));
-		} else {
-			console.log(util.inspect(value, { showHidden: false, depth: null, color: true }));
-		}
-	};
-
+	context.log = log;
 	/*  Require app models  */
 	context._offers = r("models/offers");
 	context.Offer = context._offers.Offer;

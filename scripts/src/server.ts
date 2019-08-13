@@ -1,4 +1,5 @@
 import { Server } from "http";
+import { Server as netServer } from "net";
 
 import * as metrics from "./metrics";
 import { getConfig } from "./config";
@@ -41,7 +42,7 @@ export function onError(error: ServerError) {
 /**
  * Event listener for HTTP server "listening" event.
  */
-export function onListening(server: Server) {
+export function onListening(server: Server | netServer) {
 	return () => {
 		const addr = server.address() as { port: number };
 		const handler = cleanup.bind(null, server);

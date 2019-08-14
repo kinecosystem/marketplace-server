@@ -82,6 +82,7 @@
 		"start-marketplace-admin": "node scripts/bin/admin/index",
 		"manage-db-data": "node scripts/bin/manage_db_data",
 		"restart": "npm-run-all build start",
+		"remote-repl": "node ./scripts/bin/repl-client.js localhost:3003",
 		"test-system": "node scripts/bin/mock_client",
 		"test": "jest --forceExit --runInBand --detectOpenHandles"
 	},

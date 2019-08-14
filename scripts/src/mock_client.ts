@@ -1792,6 +1792,97 @@ async function checkClientMigration() {
 	await client.changeAppBlockchainVersion("2");
 }
 
+async function checkClientMigrationGradualManual() {
+	console.log("===================================== checkClientMigrationGradualManual =====================================");
+
+	const userId = generateId();
+	const deviceId = generateId();
+
+	const userId2 = generateId();
+	const deviceId2 = generateId();
+
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
+
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+	const client = await MarketplaceClient.create({ jwt });
+
+	const jwt2 = await appClient.getRegisterJWT(userId2, deviceId2);
+	const client2 = await MarketplaceClient.create({ jwt: jwt2 });
+
+	const keypair = Keypair.random();
+	await client.updateWallet(keypair.secret());
+
+	const keypair2 = Keypair.random();
+	await client2.updateWallet(keypair2.secret());
+
+	const selectedOfferV2 = await getOffer(client, "earn", "tutorial");
+
+	const selectedOfferV22 = await getOffer(client2, "earn", "tutorial");
+
+	console.log(`requesting order for offer: ${ selectedOfferV2.id }: ${ selectedOfferV2.content.slice(0, 100) }`);
+	const openOrderV2 = await client.createOrder(selectedOfferV2.id);
+	console.log(`got order ${ openOrderV2.id }`);
+
+	const content = JSON.stringify({});
+
+	await client.submitOrder(openOrderV2.id, { content });
+	const orderV2 = await retry(() => client.getOrder(openOrderV2.id), order => order.status === "completed", "order did not turn completed");
+
+	console.log(`completion date: ${ orderV2.completion_date }`);
+	console.log(`got order after submit`, orderV2);
+
+	console.log(`requesting order for offer: ${ selectedOfferV22.id }: ${ selectedOfferV22.content.slice(0, 100) }`);
+	const openOrderV22 = await client2.createOrder(selectedOfferV22.id);
+	console.log(`got order ${ openOrderV22.id }`);
+
+	const content2 = JSON.stringify({});
+
+	await client2.submitOrder(openOrderV22.id, { content: content2 });
+	const orderV22 = await retry(() => client2.getOrder(openOrderV22.id), order => order.status === "completed", "order did not turn completed");
+
+	console.log(`completion date: ${ orderV22.completion_date }`);
+	console.log(`got order after submit`, orderV22);
+
+	console.log(`admin endpoint is ${ process.env.ADMIN_BASE }/applications/${ client.appId }/config`);
+
+	await axios.put(`${ process.env.ADMIN_BASE }/applications/${ client.appId }/config`, {
+		"max_user_wallets": 50,
+		"daily_earn_offers": 100,
+		"sign_in_types": [ "jwt", "whitelist"],
+		"blockchain_version": "3",
+		"bulk_user_creation_allowed": 51,
+		"limits": {
+			"hourly_registration": 200000,
+			"minute_registration": 10000,
+			"hourly_total_earn": 5000000,
+			"minute_total_earn": 85000,
+			"daily_user_earn": 50000,
+		}
+	});
+	await delay(100);
+
+	// shouldMigrate API
+	const shouldMigrate = await client.shouldMigrate(keypair.publicKey());
+	console.log("shouldMigrate", shouldMigrate);
+	expect(shouldMigrate.should_migrate).toBe(true);
+
+	// burning wallet
+	const burnStatus = await client.burnWallet();
+	console.log("burnStatus", burnStatus);
+	expect(burnStatus).toBe(true);
+
+	// migrating a wallet
+	const migrationResponse = await client.migrate();
+	console.log("migrationResponse", migrationResponse);
+	expect(migrationResponse).toBe(true);
+
+	// shouldMigrate API
+	const shouldMigrate2 = await client2.shouldMigrate(keypair2.publicKey());
+	console.log("shouldMigrate2", shouldMigrate2);
+	expect(shouldMigrate2.should_migrate).toBe(false);
+
+}
+
 async function checkOutgoingTransferOrder(){
 	console.log("===================================== checkOutgoingTransferOrder =====================================");
 
@@ -2051,16 +2142,17 @@ async function main() {
 	}
 
 	async function migration() {
-		await kin3EarnPollFlow();
-		await kin3EarnTutorial();
-		await kin3SpendFlow();
-		await kin3EarnQuizFlow();
-		await checkClientMigration();
-		await walletSharedAcrossApps();
+		// await kin3EarnPollFlow();
+		// await kin3EarnTutorial();
+		// await kin3SpendFlow();
+		// await kin3EarnQuizFlow();
+		// await checkClientMigration();
+		await checkClientMigrationGradualManual();
+		// await walletSharedAcrossApps();
 	}
 
-	await v1();
-	await v2();
+	// await v1();
+	// await v2();
 	await migration();
 }
 

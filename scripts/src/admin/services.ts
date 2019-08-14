@@ -567,8 +567,8 @@ export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: 
 	// if the change is migrating from v2 to v3, enforce gradual migration
 	if (app.config.blockchain_version === "2" && config.blockchain_version === "3"){
 		config.gradual_migration_date = moment().toISOString();
-		config.limits.hourly_migration = 100;
-		config.limits.minute_migration = 10;
+		config.limits.hourly_migration = 1;
+		config.limits.minute_migration = 1;
 	}
 
 	try {

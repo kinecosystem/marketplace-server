@@ -45,6 +45,7 @@ services:
       - .:/opt/app
     ports:
       - 3002:80
+      - 3003:3003
     links:
       - redis
       - payment-web

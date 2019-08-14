@@ -3,7 +3,7 @@ import * as net from "net";
 import * as path from "path";
 
 const args = process.argv.slice(2);
-if (args.length < 1 || !(args[0] as string).match(/^[\w\d.]{3,}:\d{1,5}$/)) {
+if (args.length < 1 || !(args[0] as string).match(/^[\w\d.\-_]{3,}:\d{1,5}$/)) {
 	console.log(`USAGE: ${ path.basename(process.argv[1]) } <HOST:PORT>`);
 	process.exit(1);
 }

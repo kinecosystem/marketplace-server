@@ -4,24 +4,26 @@ export function start(socket?: Socket, intro?: string) {
 	const repl = require("repl");
 	const util = require("util");
 
-	function log(value: any = "No Value To Log", ...args: any[]) {
+	function log(value?: any, ...args: any[]) {
 		let print = console.log;
 		if (socket) {
-			print = (...params: any[]) => socket.write(util.format(...params) + "\n");
+			// If output is not to stdout but a socket write to the socket
+			print = (...params: any[]) => {
+				socket.write(util.format(...params) + "\n");
+			};
 		}
-		print("value is ", typeof value);
-		if (value.then && typeof value.then === "function") {
-			value.then(log);
-			args.length && log(...args);
+		if (value && value.then && typeof value.then === "function") {
+			//  if FIRST argument is a promise (thenable object) then print the resolved value
+			//  we can iterate over args and handle if any are promises
+			value.then((value: any) => log(value, ...args));
 			return;
 		}
 		if (typeof value === "function") {
 			log(value.toString(), ...args);
 			return;
 		}
-		if (Array.isArray(value) ||  typeof value === "object") {
-			print(util.inspect(value, { showHidden: false, depth: null, color: true }));
-			print(...args);
+		if (Array.isArray(value) || typeof value === "object") {
+			print(util.inspect(value, { showHidden: false, depth: 4, colors: true }), ...args);
 			return;
 		}
 		print(value, ...args);

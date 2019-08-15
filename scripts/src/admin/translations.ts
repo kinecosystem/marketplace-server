@@ -59,8 +59,6 @@ const CHARACTER_LIMITS: { [path: string]: number } = {
 	"quiz:offer_contents:content:pages.rewardValue": 12,
 };
 
-const KEY_TO_PATH_REGEX = /\b([\w_]+:)\w+:|\[\d\]/g;
-
 const EXCLUDED = [
 	"tutorial",
 	"quiz:offer_contents:content:pages.question.id",
@@ -68,8 +66,11 @@ const EXCLUDED = [
 ];
 
 function constructRow(contentType: ContentType, key: string, str: string) {
+	// this transfroms something like:
+	// offer_contents:Generic Poll #18:content:pages[0].question.answers[1]
+	// to:
+	// offer_contents:content:pages.question.answers
 	const path = `${ contentType }:${ key.replace(/:(.*?):/, ":").replace(/\[.\]/g, "") }`;
-
 	if (EXCLUDED.includes(path) || EXCLUDED.includes(contentType)) {
 		return;
 	}
@@ -290,7 +291,10 @@ async function processTranslationData(csvDataRows: TranslationData) {
 		}
 		// const [table, offerId, column, jsonPath] = getCsvKeyElements(csvKey);
 		const [table, offerName, column, jsonPath] = getCsvKeyElements(csvKey);
-		const currentOffer = _.find(allOffers, function(offer: Offer) {
+		// const currentOffer = _.find(allOffers, function(offer: Offer) {
+		// 	return offer.name === offerName;
+		// });
+		const currentOffer = allOffers.find((offer: Offer) => {
 			return offer.name === offerName;
 		});
 		if (currentOffer){

@@ -289,11 +289,7 @@ async function processTranslationData(csvDataRows: TranslationData) {
 		if (!translation) {
 			return;
 		}
-		// const [table, offerId, column, jsonPath] = getCsvKeyElements(csvKey);
 		const [table, offerName, column, jsonPath] = getCsvKeyElements(csvKey);
-		// const currentOffer = _.find(allOffers, function(offer: Offer) {
-		// 	return offer.name === offerName;
-		// });
 		const currentOffer = allOffers.find((offer: Offer) => {
 			return offer.name === offerName;
 		});

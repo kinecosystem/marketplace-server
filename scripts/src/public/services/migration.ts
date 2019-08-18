@@ -58,7 +58,7 @@ async function getBlockchainVersionForWallet(wallet: WalletApplication, app: App
 	}
 
 	if (app.config.blockchain_version === "3" && app.config.gradual_migration_date && await withinMigrationRateLimit(app.id)) {
-		logger().info(`app on kin3 - should migrate ${ wallet.walletAddress }`);
+		logger().info(`app on kin3 - should migrate (gradual kill switch) ${ wallet.walletAddress }`);
 		metrics.migrationInfo(app.id, "app_on_kin3");
 		return { blockchainVersion: "3", shouldMigrate: true };
 	}

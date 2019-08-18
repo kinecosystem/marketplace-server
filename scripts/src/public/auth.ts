@@ -117,7 +117,7 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 	}
 	if (app.config.blockchain_version === "3" && app.config.gradual_migration_date && await withinMigrationRateLimit(app.id)) {
 		metrics.migrationTrigger(app.id, "app_on_kin3");
-		logger().info(`app on kin3 - should migrate ${ user.id }`);
+		logger().info(`app on kin3 - should migrate (gradual kill switch) ${ user.id }`);
 		return true;
 	}
 	if (app.config.blockchain_version === "3" && !app.config.gradual_migration_date) {

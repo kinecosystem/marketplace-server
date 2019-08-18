@@ -29,7 +29,14 @@ test-system:
 console:
 	node --experimental-repl-await ./scripts/bin/node-console.js
 
-# "make down  up" will not work sometimes, adding sleep after "down" fixes it 
+
+# will connect to localhost:3000 via socket (can be used to connect to prod with ssh tunnel or any environment)
+console-admin:
+	npm run remote-repl
+
+
+
+# "make down  up" will not work sometimes, adding sleep after "down" fixes it
 sleep: 
 	sleep 0.5
 # docker targets

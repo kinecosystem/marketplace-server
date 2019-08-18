@@ -2142,17 +2142,17 @@ async function main() {
 	}
 
 	async function migration() {
-		// await kin3EarnPollFlow();
-		// await kin3EarnTutorial();
-		// await kin3SpendFlow();
-		// await kin3EarnQuizFlow();
-		// await checkClientMigration();
+		await kin3EarnPollFlow();
+		await kin3EarnTutorial();
+		await kin3SpendFlow();
+		await kin3EarnQuizFlow();
+		await checkClientMigration();
 		await checkClientMigrationGradualManual();
-		// await walletSharedAcrossApps();
+		await walletSharedAcrossApps();
 	}
 
-	// await v1();
-	// await v2();
+	await v1();
+	await v2();
 	await migration();
 }
 

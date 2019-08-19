@@ -42,6 +42,8 @@ export interface Config {
 
 	migration_service?: string;
 	num_processes?: number;
+	initial_hourly_migration?: number;
+	initial_minute_migration?: number;
 }
 
 let config: Config;
@@ -70,6 +72,8 @@ export function init(filePath: string) {
 	config.statsd.host = process.env.STATSD_HOST || config.statsd.host;
 	config.statsd.port = Number(process.env.STATSD_PORT) || config.statsd.port;
 	config.num_processes = Number(process.env.NUM_PROCESSES) || config.num_processes;
+	config.initial_hourly_migration = Number(process.env.INITIAL_HOURLY_MIGRATION) || config.initial_hourly_migration;
+	config.initial_minute_migration = Number(process.env.INITIAL_MINUTE_MIGRATION) || config.initial_minute_migration;
 
 	const cacheConfig = JSON.parse(process.env.CACH_TTL || "null") || config.cache_ttl || { "default": 30 };  // In seconds
 	const getHandler = {

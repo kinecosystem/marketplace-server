@@ -28,5 +28,7 @@
 	},
 	"cache_ttl": {
 		"default": 0
-	}
+	},
+	"initial_hourly_migration": 100,
+	"initial_minute_migration": 10
 }

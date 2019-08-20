@@ -22,6 +22,7 @@ export type OfferMeta = {
 	image: string;
 	description: string;
 	order_meta: OrderMeta;
+	[key: string]: string | OrderMeta;
 };
 
 export type Cap = {

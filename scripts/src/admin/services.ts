@@ -1,7 +1,7 @@
 import { Request, RequestHandler, Response } from "express";
 
 import { Application, ApplicationConfig, AppOffer } from "../models/applications";
-import { Cap, Offer, OfferContent, PollAnswer } from "../models/offers";
+import { Cap, Offer, OfferContent, PollAnswer, OfferMeta } from "../models/offers";
 import { GradualMigrationUser, User, WalletApplication, Wallet as UserWallets } from "../models/users";
 import { OpenOrderStatus, Order, OrderContext } from "../models/orders";
 import { IdPrefix, isNothing } from "../utils/utils";
@@ -107,6 +107,10 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 		return `<input type="number" onchange="submitData('/offers/${ offer.id }', { amount: Number(this.value) })" value="${ offer.amount }"/>`;
 	}
 
+	function getTitleElement() {
+		return `<input type="text" onchange="submitData('/offers/${ offer.id }', { title: this.value, is_meta: true })" value="${ offer.meta.title }"/>`;
+	}
+
 	const offerContent = ((await OfferContent.get(offer.id)) || { contentType: "poll", content: "{}" });
 	const offerIdHtml = offerContent.contentType === "coupon" ? offer.id : `<a onclick="overlayOn(this.dataset.content, '${ offer.id }')" data-content="${ escape(offerContent.content) }">${ offer.id }</a>`;
 	return `<tr class='offer-row'>
@@ -116,7 +120,7 @@ async function offerToHtml(offer: Offer, appOffer?: AppOffer): Promise<string> {
 <td>${ offer.name }</td>
 <td>${ offer.type }</td>
 <td>${ getAmountElement() }</td>
-<td>${ offer.meta.title }</td>
+<td>${ getTitleElement() }</td>
 <td>${ offer.meta.description }</td>
 <td><img src="${ offer.meta.image }"/></td>
 <td>${ total() }</td>
@@ -520,10 +524,16 @@ export async function changeAppOffer(body: { cap: Cap }, params: { app_id: strin
 
 export type ChangeOfferData = Partial<Offer> & {
 	content: string;
+	is_meta?: boolean;
+	[key: string]: string | boolean | undefined;
 };
 
 function isInOffer(key: string, offer: Offer): key is keyof Offer {
 	return key in offer;
+}
+
+function isInMeta(key: string, offer: Offer): key is keyof Offer {
+	return key in offer.meta;
 }
 
 export async function changeOffer(body: ChangeOfferData, params: { offer_id: string }, query: any): Promise<any> {
@@ -544,6 +554,11 @@ export async function changeOffer(body: ChangeOfferData, params: { offer_id: str
 		if (isInOffer(key, offer)) {
 			offer[key] = body[key]!;
 			console.log("updating:", key, "with:", body[key]);
+		}
+		// if (body.is_meta && isInMeta(key, offer)){
+		if (body.is_meta && key === "title"){
+			offer.meta.title = body[key]!.toString();
+			console.log("updating meta.title to ", body[key]);
 		}
 	});
 

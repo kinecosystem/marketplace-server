@@ -555,10 +555,9 @@ export async function changeOffer(body: ChangeOfferData, params: { offer_id: str
 			offer[key] = body[key]!;
 			console.log("updating:", key, "with:", body[key]);
 		}
-		// if (body.is_meta && isInMeta(key, offer)){
-		if (body.is_meta && key === "title"){
-			offer.meta.title = body[key]!.toString();
-			console.log("updating meta.title to ", body[key]);
+		if (body.is_meta && isInMeta(key, offer)){
+			offer.meta[key] = body[key]!.toString();
+			console.log("updating meta:", key, "with:", body[key]);
 		}
 	});
 

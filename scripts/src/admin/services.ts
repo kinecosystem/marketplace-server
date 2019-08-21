@@ -577,6 +577,10 @@ export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: 
 		}
 	}
 
+	if (app.config.blockchain_version === "3" && config.blockchain_version === "2"){
+		delete config.gradual_migration_date;
+	}
+
 	try {
 		app.config = config;
 		await app.save();

@@ -97,14 +97,14 @@ export async function validateMigrationListJWT(jwt: string, appId: string): Prom
 }
 
 // return true if a user migration is within rate limits
-export async function withinMigrationRateLimit(appId: string) {
+export async function withinMigrationRateLimit(appId: string, userId?: string) {
 	try {
 		await assertRateLimitMigration(appId);
-		logger().info(`within migration limit for ${ appId }`);
+		logger().info(`within migration limit for app ${ appId }, user ${ userId }`);
 		return true;
 	} catch (e) {
 		metrics.migrationRateLimitExceeded(appId);
-		logger().info(`exceeded migration limit for ${ appId }`);
+		logger().info(`exceeded migration limit for app ${ appId }, user ${ userId }`);
 		return false;
 	}
 }

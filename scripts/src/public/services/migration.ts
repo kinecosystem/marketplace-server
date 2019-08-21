@@ -57,7 +57,7 @@ async function getBlockchainVersionForWallet(wallet: WalletApplication, app: App
 		return { blockchainVersion: "3", shouldMigrate: false };
 	}
 
-	if (app.config.blockchain_version === "3" && app.config.gradual_migration_date && await withinMigrationRateLimit(app.id)) {
+	if (app.config.blockchain_version === "3" && app.config.gradual_migration_date && await withinMigrationRateLimit(app.id, wallet.walletAddress)) {
 		logger().info(`app on kin3 - should migrate (gradual kill switch) ${ wallet.walletAddress }`);
 		metrics.migrationInfo(app.id, "app_on_kin3");
 		return { blockchainVersion: "3", shouldMigrate: true };
@@ -71,7 +71,7 @@ async function getBlockchainVersionForWallet(wallet: WalletApplication, app: App
 
 	if (app.shouldApplyGradualMigration()) {
 		const whitelisted = await GradualMigrationUser.findByWallet(wallet.walletAddress);
-		if (whitelisted.length > 0 && (whitelisted.some(w => !!w.migrationDate) || await withinMigrationRateLimit(app.id))) {
+		if (whitelisted.length > 0 && (whitelisted.some(w => !!w.migrationDate) || await withinMigrationRateLimit(app.id, wallet.walletAddress))) {
 			await GradualMigrationUser.setAsMigrated(whitelisted.map(w => w.userId));
 			logger().info(`kin2 user on migration list - should migrate ${ wallet.walletAddress }`);
 			metrics.migrationInfo(app.id, "gradual_migration");

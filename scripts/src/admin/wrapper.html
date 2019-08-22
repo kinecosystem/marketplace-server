@@ -466,7 +466,8 @@
 				headers: new Headers({'Content-Type': 'application/json'})
 			})
 			if (response.ok) {
-				closeEditor(editor)
+				json = await response.json();
+				closeEditor(editor,json)
 			} else {
 				toast('Config is incorrect (rejected by server)')
 			}
@@ -475,14 +476,15 @@
 		}
 	}
 
-	function closeEditor(editor) {
+	async function closeEditor(editor,appConfig) {
 		const jsonArea = editor.frame.parentNode;
 		const configJson = JSON.stringify(editor.get(), null, 2);
 		editor.destroy();
 		Array.from(jsonArea.querySelectorAll('.editor-btn')).forEach(btn => {
 			btn.remove();
 		})
-		jsonArea.querySelector('pre').textContent = configJson;
+		//jsonArea.querySelector('pre').textContent = configJson;
+		jsonArea.querySelector('pre').textContent = appConfig ? JSON.stringify(appConfig, null, 2) : configJson;
 		jsonArea.querySelector('pre').removeAttribute('hidden')
 	}
 

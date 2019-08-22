@@ -587,5 +587,5 @@ export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: 
 	} catch (e) {
 		res.status(500).send(e.message);
 	}
-	res.status(204).send();
+	res.json(app.config);
 } as any as RequestHandler;

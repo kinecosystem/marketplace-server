@@ -416,7 +416,7 @@
 	{
 		"id": "vG3HILxm23CMiW0XvRp5",
 		"offer_id": "OFrqum1dSc5qH9C5LwLJu",
-		"content": "\"{\\\"pages\\\":[{\\\"type\\\":1,\\\"image\\\":\\\"https://s3.amazonaws.com/htmlpoll.kinecosystem.com/kinlogoTut%403x.png\\\",\\\"title\\\":\\\"How to earn/spend Kin?\\\",\\\"bodyHtml\\\":\\\"<script>window.location.href='https://www.kin.org/kin-apps'</script>\\\",\\\"buttonText\\\":\\\"Next\\\",\\\"rewardText\\\":\\\"Finish the tutorial to earn\\\",\\\"rewardValue\\\":\\\"${amount}\\\"}]}\"",
+		"content": "\"{\\\"pages\\\":[{\\\"type\\\":1,\\\"image\\\":\\\"\\\",\\\"title\\\":\\\"Discover Kin Apps\\\",\\\"bodyHtml\\\":\\\"<iframe style='position:absolute;width:100%;height:100%;left:0;top:5em;' src='https://www.kin.org/kin-apps'></iframe>\\\",\\\"buttonText\\\":\\\"Next\\\",\\\"rewardText\\\":\\\"Finish the tutorial to earn\\\",\\\"rewardValue\\\":\\\"${amount}\\\"}]}\"",
 		"content_type": "tutorial"
 	}
 ]

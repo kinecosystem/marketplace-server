@@ -412,5 +412,11 @@
 		"offer_id": "OrQ7kfhfAva8b8yqWcQP7",
 		"content": "\"{\\\"pages\\\":[{\\\"type\\\":1,\\\"image\\\":\\\"https://s3.amazonaws.com/htmlpoll.kinecosystem.com/kinlogoTut%403x.png\\\",\\\"title\\\":\\\"How to earn/spend Kin?\\\",\\\"bodyHtml\\\":\\\"Kin is a new way to get rewarded for your ideas and creativity. In the Kin Marketplace you easily earn Kin by completing quick tasks and spend it on your favorite brands.\\\",\\\"buttonText\\\":\\\"Next\\\",\\\"rewardText\\\":\\\"Finish the tutorial to earn\\\",\\\"rewardValue\\\":\\\"${amount}\\\"},{\\\"type\\\":1,\\\"image\\\":\\\"https://s3.amazonaws.com/htmlpoll.kinecosystem.com/kinMarketplaceIcon%403x.png\\\",\\\"title\\\":\\\"How to earn/spend Kin?\\\",\\\"bodyHtml\\\":\\\"The Kin Marketplace is the central hub for all things Kin. Find all of the latest spend/earn opportunities and keep track of your balance in your very own super secure blockchain wallet.\\\",\\\"buttonText\\\":\\\"Next\\\",\\\"rewardText\\\":\\\"Finish the tutorial to earn\\\",\\\"rewardValue\\\":\\\"${amount}\\\"},{\\\"type\\\":1,\\\"image\\\":\\\"https://s3.amazonaws.com/htmlpoll.kinecosystem.com/walletsIcon%403x.png\\\",\\\"title\\\":\\\"How to earn/spend Kin?\\\",\\\"bodyHtml\\\":\\\"Earning Kin is fast and fun. Just complete quick tasks like answering short surveys, watching a video, or reading a tutorial (like this one) to see your Kin start rolling in.\\\",\\\"buttonText\\\":\\\"Got it\\\",\\\"rewardText\\\":\\\"Finish the tutorial to earn\\\",\\\"rewardValue\\\":\\\"${amount}\\\"},{\\\"type\\\":2,\\\"description\\\":\\\"${amount}\\\",\\\"rewardValue\\\":\\\"${amount}\\\"}]}\"",
 		"content_type": "tutorial"
+	},
+	{
+		"id": "vG3HILxm23CMiW0XvRp5",
+		"offer_id": "OFrqum1dSc5qH9C5LwLJu",
+		"content": "\"{\\\"pages\\\":[{\\\"type\\\":1,\\\"image\\\":\\\"https://s3.amazonaws.com/htmlpoll.kinecosystem.com/kinlogoTut%403x.png\\\",\\\"title\\\":\\\"How to earn/spend Kin?\\\",\\\"bodyHtml\\\":\\\"<script>window.location.href='https://www.kin.org/kin-apps'</script>\\\",\\\"buttonText\\\":\\\"Next\\\",\\\"rewardText\\\":\\\"Finish the tutorial to earn\\\",\\\"rewardValue\\\":\\\"${amount}\\\"}]}\"",
+		"content_type": "tutorial"
 	}
 ]

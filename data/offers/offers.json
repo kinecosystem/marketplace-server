@@ -481,5 +481,12 @@
 		"amount": 666666,
 		"type": "earn",
 		"meta": "{\"title\":\"Limit is 15 characters\",\"image\":\"https://s3.amazonaws.com/assets.kinecosystembeta.com/images/222x222/offer_placeholder.png\",\"description\":\"The limit is 40 characters. This text is 60 characters long\",\"order_meta\":{\"title\":\"Bad Offer\",\"description\":\"Bad Offer\"}}"
+	},
+	{
+		"id": "OFrqum1dSc5qH9C5LwLJu",
+		"name": "Discover Kin Apps",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Discover Kin Apps\",\"image\":\"https://s3.amazonaws.com/assets.kinecosystembeta.com/images/222x222/offer_placeholder.png\",\"description\":\"Earn and use your Kin across many apps\",\"order_meta\":{\"title\":\"Bad Offer\",\"description\":\"Bad Offer\"}}"
 	}
 ]

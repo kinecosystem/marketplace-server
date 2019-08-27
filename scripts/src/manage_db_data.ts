@@ -248,6 +248,7 @@ export async function initDb(scriptConfig: ScriptConfig, closeConnectionWhenDone
 			confirmUpdate: scriptConfig.require_update_confirm!,
 			onlyUpdateMetaImage: scriptConfig.update_earn_thumbnails,
 			onlyUpdate: scriptConfig.only_update,
+			verbose: true
 		};
 		type OfferData = {
 			id: string;

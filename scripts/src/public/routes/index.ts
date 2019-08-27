@@ -68,7 +68,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 
 	app.get(prefix("config/"), getConfigHandler);
 
-	app.get(prefix("applications/:app_id/blockchain_version"), getAppBlockchainVersion);
+	app.get(prefix("applications/:app_id/blockchain_version"), authenticateUser, getAppBlockchainVersion);
 	if (process.env.environment_name !== "production") {
 		app.put(prefix("applications/:app_id/blockchain_version"), setAppBlockchainVersion);
 	}

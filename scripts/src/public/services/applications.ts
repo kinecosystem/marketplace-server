@@ -4,7 +4,6 @@ import { verify as verifyJwt } from "../jwt";
 import { InvalidApiKey, MissingField, NoSuchApp } from "../../errors";
 import { Application, AppWhitelists } from "../../models/applications";
 import { BlockchainVersion } from "../../models/offers";
-import { withinMigrationRateLimit } from "../../utils/migration";
 import moment = require("moment");
 
 export type RegisterPayload = {
@@ -101,9 +100,6 @@ export async function getAppBlockchainVersion(app_id: string): Promise<Blockchai
 	const app = await Application.get(app_id);
 	if (!app) {
 		throw NoSuchApp(app_id);
-	}
-	if (!withinMigrationRateLimit(app.id) ){
-		return "2"; // Blame Netanel for this
 	}
 	return app.config.blockchain_version;
 }

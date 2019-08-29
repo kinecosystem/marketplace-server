@@ -377,7 +377,12 @@ export async function submitOrder(
 		createEarnTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 	} else {
 		if (transaction) { // there is only transaction on kin3
-			await payment.submitTransaction(order.blockchainData.recipient_address!, order.blockchainData.sender_address!, user.appId, order.amount, order.id, transaction!);
+			try{
+				await payment.submitTransaction(order.blockchainData.recipient_address!, order.blockchainData.sender_address!, user.appId, order.amount, order.id, transaction!);
+			} catch (e){
+				logger().error("ali asadi");
+				throw e;
+			}
 			createSpendTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();
 		}
 	}

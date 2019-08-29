@@ -6,7 +6,7 @@ import { isNothing, normalizeError, readUTCDate } from "../../utils/utils";
 import { Application } from "../../models/applications";
 import { getDefaultLogger as logger } from "../../logging";
 import { User, AuthToken as DbAuthToken, WalletApplication } from "../../models/users";
-import { MaxWalletsExceeded, NoSuchUser, NoSuchApp, CrossAppWallet } from "../../errors";
+import { MaxWalletsExceeded, NoSuchUser, NoSuchApp, CrossAppWallet, NoSuchWallet } from "../../errors";
 import { create as createUserRegistrationFailed } from "../../analytics/events/user_registration_failed";
 import { create as createUserLoginServerRequested } from "../../analytics/events/user_login_server_requested";
 import { create as createUserLoginServerSucceeded } from "../../analytics/events/user_login_server_succeeded";
@@ -322,5 +322,5 @@ export async function getUserBlockchainVersion(walletAddress: string): Promise<s
 	if (appWallet){
 		return appWallet.createdDateKin3 ? "3" : "2";
 	}
-	return "2";
+	throw NoSuchWallet(walletAddress);
 }

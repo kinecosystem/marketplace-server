@@ -13,6 +13,7 @@ import {
 	v1GetOrCreateUserCredentials,
 	getUserProfile as getUserProfileService,
 	register as registerUser,
+	getUserBlockchainVersion as getUserBlockchainVersionService,
 } from "../services/users";
 import {
 	SignInContext,
@@ -273,3 +274,8 @@ export const bulkUserCreation = async function(req: BulkUserCreationRequest, res
 	res.write(`Created user accounts, requestId: ${ httpContext.get("reqId") }\n`);
 	res.status(200).end();
 };
+
+export const getUserBlockchainVersion = async function(req: Request, res: Response) {
+	const blockchainVersion = await getUserBlockchainVersionService(req.params.wallet_address);
+	res.status(200).send(blockchainVersion);
+} as any as RequestHandler;

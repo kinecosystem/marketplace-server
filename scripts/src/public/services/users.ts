@@ -316,3 +316,11 @@ async function createUserProfileObject(user: User, deviceId: string): Promise<Us
 		current_wallet: wallet ? wallet.address : null
 	};
 }
+
+export async function getUserBlockchainVersion(walletAddress: string): Promise<string>{
+	const appWallet = await WalletApplication.get(walletAddress);
+	if (appWallet){
+		return appWallet.createdDateKin3 ? "3" : "2";
+	}
+	return "2";
+}

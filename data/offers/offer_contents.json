@@ -416,7 +416,13 @@
 	{
 		"id": "vG3HILxm23CMiW0XvRp5",
 		"offer_id": "OFrqum1dSc5qH9C5LwLJu",
-		"content": "\"{\\\"pages\\\":[{\\\"type\\\":5,\\\"image\\\":\\\"\\\",\\\"title\\\":\\\"Discover Kin Apps\\\",\\\"iframeSrc\\\":\\\"https://www.kin.org/kin-apps\\\"}]}\"",
+		"content": "\"{\\\"pages\\\":[{\\\"type\\\":5,\\\"image\\\":\\\"\\\",\\\"title\\\":\\\"Discover Kin Apps\\\",\\\"iframeSrc\\\":\\\"https://www.kin.org/kin-apps?utm_source=ecosystem&utm_medium=smpl\\\"}]}\"",
+		"content_type": "tutorial"
+	},
+	{
+		"id": "vG3HILxm23CMiW0XvRp5",
+		"offer_id": "OFrqum1dSc5qH9C5LwLJt",
+		"content": "\"{\\\"pages\\\":[{\\\"type\\\":5,\\\"image\\\":\\\"\\\",\\\"title\\\":\\\"Discover Kin Apps\\\",\\\"iframeSrc\\\":\\\"https://www.kin.org/kin-apps?utm_source=ecosystem&utm_medium=test\\\"}]}\"",
 		"content_type": "tutorial"
 	}
 ]

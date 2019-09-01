@@ -484,7 +484,14 @@
 	},
 	{
 		"id": "OFrqum1dSc5qH9C5LwLJu",
-		"name": "Discover Kin Apps",
+		"name": "Discover Kin Apps smpl",
+		"amount": 20,
+		"type": "earn",
+		"meta": "{\"title\":\"Discover Kin Apps\",\"image\":\"https://s3.amazonaws.com/assets.kinecosystem.com/thumbnails/offers/discover_kin_icon_orig.png\",\"description\":\"Earn and use your Kin across many apps\",\"order_meta\":{\"title\":\"Bad Offer\",\"description\":\"Bad Offer\"}}"
+	},
+	{
+		"id": "OFrqum1dSc5qH9C5LwLJt",
+		"name": "Discover Kin Apps test",
 		"amount": 20,
 		"type": "earn",
 		"meta": "{\"title\":\"Discover Kin Apps\",\"image\":\"https://s3.amazonaws.com/assets.kinecosystem.com/thumbnails/offers/discover_kin_icon_orig.png\",\"description\":\"Earn and use your Kin across many apps\",\"order_meta\":{\"title\":\"Bad Offer\",\"description\":\"Bad Offer\"}}"

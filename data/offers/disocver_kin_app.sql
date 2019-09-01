@@ -1,3 +1,5 @@
+smpl# prod
+
 insert into offers(id,name,amount,meta,owner_id) values('OQ5Bspwnnun7AeW2WxbA6','Discover Kin Apps mkme',0,'{"title":"Discover Kin Apps","image":"https://cdn.kinecosystem.com/thumbnails/offers/discover_kin_icon_orig.png","description":"Earn and use your Kin across many apps","order_meta":{"title":"Bad Offer","description":"Bad Offer"}}','UWNw1teevBjVlhwA2uXc')
 insert into offers(id,name,amount,meta,owner_id) values('Oyew4TIXcU61KdUk4e1FU','Discover Kin Apps gphy',0,'{"title":"Discover Kin Apps","image":"https://cdn.kinecosystem.com/thumbnails/offers/discover_kin_icon_orig.png","description":"Earn and use your Kin across many apps","order_meta":{"title":"Bad Offer","description":"Bad Offer"}}','UWNw1teevBjVlhwA2uXc')
 insert into offers(id,name,amount,meta,owner_id) values('OYnzlJyGn2uTIm1hyYiLk','Discover Kin Apps lipz',0,'{"title":"Discover Kin Apps","image":"https://cdn.kinecosystem.com/thumbnails/offers/discover_kin_icon_orig.png","description":"Earn and use your Kin across many apps","order_meta":{"title":"Bad Offer","description":"Bad Offer"}}','UWNw1teevBjVlhwA2uXc')
@@ -21,3 +23,13 @@ insert into application_offers(app_id,offer_id,cap,wallet_address,sort_index) va
 insert into application_offers(app_id,offer_id,cap,wallet_address,sort_index) values('swel','Og80ugJSsulScN0LlLv1Y','{"total":1000,"per_user":1}','GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E',100000)
 insert into application_offers(app_id,offer_id,cap,wallet_address,sort_index) values('p365','Oxhstb0IDrFCFOARcIr2q','{"total":1000,"per_user":1}','GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E',100000)
 insert into application_offers(app_id,offer_id,cap,wallet_address,sort_index) values('kik','OQ5Bspwnnun7AeW2WxbA6','{"total":1000,"per_user":1}','GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E',100000)
+
+# test
+insert into offers(id,name,amount,meta,owner_id) values('OQ5Bspwnnun7AeW2WxbA6','Discover Kin Apps smpl',0,'{"title":"Discover Kin Apps","image":"https://cdn.kinecosystem.com/thumbnails/offers/discover_kin_icon_orig.png","description":"Earn and use your Kin across many apps","order_meta":{"title":"Bad Offer","description":"Bad Offer"}}','UWNw1teevBjVlhwA2uXc')
+insert into offers(id,name,amount,meta,owner_id) values('Oyew4TIXcU61KdUk4e1FU','Discover Kin Apps test',0,'{"title":"Discover Kin Apps","image":"https://cdn.kinecosystem.com/thumbnails/offers/discover_kin_icon_orig.png","description":"Earn and use your Kin across many apps","order_meta":{"title":"Bad Offer","description":"Bad Offer"}}','UWNw1teevBjVlhwA2uXc')
+
+insert into offer_contents(id,offer_id,content,content_type) values('rzyUkTBS5N5Za0GvAgc4','OQ5Bspwnnun7AeW2WxbA6','"{\"pages\":[{\"type\":5,\"image\":\"\",\"title\":\"Discover Kin Apps\",\"iframeSrc\":\"https://www.kin.org/kin-apps?utm_source=ecosystem&utm_medium=smpl\"}]}"','tutorial')
+insert into offer_contents(id,offer_id,content,content_type) values('G1GJjKvWoxCTn6F9B59V','Oyew4TIXcU61KdUk4e1FU','"{\"pages\":[{\"type\":5,\"image\":\"\",\"title\":\"Discover Kin Apps\",\"iframeSrc\":\"https://www.kin.org/kin-apps?utm_source=ecosystem&utm_medium=test\"}]}"','tutorial')
+
+insert into application_offers(app_id,offer_id,cap,wallet_address,sort_index) values('smpl','OQ5Bspwnnun7AeW2WxbA6','{"total":1000,"per_user":1}','GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E',100000)
+insert into application_offers(app_id,offer_id,cap,wallet_address,sort_index) values('test','Oyew4TIXcU61KdUk4e1FU','{"total":1000,"per_user":1}','GDNJRI53DAO63JXQE2COPUDE3B3B6V5GGIIGE5QE4VZQZ5S2EHXHMZ6E',100000)

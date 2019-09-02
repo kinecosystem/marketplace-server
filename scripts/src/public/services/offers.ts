@@ -12,6 +12,7 @@ import { ContentType, OfferContent, OfferType, SdkVersionRule } from "../../mode
 import { Order } from "../../models/orders";
 import { OfferTranslation } from "../../models/translations";
 import { NoSuchApp } from "../../errors";
+import { getDefaultLogger as logger } from "../../logging";
 
 import * as semver from "semver";
 import { CLIENT_SDK_VERSION_HEADER } from "../../middleware";
@@ -25,6 +26,7 @@ export interface PollAnswer {
 
 export interface Offer {
 	id: string;
+	name: string;
 	title: string;
 	description: string;
 	image: string;
@@ -80,6 +82,7 @@ async function getImageDataResolver(version: string, key: string, defaultValue: 
 async function offerDbToApi(offer: db.Offer, content: db.OfferContent, offerTranslations: OfferTranslations, walletAddress: string) {
 	const offerData = {
 		id: offer.id,
+		name: offer.name,
 		title: offerTranslations.title || offer.meta.title,
 		description: offerTranslations.description || offer.meta.description,
 		image: await getImageDataResolver(httpContext.get(CLIENT_SDK_VERSION_HEADER), offer.meta.image),
@@ -167,7 +170,17 @@ export async function getOffers(userId: string, appId: string, filters: ModelFil
 			);
 			const daily_earn_offers = app!.config.daily_earn_offers;
 			const completedToday = await dbOrders.Order.countToday(userId, "earn", "marketplace");
-			return offers.slice(0, Math.max(0, daily_earn_offers - completedToday));
+			// The "Discover Kin Apps" offer should always be on the bottom, and must not be filtered
+			// out by daily_earn_offers. So we take it out of the equastion (if exists) and place
+			// it at the end of the array after filter
+			const discoverIndex = offers.findIndex(element => {
+				return element.name.startsWith("Discover Kin Apps");
+			});
+			const discoverOffer = offers.splice(discoverIndex, 1);
+			const slicedOffers = offers.slice(0, Math.max(0, daily_earn_offers - completedToday));
+			const combinedOffers = slicedOffers.concat(discoverOffer);
+			return combinedOffers;
+
 		}
 		return [];
 	}

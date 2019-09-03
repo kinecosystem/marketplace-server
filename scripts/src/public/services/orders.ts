@@ -380,7 +380,8 @@ export async function submitOrder(
 			try{
 				await payment.submitTransaction(order.blockchainData.recipient_address!, order.blockchainData.sender_address!, user.appId, order.amount, order.id, transaction!);
 			} catch (e){
-				logger().error("ali asadi");
+				const util = require("util");
+				logger().error(`ali asadi ${util.inspect(e)}`);
 				throw e;
 			}
 			createSpendTransactionBroadcastToBlockchainSubmitted(user.id, userDeviceId, order.offerId, order.id).report();

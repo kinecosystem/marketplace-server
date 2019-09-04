@@ -1036,6 +1036,65 @@ async function nativeSpendFlow() {
 	console.log("OK.\n");
 }
 
+async function multiNativeSpendFlow() {
+	console.log("===================================== nativeSpendFlow =====================================");
+
+	// this address is prefunded with test kin
+	const userId = "test:rich_user:" + generateId();
+	const deviceId = generateId();
+	const appClient = new SampleAppClient(SMPL_APP_CONFIG.jwtAddress);
+	const jwt = await appClient.getRegisterJWT(userId, deviceId);
+
+	const client = await MarketplaceClient.create({ jwt });
+	await client.updateWallet(SMPL_APP_CONFIG.keypair.secret());
+	await client.activate();
+
+	for (let i = 0 ; i < 20; i++){
+		const selectedOffer = (await appClient.getOffers())[0] as ExternalOfferPayload;
+		const offerJwt = await appClient.getSpendJWT(userId, deviceId, selectedOffer.id);
+		console.log(`requesting order for offer: ${ selectedOffer.id }: ${ offerJwt }`);
+
+		const openOrder = await client.createExternalOrder(offerJwt);
+		console.log(`got open order`, openOrder);
+
+		expect(openOrder.offer_type).toBe("spend");
+		expect(openOrder.amount).toBe(selectedOffer.amount);
+		expect(openOrder.offer_id).toBe(selectedOffer.id);
+
+		// pay for the offer
+		const res = await client.pay(openOrder.blockchain_data.recipient_address!, selectedOffer.amount, openOrder.id);
+		console.log("pay result hash: " + res.hash);
+		await client.submitOrder(openOrder.id);
+
+		// poll on order payment
+		const order = await retry(() => client.getOrder(openOrder.id), order => order.status === "completed", "order did not turn completed");
+
+		console.log(`completion date: ${ order.completion_date }`);
+
+		// find payment on blockchain
+		const payment = (await retry(() => client.findKinPayment(order.id), payment => !!payment, "failed to find payment on blockchain"))!;
+		expect(payment).toBeDefined();
+
+		console.log(`payment on blockchain:`, payment);
+		expect(isValidPayment(order, client.appId, payment)).toBeTruthy();
+		console.log(`got order after submit`, order);
+		console.log(`order history`, (await client.getOrders()).orders.slice(0, 2));
+
+		expect(order.result!.type).toBe("payment_confirmation");
+		const paymentJwt = (order.result! as JWTValue).jwt;
+		const jwtPayload = jsonwebtoken.decode(paymentJwt, { complete: true }) as JWTContent<JWTBodyPaymentConfirmation, "payment_confirmation">;
+		expect(jwtPayload.payload.offer_id).toBe(order.offer_id);
+		expect(jwtPayload.payload.sender_user_id).toBe(userId);
+		expect(jwtPayload.header.kid).toBeDefined();
+		expect(jwtPayload.payload.iss).toEqual("kin");
+		expect(jwtPayload.payload.nonce).toEqual(DbOrder.DEFAULT_NONCE);
+		// verify using kin public key
+		expect(await appClient.isValidSignature(paymentJwt)).toBeTruthy();
+	}
+
+	console.log("OK.\n");
+}
+
 async function v1NativeSpendFlow() {
 	console.log("===================================== nativeSpendFlow V1 =====================================");
 
@@ -2115,30 +2174,31 @@ async function main() {
 	}
 
 	async function v2() {
-		await registerJWT();
-		await outdatedJWT();
-		await updateWallet();
-		await userProfile();
-		await extraTrustlineIsOK();
-		await earnPollFlow();
-		await earnTutorial();
-		await spendFlow();
-		await earnQuizFlow();
-		await nativeEarnFlow();
-		await nativeSpendFlow();
-		await didNotApproveTOS();
-		await testRegisterNewUser();
-		await tryToNativeSpendTwice();
-		await tryToNativeSpendTwiceWithNonce();
-		await p2p();
-		await getOfferTranslations();
-		await twoUsersSharingWallet();
-		await checkValidTokenAfterLoginRightAfterLogout();
-		await getOffersVersionSpecificImages();
-		await checkOutgoingTransferOrder();
-		await checkIncomingTransferOrder();
-		await checkTransferOrderE2E();
-		await checkExternalTransferOrderE2E();
+		// await registerJWT();
+		// await outdatedJWT();
+		// await updateWallet();
+		// await userProfile();
+		// await extraTrustlineIsOK();
+		// await earnPollFlow();
+		// await earnTutorial();
+		// await spendFlow();
+		// await earnQuizFlow();
+		// await nativeEarnFlow();
+		// await nativeSpendFlow();
+		await multiNativeSpendFlow();
+		// await didNotApproveTOS();
+		// await testRegisterNewUser();
+		// await tryToNativeSpendTwice();
+		// await tryToNativeSpendTwiceWithNonce();
+		// await p2p();
+		// await getOfferTranslations();
+		// await twoUsersSharingWallet();
+		// await checkValidTokenAfterLoginRightAfterLogout();
+		// await getOffersVersionSpecificImages();
+		// await checkOutgoingTransferOrder();
+		// await checkIncomingTransferOrder();
+		// await checkTransferOrderE2E();
+		// await checkExternalTransferOrderE2E();
 	}
 
 	async function migration() {
@@ -2151,9 +2211,9 @@ async function main() {
 		await walletSharedAcrossApps();
 	}
 
-	await v1();
+	// await v1();
 	await v2();
-	await migration();
+	// await migration();
 }
 
 main()

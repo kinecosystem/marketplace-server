@@ -23,6 +23,7 @@ type AccountMigrationStatus = {
 	should_migrate: boolean;
 	app_blockchain_version: BlockchainVersion;
 	restore_allowed: boolean;
+	wallet_blockchain_version: BlockchainVersion;
 };
 
 // return true if user can skip migration - checks if zero balance optimization can be performed
@@ -112,6 +113,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 		app_blockchain_version: blockchainVersion,
 		// restore allowed when no wallet was found or the appId is equal
 		restore_allowed: !wallet || wallet.appId === appId,
+		wallet_blockchain_version: blockchainVersion,
 	} as AccountMigrationStatus);
 } as express.RequestHandler;
 

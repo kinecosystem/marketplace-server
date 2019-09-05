@@ -23,7 +23,7 @@ type AccountMigrationStatus = {
 	should_migrate: boolean;
 	app_blockchain_version: BlockchainVersion;
 	restore_allowed: boolean;
-	wallet_blockchain_version: BlockchainVersion;
+	wallet_blockchain_version: BlockchainVersion | null;
 };
 
 // return true if user can skip migration - checks if zero balance optimization can be performed
@@ -95,6 +95,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 	const wallet = await WalletApplication.get(publicAddress);
 
 	let blockchainVersion: BlockchainVersion;
+	let walletBlockchainVersion: BlockchainVersion | null = null;
 	let shouldMigrate: boolean;
 	if (!wallet) {
 		blockchainVersion = app.config.blockchain_version;
@@ -104,6 +105,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 		if (shouldMigrate && await canSkipMigration(publicAddress)) {
 			metrics.skipMigration(appId);
 			shouldMigrate = false;
+			walletBlockchainVersion = blockchainVersion;
 		}
 	}
 	logger().info(`handling account status response app_id: ${ appId } public_address: ${ publicAddress }, ${ shouldMigrate }, ${ blockchainVersion }`);
@@ -113,7 +115,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 		app_blockchain_version: blockchainVersion,
 		// restore allowed when no wallet was found or the appId is equal
 		restore_allowed: !wallet || wallet.appId === appId,
-		wallet_blockchain_version: blockchainVersion,
+		wallet_blockchain_version: walletBlockchainVersion,
 	} as AccountMigrationStatus);
 } as express.RequestHandler;
 

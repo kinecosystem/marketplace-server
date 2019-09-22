@@ -35,9 +35,10 @@ export class Application extends CreationDateModel {
 		const cacheKey = "apps";
 		let apps = localCache.get<Application[]>(cacheKey);
 
-		if (!apps) {
+		// if (!apps) {
+		if (true) {
 			apps = await Application.find();
-			localCache.set(cacheKey, apps, moment.duration(config.cache_ttl.application, "seconds"));
+			// localCache.set(cacheKey, apps, moment.duration(config.cache_ttl.application, "seconds"));
 		}
 
 		return new Map(apps.map(app => [app.id, app]) as Array<[string, Application]>);

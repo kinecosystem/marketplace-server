@@ -115,7 +115,12 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 	if (!app) { // cached per instance
 		throw NoSuchApp(user.appId);
 	}
-	if (app.config.blockchain_version === "3") {
+	if (app.config.blockchain_version === "3" && app.config.gradual_migration_date && await withinMigrationRateLimit(app.id, user.id)) {
+		metrics.migrationTrigger(app.id, "app_on_kin3");
+		logger().info(`app on kin3 - should migrate (gradual kill switch) ${ user.id }`);
+		return true;
+	}
+	if (app.config.blockchain_version === "3" && !app.config.gradual_migration_date) {
 		metrics.migrationTrigger(app.id, "app_on_kin3");
 		logger().info(`app on kin3 - should migrate ${ user.id }`);
 		return true;
@@ -134,7 +139,7 @@ async function checkMigrationNeeded(req: AuthenticatedRequest): Promise<boolean>
 			return true;
 		}
 		const whitelist = await GradualMigrationUser.findOneById(user.id);
-		if (whitelist && (whitelist.migrationDate || await withinMigrationRateLimit(app.id))) {
+		if (whitelist && (whitelist.migrationDate || await withinMigrationRateLimit(app.id, user.id))) {
 			await GradualMigrationUser.setAsMigrated([user.id]);
 			metrics.migrationTrigger(app.id, "gradual_migration");
 			logger().info(`kin2 user in migration list - should migrate ${ wallet.address } ${ user.id }`);

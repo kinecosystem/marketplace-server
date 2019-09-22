@@ -19,6 +19,7 @@ import {
 	activateUser,
 	v1SignInUser,
 	v1MyUserInfo, bulkUserCreation,
+	getUserBlockchainVersion,
 } from "./users";
 import {
 	cancelOrder,
@@ -65,6 +66,7 @@ export function createRoutes(app: express.Express, pathPrefix?: string) {
 	app.patch(prefix("users/me"), authenticateUser, updateUser);
 	app.delete(prefix("users/me/session"), authenticateUser, logoutUser);
 	app.post(prefix("users/"), signInUser);
+	app.get(prefix("users/:wallet_address/blockchain_version"), getUserBlockchainVersion);
 
 	app.get(prefix("config/"), getConfigHandler);
 

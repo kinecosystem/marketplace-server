@@ -9,6 +9,8 @@ import * as payment from "../public/services/payment";
 import { BlockchainConfig, getBlockchainConfig } from "../public/services/payment";
 import { getOffers as getUserOffersService } from "../public/services/offers";
 import { getKin2Balance, isBurned, getKin3Balance } from "./migration";
+import { getConfig } from "./config";
+import moment = require("moment");
 
 let BLOCKCHAIN: BlockchainConfig;
 let BLOCKCHAIN3: BlockchainConfig;
@@ -554,6 +556,7 @@ type AppConfig = ApplicationConfig & { [limits: string]: number };
 type UpdateAppConfigRequest = Request & { body: AppConfig; };
 
 export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: Response) {
+	const globalConfig = getConfig();
 	const config: AppConfig = req.body;
 	const isLimitsNumbers = (configObj: AppConfig, limitName: string) => typeof configObj.limits[limitName as keyof AppConfig["limits"]] === "number";
 	if (!config.limits || !Object.keys(config.limits).every(isLimitsNumbers.bind(null, config))) {
@@ -562,11 +565,27 @@ export const updateAppConfig = async function(req: UpdateAppConfigRequest, res: 
 	}
 
 	const app = (await Application.findOne({ id: req.params.application_id }))!;
+
+	// if the change is migrating from v2 to v3, enforce gradual migration
+	if (app.config.blockchain_version === "2" && config.blockchain_version === "3"){
+		config.gradual_migration_date = moment().toISOString();
+		if (config.limits.hourly_migration === undefined){
+			config.limits.hourly_migration = Number(globalConfig.initial_hourly_migration);
+		}
+		if (config.limits.minute_migration === undefined){
+			config.limits.minute_migration = Number(globalConfig.initial_minute_migration);
+		}
+	}
+
+	if (app.config.blockchain_version === "3" && config.blockchain_version === "2"){
+		delete config.gradual_migration_date;
+	}
+
 	try {
 		app.config = config;
 		await app.save();
 	} catch (e) {
 		res.status(500).send(e.message);
 	}
-	res.status(204).send();
+	res.json(app.config);
 } as any as RequestHandler;

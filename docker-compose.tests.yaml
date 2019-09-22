@@ -54,11 +54,13 @@ services:
     links:
       - marketplace-public
       - jwt-service
+      - marketplace-admin
     environment:
       MARKETPLACE_BASE: http://marketplace-public
       JWT_SERVICE_BASE: http://jwt-service
       JWT_SERVICE_BASE_V3: http://jwt-service-v3
       MIGRATION_SERVICE: http://migration-service:8000
+      ADMIN_BASE: http://marketplace-admin
     command: npm run test-system
 
   generate-funding-address:

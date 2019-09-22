@@ -23,6 +23,7 @@ type AccountMigrationStatus = {
 	should_migrate: boolean;
 	app_blockchain_version: BlockchainVersion;
 	restore_allowed: boolean;
+	wallet_blockchain_version: BlockchainVersion | null;
 };
 
 // return true if user can skip migration - checks if zero balance optimization can be performed
@@ -57,7 +58,13 @@ async function getBlockchainVersionForWallet(wallet: WalletApplication, app: App
 		return { blockchainVersion: "3", shouldMigrate: false };
 	}
 
-	if (app.config.blockchain_version === "3") {
+	if (app.config.blockchain_version === "3" && app.config.gradual_migration_date && await withinMigrationRateLimit(app.id, wallet.walletAddress)) {
+		logger().info(`app on kin3 - should migrate (gradual kill switch) ${ wallet.walletAddress }`);
+		metrics.migrationInfo(app.id, "app_on_kin3");
+		return { blockchainVersion: "3", shouldMigrate: true };
+	}
+
+	if (app.config.blockchain_version === "3" && !app.config.gradual_migration_date) {
 		logger().info(`app on kin3 - should migrate ${ wallet.walletAddress }`);
 		metrics.migrationInfo(app.id, "app_on_kin3");
 		return { blockchainVersion: "3", shouldMigrate: true };
@@ -65,7 +72,7 @@ async function getBlockchainVersionForWallet(wallet: WalletApplication, app: App
 
 	if (app.shouldApplyGradualMigration()) {
 		const whitelisted = await GradualMigrationUser.findByWallet(wallet.walletAddress);
-		if (whitelisted.length > 0 && (whitelisted.some(w => !!w.migrationDate) || await withinMigrationRateLimit(app.id))) {
+		if (whitelisted.length > 0 && (whitelisted.some(w => !!w.migrationDate) || await withinMigrationRateLimit(app.id, wallet.walletAddress))) {
 			await GradualMigrationUser.setAsMigrated(whitelisted.map(w => w.userId));
 			logger().info(`kin2 user on migration list - should migrate ${ wallet.walletAddress }`);
 			metrics.migrationInfo(app.id, "gradual_migration");
@@ -88,6 +95,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 	const wallet = await WalletApplication.get(publicAddress);
 
 	let blockchainVersion: BlockchainVersion;
+	let walletBlockchainVersion: BlockchainVersion | null = null;
 	let shouldMigrate: boolean;
 	if (!wallet) {
 		blockchainVersion = app.config.blockchain_version;
@@ -97,6 +105,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 		if (shouldMigrate && await canSkipMigration(publicAddress)) {
 			metrics.skipMigration(appId);
 			shouldMigrate = false;
+			walletBlockchainVersion = blockchainVersion;
 		}
 	}
 	logger().info(`handling account status response app_id: ${ appId } public_address: ${ publicAddress }, ${ shouldMigrate }, ${ blockchainVersion }`);
@@ -106,6 +115,7 @@ export const accountStatus = async function(req: AccountStatusRequest, res: expr
 		app_blockchain_version: blockchainVersion,
 		// restore allowed when no wallet was found or the appId is equal
 		restore_allowed: !wallet || wallet.appId === appId,
+		wallet_blockchain_version: walletBlockchainVersion,
 	} as AccountMigrationStatus);
 } as express.RequestHandler;
 

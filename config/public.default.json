@@ -30,7 +30,8 @@
 	"environment_name": "local",
 	"bi_service": "https://kin-bi.appspot.com/eco_",
 	"cache_ttl": {
-		"default": 0
+		"default": 0,
+		"application": 10
 	},
 
 	"migration_service": "https://migration-service.kinecosystemtest.com"

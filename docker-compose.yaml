@@ -33,7 +33,7 @@ services:
       APP_DB_HOST: postgres
       APP_DB_DATABASE: ecosystem
       NODEMON_WATCH_DIRS: ${NODEMON_WATCH_DIRS}
-      CACHE_TTL: '{ "default": 0 }'
+      CACHE_TTL: '{ "default": 0, "application": 10 }'
       MIGRATION_SERVICE: http://migration-service:8000
       NUM_PROCESSES: 1
 

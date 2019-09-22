@@ -75,7 +75,7 @@ export function init(filePath: string) {
 	config.initial_hourly_migration = Number(process.env.INITIAL_HOURLY_MIGRATION) || config.initial_hourly_migration;
 	config.initial_minute_migration = Number(process.env.INITIAL_MINUTE_MIGRATION) || config.initial_minute_migration;
 
-	const cacheConfig = JSON.parse(process.env.CACH_TTL || "null") || config.cache_ttl || { "default": 30 };  // In seconds
+	const cacheConfig = JSON.parse(process.env.CACH_TTL || "null") || config.cache_ttl || { "default": 30, "application": 10 };  // In seconds
 	const getHandler = {
 		get: (obj: Config["cache_ttl"], prop: keyof Config["cache_ttl"]) => {
 			const currentValue = obj[prop];

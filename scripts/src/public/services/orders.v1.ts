@@ -173,12 +173,6 @@ async function createP2PExternalOrder(sender: User, jwt: ExternalPayToUserOrderJ
 	if (!recipientWallet) {
 		throw UserHasNoWallet(recipient.id);
 	}
-	// check wallet version matches
-	if (await WalletApplication.getBlockchainVersion(senderWallet.address) !==
-		await WalletApplication.getBlockchainVersion(recipientWallet.address)) {
-		logger().warn("failed p2p creation due to blockchain version mismatch on v1");
-		throw UserHasNoWallet(recipient.id);
-	}
 
 	const order = db.ExternalOrder.new({
 		offerId: jwt.offer.id,

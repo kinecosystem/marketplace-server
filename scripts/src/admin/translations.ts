@@ -44,15 +44,18 @@ const CHARACTER_LIMITS: { [path: string]: number } = {
 	"poll:offer_contents:content:pages.title": 38,
 	"poll:offer_contents:content:pages.description": 24,
 	"poll:offer_contents:content:pages.question.answers": 22,
+	"poll:offer_contents:content:pages.rewardText": 30,
+	"poll:offer_contents:content:pages.rewardValue": 12,
 	"quiz:offer:title": 14,
 	"quiz:offer:description": 18,
 	"quiz:offer:orderTitle": 8,
 	"quiz:offer:orderDescription": 24,
+	"quiz:offer_contents:content:pages.title": 38,
 	"quiz:offer_contents:content:pages.description": 66,
 	"quiz:offer_contents:content:pages.question.answers": 22,
+	"quiz:offer_contents:content:pages.rewardText": 30,
+	"quiz:offer_contents:content:pages.rewardValue": 12,
 };
-
-const KEY_TO_PATH_REGEX = /\b([\w_]+:)\w+:|\[\d\]/g;
 
 const EXCLUDED = [
 	"tutorial",
@@ -61,7 +64,11 @@ const EXCLUDED = [
 ];
 
 function constructRow(contentType: ContentType, key: string, str: string) {
-	const path = `${ contentType }:${ key.replace(KEY_TO_PATH_REGEX, "$1") }`;
+	// this transfroms something like:
+	// offer_contents:Generic Poll #18:content:pages[0].question.answers[1]
+	// to:
+	// offer_contents:content:pages.question.answers
+	const path = `${ contentType }:${ key.replace(/:(.*?):/, ":").replace(/\[.\]/g, "") }`;
 	if (EXCLUDED.includes(path) || EXCLUDED.includes(contentType)) {
 		return;
 	}
@@ -123,18 +130,19 @@ async function getCsvRowData() {
 	let rows: CsvRow[] = [];
 	allOffers.forEach(offer => {
 		const offerId = offer.id;
+		const offerName = offer.name;
 		const offerContent: OfferContent = allContent.filter(obj => obj.offerId === offerId)[0];
 		// quote unquoted template values
 		const offerContentContent = parseContent(offerContent.content);
 		const boundConstructRow = constructRow.bind({}, offerContent.contentType);
-		let keyBase = `offer:${ offerId }`;
+		let keyBase = `offer:${ offerName }`;
 		rows = rows.concat([
 			boundConstructRow(`${ keyBase }:title`, offer.meta.title),
 			boundConstructRow(`${ keyBase }:description`, offer.meta.description),
 			boundConstructRow(`${ keyBase }:orderTitle`, offer.meta.order_meta.title),
 			boundConstructRow(`${ keyBase }:orderDescription`, offer.meta.order_meta.description),
 		]);
-		keyBase = `offer_contents:${ offerId }`;
+		keyBase = `offer_contents:${ offerName }`;
 		if (offerContentContent.pages) {
 			rows = rows.concat(constructRowsFromArray(`${ keyBase }:content:pages`, offerContentContent.pages, boundConstructRow));
 		} else if (offerContentContent.confirmation) {
@@ -180,20 +188,20 @@ export async function writeCsvTemplateToFile(fileName: string = "translation_tem
 
 /*** Example CSV:
  Type,Key,Default,Translation,Character Limit
- poll,offer:OKKmC7OHkK2GztnaD3VF3:title,Favorites,Favoritos,14
- poll,offer:OKKmC7OHkK2GztnaD3VF3:description,Let us know!,Avise-nos!,18
- poll,offer:OKKmC7OHkK2GztnaD3VF3:orderTitle,Poll,Enquete,8
- poll,offer:OKKmC7OHkK2GztnaD3VF3:orderDescription,Completed,Concluído,24
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].title,Choose your favorite city,Escolha sua cidade preferida,38
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[0],San Francisco,São Francisco,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[1],New York City,Cidade de Nova York,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[2],Miami,Miami,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[0].question.answers[3],Austin,Austin,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].title,Choose your favorite flower,Escolha sua flor preferida,38
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[0],Rose,Rosa,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[1],Daffodil,Narciso,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[2],Petunia,Petúnia,22
- poll,offer_contents:OKKmC7OHkK2GztnaD3VF3:content:pages[1].question.answers[3],Daisy,Margarida,22
+ poll,offer:Generic Poll #40:title,Favorites,Favoritos,14
+ poll,offer:Generic Poll #40:description,Let us know!,Avise-nos!,18
+ poll,offer:Generic Poll #40:orderTitle,Poll,Enquete,8
+ poll,offer:Generic Poll #40:orderDescription,Completed,Concluído,24
+ poll,offer_contents:Generic Poll #40:content:pages[0].title,Choose your favorite city,Escolha sua cidade preferida,38
+ poll,offer_contents:Generic Poll #40:content:pages[0].question.answers[0],San Francisco,São Francisco,22
+ poll,offer_contents:Generic Poll #40:content:pages[0].question.answers[1],New York City,Cidade de Nova York,22
+ poll,offer_contents:Generic Poll #40:content:pages[0].question.answers[2],Miami,Miami,22
+ poll,offer_contents:Generic Poll #40:content:pages[0].question.answers[3],Austin,Austin,22
+ poll,offer_contents:Generic Poll #40:content:pages[1].title,Choose your favorite flower,Escolha sua flor preferida,38
+ poll,offer_contents:Generic Poll #40:content:pages[1].question.answers[0],Rose,Rosa,22
+ poll,offer_contents:Generic Poll #40:content:pages[1].question.answers[1],Daffodil,Narciso,22
+ poll,offer_contents:Generic Poll #40:content:pages[1].question.answers[2],Petunia,Petúnia,22
+ poll,offer_contents:Generic Poll #40:content:pages[1].question.answers[3],Daisy,Margarida,22
  ***/
 
 export type CsvParse = ((input: Buffer, options?: Options) => any) & typeof csvParse;
@@ -266,37 +274,44 @@ async function insertIntoDb(data: OffersTranslation, language: string) {
 	});
 	console.info(`inserting ${ dbReadyData.length } translations`);
 	await OfferTranslation.createQueryBuilder().insert().values(dbReadyData)
-		.onConflict(`("offer_id", "context", "path", "language") DO NOTHING`)
+		.onConflict(`("offer_id", "context", "path", "language") DO UPDATE SET offer_id=EXCLUDED.offer_id, context=EXCLUDED.context, path=EXCLUDED.path, language=EXCLUDED.language`)
 		.execute();
 }
 
 //  TODO: add validation
 async function processTranslationData(csvDataRows: TranslationData) {
+	const allOffers = await Offer.find({ type: "earn" });
 	const allOfferContents = await OfferContent.find({ select: ["offerId", "content"] } as FindManyOptions<OfferContent>);
 	const allContentTranslations: OffersTranslation = {};
 	csvDataRows.forEach(([__, csvKey, ___, translation]) => {
 		if (!translation) {
 			return;
 		}
-		const [table, offerId, column, jsonPath] = getCsvKeyElements(csvKey);
-		let offerTranslations;
-		if (offerId in allContentTranslations) {
-			offerTranslations = allContentTranslations[offerId];
-		} else {
-			offerTranslations = { content: getOfferContentFromJson(allOfferContents.find(content => content.offerId === offerId)) } as OfferTranslationData;
-		}
-		if (table === "offer") {
-			offerTranslations[column] = translation;
-		} else {
-			const evalString = `offerTranslations.content.${ jsonPath }=translation`;
-			try {
-				/* tslint:disable-next-line:no-eval */
-				eval(evalString);
-			} catch (e) {
-				console.error("content eval failed: \neval string: %s\n error message: %s", evalString, e);
+		const [table, offerName, column, jsonPath] = getCsvKeyElements(csvKey);
+		const currentOffer = allOffers.find((offer: Offer) => {
+			return offer.name === offerName;
+		});
+		if (currentOffer){
+			const offerId = currentOffer.id;
+			let offerTranslations;
+			if (offerId in allContentTranslations) {
+				offerTranslations = allContentTranslations[offerId];
+			} else {
+				offerTranslations = { content: getOfferContentFromJson(allOfferContents.find(content => content.offerId === offerId)) } as OfferTranslationData;
 			}
+			if (table === "offer") {
+				offerTranslations[column] = translation;
+			} else {
+				const evalString = `offerTranslations.content.${ jsonPath }=translation`;
+				try {
+					/* tslint:disable-next-line:no-eval */
+					eval(evalString);
+				} catch (e) {
+					console.error("content eval failed: \neval string: %s\n error message: %s", evalString, e);
+				}
+			}
+			allContentTranslations[offerId] = offerTranslations;
 		}
-		allContentTranslations[offerId] = offerTranslations;
 	});
 	return allContentTranslations;
 }
